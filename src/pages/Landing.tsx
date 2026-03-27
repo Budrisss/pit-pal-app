@@ -60,7 +60,7 @@ const Landing = () => {
       >
         <div className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4">
           <Link to="/" className="flex items-center">
-            <span className="text-lg sm:text-xl font-bold tracking-tight">TRACK SIDE</span>
+            <span className="text-lg sm:text-xl font-bold tracking-tight">TRACK SIDE ops</span>
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
             <Button variant="ghost" size="sm" className="sm:size-default" asChild>
