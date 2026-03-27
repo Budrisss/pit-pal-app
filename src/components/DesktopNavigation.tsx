@@ -1,9 +1,17 @@
-import { Link, useLocation } from "react-router-dom";
-import { Settings, Calendar, CheckSquare, Car, Home, Plus } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Settings, Calendar, CheckSquare, Car, Home, Plus, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 const DesktopNavigation = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   const navItems = [
     { icon: Home, label: "Home", path: "/dashboard" },
@@ -39,8 +47,14 @@ const DesktopNavigation = () => {
               <span className="transform skew-x-6">{label}</span>
             </Link>
           ))}
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-6 py-3 transition-all duration-300 transform -skew-x-6 border-2 border-transparent uppercase tracking-wide font-bold text-sm text-f1-silver hover:text-white hover:bg-destructive hover:border-f1-silver"
+          >
+            <LogOut size={18} className="transform skew-x-6" />
+            <span className="transform skew-x-6">Logout</span>
+          </button>
         </div>
-      </div>
     </nav>
   );
 };

@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Settings as SettingsIcon, User, Bell, Car, Database, Camera } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Settings as SettingsIcon, User, Bell, Car, Database, Camera, LogOut } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -8,6 +10,13 @@ import RacingGallery from "@/components/RacingGallery";
 
 const Settings = () => {
   const [showGallery, setShowGallery] = useState(false);
+  const { signOut, user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   if (showGallery) {
     return <RacingGallery onClose={() => setShowGallery(false)} />;
@@ -144,6 +153,23 @@ const Settings = () => {
             </Button>
             <Button variant="destructive" size="sm" className="w-full">
               Reset All Data
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Account / Logout */}
+        <Card className="bg-gradient-dark border-border/50">
+          <CardHeader>
+            <CardTitle className="text-lg text-foreground flex items-center gap-2">
+              <LogOut className="text-primary" size={20} />
+              Account
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground text-sm">Signed in as {user?.email}</p>
+            <Button variant="destructive" className="w-full" onClick={handleLogout}>
+              <LogOut size={16} className="mr-2" />
+              Log Out
             </Button>
           </CardContent>
         </Card>
