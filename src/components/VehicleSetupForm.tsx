@@ -101,7 +101,7 @@ export const VehicleSetupForm = () => {
   }, [selectedEvent]);
 
   const fetchTracks = async () => {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('tracks')
       .select('id, name, city, state')
       .order('name');
@@ -118,7 +118,7 @@ export const VehicleSetupForm = () => {
   };
 
   const fetchCars = async () => {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('cars')
       .select('id, name, make, model, year')
       .order('name');
@@ -135,7 +135,7 @@ export const VehicleSetupForm = () => {
   };
 
   const fetchEvents = async () => {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('events')
       .select('id, name, date, track_id')
       .eq('track_id', selectedTrack)
@@ -153,7 +153,7 @@ export const VehicleSetupForm = () => {
   };
 
   const fetchSessions = async () => {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('sessions')
       .select('id, name, type, event_id')
       .eq('event_id', selectedEvent)
@@ -172,7 +172,7 @@ export const VehicleSetupForm = () => {
 
   const onSubmit = async (data: SetupFormData) => {
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('setup_data')
         .insert({
           ...data,

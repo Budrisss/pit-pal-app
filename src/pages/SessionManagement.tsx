@@ -502,7 +502,7 @@ const SessionManagement = () => {
         rr_temp_inside: data.rearRight.tempInside ? parseFloat(data.rearRight.tempInside) : null,
       };
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('setup_data')
         .insert(setupData);
 
