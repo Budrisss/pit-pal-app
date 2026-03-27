@@ -181,7 +181,7 @@ const Landing = () => {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <Car size={16} className="sm:w-[18px] sm:h-[18px] text-primary" />
-            <span>TRACK SIDE</span>
+            <span>TRACK SIDE ops</span>
           </div>
           <span>© {new Date().getFullYear()} Track Side. All rights reserved.</span>
         </div>
