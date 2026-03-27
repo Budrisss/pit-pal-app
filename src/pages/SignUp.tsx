@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Car, Mail, Lock, UserPlus, LogIn } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Car, Mail, Lock, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,15 +9,15 @@ import { useToast } from '@/hooks/use-toast';
 
 import racingCockpit from '@/assets/racing-cockpit.jpg';
 
-const Landing = () => {
+const SignUp = () => {
   const navigate = useNavigate();
-  const { signIn, signUp, user } = useAuth();
+  const { signUp, user } = useAuth();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Redirect if already logged in
   if (user) {
     navigate('/dashboard');
     return null;
@@ -25,28 +25,32 @@ const Landing = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (password !== confirmPassword) {
+      toast({
+        title: "Passwords don't match",
+        description: "Please make sure both passwords are the same.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
-
-    const { error } = isSignUp
-      ? await signUp(email, password)
-      : await signIn(email, password);
-
+    const { error } = await signUp(email, password);
     setLoading(false);
 
     if (error) {
       toast({
-        title: isSignUp ? "Sign up failed" : "Login failed",
+        title: "Sign up failed",
         description: error.message,
         variant: "destructive",
       });
-    } else if (isSignUp) {
+    } else {
       toast({
         title: "Account created!",
         description: "Check your email to confirm your account, then log in.",
       });
-      setIsSignUp(false);
-    } else {
-      navigate('/dashboard');
+      navigate('/');
     }
   };
 
@@ -69,7 +73,7 @@ const Landing = () => {
 
         <div className="bg-black/80 backdrop-blur-sm p-8 rounded-2xl border border-white/20 w-full max-w-md">
           <h2 className="text-2xl font-bold text-white mb-6 text-center">
-            Login to Garage
+            Create Account
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -99,7 +103,24 @@ const Landing = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="pl-10 bg-white/10 border-white/30 text-white placeholder:text-white/50"
-                  placeholder="Enter password"
+                  placeholder="Create password"
+                  required
+                  minLength={6}
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="confirmPassword" className="text-white">Confirm Password</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50" size={20} />
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="pl-10 bg-white/10 border-white/30 text-white placeholder:text-white/50"
+                  placeholder="Confirm password"
                   required
                   minLength={6}
                 />
@@ -113,21 +134,19 @@ const Landing = () => {
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : isSignUp ? (
-                <><UserPlus size={20} className="mr-2" /> Create Account</>
               ) : (
-                <><LogIn size={20} className="mr-2" /> Enter Garage</>
+                <><UserPlus size={20} className="mr-2" /> Create Account</>
               )}
             </Button>
           </form>
 
           <div className="mt-6 text-center">
-            <button
-              onClick={() => setIsSignUp(!isSignUp)}
+            <Link
+              to="/"
               className="text-white/70 hover:text-white text-sm transition-colors"
             >
-              {isSignUp ? 'Already have an account? Log in' : "Don't have an account? Sign up"}
-            </button>
+              Already have an account? Log in
+            </Link>
           </div>
         </div>
       </div>
@@ -135,4 +154,4 @@ const Landing = () => {
   );
 };
 
-export default Landing;
+export default SignUp;
