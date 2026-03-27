@@ -55,6 +55,7 @@ const DesktopNavigation = () => {
             <span className="transform skew-x-6">Logout</span>
           </button>
         </div>
+      </div>
     </nav>
   );
 };
