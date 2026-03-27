@@ -225,21 +225,22 @@ const SignUp = () => {
               </p>
 
               <form onSubmit={handleVerifyAndSignUp} className="space-y-6">
-                <div className="flex justify-center">
-                  <InputOTP
-                    maxLength={6}
-                    value={otpCode}
-                    onChange={(value) => setOtpCode(value)}
-                  >
-                    <InputOTPGroup>
-                      <InputOTPSlot index={0} className="bg-white/10 border-white/30 text-white" />
-                      <InputOTPSlot index={1} className="bg-white/10 border-white/30 text-white" />
-                      <InputOTPSlot index={2} className="bg-white/10 border-white/30 text-white" />
-                      <InputOTPSlot index={3} className="bg-white/10 border-white/30 text-white" />
-                      <InputOTPSlot index={4} className="bg-white/10 border-white/30 text-white" />
-                      <InputOTPSlot index={5} className="bg-white/10 border-white/30 text-white" />
-                    </InputOTPGroup>
-                  </InputOTP>
+                <div>
+                  <Label htmlFor="otp" className="text-white">Verification Code</Label>
+                  <div className="relative">
+                    <ShieldCheck className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50" size={20} />
+                    <Input
+                      id="otp"
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={6}
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      className="pl-10 bg-white/10 border-white/30 text-white placeholder:text-white/50 text-center text-2xl tracking-[0.5em] font-mono"
+                      placeholder="000000"
+                      required
+                    />
+                  </div>
                 </div>
 
                 <Button
