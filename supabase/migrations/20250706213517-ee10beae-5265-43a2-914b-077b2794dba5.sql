@@ -1,0 +1,22 @@
+-- Insert popular racing tracks
+INSERT INTO public.tracks (name, address, city, state, country, track_type, website) VALUES
+('Thunderhill Raceway Park', '5250 Hwy 162', 'Willows', 'CA', 'USA', 'Road Course', 'https://thunderhill.com'),
+('Laguna Seca', '1021 Monterey Salinas Hwy', 'Salinas', 'CA', 'USA', 'Road Course', 'https://weathertechraceway.com'),
+('Sonoma Raceway', '29355 Arnold Dr', 'Sonoma', 'CA', 'USA', 'Road Course', 'https://sonomaraceway.com'),
+('Road America', 'N7390 Highway 67', 'Elkhart Lake', 'WI', 'USA', 'Road Course', 'https://roadamerica.com'),
+('Mid-Ohio Sports Car Course', '7721 Steam Corners Rd', 'Lexington', 'OH', 'USA', 'Road Course', 'https://midohio.com'),
+('Virginia International Raceway', '1245 Pine Tree Rd', 'Alton', 'VA', 'USA', 'Road Course', 'https://virnow.com'),
+('Road Atlanta', '5300 Winder Hwy', 'Braselton', 'GA', 'USA', 'Road Course', 'https://roadatlanta.com'),
+('Sebring International Raceway', '113 Midway Dr', 'Sebring', 'FL', 'USA', 'Road Course', 'https://sebringraceway.com'),
+('Circuit of the Americas', '9201 Circuit of the Americas Blvd', 'Austin', 'TX', 'USA', 'Road Course', 'https://circuitoftheamericas.com'),
+('Watkins Glen International', '2790 County Route 16', 'Watkins Glen', 'NY', 'USA', 'Road Course', 'https://theglen.com'),
+('Lime Rock Park', '497 Lime Rock Rd', 'Lakeville', 'CT', 'USA', 'Road Course', 'https://limerock.com'),
+('Portland International Raceway', '1940 N Victory Blvd', 'Portland', 'OR', 'USA', 'Road Course', 'https://portlandraceway.com'),
+('Buttonwillow Raceway Park', '24551 Lerdo Hwy', 'Buttonwillow', 'CA', 'USA', 'Road Course', 'https://buttonwillowraceway.com'),
+('Streets of Willow Springs', '25500 The Old Rd', 'Rosamond', 'CA', 'USA', 'Road Course', 'https://willowspringsraceway.com'),
+('Auto Club Speedway', '9300 Cherry Ave', 'Fontana', 'CA', 'USA', 'Oval/Road Course', 'https://autoclubspeedway.com'),
+('New Jersey Motorsports Park', '8000 Dividing Creek Rd', 'Millville', 'NJ', 'USA', 'Road Course', 'https://njmp.com'),
+('Pocono Raceway', '1234 Long Pond Rd', 'Long Pond', 'PA', 'USA', 'Oval', 'https://poconoraceway.com'),
+('Homestead-Miami Speedway', '1 Speedway Blvd', 'Homestead', 'FL', 'USA', 'Oval/Road Course', 'https://homesteadmiamispeedway.com'),
+('Barber Motorsports Park', '6030 Barber Motorsports Pkwy', 'Leeds', 'AL', 'USA', 'Road Course', 'https://barbermotorsports.com'),
+('Palmer Motorsports Park', '76 Forrest St', 'Palmer', 'MA', 'USA', 'Road Course', 'https://palmermotorsportspark.com');
