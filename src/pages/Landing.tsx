@@ -70,7 +70,7 @@ const Landing = () => {
 
       {/* Hero */}
       <section className="relative pt-24">
-        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${racingCockpit})` }} />
+        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${pitLaneHero})` }} />
         <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/60 to-background" />
         <div className="relative z-10 max-w-6xl mx-auto px-6 py-32 md:py-44 text-center">
           <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-tight mb-6">
