@@ -8,6 +8,7 @@ import { CarsProvider } from "@/contexts/CarsContext";
 import { EventsProvider } from "@/contexts/EventsContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Landing from "./pages/Landing";
+import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import Dashboard from "./pages/Dashboard";
 import Garage from "./pages/Garage";
@@ -33,6 +34,7 @@ const App = () => (
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Landing />} />
+                <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<SignUp />} />
                 <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/garage" element={<ProtectedRoute><Garage /></ProtectedRoute>} />
