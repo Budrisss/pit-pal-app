@@ -211,7 +211,7 @@ const EventForm = ({ open, onOpenChange, onSave, editingEvent }: EventFormProps)
     const fetchTracks = async () => {
       setIsLoadingTracks(true);
       try {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from('tracks')
           .select('id, name, address, city, state')
           .order('name');
