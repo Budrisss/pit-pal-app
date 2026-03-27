@@ -36,10 +36,9 @@ const Events = () => {
     setIsEventFormOpen(true);
   };
 
-  const handleSaveEvent = (eventData: EventFormData) => {
+  const handleSaveEvent = async (eventData: EventFormData) => {
     if (editingEvent) {
-      // Update existing event
-      const updatedEvent = {
+      const updatedEvent: Event = {
         ...editingEvent,
         name: eventData.name,
         track: eventData.track,
@@ -49,42 +48,22 @@ const Events = () => {
         car: eventData.car,
         address: eventData.address,
       };
-      updateEvent(updatedEvent);
+      await updateEvent(updatedEvent);
     } else {
-      // Create new event - fix timezone handling for same-day detection
       const eventDateTime = new Date(`${eventData.date}T${eventData.time}`);
-      
-      // Generate schedule based on whether it's same-day or not
-      let schedule;
-      if (eventData.isSameDay) {
-        // For same-day events, provide empty schedule for manual creation
-        console.log('Creating same-day event with empty schedule for event:', eventData.name);
-        schedule = [];
-      } else {
-        // Standard morning schedule for future events
-        schedule = [
-          { time: "8:00 AM", activity: "Registration & Setup" },
-          { time: "9:00 AM", activity: "Drivers Meeting" },
-          { time: "10:00 AM", activity: "Track Session Begins" }
-        ];
-      }
 
-      const newEvent = {
-        id: Date.now().toString(),
+      const newEvent: Omit<Event, "id"> = {
         name: eventData.name,
         track: eventData.track,
         date: new Date(eventData.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
         time: new Date(`2000-01-01T${eventData.time}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
-        status: "upcoming" as const,
+        status: "upcoming",
         eventDate: eventDateTime,
         car: eventData.car,
         address: eventData.address,
         description: `Track day event at ${eventData.track}. Get ready for an exciting day on the track!`,
-        weather: { temperature: "70°F", condition: "Clear", windSpeed: "5 mph" },
-        schedule,
-        requirements: ["Valid driver's license", "Helmet", "Closed-toe shoes"]
       };
-      addEvent(newEvent);
+      await addEvent(newEvent);
     }
     setEditingEvent(null);
   };
