@@ -59,8 +59,7 @@ const Landing = () => {
         className="fixed top-0 inset-x-0 z-50 bg-background/80 backdrop-blur-md border-b border-border"
       >
         <div className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4">
-          <Link to="/" className="flex items-center gap-2">
-            <Car size={24} className="sm:w-7 sm:h-7 text-primary" />
+          <Link to="/" className="flex items-center">
             <span className="text-lg sm:text-xl font-bold tracking-tight">TRACK SIDE</span>
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
