@@ -99,7 +99,7 @@ const SignUp = () => {
         title: "Account created!",
         description: "Check your email to confirm your account, then log in.",
       });
-      navigate('/');
+      navigate('/login');
     } catch (err: any) {
       toast({
         title: "Verification failed",
@@ -277,7 +277,7 @@ const SignUp = () => {
 
           <div className="mt-6 text-center">
             <Link
-              to="/"
+              to="/login"
               className="text-white/70 hover:text-white text-sm transition-colors"
             >
               Already have an account? Log in
