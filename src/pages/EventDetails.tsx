@@ -48,8 +48,8 @@ const EventDetails = () => {
     navigate('/events', { state: { editingEvent: event } });
   };
 
-  const handleDelete = () => {
-    deleteEvent(id!);
+  const handleDelete = async () => {
+    await deleteEvent(id!);
     navigate('/events');
   };
 
