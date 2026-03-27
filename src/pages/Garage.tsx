@@ -15,7 +15,7 @@ import { useCars } from "@/contexts/CarsContext";
 const Garage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { cars, addCar } = useCars();
+  const { cars, loading, addCar } = useCars();
   const [isAddCarOpen, setIsAddCarOpen] = useState(false);
   const [newCar, setNewCar] = useState({
     name: "",
@@ -33,7 +33,7 @@ const Garage = () => {
     setIsAddCarOpen(true);
   };
 
-  const handleSaveCar = () => {
+  const handleSaveCar = async () => {
     if (!newCar.name || !newCar.make || !newCar.model) {
       toast({
         title: "Missing Information",
@@ -43,8 +43,7 @@ const Garage = () => {
       return;
     }
 
-    const car = {
-      id: Date.now().toString(),
+    await addCar({
       name: newCar.name,
       year: newCar.year,
       make: newCar.make,
@@ -57,11 +56,8 @@ const Garage = () => {
         weight: newCar.weight || "N/A",
         drivetrain: newCar.drivetrain || "N/A"
       },
-      events: 0,
-      setups: 0
-    };
+    });
 
-    addCar(car);
     setNewCar({
       name: "",
       year: "",
