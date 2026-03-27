@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Plus, Calendar } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import EventCard from "@/components/EventCard";
 import EventForm, { EventFormData } from "@/components/EventForm";
 import Navigation from "@/components/Navigation";
@@ -10,7 +11,7 @@ import { useEvents, Event } from "@/contexts/EventsContext";
 import racingGrid from "@/assets/racing-grid.jpg";
 
 const Events = () => {
-  const { events, addEvent, updateEvent } = useEvents();
+  const { events, loading, addEvent, updateEvent } = useEvents();
   const location = useLocation();
   const [countdown, setCountdown] = useState("");
   const [isEventFormOpen, setIsEventFormOpen] = useState(false);
@@ -134,8 +135,36 @@ const Events = () => {
 
         {/* Events List */}
         <div className="space-y-4 lg:space-y-6 max-w-4xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-            {events.map((event) => (
+          {loading ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="bg-card border border-border rounded-xl p-4 space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="h-5 w-40" />
+                      <Skeleton className="h-4 w-28" />
+                    </div>
+                    <Skeleton className="h-6 w-20 rounded-full" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-3/4" />
+                  </div>
+                  <div className="flex gap-2">
+                    <Skeleton className="h-9 flex-1" />
+                    <Skeleton className="h-9 flex-1" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : events.length === 0 ? (
+            <div className="text-center py-12">
+              <Calendar className="mx-auto size-12 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">No events yet. Create your first event!</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+              {events.map((event) => (
                 <EventCard
                   key={event.id}
                   id={event.id}
@@ -150,7 +179,8 @@ const Events = () => {
                   onEdit={() => handleEditEvent(event)}
                 />
               ))}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Event Form Dialog */}
