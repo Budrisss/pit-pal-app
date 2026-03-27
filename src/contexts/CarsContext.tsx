@@ -1,4 +1,6 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface Car {
   id: string;
@@ -21,8 +23,10 @@ export interface Car {
 
 interface CarsContextType {
   cars: Car[];
-  setCars: (cars: Car[]) => void;
-  addCar: (car: Car) => void;
+  loading: boolean;
+  addCar: (car: Omit<Car, "id" | "events" | "setups">) => Promise<void>;
+  deleteCar: (id: string) => Promise<void>;
+  refreshCars: () => Promise<void>;
   getCarDisplayName: (car: Car) => string;
 }
 
@@ -36,64 +40,83 @@ export const useCars = () => {
   return context;
 };
 
-export const CarsProvider = ({ children }: { children: ReactNode }) => {
-  const [cars, setCars] = useState<Car[]>([
-    {
-      id: "1",
-      name: "Track Beast",
-      year: "2018",
-      make: "Mazda",
-      model: "MX-5 Miata",
-      category: "Street/Track",
-      image: "/api/placeholder/300/200",
-      specs: {
-        engine: "2.0L SKYACTIV-G",
-        power: "181 HP",
-        weight: "2,332 lbs",
-        drivetrain: "RWD"
-      },
-      events: 5,
-      setups: 3,
-      isDefault: true
-    },
-    {
-      id: "2", 
-      name: "Weekend Warrior",
-      year: "2020",
-      make: "BMW",
-      model: "M2 Competition",
-      category: "Track",
-      image: "/api/placeholder/300/200",
-      specs: {
-        engine: "3.0L Twin-Turbo I6",
-        power: "405 HP", 
-        weight: "3,450 lbs",
-        drivetrain: "RWD"
-      },
-      events: 2,
-      setups: 2
-    },
-    {
-      id: "3",
-      name: "Daily Driver",
-      year: "2019", 
-      make: "Honda",
-      model: "Civic Type R",
-      category: "Street",
-      image: "/api/placeholder/300/200",
-      specs: {
-        engine: "2.0L VTEC Turbo",
-        power: "306 HP",
-        weight: "3,117 lbs", 
-        drivetrain: "FWD"
-      },
-      events: 1,
-      setups: 1
-    }
-  ]);
+// Map a DB row to our Car interface
+const mapDbRowToCar = (row: any): Car => ({
+  id: row.id,
+  name: row.name,
+  year: row.year?.toString() || "",
+  make: row.make || "",
+  model: row.model || "",
+  category: row.category || "Street",
+  image: row.image || "/api/placeholder/300/200",
+  specs: {
+    engine: row.engine || "N/A",
+    power: row.power || "N/A",
+    weight: row.weight || "N/A",
+    drivetrain: row.drivetrain || "N/A",
+  },
+  events: 0,
+  setups: 0,
+});
 
-  const addCar = (car: Car) => {
-    setCars(prev => [...prev, car]);
+export const CarsProvider = ({ children }: { children: ReactNode }) => {
+  const [cars, setCars] = useState<Car[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+
+  const fetchCars = useCallback(async () => {
+    if (!user) {
+      setCars([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    const { data, error } = await (supabase as any)
+      .from("cars")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (!error && data) {
+      setCars(data.map(mapDbRowToCar));
+    }
+    setLoading(false);
+  }, [user]);
+
+  useEffect(() => {
+    fetchCars();
+  }, [fetchCars]);
+
+  const addCar = async (car: Omit<Car, "id" | "events" | "setups">) => {
+    if (!user) return;
+    const { error } = await (supabase as any).from("cars").insert({
+      user_id: user.id,
+      name: car.name,
+      year: car.year ? parseInt(car.year) : null,
+      make: car.make || null,
+      model: car.model || null,
+      category: car.category || null,
+      image: car.image || null,
+      engine: car.specs?.engine || null,
+      power: car.specs?.power || null,
+      weight: car.specs?.weight || null,
+      drivetrain: car.specs?.drivetrain || null,
+    });
+    if (!error) {
+      await fetchCars();
+    }
+  };
+
+  const deleteCar = async (id: string) => {
+    if (!user) return;
+    const { error } = await (supabase as any)
+      .from("cars")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", user.id);
+    if (!error) {
+      setCars((prev) => prev.filter((c) => c.id !== id));
+    }
   };
 
   const getCarDisplayName = (car: Car) => {
@@ -101,7 +124,7 @@ export const CarsProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <CarsContext.Provider value={{ cars, setCars, addCar, getCarDisplayName }}>
+    <CarsContext.Provider value={{ cars, loading, addCar, deleteCar, refreshCars: fetchCars, getCarDisplayName }}>
       {children}
     </CarsContext.Provider>
   );
