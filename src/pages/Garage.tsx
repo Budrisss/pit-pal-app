@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
 import { Plus, Car, Settings, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -265,8 +266,40 @@ const Garage = () => {
         {/* Cars Grid */}
         <div className="space-y-4 lg:space-y-6 max-w-6xl mx-auto">
           <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold text-foreground">Your Vehicles</h2>
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
-            {cars.map((car) => (
+          {loading ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-card border border-border rounded-xl lg:rounded-2xl p-4 space-y-4">
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="h-5 w-32" />
+                      <Skeleton className="h-4 w-48" />
+                    </div>
+                    <Skeleton className="h-6 w-16 rounded-full" />
+                  </div>
+                  <Skeleton className="w-full h-24 sm:h-32 lg:h-40 rounded-lg" />
+                  <div className="grid grid-cols-2 gap-3">
+                    <Skeleton className="h-10" />
+                    <Skeleton className="h-10" />
+                    <Skeleton className="h-10" />
+                    <Skeleton className="h-10" />
+                  </div>
+                  <Skeleton className="h-16 rounded-xl" />
+                  <div className="flex gap-3">
+                    <Skeleton className="h-9 flex-1 rounded-full" />
+                    <Skeleton className="h-9 flex-1 rounded-full" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : cars.length === 0 ? (
+            <div className="text-center py-12">
+              <Car className="mx-auto size-12 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">No cars yet. Add your first car to get started!</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
+              {cars.map((car) => (
                 <CarCard
                   key={car.id}
                   id={car.id}
@@ -282,7 +315,8 @@ const Garage = () => {
                   isDefault={car.isDefault}
                 />
               ))}
-          </div>
+            </div>
+          )}
         </div>
       </div>
       <Navigation />
