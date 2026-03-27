@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 
-import racingCockpit from '@/assets/racing-cockpit.jpg';
+import pitLaneHero from '@/assets/pit-lane-hero.jpg';
 
 const features = [
   {
