@@ -71,6 +71,45 @@ export type Database = {
         }
         Relationships: []
       }
+      event_announcements: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          message: string
+          organizer_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          message: string
+          organizer_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          message?: string
+          organizer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_announcements_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_announcements_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "organizer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_registrations: {
         Row: {
           created_at: string
