@@ -33,6 +33,15 @@ interface RegistrationType {
   max_spots: number | null;
 }
 
+interface EventSession {
+  id?: string;
+  registration_type_id: string | null;
+  name: string;
+  start_time: string;
+  duration_minutes: number | null;
+  sort_order: number;
+}
+
 interface EventRegistration {
   id: string;
   registration_type_id: string;
