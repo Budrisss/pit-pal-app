@@ -170,6 +170,7 @@ export type Database = {
           description: string | null
           id: string
           name: string
+          public_event_id: string | null
           status: string | null
           time: string | null
           track_id: string | null
@@ -184,6 +185,7 @@ export type Database = {
           description?: string | null
           id?: string
           name: string
+          public_event_id?: string | null
           status?: string | null
           time?: string | null
           track_id?: string | null
@@ -198,6 +200,7 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
+          public_event_id?: string | null
           status?: string | null
           time?: string | null
           track_id?: string | null

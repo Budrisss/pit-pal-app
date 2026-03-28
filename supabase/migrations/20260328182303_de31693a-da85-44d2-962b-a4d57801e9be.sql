@@ -1,0 +1,1 @@
+ALTER TABLE public.events ADD COLUMN public_event_id uuid DEFAULT NULL;
