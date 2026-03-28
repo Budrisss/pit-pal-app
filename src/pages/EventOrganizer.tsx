@@ -891,6 +891,9 @@ const EventOrganizer = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openLiveManagement(event)}>
+                            <Radio size={14} className="mr-2" /> Live Manage
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => openPreview(event)}>
                             <Eye size={14} className="mr-2" /> Preview Event
                           </DropdownMenuItem>
