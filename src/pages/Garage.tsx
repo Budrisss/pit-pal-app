@@ -125,6 +125,14 @@ const Garage = () => {
     });
   };
 
+  const handleImageUpload = async (id: string, file: File) => {
+    await uploadCarImage(id, file);
+    toast({
+      title: "Photo Updated!",
+      description: "Your car photo has been uploaded.",
+    });
+  };
+
   const handleNewEvent = () => {
     navigate('/events');
   };
@@ -392,6 +400,7 @@ const Garage = () => {
                   isDefault={car.isDefault}
                   onEdit={handleEditCar}
                   onDelete={handleDeleteCar}
+                  onImageUpload={handleImageUpload}
                 />
               ))}
             </div>
