@@ -190,6 +190,54 @@ const LocalEvents = () => {
     }
   };
 
+  const handleEditEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingEvent || !organizerProfile) return;
+    setCreating(true);
+    try {
+      let lat = editingEvent.latitude ?? null;
+      let lng = editingEvent.longitude ?? null;
+      const ev = editingEvent;
+      if (ev.zip_code) {
+        const geo = await geocodeZip(ev.zip_code);
+        if (geo) { lat = geo.latitude; lng = geo.longitude; }
+      }
+      const { error } = await supabase.from('public_events').update({
+        name: ev.name, date: ev.date, time: ev.time || null,
+        description: ev.description || null, track_name: ev.track_name || null,
+        address: ev.address || null, city: ev.city || null, state: ev.state || null,
+        zip_code: ev.zip_code || null, entry_fee: ev.entry_fee || null,
+        car_classes: ev.car_classes || null, registration_link: ev.registration_link || null,
+        latitude: lat, longitude: lng,
+      }).eq('id', ev.id);
+      if (error) throw error;
+      toast({ title: "Event updated!" });
+      setShowEditDialog(false);
+      setEditingEvent(null);
+      fetchEvents();
+    } catch (err: any) {
+      toast({ title: "Failed to update", description: err.message, variant: "destructive" });
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleDeleteEvent = async () => {
+    if (!deletingEventId) return;
+    try {
+      const { error } = await supabase.from('public_events').delete().eq('id', deletingEventId);
+      if (error) throw error;
+      toast({ title: "Event deleted" });
+      setDeletingEventId(null);
+      fetchEvents();
+    } catch (err: any) {
+      toast({ title: "Failed to delete", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const isOrganizerEvent = (event: PublicEvent) =>
+    organizerProfile && event.organizer_id === organizerProfile.id;
+
   const filteredEvents = events.filter(ev => {
     const matchesSearch = !searchQuery ||
       ev.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
