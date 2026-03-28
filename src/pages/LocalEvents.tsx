@@ -786,6 +786,9 @@ const LocalEvents = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openParticipantList(event)}>
+                                <ClipboardList size={14} className="mr-2" /> Participants
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => openEditDialog(event)}>
                                 <Pencil size={14} className="mr-2" /> Edit
                               </DropdownMenuItem>
