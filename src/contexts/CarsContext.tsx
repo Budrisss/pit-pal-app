@@ -27,6 +27,7 @@ interface CarsContextType {
   addCar: (car: Omit<Car, "id" | "events" | "setups">) => Promise<void>;
   updateCar: (id: string, car: Partial<Omit<Car, "id" | "events" | "setups">>) => Promise<void>;
   uploadCarImage: (carId: string, file: File) => Promise<void>;
+  removeCarImage: (carId: string) => Promise<void>;
   deleteCar: (id: string) => Promise<void>;
   refreshCars: () => Promise<void>;
   getCarDisplayName: (car: Car) => string;
@@ -165,12 +166,22 @@ export const CarsProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const removeCarImage = async (carId: string) => {
+    if (!user) return;
+    await (supabase as any)
+      .from("cars")
+      .update({ image: null })
+      .eq("id", carId)
+      .eq("user_id", user.id);
+    await fetchCars();
+  };
+
   const getCarDisplayName = (car: Car) => {
     return `${car.name} - ${car.year} ${car.make} ${car.model}`;
   };
 
   return (
-    <CarsContext.Provider value={{ cars, loading, addCar, updateCar, uploadCarImage, deleteCar, refreshCars: fetchCars, getCarDisplayName }}>
+    <CarsContext.Provider value={{ cars, loading, addCar, updateCar, uploadCarImage, removeCarImage, deleteCar, refreshCars: fetchCars, getCarDisplayName }}>
       {children}
     </CarsContext.Provider>
   );

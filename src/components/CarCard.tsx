@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Calendar, Settings, Star, Car, Pencil, Trash2, Camera } from "lucide-react";
+import { Calendar, Settings, Star, Car, Pencil, Trash2, Camera, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,7 @@ interface CarCardProps {
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
   onImageUpload?: (id: string, file: File) => void;
+  onImageRemove?: (id: string) => void;
 }
 
 const CarCard = ({ 
@@ -40,7 +41,8 @@ const CarCard = ({
   isDefault,
   onEdit,
   onDelete,
-  onImageUpload
+  onImageUpload,
+  onImageRemove
 }: CarCardProps) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -82,9 +84,17 @@ const CarCard = ({
                 ) : (
                   <Car size={20} className="sm:size-6 text-muted-foreground" />
                 )}
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
                   <Camera size={14} className="text-white" />
                 </div>
+                {hasImage && onImageRemove && (
+                  <button
+                    className="absolute -top-1 -right-1 size-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                    onClick={(e) => { e.stopPropagation(); onImageRemove(id); }}
+                  >
+                    <X size={10} />
+                  </button>
+                )}
                 <input
                   ref={fileInputRef}
                   type="file"
