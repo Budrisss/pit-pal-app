@@ -1,4 +1,4 @@
-import { Calendar, Clock, MapPin, Timer, Car, Play, Edit, Trash2, MoreVertical, Eye } from "lucide-react";
+import { Calendar, Clock, MapPin, Timer, Car, Play, Edit, Trash2, MoreVertical, Eye, UserCheck } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";

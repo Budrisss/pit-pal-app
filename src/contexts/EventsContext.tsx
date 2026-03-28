@@ -13,6 +13,7 @@ export interface Event {
   car: string;
   address: string;
   description?: string;
+  publicEventId?: string | null;
   weather?: { temperature: string; condition: string; windSpeed: string };
   schedule?: { time: string; activity: string }[];
   requirements?: string[];
@@ -58,6 +59,7 @@ const mapDbRowToEvent = (row: any): Event => {
     car: row.car_name || "",
     address: row.address || "",
     description: row.description || undefined,
+    publicEventId: row.public_event_id || null,
   };
 };
 
