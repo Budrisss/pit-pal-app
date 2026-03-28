@@ -406,6 +406,32 @@ const EventOrganizer = () => {
     }
   };
 
+  const saveSessions = async (eventId: string, sessions: EventSession[], existingIds?: string[]) => {
+    if (existingIds && existingIds.length > 0) {
+      const keepIds = sessions.filter(s => s.id).map(s => s.id!);
+      const toDelete = existingIds.filter(id => !keepIds.includes(id));
+      if (toDelete.length > 0) {
+        await supabase.from('public_event_sessions').delete().in('id', toDelete);
+      }
+    }
+    for (let i = 0; i < sessions.length; i++) {
+      const s = sessions[i];
+      if (!s.name.trim()) continue;
+      const payload = {
+        name: s.name,
+        registration_type_id: s.registration_type_id || null,
+        start_time: s.start_time || null,
+        duration_minutes: s.duration_minutes,
+        sort_order: i,
+      };
+      if (s.id) {
+        await supabase.from('public_event_sessions').update(payload).eq('id', s.id);
+      } else {
+        await supabase.from('public_event_sessions').insert({ ...payload, event_id: eventId });
+      }
+    }
+  };
+
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!organizerProfile) return;
