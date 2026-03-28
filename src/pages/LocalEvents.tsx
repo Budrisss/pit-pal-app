@@ -187,6 +187,19 @@ const LocalEvents = () => {
   });
   const [newRegTypes, setNewRegTypes] = useState<RegistrationType[]>([]);
   const [editRegTypes, setEditRegTypes] = useState<RegistrationType[]>([]);
+  
+  // Registration state
+  const [registeringEvent, setRegisteringEvent] = useState<PublicEvent | null>(null);
+  const [selectedRegTypeId, setSelectedRegTypeId] = useState<string>('');
+  const [regForm, setRegForm] = useState({ name: '', email: '', phone: '', notes: '' });
+  const [registering, setRegistering] = useState(false);
+  const [userRegistrations, setUserRegistrations] = useState<Set<string>>(new Set());
+  
+  // Participant list state
+  const [participantEvent, setParticipantEvent] = useState<PublicEvent | null>(null);
+  const [participants, setParticipants] = useState<EventRegistration[]>([]);
+  const [loadingParticipants, setLoadingParticipants] = useState(false);
+  const [registrationCounts, setRegistrationCounts] = useState<Record<string, number>>({});
 
   // Check if user is an organizer
   useEffect(() => {
