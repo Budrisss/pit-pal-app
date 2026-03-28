@@ -983,6 +983,136 @@ const LocalEvents = () => {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Registration Dialog */}
+      <Dialog open={!!registeringEvent} onOpenChange={(open) => { if (!open) { setRegisteringEvent(null); setSelectedRegTypeId(''); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Register for {registeringEvent?.name}</DialogTitle>
+          </DialogHeader>
+          {registeringEvent && (
+            <form onSubmit={handleRegister} className="space-y-4 mt-2">
+              <div className="space-y-2">
+                <Label>Select Registration Group *</Label>
+                <Select value={selectedRegTypeId} onValueChange={setSelectedRegTypeId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a group..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(registeringEvent.registration_types || []).map(rt => {
+                      const count = rt.id ? (registrationCounts[rt.id] || 0) : 0;
+                      const isFull = rt.max_spots ? count >= rt.max_spots : false;
+                      const isRegistered = rt.id ? userRegistrations.has(rt.id) : false;
+                      return (
+                        <SelectItem 
+                          key={rt.id} 
+                          value={rt.id || ''} 
+                          disabled={isFull || isRegistered}
+                        >
+                          {rt.name}{rt.price ? ` — ${rt.price}` : ''}
+                          {rt.max_spots ? ` (${count}/${rt.max_spots})` : ''}
+                          {isRegistered ? ' ✓ Registered' : ''}
+                          {isFull && !isRegistered ? ' — FULL' : ''}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Show selected group description */}
+              {selectedRegTypeId && (() => {
+                const sel = (registeringEvent.registration_types || []).find(r => r.id === selectedRegTypeId);
+                return sel?.description ? (
+                  <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">{sel.description}</p>
+                ) : null;
+              })()}
+
+              <div className="space-y-2">
+                <Label>Your Name *</Label>
+                <Input value={regForm.name} onChange={e => setRegForm(p => ({ ...p, name: e.target.value }))} required placeholder="John Doe" />
+              </div>
+              <div className="space-y-2">
+                <Label>Email *</Label>
+                <Input type="email" value={regForm.email} onChange={e => setRegForm(p => ({ ...p, email: e.target.value }))} required placeholder="john@email.com" />
+              </div>
+              <div className="space-y-2">
+                <Label>Phone</Label>
+                <Input value={regForm.phone} onChange={e => setRegForm(p => ({ ...p, phone: e.target.value }))} placeholder="555-123-4567" />
+              </div>
+              <div className="space-y-2">
+                <Label>Notes</Label>
+                <Textarea value={regForm.notes} onChange={e => setRegForm(p => ({ ...p, notes: e.target.value }))} placeholder="Experience level, car info, etc." rows={2} />
+              </div>
+              <Button type="submit" disabled={registering || !selectedRegTypeId} className="w-full">
+                {registering ? <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : 'Confirm Registration'}
+              </Button>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Participant List Dialog */}
+      <Dialog open={!!participantEvent} onOpenChange={(open) => { if (!open) setParticipantEvent(null); }}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardList size={20} /> Participants — {participantEvent?.name}
+            </DialogTitle>
+          </DialogHeader>
+          {loadingParticipants ? (
+            <div className="flex justify-center py-8">
+              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : participants.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Users size={32} className="mx-auto mb-2 opacity-50" />
+              <p>No registrations yet.</p>
+            </div>
+          ) : (
+            <div className="space-y-4 mt-2">
+              {/* Group by registration type */}
+              {(participantEvent?.registration_types || []).map(rt => {
+                const groupParticipants = participants.filter(p => p.registration_type_id === rt.id);
+                if (groupParticipants.length === 0) return null;
+                return (
+                  <div key={rt.id}>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-semibold text-sm flex items-center gap-2">
+                        <Tag size={14} className="text-primary" /> {rt.name}
+                        {rt.price && <span className="text-muted-foreground font-normal">({rt.price})</span>}
+                      </h4>
+                      <Badge variant="secondary" className="text-xs">
+                        {groupParticipants.length}{rt.max_spots ? `/${rt.max_spots}` : ''} registered
+                      </Badge>
+                    </div>
+                    <div className="border border-border rounded-lg divide-y divide-border">
+                      {groupParticipants.map(p => (
+                        <div key={p.id} className="p-3 flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="font-medium text-sm truncate">{p.user_name}</p>
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                              <span className="flex items-center gap-1"><Mail size={10} /> {p.user_email}</span>
+                              {p.user_phone && <span className="flex items-center gap-1"><Phone size={10} /> {p.user_phone}</span>}
+                            </div>
+                            {p.notes && <p className="text-xs text-muted-foreground mt-1 italic">{p.notes}</p>}
+                          </div>
+                          <span className="text-xs text-muted-foreground shrink-0">
+                            {new Date(p.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+              <p className="text-xs text-muted-foreground text-center pt-2">
+                Total: {participants.length} participant{participants.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <Navigation />
     </div>
   );
