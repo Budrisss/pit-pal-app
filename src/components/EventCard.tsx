@@ -15,7 +15,7 @@ interface EventCardProps {
   date: string;
   time: string;
   countdown?: string;
-  status: "upcoming" | "active" | "completed";
+  status: "upcoming" | "completed";
   car?: string;
   address?: string;
   onEdit?: () => void;
@@ -30,7 +30,6 @@ const EventCard = ({ id, name, track, date, time, countdown, status, car, addres
   const getBorderColor = () => {
     switch (status) {
       case "upcoming": return "border-l-racing-yellow";
-      case "active": return "border-l-racing-red";
       case "completed": return "border-l-success";
       default: return "border-l-muted";
     }

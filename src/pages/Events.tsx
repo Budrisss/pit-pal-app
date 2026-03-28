@@ -40,7 +40,6 @@ const Events = () => {
   const statusCounts = useMemo(() => ({
     all: events.length,
     upcoming: events.filter(e => e.status === "upcoming").length,
-    active: events.filter(e => e.status === "active").length,
     completed: events.filter(e => e.status === "completed").length,
   }), [events]);
 
@@ -155,7 +154,7 @@ const Events = () => {
         {/* Filter Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="w-full sm:w-auto">
-            {(["all", "upcoming", "active", "completed"] as const).map((tab) => (
+            {(["all", "upcoming", "completed"] as const).map((tab) => (
               <TabsTrigger key={tab} value={tab} className="flex items-center gap-1.5 capitalize">
                 {tab}
                 {statusCounts[tab] > 0 && (
