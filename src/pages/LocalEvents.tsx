@@ -322,12 +322,29 @@ const LocalEvents = () => {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!registeringEvent || !selectedRegTypeId || !user) return;
+    if (!registeringEvent || !user) return;
     setRegistering(true);
     try {
+      let regTypeId = selectedRegTypeId;
+
+      // If no registration types exist, auto-create a "General Admission" group
+      if (!regTypeId && (!registeringEvent.registration_types || registeringEvent.registration_types.length === 0)) {
+        const { data: newType, error: typeError } = await supabase.from('registration_types').insert({
+          event_id: registeringEvent.id,
+          name: 'General Admission',
+          description: 'General event registration',
+          price: registeringEvent.entry_fee || null,
+          max_spots: null,
+        }).select('id').single();
+        if (typeError) throw typeError;
+        regTypeId = newType.id;
+      }
+
+      if (!regTypeId) throw new Error('Please select a registration group');
+
       const { error } = await supabase.from('event_registrations').insert({
         event_id: registeringEvent.id,
-        registration_type_id: selectedRegTypeId,
+        registration_type_id: regTypeId,
         user_id: user.id,
         user_name: regForm.name,
         user_email: regForm.email,
@@ -864,20 +881,24 @@ const LocalEvents = () => {
                     )}
 
                     <div className="mt-auto flex gap-2">
-                      {event.registration_types && event.registration_types.length > 0 && !isOrganizerEvent(event) && (
+                      {!isOrganizerEvent(event) && (
                         <Button 
                           size="sm" 
                           className="flex-1"
                           onClick={() => {
                             setRegisteringEvent(event);
                             setRegForm({ name: '', email: user?.email || '', phone: '', notes: '' });
+                            // Auto-select if only one reg type
+                            if (event.registration_types?.length === 1 && event.registration_types[0].id) {
+                              setSelectedRegTypeId(event.registration_types[0].id);
+                            }
                           }}
                         >
                           <UserCheck size={14} className="mr-1" /> Register
                         </Button>
                       )}
                       {event.registration_link && (
-                        <Button size="sm" variant="outline" className={event.registration_types?.length ? '' : 'w-full'} asChild>
+                        <Button size="sm" variant="outline" asChild>
                           <a href={event.registration_link} target="_blank" rel="noopener noreferrer">
                             Info <ExternalLink size={14} className="ml-1" />
                           </a>
@@ -991,33 +1012,56 @@ const LocalEvents = () => {
           </DialogHeader>
           {registeringEvent && (
             <form onSubmit={handleRegister} className="space-y-4 mt-2">
-              <div className="space-y-2">
-                <Label>Select Registration Group *</Label>
-                <Select value={selectedRegTypeId} onValueChange={setSelectedRegTypeId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose a group..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(registeringEvent.registration_types || []).map(rt => {
-                      const count = rt.id ? (registrationCounts[rt.id] || 0) : 0;
-                      const isFull = rt.max_spots ? count >= rt.max_spots : false;
-                      const isRegistered = rt.id ? userRegistrations.has(rt.id) : false;
-                      return (
-                        <SelectItem 
-                          key={rt.id} 
-                          value={rt.id || ''} 
-                          disabled={isFull || isRegistered}
-                        >
-                          {rt.name}{rt.price ? ` — ${rt.price}` : ''}
-                          {rt.max_spots ? ` (${count}/${rt.max_spots})` : ''}
-                          {isRegistered ? ' ✓ Registered' : ''}
-                          {isFull && !isRegistered ? ' — FULL' : ''}
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Only show group selector if there are multiple registration types */}
+              {registeringEvent.registration_types && registeringEvent.registration_types.length > 1 && (
+                <div className="space-y-2">
+                  <Label>Select Registration Group *</Label>
+                  <Select value={selectedRegTypeId} onValueChange={setSelectedRegTypeId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose a group..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {registeringEvent.registration_types.map(rt => {
+                        const count = rt.id ? (registrationCounts[rt.id] || 0) : 0;
+                        const isFull = rt.max_spots ? count >= rt.max_spots : false;
+                        const isRegistered = rt.id ? userRegistrations.has(rt.id) : false;
+                        return (
+                          <SelectItem 
+                            key={rt.id} 
+                            value={rt.id || ''} 
+                            disabled={isFull || isRegistered}
+                          >
+                            {rt.name}{rt.price ? ` — ${rt.price}` : ''}
+                            {rt.max_spots ? ` (${count}/${rt.max_spots})` : ''}
+                            {isRegistered ? ' ✓ Registered' : ''}
+                            {isFull && !isRegistered ? ' — FULL' : ''}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Show info for single reg type */}
+              {registeringEvent.registration_types?.length === 1 && (
+                <div className="bg-muted/50 p-3 rounded-lg">
+                  <p className="text-sm font-medium">{registeringEvent.registration_types[0].name}</p>
+                  {registeringEvent.registration_types[0].price && (
+                    <p className="text-xs text-muted-foreground">{registeringEvent.registration_types[0].price}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Show message for events with no reg types */}
+              {(!registeringEvent.registration_types || registeringEvent.registration_types.length === 0) && (
+                <div className="bg-muted/50 p-3 rounded-lg">
+                  <p className="text-sm font-medium">General Admission</p>
+                  {registeringEvent.entry_fee && (
+                    <p className="text-xs text-muted-foreground">{registeringEvent.entry_fee}</p>
+                  )}
+                </div>
+              )}
               
               {/* Show selected group description */}
               {selectedRegTypeId && (() => {
@@ -1043,7 +1087,11 @@ const LocalEvents = () => {
                 <Label>Notes</Label>
                 <Textarea value={regForm.notes} onChange={e => setRegForm(p => ({ ...p, notes: e.target.value }))} placeholder="Experience level, car info, etc." rows={2} />
               </div>
-              <Button type="submit" disabled={registering || !selectedRegTypeId} className="w-full">
+              <Button 
+                type="submit" 
+                disabled={registering || (registeringEvent.registration_types && registeringEvent.registration_types.length > 1 && !selectedRegTypeId)} 
+                className="w-full"
+              >
                 {registering ? <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : 'Confirm Registration'}
               </Button>
             </form>
