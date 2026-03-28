@@ -133,6 +133,14 @@ const Garage = () => {
     });
   };
 
+  const handleImageRemove = async (id: string) => {
+    await removeCarImage(id);
+    toast({
+      title: "Photo Removed",
+      description: "Car photo has been removed.",
+    });
+  };
+
   const handleNewEvent = () => {
     navigate('/events');
   };
@@ -401,6 +409,7 @@ const Garage = () => {
                   onEdit={handleEditCar}
                   onDelete={handleDeleteCar}
                   onImageUpload={handleImageUpload}
+                  onImageRemove={handleImageRemove}
                 />
               ))}
             </div>
