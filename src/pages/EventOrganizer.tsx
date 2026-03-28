@@ -268,6 +268,71 @@ const SessionsEditor = ({
     </div>
   );
 };
+const EventFormFields = ({ values, onChange, isEdit = false }: {
+  values: any;
+  onChange: (field: string, value: string) => void;
+  isEdit?: boolean;
+}) => (
+  <>
+    <div className="space-y-2">
+      <Label>Event Name *</Label>
+      <Input value={values.name} onChange={e => onChange('name', e.target.value)} required placeholder="Spring Track Day" />
+    </div>
+    <div className="grid grid-cols-2 gap-3">
+      <div className="space-y-2">
+        <Label>Date *</Label>
+        <Input type="date" value={values.date} onChange={e => onChange('date', e.target.value)} required />
+      </div>
+      <div className="space-y-2">
+        <Label>Time</Label>
+        <Input type="time" value={values.time || ''} onChange={e => onChange('time', e.target.value)} />
+      </div>
+    </div>
+    <div className="space-y-2">
+      <Label>Track Name</Label>
+      <Input value={values.track_name || ''} onChange={e => onChange('track_name', e.target.value)} placeholder="Thunderhill Raceway" />
+    </div>
+    <div className="space-y-2">
+      <Label>Address</Label>
+      <Input value={values.address || ''} onChange={e => onChange('address', e.target.value)} placeholder="5250 Hwy 162" />
+    </div>
+    <div className="grid grid-cols-3 gap-3">
+      <div className="space-y-2">
+        <Label>City</Label>
+        <Input value={values.city || ''} onChange={e => onChange('city', e.target.value)} placeholder="Willows" />
+      </div>
+      <div className="space-y-2">
+        <Label>State</Label>
+        <Select value={values.state || ''} onValueChange={v => onChange('state', v)}>
+          <SelectTrigger><SelectValue placeholder="State" /></SelectTrigger>
+          <SelectContent>{US_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-2">
+        <Label>ZIP</Label>
+        <Input value={values.zip_code || ''} onChange={e => onChange('zip_code', e.target.value)} placeholder="95988" maxLength={5} />
+      </div>
+    </div>
+    <div className="grid grid-cols-2 gap-3">
+      <div className="space-y-2">
+        <Label>Entry Fee</Label>
+        <Input value={values.entry_fee || ''} onChange={e => onChange('entry_fee', e.target.value)} placeholder="$150" />
+      </div>
+      <div className="space-y-2">
+        <Label>Car Classes</Label>
+        <Input value={values.car_classes || ''} onChange={e => onChange('car_classes', e.target.value)} placeholder="Open, GT, Spec Miata" />
+      </div>
+    </div>
+    <div className="space-y-2">
+      <Label>Registration Link (external)</Label>
+      <Input type="url" value={values.registration_link || ''} onChange={e => onChange('registration_link', e.target.value)} placeholder="https://motorsportreg.com/..." />
+    </div>
+    <div className="space-y-2">
+      <Label>Description</Label>
+      <Textarea value={values.description || ''} onChange={e => onChange('description', e.target.value)} placeholder="Details about the event..." rows={3} />
+    </div>
+  </>
+);
 
 const EventOrganizer = () => {
   const navigate = useNavigate();
@@ -658,71 +723,7 @@ const EventOrganizer = () => {
     );
   }
 
-  const EventFormFields = ({ values, onChange, isEdit = false }: {
-    values: any;
-    onChange: (field: string, value: string) => void;
-    isEdit?: boolean;
-  }) => (
-    <>
-      <div className="space-y-2">
-        <Label>Event Name *</Label>
-        <Input value={values.name} onChange={e => onChange('name', e.target.value)} required placeholder="Spring Track Day" />
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-2">
-          <Label>Date *</Label>
-          <Input type="date" value={values.date} onChange={e => onChange('date', e.target.value)} required />
-        </div>
-        <div className="space-y-2">
-          <Label>Time</Label>
-          <Input type="time" value={values.time || ''} onChange={e => onChange('time', e.target.value)} />
-        </div>
-      </div>
-      <div className="space-y-2">
-        <Label>Track Name</Label>
-        <Input value={values.track_name || ''} onChange={e => onChange('track_name', e.target.value)} placeholder="Thunderhill Raceway" />
-      </div>
-      <div className="space-y-2">
-        <Label>Address</Label>
-        <Input value={values.address || ''} onChange={e => onChange('address', e.target.value)} placeholder="5250 Hwy 162" />
-      </div>
-      <div className="grid grid-cols-3 gap-3">
-        <div className="space-y-2">
-          <Label>City</Label>
-          <Input value={values.city || ''} onChange={e => onChange('city', e.target.value)} placeholder="Willows" />
-        </div>
-        <div className="space-y-2">
-          <Label>State</Label>
-          <Select value={values.state || ''} onValueChange={v => onChange('state', v)}>
-            <SelectTrigger><SelectValue placeholder="State" /></SelectTrigger>
-            <SelectContent>{US_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>ZIP</Label>
-          <Input value={values.zip_code || ''} onChange={e => onChange('zip_code', e.target.value)} placeholder="95988" maxLength={5} />
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-2">
-          <Label>Entry Fee</Label>
-          <Input value={values.entry_fee || ''} onChange={e => onChange('entry_fee', e.target.value)} placeholder="$150" />
-        </div>
-        <div className="space-y-2">
-          <Label>Car Classes</Label>
-          <Input value={values.car_classes || ''} onChange={e => onChange('car_classes', e.target.value)} placeholder="Open, GT, Spec Miata" />
-        </div>
-      </div>
-      <div className="space-y-2">
-        <Label>Registration Link (external)</Label>
-        <Input type="url" value={values.registration_link || ''} onChange={e => onChange('registration_link', e.target.value)} placeholder="https://motorsportreg.com/..." />
-      </div>
-      <div className="space-y-2">
-        <Label>Description</Label>
-        <Textarea value={values.description || ''} onChange={e => onChange('description', e.target.value)} placeholder="Details about the event..." rows={3} />
-      </div>
-    </>
-  );
+  // EventFormFields moved outside the component — see top-level definition below
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-20 lg:pb-0">
