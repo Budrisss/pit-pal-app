@@ -278,9 +278,47 @@ const LocalEvents = () => {
     }
   }, [viewMode, userLocation]);
 
+  // Fetch user's existing registrations
+  const fetchUserRegistrations = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('event_registrations')
+      .select('registration_type_id')
+      .eq('user_id', user.id);
+    if (data) {
+      setUserRegistrations(new Set(data.map((r: any) => r.registration_type_id)));
+    }
+  }, [user]);
+
+  // Fetch registration counts per type
+  const fetchRegistrationCounts = useCallback(async (eventIds: string[]) => {
+    if (eventIds.length === 0) return;
+    const { data } = await supabase
+      .from('event_registrations')
+      .select('registration_type_id')
+      .in('event_id', eventIds);
+    if (data) {
+      const counts: Record<string, number> = {};
+      data.forEach((r: any) => {
+        counts[r.registration_type_id] = (counts[r.registration_type_id] || 0) + 1;
+      });
+      setRegistrationCounts(counts);
+    }
+  }, []);
+
   useEffect(() => {
     fetchEvents();
   }, [fetchEvents]);
+
+  useEffect(() => {
+    fetchUserRegistrations();
+  }, [fetchUserRegistrations]);
+
+  useEffect(() => {
+    if (events.length > 0) {
+      fetchRegistrationCounts(events.map(e => e.id));
+    }
+  }, [events, fetchRegistrationCounts]);
 
   const geocodeZip = async (zip: string) => {
     const { data, error } = await supabase.functions.invoke('geocode-zip', {
