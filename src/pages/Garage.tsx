@@ -16,7 +16,7 @@ import { useCars } from "@/contexts/CarsContext";
 const Garage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { cars, loading, addCar, updateCar, deleteCar } = useCars();
+  const { cars, loading, addCar, updateCar, uploadCarImage, deleteCar } = useCars();
   const [isAddCarOpen, setIsAddCarOpen] = useState(false);
   const [editingCar, setEditingCar] = useState<string | null>(null);
   const [newCar, setNewCar] = useState({
@@ -122,6 +122,14 @@ const Garage = () => {
     toast({
       title: "Car Deleted",
       description: "The car has been removed from your garage.",
+    });
+  };
+
+  const handleImageUpload = async (id: string, file: File) => {
+    await uploadCarImage(id, file);
+    toast({
+      title: "Photo Updated!",
+      description: "Your car photo has been uploaded.",
     });
   };
 
@@ -392,6 +400,7 @@ const Garage = () => {
                   isDefault={car.isDefault}
                   onEdit={handleEditCar}
                   onDelete={handleDeleteCar}
+                  onImageUpload={handleImageUpload}
                 />
               ))}
             </div>

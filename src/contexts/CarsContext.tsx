@@ -26,6 +26,7 @@ interface CarsContextType {
   loading: boolean;
   addCar: (car: Omit<Car, "id" | "events" | "setups">) => Promise<void>;
   updateCar: (id: string, car: Partial<Omit<Car, "id" | "events" | "setups">>) => Promise<void>;
+  uploadCarImage: (carId: string, file: File) => Promise<void>;
   deleteCar: (id: string) => Promise<void>;
   refreshCars: () => Promise<void>;
   getCarDisplayName: (car: Car) => string;
@@ -139,12 +140,37 @@ export const CarsProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const uploadCarImage = async (carId: string, file: File) => {
+    if (!user) return;
+    const fileExt = file.name.split('.').pop();
+    const filePath = `${user.id}/${carId}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('car-images')
+      .upload(filePath, file, { upsert: true });
+
+    if (uploadError) return;
+
+    const { data: urlData } = supabase.storage
+      .from('car-images')
+      .getPublicUrl(filePath);
+
+    if (urlData?.publicUrl) {
+      await (supabase as any)
+        .from("cars")
+        .update({ image: urlData.publicUrl })
+        .eq("id", carId)
+        .eq("user_id", user.id);
+      await fetchCars();
+    }
+  };
+
   const getCarDisplayName = (car: Car) => {
     return `${car.name} - ${car.year} ${car.make} ${car.model}`;
   };
 
   return (
-    <CarsContext.Provider value={{ cars, loading, addCar, updateCar, deleteCar, refreshCars: fetchCars, getCarDisplayName }}>
+    <CarsContext.Provider value={{ cars, loading, addCar, updateCar, uploadCarImage, deleteCar, refreshCars: fetchCars, getCarDisplayName }}>
       {children}
     </CarsContext.Provider>
   );
