@@ -7,7 +7,7 @@ import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 import pitLaneHero from '@/assets/pit-lane-hero.jpg';
-import tracksideLogo from '@/assets/logo-option-2.png?v=2';
+import tracksideLogo from '@/assets/trackside-logo-v2.png';
 
 const features = [
   {
