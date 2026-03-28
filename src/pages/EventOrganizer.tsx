@@ -1015,9 +1015,107 @@ const EventOrganizer = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Live Management Dialog */}
+      <Dialog open={!!liveEventId} onOpenChange={(open) => { if (!open) setLiveEventId(null); }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Radio size={20} className="text-primary animate-pulse" /> Live Event Management
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 mt-2">
+            {/* Live Schedule Editing */}
+            <div>
+              <h3 className="font-semibold text-sm flex items-center gap-2 mb-3">
+                <Clock size={16} className="text-primary" /> Live Schedule
+              </h3>
+              <p className="text-xs text-muted-foreground mb-3">Changes are pushed to participants in real-time.</p>
+              {liveSessions.length === 0 ? (
+                <p className="text-sm text-muted-foreground italic">No sessions for this event.</p>
+              ) : (
+                <div className="space-y-2">
+                  {liveSessions.map((s) => (
+                    <div key={s.id} className="border border-border rounded-lg p-3 bg-muted/30">
+                      <p className="font-medium text-sm mb-2">{s.name}</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-xs">Start Time</Label>
+                          <Input
+                            type="time"
+                            value={s.start_time || ''}
+                            onChange={(e) => handleUpdateLiveSession(s.id!, 'start_time', e.target.value)}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Duration (min)</Label>
+                          <Input
+                            type="number"
+                            value={s.duration_minutes ?? ''}
+                            onChange={(e) => handleUpdateLiveSession(s.id!, 'duration_minutes', e.target.value ? parseInt(e.target.value) : null)}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
+            <Separator />
+
+            {/* Announcements */}
+            <div>
+              <h3 className="font-semibold text-sm flex items-center gap-2 mb-3">
+                <Megaphone size={16} className="text-primary" /> Announcements
+              </h3>
+              <div className="flex gap-2 mb-4">
+                <Textarea
+                  value={newAnnouncement}
+                  onChange={(e) => setNewAnnouncement(e.target.value)}
+                  placeholder="Post an update to participants..."
+                  className="min-h-[60px] text-sm"
+                  rows={2}
+                />
+                <Button
+                  onClick={handlePostAnnouncement}
+                  disabled={!newAnnouncement.trim() || postingAnnouncement}
+                  size="icon"
+                  className="shrink-0 self-end h-10 w-10"
+                >
+                  <Send size={16} />
+                </Button>
+              </div>
+              {announcements.length === 0 ? (
+                <p className="text-sm text-muted-foreground italic">No announcements yet.</p>
+              ) : (
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {announcements.map((a) => (
+                    <div key={a.id} className="border border-border rounded-lg p-3 bg-muted/20 relative group">
+                      <p className="text-sm pr-6">{a.message}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        {new Date(a.created_at).toLocaleString()}
+                      </p>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
+                        onClick={() => handleDeleteAnnouncement(a.id)}
+                      >
+                        <X size={12} />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Navigation />
+
     </div>
   );
 };
