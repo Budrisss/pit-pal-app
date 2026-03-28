@@ -117,6 +117,14 @@ const Garage = () => {
     });
   };
 
+  const handleDeleteCar = async (id: string) => {
+    await deleteCar(id);
+    toast({
+      title: "Car Deleted",
+      description: "The car has been removed from your garage.",
+    });
+  };
+
   const handleNewEvent = () => {
     navigate('/events');
   };
@@ -383,6 +391,7 @@ const Garage = () => {
                   setups={car.setups}
                   isDefault={car.isDefault}
                   onEdit={handleEditCar}
+                  onDelete={handleDeleteCar}
                 />
               ))}
             </div>
