@@ -495,10 +495,13 @@ const EventOrganizer = () => {
       if (error) throw error;
       const existingIds = (editingEvent.registration_types || []).filter(t => t.id).map(t => t.id!);
       await saveRegistrationTypes(ev.id, editRegTypes, existingIds);
+      const existingSessionIds = editSessions.filter(s => s.id).map(s => s.id!);
+      await saveSessions(ev.id, editSessions, existingSessionIds);
       toast({ title: "Event updated!" });
       setShowEditDialog(false);
       setEditingEvent(null);
       setEditRegTypes([]);
+      setEditSessions([]);
       fetchEvents();
     } catch (err: any) {
       toast({ title: "Failed to update", description: err.message, variant: "destructive" });
@@ -522,10 +525,18 @@ const EventOrganizer = () => {
 
   const openEditDialog = async (event: PublicEvent) => {
     setEditingEvent(event);
-    const { data } = await supabase.from('registration_types').select('*').eq('event_id', event.id);
-    setEditRegTypes((data || []).map((rt: any) => ({
+    const [{ data: regData }, { data: sessData }] = await Promise.all([
+      supabase.from('registration_types').select('*').eq('event_id', event.id),
+      supabase.from('public_event_sessions').select('*').eq('event_id', event.id).order('sort_order'),
+    ]);
+    setEditRegTypes((regData || []).map((rt: any) => ({
       id: rt.id, name: rt.name, description: rt.description || '',
       price: rt.price || '', max_spots: rt.max_spots,
+    })));
+    setEditSessions((sessData || []).map((s: any) => ({
+      id: s.id, registration_type_id: s.registration_type_id,
+      name: s.name, start_time: s.start_time || '',
+      duration_minutes: s.duration_minutes, sort_order: s.sort_order,
     })));
     setShowEditDialog(true);
   };
