@@ -513,6 +513,10 @@ const SessionManagement = () => {
     }
     setSessions(loadedSessions);
     setSessionsLoaded(true);
+    // Persist to localStorage so sessions survive navigation
+    if (!savedSessions && loadedSessions.length > 0) {
+      localStorage.setItem(`sessions-${eventId}`, JSON.stringify(loadedSessions));
+    }
   }, [eventId]);
 
   const saveSessionNotes = (sessionId: string, notes: string) => {
