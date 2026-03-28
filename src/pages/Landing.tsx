@@ -61,7 +61,7 @@ const Landing = () => {
       >
         <div className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 h-16 sm:h-20">
           <Link to="/" className="flex items-center h-full py-1">
-            <img src={tracksideLogo} alt="TRACK SIDE ops" className="h-full w-auto object-contain dark:invert" />
+            <img src={tracksideLogo} alt="TRACK SIDE ops" className="h-full w-auto object-contain" />
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
             <Button variant="ghost" size="sm" className="sm:size-default" asChild>
@@ -181,7 +181,7 @@ const Landing = () => {
       <footer className="border-t border-border py-6 sm:py-8">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-            <img src={tracksideLogo} alt="TRACK SIDE ops" className="h-10 sm:h-12 w-auto dark:invert" />
+            <img src={tracksideLogo} alt="TRACK SIDE ops" className="h-10 sm:h-12 w-auto" />
           </div>
           <span>© {new Date().getFullYear()} Track Side. All rights reserved.</span>
         </div>
