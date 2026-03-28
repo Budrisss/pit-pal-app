@@ -995,7 +995,7 @@ const SessionManagement = () => {
                   </Select>
                   {myRunGroup && (
                     <p className="text-xs text-muted-foreground mt-1.5">
-                      Countdown tracks <span className="text-primary font-medium">{myRunGroup}</span>
+                      Countdown tracks <span className="text-primary font-medium">{runGroups.find(rg => rg.id === myRunGroup)?.name || myRunGroup}</span>
                     </p>
                   )}
                 </CardContent>
