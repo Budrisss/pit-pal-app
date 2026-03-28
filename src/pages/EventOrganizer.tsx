@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus, Users, Calendar, MapPin, Pencil, Trash2, Tag, X, ClipboardList, Mail, Phone, MoreVertical, DollarSign, Building2 } from "lucide-react";
+import { Plus, Users, Calendar, MapPin, Pencil, Trash2, Tag, X, ClipboardList, Mail, Phone, MoreVertical, DollarSign, Building2, Clock, GripVertical } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -31,6 +31,15 @@ interface RegistrationType {
   description: string;
   price: string;
   max_spots: number | null;
+}
+
+interface EventSession {
+  id?: string;
+  registration_type_id: string | null;
+  name: string;
+  start_time: string;
+  duration_minutes: number | null;
+  sort_order: number;
 }
 
 interface EventRegistration {
@@ -158,6 +167,106 @@ const RegistrationTypesEditor = ({
   );
 };
 
+const emptySession = (): EventSession => ({ registration_type_id: null, name: '', start_time: '', duration_minutes: null, sort_order: 0 });
+
+const SessionsEditor = ({
+  sessions,
+  onChange,
+  registrationTypes,
+}: {
+  sessions: EventSession[];
+  onChange: (sessions: EventSession[]) => void;
+  registrationTypes: RegistrationType[];
+}) => {
+  const addSession = () => onChange([...sessions, { ...emptySession(), sort_order: sessions.length }]);
+  const removeSession = (i: number) => onChange(sessions.filter((_, idx) => idx !== i));
+  const updateSession = (i: number, field: keyof EventSession, value: any) => {
+    const updated = [...sessions];
+    updated[i] = { ...updated[i], [field]: value };
+    onChange(updated);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <Label className="flex items-center gap-1.5">
+          <Clock size={14} /> Sessions / Schedule
+        </Label>
+        <Button type="button" variant="outline" size="sm" onClick={addSession}>
+          <Plus size={14} className="mr-1" /> Add Session
+        </Button>
+      </div>
+      {sessions.length === 0 && (
+        <p className="text-xs text-muted-foreground italic">No sessions yet. Add sessions like "Group 1 - Morning", "Group 2 - Afternoon", etc.</p>
+      )}
+      {sessions.map((s, i) => (
+        <div key={i} className="border border-border rounded-lg p-3 space-y-2 bg-muted/30 relative">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="absolute top-1 right-1 h-6 w-6 text-muted-foreground hover:text-destructive"
+            onClick={() => removeSession(i)}
+          >
+            <X size={14} />
+          </Button>
+          <div className="grid grid-cols-2 gap-2 pr-6">
+            <div className="space-y-1">
+              <Label className="text-xs">Session Name *</Label>
+              <Input
+                value={s.name}
+                onChange={e => updateSession(i, 'name', e.target.value)}
+                placeholder="e.g. Group 1 - Morning Run"
+                className="h-8 text-sm"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Run Group</Label>
+              <Select
+                value={s.registration_type_id || 'none'}
+                onValueChange={v => updateSession(i, 'registration_type_id', v === 'none' ? null : v)}
+              >
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue placeholder="All groups" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">All groups</SelectItem>
+                  {registrationTypes.filter(rt => rt.name.trim()).map((rt, idx) => (
+                    <SelectItem key={rt.id || `new-${idx}`} value={rt.id || `new-${idx}`}>
+                      {rt.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label className="text-xs">Start Time</Label>
+              <Input
+                type="time"
+                value={s.start_time || ''}
+                onChange={e => updateSession(i, 'start_time', e.target.value)}
+                className="h-8 text-sm"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Duration (min)</Label>
+              <Input
+                type="number"
+                value={s.duration_minutes ?? ''}
+                onChange={e => updateSession(i, 'duration_minutes', e.target.value ? parseInt(e.target.value) : null)}
+                placeholder="20"
+                className="h-8 text-sm"
+              />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const EventOrganizer = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -173,6 +282,8 @@ const EventOrganizer = () => {
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
   const [newRegTypes, setNewRegTypes] = useState<RegistrationType[]>([]);
   const [editRegTypes, setEditRegTypes] = useState<RegistrationType[]>([]);
+  const [newSessions, setNewSessions] = useState<EventSession[]>([]);
+  const [editSessions, setEditSessions] = useState<EventSession[]>([]);
   const [registrationCounts, setRegistrationCounts] = useState<Record<string, number>>({});
   const [totalRegistrations, setTotalRegistrations] = useState(0);
 
@@ -295,6 +406,32 @@ const EventOrganizer = () => {
     }
   };
 
+  const saveSessions = async (eventId: string, sessions: EventSession[], existingIds?: string[]) => {
+    if (existingIds && existingIds.length > 0) {
+      const keepIds = sessions.filter(s => s.id).map(s => s.id!);
+      const toDelete = existingIds.filter(id => !keepIds.includes(id));
+      if (toDelete.length > 0) {
+        await supabase.from('public_event_sessions').delete().in('id', toDelete);
+      }
+    }
+    for (let i = 0; i < sessions.length; i++) {
+      const s = sessions[i];
+      if (!s.name.trim()) continue;
+      const payload = {
+        name: s.name,
+        registration_type_id: s.registration_type_id || null,
+        start_time: s.start_time || null,
+        duration_minutes: s.duration_minutes,
+        sort_order: i,
+      };
+      if (s.id) {
+        await supabase.from('public_event_sessions').update(payload).eq('id', s.id);
+      } else {
+        await supabase.from('public_event_sessions').insert({ ...payload, event_id: eventId });
+      }
+    }
+  };
+
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!organizerProfile) return;
@@ -319,10 +456,14 @@ const EventOrganizer = () => {
       if (data && newRegTypes.length > 0) {
         await saveRegistrationTypes(data.id, newRegTypes);
       }
+      if (data && newSessions.length > 0) {
+        await saveSessions(data.id, newSessions);
+      }
       toast({ title: "Event created!", description: "Your event is now live." });
       setShowCreateDialog(false);
       setNewEvent({ name: '', date: '', time: '', description: '', track_name: '', address: '', city: '', state: '', zip_code: '', entry_fee: '', car_classes: '', registration_link: '' });
       setNewRegTypes([]);
+      setNewSessions([]);
       fetchEvents();
     } catch (err: any) {
       toast({ title: "Failed to create event", description: err.message, variant: "destructive" });
@@ -354,10 +495,13 @@ const EventOrganizer = () => {
       if (error) throw error;
       const existingIds = (editingEvent.registration_types || []).filter(t => t.id).map(t => t.id!);
       await saveRegistrationTypes(ev.id, editRegTypes, existingIds);
+      const existingSessionIds = editSessions.filter(s => s.id).map(s => s.id!);
+      await saveSessions(ev.id, editSessions, existingSessionIds);
       toast({ title: "Event updated!" });
       setShowEditDialog(false);
       setEditingEvent(null);
       setEditRegTypes([]);
+      setEditSessions([]);
       fetchEvents();
     } catch (err: any) {
       toast({ title: "Failed to update", description: err.message, variant: "destructive" });
@@ -381,10 +525,18 @@ const EventOrganizer = () => {
 
   const openEditDialog = async (event: PublicEvent) => {
     setEditingEvent(event);
-    const { data } = await supabase.from('registration_types').select('*').eq('event_id', event.id);
-    setEditRegTypes((data || []).map((rt: any) => ({
+    const [{ data: regData }, { data: sessData }] = await Promise.all([
+      supabase.from('registration_types').select('*').eq('event_id', event.id),
+      supabase.from('public_event_sessions').select('*').eq('event_id', event.id).order('sort_order'),
+    ]);
+    setEditRegTypes((regData || []).map((rt: any) => ({
       id: rt.id, name: rt.name, description: rt.description || '',
       price: rt.price || '', max_spots: rt.max_spots,
+    })));
+    setEditSessions((sessData || []).map((s: any) => ({
+      id: s.id, registration_type_id: s.registration_type_id,
+      name: s.name, start_time: s.start_time || '',
+      duration_minutes: s.duration_minutes, sort_order: s.sort_order,
     })));
     setShowEditDialog(true);
   };
@@ -530,6 +682,7 @@ const EventOrganizer = () => {
                   onChange={(field, value) => setNewEvent(p => ({ ...p, [field]: value }))}
                 />
                 <RegistrationTypesEditor types={newRegTypes} onChange={setNewRegTypes} />
+                <SessionsEditor sessions={newSessions} onChange={setNewSessions} registrationTypes={newRegTypes} />
                 <Button type="submit" disabled={creating} className="w-full">
                   {creating ? <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : 'Publish Event'}
                 </Button>
@@ -695,6 +848,7 @@ const EventOrganizer = () => {
                 isEdit
               />
               <RegistrationTypesEditor types={editRegTypes} onChange={setEditRegTypes} />
+              <SessionsEditor sessions={editSessions} onChange={setEditSessions} registrationTypes={editRegTypes} />
               <Button type="submit" disabled={creating} className="w-full">
                 {creating ? <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : 'Save Changes'}
               </Button>
