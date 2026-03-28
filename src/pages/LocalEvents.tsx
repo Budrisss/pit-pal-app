@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { MapPin, Search, Calendar, DollarSign, Car, ExternalLink, Plus, ChevronRight, Filter, Building2, Pencil, Trash2, MoreVertical } from 'lucide-react';
+import { MapPin, Search, Calendar, DollarSign, Car, ExternalLink, Plus, ChevronRight, Filter, Building2, Pencil, Trash2, MoreVertical, X, Users, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -28,6 +28,14 @@ const US_STATES = [
   'VA','WA','WV','WI','WY'
 ];
 
+interface RegistrationType {
+  id?: string;
+  name: string;
+  description: string;
+  price: string;
+  max_spots: number | null;
+}
+
 interface PublicEvent {
   id: string;
   name: string;
@@ -46,12 +54,101 @@ interface PublicEvent {
   organizer_id: string;
   latitude: number | null;
   longitude: number | null;
+  registration_types?: RegistrationType[];
 }
 
 interface OrganizerProfile {
   id: string;
   org_name: string;
 }
+
+const emptyRegType = (): RegistrationType => ({ name: '', description: '', price: '', max_spots: null });
+
+const RegistrationTypesEditor = ({
+  types,
+  onChange,
+}: {
+  types: RegistrationType[];
+  onChange: (types: RegistrationType[]) => void;
+}) => {
+  const addType = () => onChange([...types, emptyRegType()]);
+  const removeType = (i: number) => onChange(types.filter((_, idx) => idx !== i));
+  const updateType = (i: number, field: keyof RegistrationType, value: any) => {
+    const updated = [...types];
+    updated[i] = { ...updated[i], [field]: value };
+    onChange(updated);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <Label className="flex items-center gap-1.5">
+          <Tag size={14} /> Registration Groups
+        </Label>
+        <Button type="button" variant="outline" size="sm" onClick={addType}>
+          <Plus size={14} className="mr-1" /> Add Group
+        </Button>
+      </div>
+      {types.length === 0 && (
+        <p className="text-xs text-muted-foreground italic">No registration groups yet. Add groups like "Instructor 1-Day", "Student 2-Day", etc.</p>
+      )}
+      {types.map((rt, i) => (
+        <div key={i} className="border border-border rounded-lg p-3 space-y-2 bg-muted/30 relative">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="absolute top-1 right-1 h-6 w-6 text-muted-foreground hover:text-destructive"
+            onClick={() => removeType(i)}
+          >
+            <X size={14} />
+          </Button>
+          <div className="grid grid-cols-2 gap-2 pr-6">
+            <div className="space-y-1">
+              <Label className="text-xs">Group Name *</Label>
+              <Input
+                value={rt.name}
+                onChange={e => updateType(i, 'name', e.target.value)}
+                placeholder="e.g. Instructor 1-Day"
+                className="h-8 text-sm"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Price</Label>
+              <Input
+                value={rt.price}
+                onChange={e => updateType(i, 'price', e.target.value)}
+                placeholder="$150"
+                className="h-8 text-sm"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label className="text-xs">Description</Label>
+              <Input
+                value={rt.description}
+                onChange={e => updateType(i, 'description', e.target.value)}
+                placeholder="Full access, all sessions"
+                className="h-8 text-sm"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Max Spots</Label>
+              <Input
+                type="number"
+                value={rt.max_spots ?? ''}
+                onChange={e => updateType(i, 'max_spots', e.target.value ? parseInt(e.target.value) : null)}
+                placeholder="Unlimited"
+                className="h-8 text-sm"
+              />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const LocalEvents = () => {
   const navigate = useNavigate();
@@ -76,6 +173,8 @@ const LocalEvents = () => {
     address: '', city: '', state: '', zip_code: '', entry_fee: '',
     car_classes: '', registration_link: '',
   });
+  const [newRegTypes, setNewRegTypes] = useState<RegistrationType[]>([]);
+  const [editRegTypes, setEditRegTypes] = useState<RegistrationType[]>([]);
 
   // Check if user is an organizer
   useEffect(() => {
@@ -105,10 +204,11 @@ const LocalEvents = () => {
     fetchLocation();
   }, [user]);
 
-  // Fetch events
+  // Fetch events with registration types
   const fetchEvents = useCallback(async () => {
     setLoading(true);
     try {
+      let eventsData: PublicEvent[] = [];
       if (viewMode === 'local' && userLocation) {
         const { data, error } = await supabase.rpc('events_within_radius', {
           user_lat: userLocation.lat,
@@ -116,7 +216,7 @@ const LocalEvents = () => {
           radius_miles: 100,
         });
         if (error) throw error;
-        setEvents((data as PublicEvent[]) || []);
+        eventsData = (data as PublicEvent[]) || [];
       } else {
         const { data, error } = await supabase
           .from('public_events')
@@ -124,8 +224,28 @@ const LocalEvents = () => {
           .eq('status', 'upcoming')
           .order('date', { ascending: true });
         if (error) throw error;
-        setEvents(data || []);
+        eventsData = data || [];
       }
+
+      // Fetch registration types for all events
+      if (eventsData.length > 0) {
+        const eventIds = eventsData.map(e => e.id);
+        const { data: regTypes } = await supabase
+          .from('registration_types')
+          .select('*')
+          .in('event_id', eventIds);
+        
+        if (regTypes) {
+          const byEvent: Record<string, RegistrationType[]> = {};
+          regTypes.forEach((rt: any) => {
+            if (!byEvent[rt.event_id]) byEvent[rt.event_id] = [];
+            byEvent[rt.event_id].push(rt);
+          });
+          eventsData = eventsData.map(e => ({ ...e, registration_types: byEvent[e.id] || [] }));
+        }
+      }
+
+      setEvents(eventsData);
     } catch (err: any) {
       console.error('Error fetching events:', err);
     } finally {
@@ -137,13 +257,44 @@ const LocalEvents = () => {
     fetchEvents();
   }, [fetchEvents]);
 
-  // Geocode event ZIP when creating
   const geocodeZip = async (zip: string) => {
     const { data, error } = await supabase.functions.invoke('geocode-zip', {
       body: { zip_code: zip },
     });
     if (error || !data?.success) return null;
     return { latitude: data.latitude, longitude: data.longitude, city: data.city, state: data.state };
+  };
+
+  const saveRegistrationTypes = async (eventId: string, types: RegistrationType[], existingIds?: string[]) => {
+    // Delete removed types
+    if (existingIds && existingIds.length > 0) {
+      const keepIds = types.filter(t => t.id).map(t => t.id!);
+      const toDelete = existingIds.filter(id => !keepIds.includes(id));
+      if (toDelete.length > 0) {
+        await supabase.from('registration_types').delete().in('id', toDelete);
+      }
+    }
+
+    // Upsert types
+    for (const rt of types) {
+      if (!rt.name.trim()) continue;
+      if (rt.id) {
+        await supabase.from('registration_types').update({
+          name: rt.name,
+          description: rt.description || null,
+          price: rt.price || null,
+          max_spots: rt.max_spots,
+        }).eq('id', rt.id);
+      } else {
+        await supabase.from('registration_types').insert({
+          event_id: eventId,
+          name: rt.name,
+          description: rt.description || null,
+          price: rt.price || null,
+          max_spots: rt.max_spots,
+        });
+      }
+    }
   };
 
   const handleCreateEvent = async (e: React.FormEvent) => {
@@ -155,13 +306,10 @@ const LocalEvents = () => {
       let lat = null, lng = null;
       if (newEvent.zip_code) {
         const geo = await geocodeZip(newEvent.zip_code);
-        if (geo) {
-          lat = geo.latitude;
-          lng = geo.longitude;
-        }
+        if (geo) { lat = geo.latitude; lng = geo.longitude; }
       }
 
-      const { error } = await supabase.from('public_events').insert({
+      const { data, error } = await supabase.from('public_events').insert({
         organizer_id: organizerProfile.id,
         name: newEvent.name,
         date: newEvent.date,
@@ -177,13 +325,19 @@ const LocalEvents = () => {
         registration_link: newEvent.registration_link || null,
         latitude: lat,
         longitude: lng,
-      });
+      }).select('id').single();
 
       if (error) throw error;
+
+      // Save registration types
+      if (data && newRegTypes.length > 0) {
+        await saveRegistrationTypes(data.id, newRegTypes);
+      }
 
       toast({ title: "Event created!", description: "Your event is now visible to racers." });
       setShowCreateDialog(false);
       setNewEvent({ name: '', date: '', time: '', description: '', track_name: '', address: '', city: '', state: '', zip_code: '', entry_fee: '', car_classes: '', registration_link: '' });
+      setNewRegTypes([]);
       fetchEvents();
     } catch (err: any) {
       toast({ title: "Failed to create event", description: err.message, variant: "destructive" });
@@ -213,9 +367,15 @@ const LocalEvents = () => {
         latitude: lat, longitude: lng,
       }).eq('id', ev.id);
       if (error) throw error;
+
+      // Save registration types
+      const existingIds = (editingEvent.registration_types || []).filter(t => t.id).map(t => t.id!);
+      await saveRegistrationTypes(ev.id, editRegTypes, existingIds);
+
       toast({ title: "Event updated!" });
       setShowEditDialog(false);
       setEditingEvent(null);
+      setEditRegTypes([]);
       fetchEvents();
     } catch (err: any) {
       toast({ title: "Failed to update", description: err.message, variant: "destructive" });
@@ -249,6 +409,23 @@ const LocalEvents = () => {
     const matchesState = stateFilter === 'all' || ev.state === stateFilter;
     return matchesSearch && matchesState;
   });
+
+  const openEditDialog = async (event: PublicEvent) => {
+    setEditingEvent(event);
+    // Load existing registration types
+    const { data } = await supabase
+      .from('registration_types')
+      .select('*')
+      .eq('event_id', event.id);
+    setEditRegTypes((data || []).map((rt: any) => ({
+      id: rt.id,
+      name: rt.name,
+      description: rt.description || '',
+      price: rt.price || '',
+      max_spots: rt.max_spots,
+    })));
+    setShowEditDialog(true);
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-20 lg:pb-0">
@@ -432,6 +609,10 @@ const LocalEvents = () => {
                     <Label>Description</Label>
                     <Textarea value={newEvent.description} onChange={e => setNewEvent(p => ({ ...p, description: e.target.value }))} placeholder="Details about the event..." rows={3} />
                   </div>
+
+                  {/* Registration Types */}
+                  <RegistrationTypesEditor types={newRegTypes} onChange={setNewRegTypes} />
+
                   <Button type="submit" disabled={creating} className="w-full">
                     {creating ? <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : 'Publish Event'}
                   </Button>
@@ -485,7 +666,7 @@ const LocalEvents = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => { setEditingEvent(event); setShowEditDialog(true); }}>
+                              <DropdownMenuItem onClick={() => openEditDialog(event)}>
                                 <Pencil size={14} className="mr-2" /> Edit
                               </DropdownMenuItem>
                               <DropdownMenuItem className="text-destructive" onClick={() => setDeletingEventId(event.id)}>
@@ -501,7 +682,7 @@ const LocalEvents = () => {
                       <p className="text-sm text-primary font-medium mb-1">{event.track_name}</p>
                     )}
 
-                    <div className="space-y-1.5 text-sm text-muted-foreground mb-4">
+                    <div className="space-y-1.5 text-sm text-muted-foreground mb-3">
                       <div className="flex items-center gap-2">
                         <Calendar size={14} />
                         <span>{new Date(event.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
@@ -527,6 +708,23 @@ const LocalEvents = () => {
                       )}
                     </div>
 
+                    {/* Registration Types Display */}
+                    {event.registration_types && event.registration_types.length > 0 && (
+                      <div className="mb-3">
+                        <p className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
+                          <Tag size={12} /> Registration Groups
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {event.registration_types.map((rt, idx) => (
+                            <Badge key={idx} variant="outline" className="text-xs font-normal">
+                              {rt.name}{rt.price ? ` · ${rt.price}` : ''}
+                              {rt.max_spots ? ` · ${rt.max_spots} spots` : ''}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {event.description && (
                       <p className="text-xs text-muted-foreground mb-4 line-clamp-2">{event.description}</p>
                     )}
@@ -549,7 +747,7 @@ const LocalEvents = () => {
       </section>
 
       {/* Edit Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={(open) => { setShowEditDialog(open); if (!open) setEditingEvent(null); }}>
+      <Dialog open={showEditDialog} onOpenChange={(open) => { setShowEditDialog(open); if (!open) { setEditingEvent(null); setEditRegTypes([]); } }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Event</DialogTitle>
@@ -613,6 +811,10 @@ const LocalEvents = () => {
                 <Label>Description</Label>
                 <Textarea value={editingEvent.description || ''} onChange={e => setEditingEvent(p => p ? { ...p, description: e.target.value } : p)} rows={3} />
               </div>
+
+              {/* Registration Types */}
+              <RegistrationTypesEditor types={editRegTypes} onChange={setEditRegTypes} />
+
               <Button type="submit" disabled={creating} className="w-full">
                 {creating ? <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : 'Save Changes'}
               </Button>
