@@ -74,7 +74,7 @@ const CarCard = ({
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-3 min-w-0 flex-1">
               <div
-                className="size-10 sm:size-12 rounded-xl bg-muted flex items-center justify-center flex-shrink-0 relative overflow-hidden cursor-pointer group"
+                className="size-14 sm:size-16 rounded-xl bg-muted flex items-center justify-center flex-shrink-0 relative overflow-hidden cursor-pointer group"
                 onClick={() => fileInputRef.current?.click()}
               >
                 {hasImage ? (
