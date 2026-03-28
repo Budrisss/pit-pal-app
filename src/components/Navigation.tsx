@@ -1,15 +1,31 @@
 import { Link, useLocation } from "react-router-dom";
-import { Settings, Calendar, Car, Home, MapPin } from "lucide-react";
+import { Settings, Calendar, Car, Home, MapPin, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const Navigation = () => {
   const location = useLocation();
+  const { user } = useAuth();
+  const [isOrganizer, setIsOrganizer] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('organizer_profiles')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+      .then(({ data }) => setIsOrganizer(!!data));
+  }, [user]);
 
   const navItems = [
     { icon: Home, label: "Home", path: "/dashboard" },
     { icon: Car, label: "Garage", path: "/garage" },
     { icon: MapPin, label: "Local", path: "/local-events" },
     { icon: Calendar, label: "Events", path: "/events" },
+    ...(isOrganizer ? [{ icon: ClipboardList, label: "Organizer", path: "/event-organizer" }] : []),
     { icon: Settings, label: "Settings", path: "/settings" },
   ];
 
