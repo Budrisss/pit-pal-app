@@ -4,12 +4,14 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
 
 const DesktopNavigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const [isOrganizer, setIsOrganizer] = useState(false);
+  const [newRegCount, setNewRegCount] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -18,7 +20,17 @@ const DesktopNavigation = () => {
       .select('id')
       .eq('user_id', user.id)
       .maybeSingle()
-      .then(({ data }) => setIsOrganizer(!!data));
+      .then(({ data }) => {
+        setIsOrganizer(!!data);
+        if (data) {
+          // Fetch registration count for organizer's events
+          supabase
+            .from('event_registrations')
+            .select('id, event_id, public_events!inner(organizer_id)', { count: 'exact' })
+            .eq('public_events.organizer_id', data.id)
+            .then(({ count }) => setNewRegCount(count || 0));
+        }
+      });
   }, [user]);
 
   const handleLogout = async () => {
@@ -51,7 +63,7 @@ const DesktopNavigation = () => {
               key={path}
               to={path}
               className={cn(
-                "flex items-center gap-2 px-6 py-3 transition-all duration-300 transform -skew-x-6 border-2 border-transparent uppercase tracking-wide font-bold text-sm",
+                "relative flex items-center gap-2 px-6 py-3 transition-all duration-300 transform -skew-x-6 border-2 border-transparent uppercase tracking-wide font-bold text-sm",
                 location.pathname === path
                   ? "text-white bg-f1-red shadow-f1 border-white"
                   : "text-f1-silver hover:text-white hover:bg-f1-red hover:border-f1-silver"
@@ -59,6 +71,11 @@ const DesktopNavigation = () => {
             >
               <Icon size={18} className="transform skew-x-6" />
               <span className="transform skew-x-6">{label}</span>
+              {label === "Organizer" && newRegCount > 0 && (
+                <Badge className="absolute -top-2 -right-2 transform skew-x-6 bg-destructive text-destructive-foreground text-[10px] px-1.5 py-0.5 min-w-[20px] flex items-center justify-center">
+                  {newRegCount}
+                </Badge>
+              )}
             </Link>
           ))}
           <button
