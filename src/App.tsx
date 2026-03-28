@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { OrganizerModeProvider } from "@/contexts/OrganizerModeContext";
 import { CarsProvider } from "@/contexts/CarsContext";
 import { EventsProvider } from "@/contexts/EventsContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -30,6 +31,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
+        <OrganizerModeProvider>
         <CarsProvider>
           <EventsProvider>
             <Toaster />
@@ -56,6 +58,7 @@ const App = () => (
             </BrowserRouter>
           </EventsProvider>
         </CarsProvider>
+        </OrganizerModeProvider>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>

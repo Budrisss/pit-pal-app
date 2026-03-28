@@ -4,9 +4,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Calendar, MapPin, DollarSign, Car, Clock, Tag, UserCheck, ExternalLink, Users, Building2 } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, DollarSign, Car, Clock, Tag, UserCheck, ExternalLink, Users, Building2, Megaphone, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Navigation from "@/components/Navigation";
 import DesktopNavigation from "@/components/DesktopNavigation";
 
@@ -25,6 +25,12 @@ interface EventSession {
   start_time: string | null;
   duration_minutes: number | null;
   sort_order: number;
+}
+
+interface Announcement {
+  id: string;
+  message: string;
+  created_at: string;
 }
 
 interface PublicEventData {
@@ -57,22 +63,24 @@ const PublicEventPreview = () => {
   const [regTypes, setRegTypes] = useState<RegistrationType[]>([]);
   const [regCounts, setRegCounts] = useState<Record<string, number>>({});
   const [organizer, setOrganizer] = useState<OrganizerInfo | null>(null);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [newAnnouncementFlash, setNewAnnouncementFlash] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!id) return;
     const fetchAll = async () => {
       setLoading(true);
-      const [{ data: eventData }, { data: sessData }, { data: rtData }, { data: regsData }] = await Promise.all([
+      const [{ data: eventData }, { data: sessData }, { data: rtData }, { data: regsData }, { data: annData }] = await Promise.all([
         supabase.from("public_events").select("*").eq("id", id).single(),
         supabase.from("public_event_sessions").select("*").eq("event_id", id).order("sort_order"),
         supabase.from("registration_types").select("*").eq("event_id", id),
         supabase.from("event_registrations").select("registration_type_id").eq("event_id", id),
+        supabase.from("event_announcements").select("id, message, created_at").eq("event_id", id).order("created_at", { ascending: false }),
       ]);
 
       if (eventData) {
         setEvent(eventData);
-        // Fetch organizer name
         const { data: orgData } = await supabase
           .from("organizer_profiles")
           .select("org_name")
@@ -82,6 +90,7 @@ const PublicEventPreview = () => {
       }
       setSessions((sessData as EventSession[]) || []);
       setRegTypes((rtData as RegistrationType[]) || []);
+      setAnnouncements((annData as Announcement[]) || []);
 
       if (regsData) {
         const counts: Record<string, number> = {};
@@ -93,6 +102,45 @@ const PublicEventPreview = () => {
       setLoading(false);
     };
     fetchAll();
+  }, [id]);
+
+  // Realtime subscriptions
+  useEffect(() => {
+    if (!id) return;
+
+    const channel = supabase
+      .channel(`event-live-${id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'public_event_sessions', filter: `event_id=eq.${id}` },
+        (payload) => {
+          if (payload.eventType === 'UPDATE') {
+            setSessions(prev => prev.map(s => s.id === payload.new.id ? { ...payload.new as EventSession } : s));
+          } else if (payload.eventType === 'INSERT') {
+            setSessions(prev => [...prev, payload.new as EventSession].sort((a, b) => a.sort_order - b.sort_order));
+          } else if (payload.eventType === 'DELETE') {
+            setSessions(prev => prev.filter(s => s.id !== payload.old.id));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'event_announcements', filter: `event_id=eq.${id}` },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setAnnouncements(prev => [payload.new as Announcement, ...prev]);
+            setNewAnnouncementFlash(true);
+            setTimeout(() => setNewAnnouncementFlash(false), 3000);
+          } else if (payload.eventType === 'DELETE') {
+            setAnnouncements(prev => prev.filter(a => a.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [id]);
 
   if (loading) {
@@ -150,6 +198,49 @@ const PublicEventPreview = () => {
             <ArrowLeft size={14} className="mr-1" /> Back to Organizer
           </Button>
         </motion.div>
+
+        {/* Live Announcements */}
+        {announcements.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.02 }}
+            className="mb-6"
+          >
+            <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
+              <Megaphone size={18} className="text-primary" /> Announcements
+              {newAnnouncementFlash && (
+                <Badge variant="destructive" className="animate-pulse text-[10px]">NEW</Badge>
+              )}
+            </h2>
+            <div className="space-y-2">
+              <AnimatePresence>
+                {announcements.map((a) => (
+                  <motion.div
+                    key={a.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    <Card className="bg-primary/5 border-primary/20">
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-3">
+                          <Bell size={14} className="text-primary shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-sm">{a.message}</p>
+                            <p className="text-[10px] text-muted-foreground mt-1">
+                              {new Date(a.created_at).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          </motion.div>
+        )}
 
         {/* Event Header */}
         <motion.div
@@ -283,6 +374,7 @@ const PublicEventPreview = () => {
           >
             <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
               <Clock size={18} className="text-primary" /> Session Schedule
+              <Badge variant="outline" className="text-[10px] font-normal">LIVE</Badge>
             </h2>
             <Card className="bg-card/60 border-border">
               <CardContent className="p-0">
