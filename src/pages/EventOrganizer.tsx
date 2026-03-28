@@ -352,6 +352,7 @@ const EventOrganizer = () => {
   const [editRegTypes, setEditRegTypes] = useState<RegistrationType[]>([]);
   const [newSessions, setNewSessions] = useState<EventSession[]>([]);
   const [editSessions, setEditSessions] = useState<EventSession[]>([]);
+  const [originalEditSessionIds, setOriginalEditSessionIds] = useState<string[]>([]);
   const [registrationCounts, setRegistrationCounts] = useState<Record<string, number>>({});
   const [totalRegistrations, setTotalRegistrations] = useState(0);
 
