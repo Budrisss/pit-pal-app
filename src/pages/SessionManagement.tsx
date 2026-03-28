@@ -342,7 +342,7 @@ const SessionManagement = () => {
 
   const getActiveSessionRemainingTime = () => {
     const statedSessions = calculateSessionStates();
-    let activeSession = statedSessions.find(s => s.state === "active");
+    let activeSession: typeof statedSessions[number] | undefined = statedSessions.find(s => s.state === "active");
     // If user selected a run group, prioritize showing that group's active state
     if (myRunGroup) {
       const myActive = statedSessions.find(s => s.id === myRunGroup && s.state === "active");
