@@ -206,6 +206,84 @@ const Garage = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Edit Car Dialog */}
+      <Dialog open={!!editingCar} onOpenChange={(open) => !open && setEditingCar(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil size={24} className="text-primary" />
+              Edit Car
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 mt-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-name">Car Name *</Label>
+              <Input
+                id="edit-name"
+                value={editCar.name}
+                onChange={(e) => setEditCar({...editCar, name: e.target.value})}
+                placeholder="e.g. Track Beast"
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-year">Year</Label>
+                <Input
+                  id="edit-year"
+                  value={editCar.year}
+                  onChange={(e) => setEditCar({...editCar, year: e.target.value})}
+                  placeholder="2024"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-make">Make *</Label>
+                <Input
+                  id="edit-make"
+                  value={editCar.make}
+                  onChange={(e) => setEditCar({...editCar, make: e.target.value})}
+                  placeholder="BMW"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-model">Model *</Label>
+                <Input
+                  id="edit-model"
+                  value={editCar.model}
+                  onChange={(e) => setEditCar({...editCar, model: e.target.value})}
+                  placeholder="M3"
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-category">Category</Label>
+              <Select value={editCar.category} onValueChange={(value) => setEditCar({...editCar, category: value})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Street">Street</SelectItem>
+                  <SelectItem value="Track">Track</SelectItem>
+                  <SelectItem value="Street/Track">Street/Track</SelectItem>
+                  <SelectItem value="Race">Race</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" onClick={() => setEditingCar(null)} className="flex-1">
+                Cancel
+              </Button>
+              <Button onClick={handleSaveEdit} className="flex-1">
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Hero Section */}
       <div className="bg-gradient-hero p-4 sm:p-6 lg:p-8 rounded-b-2xl lg:rounded-b-3xl mb-4 sm:mb-6 lg:mb-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 max-w-6xl mx-auto">
@@ -304,6 +382,7 @@ const Garage = () => {
                   events={car.events}
                   setups={car.setups}
                   isDefault={car.isDefault}
+                  onEdit={handleEditCar}
                 />
               ))}
             </div>
