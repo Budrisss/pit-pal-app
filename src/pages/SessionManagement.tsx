@@ -345,9 +345,9 @@ const SessionManagement = () => {
     let activeSession: typeof statedSessions[number] | undefined = statedSessions.find(s => s.state === "active");
     // If user selected a run group, prioritize showing that group's active state
     if (myRunGroup) {
-      const myActive = statedSessions.find(s => s.id === myRunGroup && s.state === "active");
+      const myActive = statedSessions.find(s => s.referenceName === myRunGroup && s.state === "active");
       if (myActive) activeSession = myActive;
-      else if (activeSession && activeSession.id !== myRunGroup) activeSession = undefined;
+      else if (activeSession && activeSession.referenceName !== myRunGroup) activeSession = undefined;
     }
     if (!activeSession) return null;
     const eventDate = parseISO(eventData.date);
