@@ -65,6 +65,9 @@ const LocalEvents = () => {
   const [creating, setCreating] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [viewMode, setViewMode] = useState<'local' | 'search'>('local');
+  const [editingEvent, setEditingEvent] = useState<PublicEvent | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
 
   const [newEvent, setNewEvent] = useState({
     name: '', date: '', time: '', description: '', track_name: '',
