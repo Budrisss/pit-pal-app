@@ -968,9 +968,14 @@ const SessionManagement = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Sessions (next up)</SelectItem>
-                      {[...new Set(sessions.map((s) => s.referenceName))].map((name) => (
-                        <SelectItem key={name} value={name}>{name}</SelectItem>
-                      ))}
+                      {(runGroups.length > 0
+                        ? runGroups.map((rg) => (
+                            <SelectItem key={rg.id} value={rg.name}>{rg.name}</SelectItem>
+                          ))
+                        : [...new Set(sessions.map((s) => s.referenceName))].map((name) => (
+                            <SelectItem key={name} value={name}>{name}</SelectItem>
+                          ))
+                      )}
                     </SelectContent>
                   </Select>
                   {myRunGroup && (
