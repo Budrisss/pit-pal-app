@@ -26,6 +26,7 @@ interface CarsContextType {
   loading: boolean;
   addCar: (car: Omit<Car, "id" | "events" | "setups">) => Promise<void>;
   updateCar: (id: string, car: Partial<Omit<Car, "id" | "events" | "setups">>) => Promise<void>;
+  uploadCarImage: (carId: string, file: File) => Promise<void>;
   deleteCar: (id: string) => Promise<void>;
   refreshCars: () => Promise<void>;
   getCarDisplayName: (car: Car) => string;
