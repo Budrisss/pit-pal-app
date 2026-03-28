@@ -838,12 +838,23 @@ const LocalEvents = () => {
                           <Tag size={12} /> Registration Groups
                         </p>
                         <div className="flex flex-wrap gap-1.5">
-                          {event.registration_types.map((rt, idx) => (
-                            <Badge key={idx} variant="outline" className="text-xs font-normal">
-                              {rt.name}{rt.price ? ` · ${rt.price}` : ''}
-                              {rt.max_spots ? ` · ${rt.max_spots} spots` : ''}
-                            </Badge>
-                          ))}
+                          {event.registration_types.map((rt, idx) => {
+                            const count = rt.id ? (registrationCounts[rt.id] || 0) : 0;
+                            const isFull = rt.max_spots ? count >= rt.max_spots : false;
+                            const isRegistered = rt.id ? userRegistrations.has(rt.id) : false;
+                            return (
+                              <Badge 
+                                key={idx} 
+                                variant={isRegistered ? "default" : isFull ? "secondary" : "outline"} 
+                                className={`text-xs font-normal ${isRegistered ? '' : ''}`}
+                              >
+                                {rt.name}{rt.price ? ` · ${rt.price}` : ''}
+                                {rt.max_spots ? ` · ${count}/${rt.max_spots}` : ''}
+                                {isRegistered && <UserCheck size={10} className="ml-1" />}
+                                {isFull && !isRegistered && ' · FULL'}
+                              </Badge>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
@@ -852,11 +863,23 @@ const LocalEvents = () => {
                       <p className="text-xs text-muted-foreground mb-4 line-clamp-2">{event.description}</p>
                     )}
 
-                    <div className="mt-auto">
+                    <div className="mt-auto flex gap-2">
+                      {event.registration_types && event.registration_types.length > 0 && !isOrganizerEvent(event) && (
+                        <Button 
+                          size="sm" 
+                          className="flex-1"
+                          onClick={() => {
+                            setRegisteringEvent(event);
+                            setRegForm({ name: '', email: user?.email || '', phone: '', notes: '' });
+                          }}
+                        >
+                          <UserCheck size={14} className="mr-1" /> Register
+                        </Button>
+                      )}
                       {event.registration_link && (
-                        <Button size="sm" variant="outline" className="w-full" asChild>
+                        <Button size="sm" variant="outline" className={event.registration_types?.length ? '' : 'w-full'} asChild>
                           <a href={event.registration_link} target="_blank" rel="noopener noreferrer">
-                            Register <ExternalLink size={14} className="ml-1" />
+                            Info <ExternalLink size={14} className="ml-1" />
                           </a>
                         </Button>
                       )}
