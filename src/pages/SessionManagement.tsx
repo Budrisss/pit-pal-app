@@ -291,7 +291,7 @@ const SessionManagement = () => {
   const [showAddSession, setShowAddSession] = useState(false);
   const [announcements, setAnnouncements] = useState<{ id: string; message: string; created_at: string }[]>([]);
   const [publicEventId, setPublicEventId] = useState<string | null>(null);
-  const [myRunGroup, setMyRunGroup] = useState<string | null>(null);
+  const [myRunGroup, setMyRunGroup] = useState<string | null>(null); // stores run group NAME, not id
 
   const sensors = useSensors(
     useSensor(PointerSensor),
