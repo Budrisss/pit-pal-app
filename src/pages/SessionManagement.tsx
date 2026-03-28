@@ -956,14 +956,14 @@ const SessionManagement = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Sessions (next up)</SelectItem>
-                      {sessions.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>{s.referenceName}</SelectItem>
+                      {[...new Set(sessions.map((s) => s.referenceName))].map((name) => (
+                        <SelectItem key={name} value={name}>{name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                   {myRunGroup && (
                     <p className="text-xs text-muted-foreground mt-1.5">
-                      Countdown tracks <span className="text-primary font-medium">{sessions.find(s => s.id === myRunGroup)?.referenceName}</span>
+                      Countdown tracks <span className="text-primary font-medium">{myRunGroup}</span>
                     </p>
                   )}
                 </CardContent>
