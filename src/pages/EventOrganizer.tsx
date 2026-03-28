@@ -572,8 +572,7 @@ const EventOrganizer = () => {
       if (error) throw error;
       const existingIds = (editingEvent.registration_types || []).filter(t => t.id).map(t => t.id!);
       await saveRegistrationTypes(ev.id, editRegTypes, existingIds);
-      const existingSessionIds = editSessions.filter(s => s.id).map(s => s.id!);
-      await saveSessions(ev.id, editSessions, existingSessionIds);
+      await saveSessions(ev.id, editSessions, originalEditSessionIds);
       toast({ title: "Event updated!" });
       setShowEditDialog(false);
       setEditingEvent(null);
