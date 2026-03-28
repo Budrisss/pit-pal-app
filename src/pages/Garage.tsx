@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
-import { Plus, Car, Settings, Calendar } from "lucide-react";
+import { Plus, Car, Settings, Calendar, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -16,9 +16,17 @@ import { useCars } from "@/contexts/CarsContext";
 const Garage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { cars, loading, addCar } = useCars();
+  const { cars, loading, addCar, updateCar } = useCars();
   const [isAddCarOpen, setIsAddCarOpen] = useState(false);
+  const [editingCar, setEditingCar] = useState<string | null>(null);
   const [newCar, setNewCar] = useState({
+    name: "",
+    year: "",
+    make: "",
+    model: "",
+    category: "",
+  });
+  const [editCar, setEditCar] = useState({
     name: "",
     year: "",
     make: "",
@@ -67,6 +75,45 @@ const Garage = () => {
     toast({
       title: "Car Added!",
       description: `${newCar.name} has been added to your garage.`,
+    });
+  };
+
+  const handleEditCar = (id: string) => {
+    const car = cars.find(c => c.id === id);
+    if (car) {
+      setEditCar({
+        name: car.name,
+        year: car.year,
+        make: car.make,
+        model: car.model,
+        category: car.category,
+      });
+      setEditingCar(id);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingCar || !editCar.name || !editCar.make || !editCar.model) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in the car name, make, and model.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    await updateCar(editingCar, {
+      name: editCar.name,
+      year: editCar.year,
+      make: editCar.make,
+      model: editCar.model,
+      category: editCar.category || "Street",
+    });
+
+    setEditingCar(null);
+    toast({
+      title: "Car Updated!",
+      description: `${editCar.name} has been updated.`,
     });
   };
 
