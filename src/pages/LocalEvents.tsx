@@ -44,6 +44,8 @@ interface PublicEvent {
   registration_link: string | null;
   status: string;
   organizer_id: string;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 interface OrganizerProfile {
