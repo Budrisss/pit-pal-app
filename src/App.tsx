@@ -21,6 +21,7 @@ import Settings from "./pages/Settings";
 import SessionManagement from "./pages/SessionManagement";
 import LocalEvents from "./pages/LocalEvents";
 import OrganizerSignup from "./pages/OrganizerSignup";
+import PublicEventPreview from "./pages/PublicEventPreview";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -48,6 +49,7 @@ const App = () => (
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 <Route path="/session-management/:eventId" element={<ProtectedRoute><SessionManagement /></ProtectedRoute>} />
                 <Route path="/local-events" element={<ProtectedRoute><LocalEvents /></ProtectedRoute>} />
+                <Route path="/public-event/:id" element={<ProtectedRoute><PublicEventPreview /></ProtectedRoute>} />
                 <Route path="/organizer-signup" element={<ProtectedRoute><OrganizerSignup /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
