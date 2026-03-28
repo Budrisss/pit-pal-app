@@ -548,6 +548,93 @@ const LocalEvents = () => {
         )}
       </section>
 
+      {/* Edit Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={(open) => { setShowEditDialog(open); if (!open) setEditingEvent(null); }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Event</DialogTitle>
+          </DialogHeader>
+          {editingEvent && (
+            <form onSubmit={handleEditEvent} className="space-y-4 mt-4">
+              <div className="space-y-2">
+                <Label>Event Name *</Label>
+                <Input value={editingEvent.name} onChange={e => setEditingEvent(p => p ? { ...p, name: e.target.value } : p)} required />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Date *</Label>
+                  <Input type="date" value={editingEvent.date} onChange={e => setEditingEvent(p => p ? { ...p, date: e.target.value } : p)} required />
+                </div>
+                <div className="space-y-2">
+                  <Label>Time</Label>
+                  <Input type="time" value={editingEvent.time || ''} onChange={e => setEditingEvent(p => p ? { ...p, time: e.target.value } : p)} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Track Name</Label>
+                <Input value={editingEvent.track_name || ''} onChange={e => setEditingEvent(p => p ? { ...p, track_name: e.target.value } : p)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Address</Label>
+                <Input value={editingEvent.address || ''} onChange={e => setEditingEvent(p => p ? { ...p, address: e.target.value } : p)} />
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-2">
+                  <Label>City</Label>
+                  <Input value={editingEvent.city || ''} onChange={e => setEditingEvent(p => p ? { ...p, city: e.target.value } : p)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>State</Label>
+                  <Select value={editingEvent.state || ''} onValueChange={v => setEditingEvent(p => p ? { ...p, state: v } : p)}>
+                    <SelectTrigger><SelectValue placeholder="CA" /></SelectTrigger>
+                    <SelectContent>{US_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>ZIP</Label>
+                  <Input value={editingEvent.zip_code || ''} onChange={e => setEditingEvent(p => p ? { ...p, zip_code: e.target.value } : p)} maxLength={5} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Entry Fee</Label>
+                  <Input value={editingEvent.entry_fee || ''} onChange={e => setEditingEvent(p => p ? { ...p, entry_fee: e.target.value } : p)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Car Classes</Label>
+                  <Input value={editingEvent.car_classes || ''} onChange={e => setEditingEvent(p => p ? { ...p, car_classes: e.target.value } : p)} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Registration Link</Label>
+                <Input type="url" value={editingEvent.registration_link || ''} onChange={e => setEditingEvent(p => p ? { ...p, registration_link: e.target.value } : p)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <Textarea value={editingEvent.description || ''} onChange={e => setEditingEvent(p => p ? { ...p, description: e.target.value } : p)} rows={3} />
+              </div>
+              <Button type="submit" disabled={creating} className="w-full">
+                {creating ? <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : 'Save Changes'}
+              </Button>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deletingEventId} onOpenChange={(open) => { if (!open) setDeletingEventId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Event</AlertDialogTitle>
+            <AlertDialogDescription>This will permanently remove this event. This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteEvent} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Navigation />
     </div>
   );
