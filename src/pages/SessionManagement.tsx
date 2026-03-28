@@ -710,16 +710,6 @@ const SessionManagement = () => {
           </div>
         )}
 
-        {/* Countdown to Next */}
-        {countdown && !currentActiveSession && (
-          <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-4 text-center">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Next: {countdown.nextSession.referenceName}</p>
-            <p className={`text-3xl font-bold tabular-nums ${countdown.isInBufferZone ? "text-destructive" : "text-foreground"}`}>
-              {formatCountdown(countdown)}
-            </p>
-          </div>
-        )}
-
         {/* Main Grid */}
         <div className="lg:grid lg:grid-cols-3 lg:gap-5 space-y-5 lg:space-y-0">
           {/* Left Column — Event Info + Weather */}
@@ -809,6 +799,16 @@ const SessionManagement = () => {
                 )}
               </CardContent>
             </Card>
+
+            {/* Countdown to Next */}
+            {countdown && !currentActiveSession && (
+              <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-4 text-center">
+                <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Next: {countdown.nextSession.referenceName}</p>
+                <p className={`text-3xl font-bold tabular-nums ${countdown.isInBufferZone ? "text-destructive" : "text-foreground"}`}>
+                  {formatCountdown(countdown)}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Right Column — Session Schedule (spans 2 cols) */}
