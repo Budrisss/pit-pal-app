@@ -47,6 +47,7 @@ const CarCard = ({
   onImageUpload,
   onImageRemove
 }: CarCardProps) => {
+  const navigate = useNavigate();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [swipeX, setSwipeX] = useState(0);
   const [isSwiping, setIsSwiping] = useState(false);
