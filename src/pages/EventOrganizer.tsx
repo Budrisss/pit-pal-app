@@ -167,6 +167,105 @@ const RegistrationTypesEditor = ({
   );
 };
 
+const emptySession = (): EventSession => ({ registration_type_id: null, name: '', start_time: '', duration_minutes: null, sort_order: 0 });
+
+const SessionsEditor = ({
+  sessions,
+  onChange,
+  registrationTypes,
+}: {
+  sessions: EventSession[];
+  onChange: (sessions: EventSession[]) => void;
+  registrationTypes: RegistrationType[];
+}) => {
+  const addSession = () => onChange([...sessions, { ...emptySession(), sort_order: sessions.length }]);
+  const removeSession = (i: number) => onChange(sessions.filter((_, idx) => idx !== i));
+  const updateSession = (i: number, field: keyof EventSession, value: any) => {
+    const updated = [...sessions];
+    updated[i] = { ...updated[i], [field]: value };
+    onChange(updated);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <Label className="flex items-center gap-1.5">
+          <Clock size={14} /> Sessions / Schedule
+        </Label>
+        <Button type="button" variant="outline" size="sm" onClick={addSession}>
+          <Plus size={14} className="mr-1" /> Add Session
+        </Button>
+      </div>
+      {sessions.length === 0 && (
+        <p className="text-xs text-muted-foreground italic">No sessions yet. Add sessions like "Group 1 - Morning", "Group 2 - Afternoon", etc.</p>
+      )}
+      {sessions.map((s, i) => (
+        <div key={i} className="border border-border rounded-lg p-3 space-y-2 bg-muted/30 relative">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="absolute top-1 right-1 h-6 w-6 text-muted-foreground hover:text-destructive"
+            onClick={() => removeSession(i)}
+          >
+            <X size={14} />
+          </Button>
+          <div className="grid grid-cols-2 gap-2 pr-6">
+            <div className="space-y-1">
+              <Label className="text-xs">Session Name *</Label>
+              <Input
+                value={s.name}
+                onChange={e => updateSession(i, 'name', e.target.value)}
+                placeholder="e.g. Group 1 - Morning Run"
+                className="h-8 text-sm"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Run Group</Label>
+              <Select
+                value={s.registration_type_id || 'none'}
+                onValueChange={v => updateSession(i, 'registration_type_id', v === 'none' ? null : v)}
+              >
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue placeholder="All groups" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">All groups</SelectItem>
+                  {registrationTypes.filter(rt => rt.name.trim()).map((rt, idx) => (
+                    <SelectItem key={rt.id || `new-${idx}`} value={rt.id || `new-${idx}`}>
+                      {rt.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label className="text-xs">Start Time</Label>
+              <Input
+                type="time"
+                value={s.start_time || ''}
+                onChange={e => updateSession(i, 'start_time', e.target.value)}
+                className="h-8 text-sm"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Duration (min)</Label>
+              <Input
+                type="number"
+                value={s.duration_minutes ?? ''}
+                onChange={e => updateSession(i, 'duration_minutes', e.target.value ? parseInt(e.target.value) : null)}
+                placeholder="20"
+                className="h-8 text-sm"
+              />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
 const EventOrganizer = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
