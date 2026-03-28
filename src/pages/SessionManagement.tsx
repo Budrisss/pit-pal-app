@@ -289,6 +289,8 @@ const SessionManagement = () => {
   const [newSessionDuration, setNewSessionDuration] = useState("20");
   const [newSessionTime, setNewSessionTime] = useState("13:00");
   const [showAddSession, setShowAddSession] = useState(false);
+  const [announcements, setAnnouncements] = useState<{ id: string; message: string; created_at: string }[]>([]);
+  const [publicEventId, setPublicEventId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
