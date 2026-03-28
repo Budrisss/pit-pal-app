@@ -320,6 +320,63 @@ const LocalEvents = () => {
     }
   }, [events, fetchRegistrationCounts]);
 
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!registeringEvent || !selectedRegTypeId || !user) return;
+    setRegistering(true);
+    try {
+      const { error } = await supabase.from('event_registrations').insert({
+        event_id: registeringEvent.id,
+        registration_type_id: selectedRegTypeId,
+        user_id: user.id,
+        user_name: regForm.name,
+        user_email: regForm.email,
+        user_phone: regForm.phone || null,
+        notes: regForm.notes || null,
+      });
+      if (error) throw error;
+      toast({ title: "Registered!", description: "You're signed up for this event." });
+      setRegisteringEvent(null);
+      setSelectedRegTypeId('');
+      setRegForm({ name: '', email: '', phone: '', notes: '' });
+      fetchUserRegistrations();
+      fetchRegistrationCounts(events.map(ev => ev.id));
+    } catch (err: any) {
+      toast({ title: "Registration failed", description: err.message, variant: "destructive" });
+    } finally {
+      setRegistering(false);
+    }
+  };
+
+  const handleCancelRegistration = async (regTypeId: string) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('event_registrations')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('registration_type_id', regTypeId);
+      if (error) throw error;
+      toast({ title: "Registration cancelled" });
+      fetchUserRegistrations();
+      fetchRegistrationCounts(events.map(ev => ev.id));
+    } catch (err: any) {
+      toast({ title: "Failed to cancel", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const openParticipantList = async (event: PublicEvent) => {
+    setParticipantEvent(event);
+    setLoadingParticipants(true);
+    const { data } = await supabase
+      .from('event_registrations')
+      .select('*')
+      .eq('event_id', event.id)
+      .order('created_at', { ascending: true });
+    setParticipants((data as EventRegistration[]) || []);
+    setLoadingParticipants(false);
+  };
+
   const geocodeZip = async (zip: string) => {
     const { data, error } = await supabase.functions.invoke('geocode-zip', {
       body: { zip_code: zip },
