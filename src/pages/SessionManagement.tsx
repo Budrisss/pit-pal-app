@@ -291,7 +291,7 @@ const SessionManagement = () => {
   const [showAddSession, setShowAddSession] = useState(false);
   const [announcements, setAnnouncements] = useState<{ id: string; message: string; created_at: string }[]>([]);
   const [publicEventId, setPublicEventId] = useState<string | null>(null);
-  const [myRunGroup, setMyRunGroup] = useState<string | null>(null);
+  const [myRunGroup, setMyRunGroup] = useState<string | null>(null); // stores run group NAME, not id
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -327,9 +327,9 @@ const SessionManagement = () => {
   const getNextUpcomingSession = () => {
     const statedSessions = calculateSessionStates();
     let upcomingSessions = statedSessions.filter(s => s.state === "upcoming");
-    // If user selected a run group, only count sessions matching that group
+    // If user selected a run group, only count sessions matching that group name
     if (myRunGroup) {
-      const filtered = upcomingSessions.filter(s => s.id === myRunGroup);
+      const filtered = upcomingSessions.filter(s => s.referenceName === myRunGroup);
       if (filtered.length > 0) upcomingSessions = filtered;
     }
     if (upcomingSessions.length === 0) return null;
@@ -345,9 +345,9 @@ const SessionManagement = () => {
     let activeSession: typeof statedSessions[number] | undefined = statedSessions.find(s => s.state === "active");
     // If user selected a run group, prioritize showing that group's active state
     if (myRunGroup) {
-      const myActive = statedSessions.find(s => s.id === myRunGroup && s.state === "active");
+      const myActive = statedSessions.find(s => s.referenceName === myRunGroup && s.state === "active");
       if (myActive) activeSession = myActive;
-      else if (activeSession && activeSession.id !== myRunGroup) activeSession = undefined;
+      else if (activeSession && activeSession.referenceName !== myRunGroup) activeSession = undefined;
     }
     if (!activeSession) return null;
     const eventDate = parseISO(eventData.date);
@@ -956,14 +956,14 @@ const SessionManagement = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Sessions (next up)</SelectItem>
-                      {sessions.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>{s.referenceName}</SelectItem>
+                      {[...new Set(sessions.map((s) => s.referenceName))].map((name) => (
+                        <SelectItem key={name} value={name}>{name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                   {myRunGroup && (
                     <p className="text-xs text-muted-foreground mt-1.5">
-                      Countdown tracks <span className="text-primary font-medium">{sessions.find(s => s.id === myRunGroup)?.referenceName}</span>
+                      Countdown tracks <span className="text-primary font-medium">{myRunGroup}</span>
                     </p>
                   )}
                 </CardContent>
