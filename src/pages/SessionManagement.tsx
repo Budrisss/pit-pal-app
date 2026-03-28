@@ -687,23 +687,23 @@ const SessionManagement = () => {
 
         {/* Active Session Banner */}
         {currentActiveSession && (
-          <div className="rounded-xl border border-green-500/30 bg-green-500/10 backdrop-blur-sm p-4">
+          <div className="rounded-xl border border-green-500/30 bg-green-500/10 backdrop-blur-sm p-5 sm:p-6">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
+              <div className="flex items-center gap-4">
+                <div className="w-4 h-4 rounded-full bg-green-500 animate-pulse" />
                 <div>
-                  <p className="font-bold text-foreground">{currentActiveSession.referenceName}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-lg sm:text-xl font-bold text-foreground">{currentActiveSession.referenceName}</p>
+                  <p className="text-sm text-muted-foreground">
                     Started at {currentActiveSession.startTime} • {currentActiveSession.type}
                   </p>
                 </div>
               </div>
               {activeSessionRemainingTime && (
                 <div className="text-right">
-                  <p className="text-2xl font-bold text-green-400 tabular-nums">
+                  <p className="text-3xl sm:text-4xl font-bold text-green-400 tabular-nums">
                     {activeSessionRemainingTime.minutes}:{activeSessionRemainingTime.seconds.toString().padStart(2, '0')}
                   </p>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Remaining</p>
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">Remaining</p>
                 </div>
               )}
             </div>
