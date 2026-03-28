@@ -221,6 +221,57 @@ export type Database = {
         }
         Relationships: []
       }
+      public_event_sessions: {
+        Row: {
+          created_at: string
+          duration_minutes: number | null
+          event_id: string
+          id: string
+          name: string
+          registration_type_id: string | null
+          sort_order: number
+          start_time: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          duration_minutes?: number | null
+          event_id: string
+          id?: string
+          name: string
+          registration_type_id?: string | null
+          sort_order?: number
+          start_time?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          duration_minutes?: number | null
+          event_id?: string
+          id?: string
+          name?: string
+          registration_type_id?: string | null
+          sort_order?: number
+          start_time?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_event_sessions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "public_event_sessions_registration_type_id_fkey"
+            columns: ["registration_type_id"]
+            isOneToOne: false
+            referencedRelation: "registration_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       public_events: {
         Row: {
           address: string | null
