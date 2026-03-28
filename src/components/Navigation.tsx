@@ -1,10 +1,11 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Settings, Calendar, Car, Home, MapPin, ClipboardList, Users, Repeat } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useOrganizerMode } from "@/contexts/OrganizerModeContext";
 
 const Navigation = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { isOrganizer, isOrganizerMode, toggleMode } = useOrganizerMode();
 
   const userNavItems = [
@@ -42,7 +43,10 @@ const Navigation = () => {
         ))}
         {isOrganizer && (
           <button
-            onClick={toggleMode}
+            onClick={() => {
+              toggleMode();
+              navigate(isOrganizerMode ? "/dashboard" : "/event-organizer");
+            }}
             className="flex flex-col items-center p-2 sm:p-3 rounded-none transition-all duration-300 min-w-0 text-muted-foreground hover:text-f1-red hover:bg-f1-light-gray"
           >
             <Repeat size={18} className="sm:size-5" />
