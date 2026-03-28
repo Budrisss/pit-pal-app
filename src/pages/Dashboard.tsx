@@ -1,11 +1,13 @@
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Car, Calendar, CheckSquare, Settings, Plus, TrendingUp, LogOut, ChevronRight } from "lucide-react";
+import { Car, Calendar, CheckSquare, Settings, Plus, TrendingUp, LogOut, ChevronRight, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Navigation from "@/components/Navigation";
 import { useCars } from "@/contexts/CarsContext";
 import { useEvents } from "@/contexts/EventsContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 
 import dashboardHero from "@/assets/dashboard-hero.jpg";
@@ -15,7 +17,39 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { cars } = useCars();
   const { events } = useEvents();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
+
+  const [localEvents, setLocalEvents] = useState<any[]>([]);
+  const [localEventsLoading, setLocalEventsLoading] = useState(true);
+
+  // Fetch nearby public events
+  useEffect(() => {
+    if (!user) return;
+    const fetchLocal = async () => {
+      setLocalEventsLoading(true);
+      try {
+        const { data: loc } = await supabase
+          .from('user_locations')
+          .select('latitude, longitude')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (loc) {
+          const { data } = await supabase.rpc('events_within_radius', {
+            user_lat: Number(loc.latitude),
+            user_lng: Number(loc.longitude),
+            radius_miles: 100,
+          });
+          setLocalEvents((data || []).slice(0, 3));
+        }
+      } catch (err) {
+        console.error('Error fetching local events:', err);
+      } finally {
+        setLocalEventsLoading(false);
+      }
+    };
+    fetchLocal();
+  }, [user]);
 
   const totalChecklists = 3;
   const completedChecklists = 1;
@@ -250,6 +284,56 @@ const Dashboard = () => {
             </Card>
           </motion.div>
         </div>
+
+        {/* Local Events */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-40px" }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          <Card className="bg-card/80 backdrop-blur-md border-border hover:border-primary/50 transition-colors">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span className="flex items-center gap-2 text-base sm:text-lg">
+                  <MapPin size={20} className="text-primary" />
+                  Local Events
+                </span>
+                <Button size="sm" variant="ghost" onClick={() => navigate('/local-events')}>
+                  View All <ChevronRight size={16} className="ml-1" />
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {localEventsLoading ? (
+                <p className="text-sm text-muted-foreground text-center py-4">Loading...</p>
+              ) : localEvents.length > 0 ? (
+                <div className="space-y-3">
+                  {localEvents.map((ev: any) => (
+                    <div key={ev.id} className="border border-border rounded-lg p-3 hover:border-primary/30 transition-colors">
+                      <h4 className="font-semibold text-sm">{ev.name}</h4>
+                      <p className="text-xs text-muted-foreground">
+                        {ev.track_name && `${ev.track_name} • `}
+                        {[ev.city, ev.state].filter(Boolean).join(', ')}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(ev.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        {ev.entry_fee && ` • ${ev.entry_fee}`}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-muted-foreground text-sm mb-3">No events near you yet.</p>
+                  <Button size="sm" variant="outline" onClick={() => navigate('/local-events')}>
+                    Browse All Events <ChevronRight size={16} className="ml-1" />
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
       </section>
 
       {/* Footer */}
