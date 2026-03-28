@@ -219,10 +219,41 @@ const PublicEventPreview = () => {
       });
       if (error) throw error;
 
-      toast({ title: "Registered!", description: "You're signed up for this event." });
+      // Create a personal event in the user's events table
+      const { data: newEvent, error: eventError } = await supabase.from("events").insert({
+        user_id: user.id,
+        name: event.name,
+        date: event.date,
+        time: event.time || null,
+        address: [event.track_name, event.address, event.city, event.state].filter(Boolean).join(", "),
+        description: event.description || null,
+        status: "upcoming",
+      }).select("id").single();
+
+      if (eventError) throw eventError;
+
+      // Copy organizer's sessions into the user's personal sessions
+      if (newEvent && sessions.length > 0) {
+        const sessionInserts = sessions.map((s) => ({
+          user_id: user.id,
+          event_id: newEvent.id,
+          name: s.name,
+          type: "practice",
+          start_time: s.start_time || null,
+          duration: s.duration_minutes || null,
+          notes: null,
+          state: "upcoming",
+        }));
+        await supabase.from("sessions").insert(sessionInserts);
+      }
+
+      toast({ title: "Registered!", description: "Event added to your schedule." });
       setShowRegDialog(false);
       setUserRegistrations(prev => new Set([...prev, regTypeId]));
       setRegCounts(prev => ({ ...prev, [regTypeId]: (prev[regTypeId] || 0) + 1 }));
+
+      // Navigate to the new personal event
+      navigate(`/events/${newEvent.id}`);
     } catch (err: any) {
       toast({ title: "Registration failed", description: err.message, variant: "destructive" });
     } finally {
