@@ -24,10 +24,6 @@ const Garage = () => {
     make: "",
     model: "",
     category: "",
-    engine: "",
-    power: "",
-    weight: "",
-    drivetrain: ""
   });
 
   const handleAddCar = () => {
@@ -52,10 +48,10 @@ const Garage = () => {
       category: newCar.category || "Street",
       image: "/api/placeholder/300/200",
       specs: {
-        engine: newCar.engine || "N/A",
-        power: newCar.power || "N/A",
-        weight: newCar.weight || "N/A",
-        drivetrain: newCar.drivetrain || "N/A"
+        engine: "N/A",
+        power: "N/A",
+        weight: "N/A",
+        drivetrain: "N/A"
       },
     });
 
@@ -65,10 +61,6 @@ const Garage = () => {
       make: "",
       model: "",
       category: "",
-      engine: "",
-      power: "",
-      weight: "",
-      drivetrain: ""
     });
     setIsAddCarOpen(false);
     
@@ -100,16 +92,17 @@ const Garage = () => {
           </DialogHeader>
           
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="name">Car Name *</Label>
-                <Input
-                  id="name"
-                  value={newCar.name}
-                  onChange={(e) => setNewCar({...newCar, name: e.target.value})}
-                  placeholder="Track Beast"
-                />
-              </div>
+            <div>
+              <Label htmlFor="name">Car Name *</Label>
+              <Input
+                id="name"
+                value={newCar.name}
+                onChange={(e) => setNewCar({...newCar, name: e.target.value})}
+                placeholder="e.g. Track Beast"
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
               <div>
                 <Label htmlFor="year">Year</Label>
                 <Input
@@ -119,9 +112,6 @@ const Garage = () => {
                   placeholder="2024"
                 />
               </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="make">Make *</Label>
                 <Input
@@ -157,53 +147,7 @@ const Garage = () => {
               </Select>
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="engine">Engine</Label>
-                <Input
-                  id="engine"
-                  value={newCar.engine}
-                  onChange={(e) => setNewCar({...newCar, engine: e.target.value})}
-                  placeholder="3.0L Twin-Turbo"
-                />
-              </div>
-              <div>
-                <Label htmlFor="power">Power</Label>
-                <Input
-                  id="power"
-                  value={newCar.power}
-                  onChange={(e) => setNewCar({...newCar, power: e.target.value})}
-                  placeholder="450 HP"
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="weight">Weight</Label>
-                <Input
-                  id="weight"
-                  value={newCar.weight}
-                  onChange={(e) => setNewCar({...newCar, weight: e.target.value})}
-                  placeholder="3,200 lbs"
-                />
-              </div>
-              <div>
-                <Label htmlFor="drivetrain">Drivetrain</Label>
-                <Select value={newCar.drivetrain} onValueChange={(value) => setNewCar({...newCar, drivetrain: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select drivetrain" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="FWD">FWD</SelectItem>
-                    <SelectItem value="RWD">RWD</SelectItem>
-                    <SelectItem value="AWD">AWD</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <div className="flex gap-2 pt-4">
+            <div className="flex gap-2 pt-2">
               <Button variant="outline" onClick={() => setIsAddCarOpen(false)} className="flex-1">
                 Cancel
               </Button>
