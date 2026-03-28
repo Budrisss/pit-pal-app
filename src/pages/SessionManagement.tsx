@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Clock, Calendar, Settings, Plus, Trash2, GripVertical, StickyNote, Timer, AlertCircle, Cloud, Thermometer, Eye, Wind, Play, CheckCircle2, MoreVertical } from "lucide-react";
-import { useState, useEffect } from "react";
+import { ArrowLeft, Clock, Calendar, Settings, Plus, Trash2, GripVertical, StickyNote, Timer, AlertCircle, Cloud, Thermometer, Eye, Wind, Play, CheckCircle2, MoreVertical, Megaphone } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO, addMinutes, differenceInMilliseconds, isAfter, isBefore } from "date-fns";
@@ -289,6 +289,8 @@ const SessionManagement = () => {
   const [newSessionDuration, setNewSessionDuration] = useState("20");
   const [newSessionTime, setNewSessionTime] = useState("13:00");
   const [showAddSession, setShowAddSession] = useState(false);
+  const [announcements, setAnnouncements] = useState<{ id: string; message: string; created_at: string }[]>([]);
+  const [publicEventId, setPublicEventId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -517,6 +519,83 @@ const SessionManagement = () => {
     if (!savedSessions && loadedSessions.length > 0) {
       localStorage.setItem(`sessions-${eventId}`, JSON.stringify(loadedSessions));
     }
+  }, [eventId]);
+
+  // Fetch public_event_id for this event and set up realtime subscriptions
+  useEffect(() => {
+    if (!eventId) return;
+
+    const setupRealtime = async () => {
+      // Check if this is a registered event
+      const { data: eventRow } = await (supabase as any)
+        .from("events")
+        .select("public_event_id")
+        .eq("id", eventId)
+        .maybeSingle();
+
+      const peId = eventRow?.public_event_id;
+      if (!peId) return;
+      setPublicEventId(peId);
+
+      // Fetch initial announcements
+      const { data: annData } = await (supabase as any)
+        .from("event_announcements")
+        .select("id, message, created_at")
+        .eq("event_id", peId)
+        .order("created_at", { ascending: false });
+      if (annData) setAnnouncements(annData);
+
+      // Subscribe to public_event_sessions changes
+      const sessionsChannel = supabase
+        .channel(`live-sessions-${peId}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "public_event_sessions", filter: `event_id=eq.${peId}` },
+          async () => {
+            // Re-fetch organizer sessions and map to local format
+            const { data: orgSessions } = await (supabase as any)
+              .from("public_event_sessions")
+              .select("*")
+              .eq("event_id", peId)
+              .order("sort_order", { ascending: true });
+            if (orgSessions) {
+              const mapped: Session[] = orgSessions.map((s: any, i: number) => ({
+                id: s.id,
+                type: "practice" as const,
+                duration: s.duration_minutes || 20,
+                referenceName: s.name,
+                startTime: s.start_time || "00:00",
+                state: "upcoming" as const,
+              }));
+              setSessions(mapped);
+              localStorage.setItem(`sessions-${eventId}`, JSON.stringify(mapped));
+            }
+          }
+        )
+        .subscribe();
+
+      // Subscribe to event_announcements
+      const announcementsChannel = supabase
+        .channel(`live-announcements-${peId}`)
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "event_announcements", filter: `event_id=eq.${peId}` },
+          (payload) => {
+            const newAnn = payload.new as { id: string; message: string; created_at: string };
+            setAnnouncements((prev) => [newAnn, ...prev]);
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(sessionsChannel);
+        supabase.removeChannel(announcementsChannel);
+      };
+    };
+
+    let cleanup: (() => void) | undefined;
+    setupRealtime().then((fn) => { cleanup = fn; });
+    return () => { cleanup?.(); };
   }, [eventId]);
 
   const saveSessionNotes = (sessionId: string, notes: string) => {
@@ -809,6 +888,28 @@ const SessionManagement = () => {
                   {formatCountdown(countdown)}
                 </p>
               </div>
+            )}
+
+            {/* Live Announcements */}
+            {publicEventId && announcements.length > 0 && (
+              <Card className="bg-card/60 backdrop-blur-sm border-border/50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                    <Megaphone size={14} className="text-primary" />
+                    Announcements
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 max-h-60 overflow-y-auto">
+                  {announcements.map((ann) => (
+                    <div key={ann.id} className="p-2.5 rounded-lg bg-primary/5 border border-primary/10">
+                      <p className="text-sm text-foreground">{ann.message}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        {format(new Date(ann.created_at), "MMM d, h:mm a")}
+                      </p>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
             )}
           </div>
 
