@@ -456,10 +456,14 @@ const EventOrganizer = () => {
       if (data && newRegTypes.length > 0) {
         await saveRegistrationTypes(data.id, newRegTypes);
       }
+      if (data && newSessions.length > 0) {
+        await saveSessions(data.id, newSessions);
+      }
       toast({ title: "Event created!", description: "Your event is now live." });
       setShowCreateDialog(false);
       setNewEvent({ name: '', date: '', time: '', description: '', track_name: '', address: '', city: '', state: '', zip_code: '', entry_fee: '', car_classes: '', registration_link: '' });
       setNewRegTypes([]);
+      setNewSessions([]);
       fetchEvents();
     } catch (err: any) {
       toast({ title: "Failed to create event", description: err.message, variant: "destructive" });
