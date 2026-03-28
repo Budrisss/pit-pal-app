@@ -4,8 +4,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ArrowLeft, Calendar, MapPin, DollarSign, Car, Clock, Tag, UserCheck, ExternalLink, Users, Building2, Megaphone, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useOrganizerMode } from "@/contexts/OrganizerModeContext";
+import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import Navigation from "@/components/Navigation";
 import DesktopNavigation from "@/components/DesktopNavigation";
@@ -58,6 +66,10 @@ interface OrganizerInfo {
 const PublicEventPreview = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { isOrganizerMode, organizerProfileId } = useOrganizerMode();
+  const { toast } = useToast();
+
   const [event, setEvent] = useState<PublicEventData | null>(null);
   const [sessions, setSessions] = useState<EventSession[]>([]);
   const [regTypes, setRegTypes] = useState<RegistrationType[]>([]);
@@ -66,6 +78,15 @@ const PublicEventPreview = () => {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [newAnnouncementFlash, setNewAnnouncementFlash] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Registration state
+  const [showRegDialog, setShowRegDialog] = useState(false);
+  const [selectedRegTypeId, setSelectedRegTypeId] = useState<string>("");
+  const [regForm, setRegForm] = useState({ name: "", email: "", phone: "", notes: "" });
+  const [registering, setRegistering] = useState(false);
+  const [userRegistrations, setUserRegistrations] = useState<Set<string>>(new Set());
+
+  const isOrganizerPreview = isOrganizerMode && event?.organizer_id === organizerProfileId;
 
   useEffect(() => {
     if (!id) return;
@@ -103,6 +124,22 @@ const PublicEventPreview = () => {
     };
     fetchAll();
   }, [id]);
+
+  // Fetch user's registrations for this event
+  useEffect(() => {
+    if (!user || !id) return;
+    const fetchUserRegs = async () => {
+      const { data } = await supabase
+        .from("event_registrations")
+        .select("registration_type_id")
+        .eq("event_id", id)
+        .eq("user_id", user.id);
+      if (data) {
+        setUserRegistrations(new Set(data.map((r: any) => r.registration_type_id)));
+      }
+    };
+    fetchUserRegs();
+  }, [user, id]);
 
   // Realtime subscriptions
   useEffect(() => {
@@ -142,6 +179,77 @@ const PublicEventPreview = () => {
       supabase.removeChannel(channel);
     };
   }, [id]);
+
+  const openRegDialog = (preselectedRegTypeId?: string) => {
+    setRegForm({ name: "", email: user?.email || "", phone: "", notes: "" });
+    setSelectedRegTypeId(preselectedRegTypeId || (regTypes.length === 1 ? regTypes[0].id : ""));
+    setShowRegDialog(true);
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!event || !user) return;
+    setRegistering(true);
+    try {
+      let regTypeId = selectedRegTypeId;
+
+      // If no registration types exist, auto-create a "General Admission" group
+      if (!regTypeId && regTypes.length === 0) {
+        const { data: newType, error: typeError } = await supabase.from("registration_types").insert({
+          event_id: event.id,
+          name: "General Admission",
+          description: "General event registration",
+          price: event.entry_fee || null,
+          max_spots: null,
+        }).select("id").single();
+        if (typeError) throw typeError;
+        regTypeId = newType.id;
+      }
+
+      if (!regTypeId) throw new Error("Please select a registration group");
+
+      const { error } = await supabase.from("event_registrations").insert({
+        event_id: event.id,
+        registration_type_id: regTypeId,
+        user_id: user.id,
+        user_name: regForm.name,
+        user_email: regForm.email,
+        user_phone: regForm.phone || null,
+        notes: regForm.notes || null,
+      });
+      if (error) throw error;
+
+      toast({ title: "Registered!", description: "You're signed up for this event." });
+      setShowRegDialog(false);
+      setUserRegistrations(prev => new Set([...prev, regTypeId]));
+      setRegCounts(prev => ({ ...prev, [regTypeId]: (prev[regTypeId] || 0) + 1 }));
+    } catch (err: any) {
+      toast({ title: "Registration failed", description: err.message, variant: "destructive" });
+    } finally {
+      setRegistering(false);
+    }
+  };
+
+  const handleCancelRegistration = async (regTypeId: string) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from("event_registrations")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("registration_type_id", regTypeId);
+      if (error) throw error;
+      toast({ title: "Registration cancelled" });
+      setUserRegistrations(prev => {
+        const next = new Set(prev);
+        next.delete(regTypeId);
+        return next;
+      });
+      setRegCounts(prev => ({ ...prev, [regTypeId]: Math.max(0, (prev[regTypeId] || 0) - 1) }));
+    } catch (err: any) {
+      toast({ title: "Failed to cancel", description: err.message, variant: "destructive" });
+    }
+  };
 
   if (loading) {
     return (
@@ -184,20 +292,35 @@ const PublicEventPreview = () => {
       <DesktopNavigation />
 
       <div className="pt-0 lg:pt-20 max-w-3xl mx-auto px-4 sm:px-6 py-8">
-        {/* Preview Banner */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-primary/10 border border-primary/30 rounded-lg p-3 mb-6 flex items-center justify-between"
-        >
-          <div className="flex items-center gap-2 text-sm">
-            <Badge variant="default" className="text-xs">PREVIEW</Badge>
-            <span className="text-muted-foreground">This is how participants will see your event</span>
-          </div>
-          <Button variant="ghost" size="sm" onClick={() => navigate("/event-organizer")}>
-            <ArrowLeft size={14} className="mr-1" /> Back to Organizer
-          </Button>
-        </motion.div>
+        {/* Preview Banner - only for organizers viewing their own event */}
+        {isOrganizerPreview && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-primary/10 border border-primary/30 rounded-lg p-3 mb-6 flex items-center justify-between"
+          >
+            <div className="flex items-center gap-2 text-sm">
+              <Badge variant="default" className="text-xs">PREVIEW</Badge>
+              <span className="text-muted-foreground">This is how participants will see your event</span>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/event-organizer")}>
+              <ArrowLeft size={14} className="mr-1" /> Back to Organizer
+            </Button>
+          </motion.div>
+        )}
+
+        {/* Back button for non-organizer users */}
+        {!isOrganizerPreview && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6"
+          >
+            <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+              <ArrowLeft size={14} className="mr-1" /> Back
+            </Button>
+          </motion.div>
+        )}
 
         {/* Live Announcements */}
         {announcements.length > 0 && (
@@ -313,6 +436,15 @@ const PublicEventPreview = () => {
                   <p className="text-sm text-muted-foreground leading-relaxed">{event.description}</p>
                 </>
               )}
+
+              {/* Main Register Button */}
+              {!isOrganizerPreview && event.status === "upcoming" && (
+                <div className="mt-5">
+                  <Button className="w-full" size="lg" onClick={() => openRegDialog()}>
+                    <UserCheck size={18} className="mr-2" /> Register for This Event
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -332,8 +464,9 @@ const PublicEventPreview = () => {
               {regTypes.map((rt) => {
                 const count = regCounts[rt.id] || 0;
                 const isFull = rt.max_spots ? count >= rt.max_spots : false;
+                const isRegistered = userRegistrations.has(rt.id);
                 return (
-                  <Card key={rt.id} className="bg-card/60 border-border">
+                  <Card key={rt.id} className={`border-border ${isRegistered ? 'bg-primary/10 border-primary/30' : 'bg-card/60'}`}>
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between mb-2">
                         <h3 className="font-semibold text-sm">{rt.name}</h3>
@@ -348,13 +481,21 @@ const PublicEventPreview = () => {
                         <span className="text-xs text-muted-foreground">
                           {count}{rt.max_spots ? `/${rt.max_spots}` : ""} spots filled
                         </span>
-                        <Button size="sm" disabled={isFull} className="h-7 text-xs">
-                          {isFull ? "Full" : (
-                            <>
-                              <UserCheck size={12} className="mr-1" /> Register
-                            </>
-                          )}
-                        </Button>
+                        {!isOrganizerPreview && (
+                          isRegistered ? (
+                            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleCancelRegistration(rt.id)}>
+                              ✓ Registered — Cancel
+                            </Button>
+                          ) : (
+                            <Button size="sm" disabled={isFull} className="h-7 text-xs" onClick={() => openRegDialog(rt.id)}>
+                              {isFull ? "Full" : (
+                                <>
+                                  <UserCheck size={12} className="mr-1" /> Register
+                                </>
+                              )}
+                            </Button>
+                          )
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -429,6 +570,99 @@ const PublicEventPreview = () => {
           </motion.div>
         )}
       </div>
+
+      {/* Registration Dialog */}
+      <Dialog open={showRegDialog} onOpenChange={setShowRegDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Register for {event.name}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleRegister} className="space-y-4 mt-2">
+            {/* Group selector for multiple types */}
+            {regTypes.length > 1 && (
+              <div className="space-y-2">
+                <Label>Select Registration Group *</Label>
+                <Select value={selectedRegTypeId} onValueChange={setSelectedRegTypeId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a group..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {regTypes.map(rt => {
+                      const count = regCounts[rt.id] || 0;
+                      const isFull = rt.max_spots ? count >= rt.max_spots : false;
+                      const isRegistered = userRegistrations.has(rt.id);
+                      return (
+                        <SelectItem
+                          key={rt.id}
+                          value={rt.id}
+                          disabled={isFull || isRegistered}
+                        >
+                          {rt.name}{rt.price ? ` — ${rt.price}` : ""}
+                          {rt.max_spots ? ` (${count}/${rt.max_spots})` : ""}
+                          {isRegistered ? " ✓ Registered" : ""}
+                          {isFull && !isRegistered ? " — FULL" : ""}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Single reg type info */}
+            {regTypes.length === 1 && (
+              <div className="bg-muted/50 p-3 rounded-lg">
+                <p className="text-sm font-medium">{regTypes[0].name}</p>
+                {regTypes[0].price && (
+                  <p className="text-xs text-muted-foreground">{regTypes[0].price}</p>
+                )}
+              </div>
+            )}
+
+            {/* No reg types */}
+            {regTypes.length === 0 && (
+              <div className="bg-muted/50 p-3 rounded-lg">
+                <p className="text-sm font-medium">General Admission</p>
+                {event.entry_fee && (
+                  <p className="text-xs text-muted-foreground">{event.entry_fee}</p>
+                )}
+              </div>
+            )}
+
+            {/* Selected group description */}
+            {selectedRegTypeId && (() => {
+              const sel = regTypes.find(r => r.id === selectedRegTypeId);
+              return sel?.description ? (
+                <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">{sel.description}</p>
+              ) : null;
+            })()}
+
+            <div className="space-y-2">
+              <Label>Your Name *</Label>
+              <Input value={regForm.name} onChange={e => setRegForm(p => ({ ...p, name: e.target.value }))} required placeholder="John Doe" />
+            </div>
+            <div className="space-y-2">
+              <Label>Email *</Label>
+              <Input type="email" value={regForm.email} onChange={e => setRegForm(p => ({ ...p, email: e.target.value }))} required placeholder="john@email.com" />
+            </div>
+            <div className="space-y-2">
+              <Label>Phone</Label>
+              <Input value={regForm.phone} onChange={e => setRegForm(p => ({ ...p, phone: e.target.value }))} placeholder="555-123-4567" />
+            </div>
+            <div className="space-y-2">
+              <Label>Notes</Label>
+              <Textarea value={regForm.notes} onChange={e => setRegForm(p => ({ ...p, notes: e.target.value }))} placeholder="Experience level, car info, etc." rows={2} />
+            </div>
+            <Button
+              type="submit"
+              disabled={registering || (regTypes.length > 1 && !selectedRegTypeId)}
+              className="w-full"
+            >
+              {registering ? <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : "Confirm Registration"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <Navigation />
     </div>

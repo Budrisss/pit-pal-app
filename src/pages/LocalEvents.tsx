@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { MapPin, Search, Calendar, DollarSign, Car, ExternalLink, Plus, ChevronRight, Filter, Building2, Pencil, Trash2, MoreVertical, X, Users, Tag, UserCheck, ClipboardList, Phone, Mail } from 'lucide-react';
+import { useOrganizerMode } from '@/contexts/OrganizerModeContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -166,6 +167,7 @@ const LocalEvents = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { isOrganizerMode } = useOrganizerMode();
 
   const [events, setEvents] = useState<PublicEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -535,7 +537,7 @@ const LocalEvents = () => {
   };
 
   const isOrganizerEvent = (event: PublicEvent) =>
-    organizerProfile && event.organizer_id === organizerProfile.id;
+    isOrganizerMode && organizerProfile && event.organizer_id === organizerProfile.id;
 
   const filteredEvents = events.filter(ev => {
     const matchesSearch = !searchQuery ||
@@ -790,7 +792,7 @@ const LocalEvents = () => {
                 <Card className="bg-card/80 backdrop-blur-md border-border hover:border-primary/50 transition-colors h-full">
                   <CardContent className="p-5 flex flex-col h-full">
                     <div className="flex items-start justify-between mb-3">
-                      <h3 className="font-bold text-base leading-tight">{event.name}</h3>
+                      <h3 className="font-bold text-base leading-tight cursor-pointer hover:text-primary transition-colors" onClick={() => navigate(`/public-event/${event.id}`)}>{event.name}</h3>
                       <div className="flex items-center gap-1 shrink-0 ml-2">
                         <Badge variant="secondary" className="text-xs">
                           {event.status}
