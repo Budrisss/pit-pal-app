@@ -131,6 +131,119 @@ export type Database = {
           },
         ]
       }
+      organizer_profiles: {
+        Row: {
+          approved: boolean
+          contact_email: string
+          created_at: string
+          description: string | null
+          id: string
+          org_name: string
+          phone: string | null
+          updated_at: string
+          user_id: string
+          website: string | null
+        }
+        Insert: {
+          approved?: boolean
+          contact_email: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          org_name: string
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+          website?: string | null
+        }
+        Update: {
+          approved?: boolean
+          contact_email?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          org_name?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      public_events: {
+        Row: {
+          address: string | null
+          car_classes: string | null
+          city: string | null
+          created_at: string
+          date: string
+          description: string | null
+          entry_fee: string | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          name: string
+          organizer_id: string
+          registration_link: string | null
+          state: string | null
+          status: string
+          time: string | null
+          track_name: string | null
+          updated_at: string
+          zip_code: string | null
+        }
+        Insert: {
+          address?: string | null
+          car_classes?: string | null
+          city?: string | null
+          created_at?: string
+          date: string
+          description?: string | null
+          entry_fee?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          name: string
+          organizer_id: string
+          registration_link?: string | null
+          state?: string | null
+          status?: string
+          time?: string | null
+          track_name?: string | null
+          updated_at?: string
+          zip_code?: string | null
+        }
+        Update: {
+          address?: string | null
+          car_classes?: string | null
+          city?: string | null
+          created_at?: string
+          date?: string
+          description?: string | null
+          entry_fee?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          name?: string
+          organizer_id?: string
+          registration_link?: string | null
+          state?: string | null
+          status?: string
+          time?: string | null
+          track_name?: string | null
+          updated_at?: string
+          zip_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_events_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "organizer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sessions: {
         Row: {
           created_at: string
@@ -401,6 +514,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_locations: {
+        Row: {
+          created_at: string
+          id: string
+          latitude: number
+          longitude: number
+          updated_at: string
+          user_id: string
+          zip_code: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          latitude: number
+          longitude: number
+          updated_at?: string
+          user_id: string
+          zip_code: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          latitude?: number
+          longitude?: number
+          updated_at?: string
+          user_id?: string
+          zip_code?: string
+        }
+        Relationships: []
+      }
       verification_codes: {
         Row: {
           code: string
@@ -433,7 +576,36 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      events_within_radius: {
+        Args: { radius_miles?: number; user_lat: number; user_lng: number }
+        Returns: {
+          address: string | null
+          car_classes: string | null
+          city: string | null
+          created_at: string
+          date: string
+          description: string | null
+          entry_fee: string | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          name: string
+          organizer_id: string
+          registration_link: string | null
+          state: string | null
+          status: string
+          time: string | null
+          track_name: string | null
+          updated_at: string
+          zip_code: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "public_events"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
     }
     Enums: {
       [_ in never]: never
