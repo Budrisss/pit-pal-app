@@ -610,11 +610,13 @@ const EventOrganizer = () => {
       id: rt.id, name: rt.name, description: rt.description || '',
       price: rt.price || '', max_spots: rt.max_spots,
     })));
-    setEditSessions((sessData || []).map((s: any) => ({
+    const mappedSessions = (sessData || []).map((s: any) => ({
       id: s.id, registration_type_id: s.registration_type_id,
       name: s.name, start_time: s.start_time || '',
       duration_minutes: s.duration_minutes, sort_order: s.sort_order,
-    })));
+    }));
+    setEditSessions(mappedSessions);
+    setOriginalEditSessionIds(mappedSessions.filter((s: EventSession) => s.id).map((s: EventSession) => s.id!));
     setShowEditDialog(true);
   };
 
