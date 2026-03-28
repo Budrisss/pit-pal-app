@@ -230,11 +230,11 @@ const CarCard = ({
 
               {/* Actions */}
               <div className="flex gap-2 sm:gap-3">
-                <Button variant="outline" size="sm" className="flex-1 rounded-full border-2 hover:shadow-pulse text-xs sm:text-sm" onClick={() => console.log(`Events for car ${id}`)}>
+                <Button variant="outline" size="sm" className="flex-1 rounded-full border-2 hover:shadow-pulse text-xs sm:text-sm" onClick={() => navigate('/events')}>
                   <Calendar size={14} className="sm:size-4" />
                   <span className="ml-1 sm:ml-2">Events</span>
                 </Button>
-                <Button variant="outline" size="sm" className="flex-1 rounded-full border-2 hover:shadow-pulse text-xs sm:text-sm" onClick={() => console.log(`Setups for car ${id}`)}>
+                <Button variant="outline" size="sm" className="flex-1 rounded-full border-2 hover:shadow-pulse text-xs sm:text-sm" onClick={() => navigate('/setups')}>
                   <Settings size={14} className="sm:size-4" />
                   <span className="ml-1 sm:ml-2">Setups</span>
                 </Button>
