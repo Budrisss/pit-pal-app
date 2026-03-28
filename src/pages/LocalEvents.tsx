@@ -473,9 +473,28 @@ const LocalEvents = () => {
                   <CardContent className="p-5 flex flex-col h-full">
                     <div className="flex items-start justify-between mb-3">
                       <h3 className="font-bold text-base leading-tight">{event.name}</h3>
-                      <Badge variant="secondary" className="shrink-0 ml-2 text-xs">
-                        {event.status}
-                      </Badge>
+                      <div className="flex items-center gap-1 shrink-0 ml-2">
+                        <Badge variant="secondary" className="text-xs">
+                          {event.status}
+                        </Badge>
+                        {isOrganizerEvent(event) && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-7 w-7">
+                                <MoreVertical size={14} />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => { setEditingEvent(event); setShowEditDialog(true); }}>
+                                <Pencil size={14} className="mr-2" /> Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive" onClick={() => setDeletingEventId(event.id)}>
+                                <Trash2 size={14} className="mr-2" /> Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                      </div>
                     </div>
 
                     {event.track_name && (
