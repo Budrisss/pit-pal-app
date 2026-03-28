@@ -21,6 +21,7 @@ import Settings from "./pages/Settings";
 import SessionManagement from "./pages/SessionManagement";
 import LocalEvents from "./pages/LocalEvents";
 import OrganizerSignup from "./pages/OrganizerSignup";
+import PublicEventPreview from "./pages/PublicEventPreview";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
