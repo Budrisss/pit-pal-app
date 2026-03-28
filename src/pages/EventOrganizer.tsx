@@ -292,10 +292,6 @@ const EventOrganizer = () => {
   const [participants, setParticipants] = useState<EventRegistration[]>([]);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
 
-  // Preview state
-  const [previewEvent, setPreviewEvent] = useState<PublicEvent | null>(null);
-  const [previewSessions, setPreviewSessions] = useState<EventSession[]>([]);
-  const [loadingPreview, setLoadingPreview] = useState(false);
 
   const [newEvent, setNewEvent] = useState({
     name: '', date: '', time: '', description: '', track_name: '',
