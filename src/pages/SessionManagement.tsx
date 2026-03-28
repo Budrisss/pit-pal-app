@@ -592,9 +592,6 @@ const SessionManagement = () => {
       if (!peId) return;
       setPublicEventId(peId);
 
-      // Load organizer sessions as the source of truth
-      await fetchOrganizerSessions(peId);
-
       // Fetch initial announcements
       const { data: annData } = await (supabase as any)
         .from("event_announcements")
