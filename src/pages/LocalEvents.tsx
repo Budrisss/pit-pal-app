@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { MapPin, Search, Calendar, DollarSign, Car, ExternalLink, Plus, ChevronRight, Filter, Building2, Pencil, Trash2, MoreVertical, X, Users, Tag, UserCheck, ClipboardList, Phone, Mail } from 'lucide-react';
+import { useOrganizerMode } from '@/contexts/OrganizerModeContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -166,6 +167,7 @@ const LocalEvents = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { isOrganizerMode } = useOrganizerMode();
 
   const [events, setEvents] = useState<PublicEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -535,7 +537,7 @@ const LocalEvents = () => {
   };
 
   const isOrganizerEvent = (event: PublicEvent) =>
-    organizerProfile && event.organizer_id === organizerProfile.id;
+    isOrganizerMode && organizerProfile && event.organizer_id === organizerProfile.id;
 
   const filteredEvents = events.filter(ev => {
     const matchesSearch = !searchQuery ||
