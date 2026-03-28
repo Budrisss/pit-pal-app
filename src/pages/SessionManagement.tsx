@@ -521,6 +521,83 @@ const SessionManagement = () => {
     }
   }, [eventId]);
 
+  // Fetch public_event_id for this event and set up realtime subscriptions
+  useEffect(() => {
+    if (!eventId) return;
+
+    const setupRealtime = async () => {
+      // Check if this is a registered event
+      const { data: eventRow } = await (supabase as any)
+        .from("events")
+        .select("public_event_id")
+        .eq("id", eventId)
+        .maybeSingle();
+
+      const peId = eventRow?.public_event_id;
+      if (!peId) return;
+      setPublicEventId(peId);
+
+      // Fetch initial announcements
+      const { data: annData } = await (supabase as any)
+        .from("event_announcements")
+        .select("id, message, created_at")
+        .eq("event_id", peId)
+        .order("created_at", { ascending: false });
+      if (annData) setAnnouncements(annData);
+
+      // Subscribe to public_event_sessions changes
+      const sessionsChannel = supabase
+        .channel(`live-sessions-${peId}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "public_event_sessions", filter: `event_id=eq.${peId}` },
+          async () => {
+            // Re-fetch organizer sessions and map to local format
+            const { data: orgSessions } = await (supabase as any)
+              .from("public_event_sessions")
+              .select("*")
+              .eq("event_id", peId)
+              .order("sort_order", { ascending: true });
+            if (orgSessions) {
+              const mapped: Session[] = orgSessions.map((s: any, i: number) => ({
+                id: s.id,
+                type: "practice" as const,
+                duration: s.duration_minutes || 20,
+                referenceName: s.name,
+                startTime: s.start_time || "00:00",
+                state: "upcoming" as const,
+              }));
+              setSessions(mapped);
+              localStorage.setItem(`sessions-${eventId}`, JSON.stringify(mapped));
+            }
+          }
+        )
+        .subscribe();
+
+      // Subscribe to event_announcements
+      const announcementsChannel = supabase
+        .channel(`live-announcements-${peId}`)
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "event_announcements", filter: `event_id=eq.${peId}` },
+          (payload) => {
+            const newAnn = payload.new as { id: string; message: string; created_at: string };
+            setAnnouncements((prev) => [newAnn, ...prev]);
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(sessionsChannel);
+        supabase.removeChannel(announcementsChannel);
+      };
+    };
+
+    let cleanup: (() => void) | undefined;
+    setupRealtime().then((fn) => { cleanup = fn; });
+    return () => { cleanup?.(); };
+  }, [eventId]);
+
   const saveSessionNotes = (sessionId: string, notes: string) => {
     const savedNotes = localStorage.getItem(`session-notes-${eventId}`) || "{}";
     try {
