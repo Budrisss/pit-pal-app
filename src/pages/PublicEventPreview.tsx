@@ -88,6 +88,13 @@ const PublicEventPreview = () => {
 
   const isOrganizerPreview = isOrganizerMode && event?.organizer_id === organizerProfileId;
 
+  // Redirect non-organizer users away from this page
+  useEffect(() => {
+    if (!loading && event && !isOrganizerMode) {
+      navigate("/local-events", { replace: true });
+    }
+  }, [loading, event, isOrganizerMode, navigate]);
+
   useEffect(() => {
     if (!id) return;
     const fetchAll = async () => {
