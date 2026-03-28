@@ -25,6 +25,7 @@ interface CarsContextType {
   cars: Car[];
   loading: boolean;
   addCar: (car: Omit<Car, "id" | "events" | "setups">) => Promise<void>;
+  updateCar: (id: string, car: Partial<Omit<Car, "id" | "events" | "setups">>) => Promise<void>;
   deleteCar: (id: string) => Promise<void>;
   refreshCars: () => Promise<void>;
   getCarDisplayName: (car: Car) => string;
@@ -107,6 +108,25 @@ export const CarsProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const updateCar = async (id: string, car: Partial<Omit<Car, "id" | "events" | "setups">>) => {
+    if (!user) return;
+    const updateData: any = {};
+    if (car.name !== undefined) updateData.name = car.name;
+    if (car.year !== undefined) updateData.year = car.year ? parseInt(car.year) : null;
+    if (car.make !== undefined) updateData.make = car.make || null;
+    if (car.model !== undefined) updateData.model = car.model || null;
+    if (car.category !== undefined) updateData.category = car.category || null;
+
+    const { error } = await (supabase as any)
+      .from("cars")
+      .update(updateData)
+      .eq("id", id)
+      .eq("user_id", user.id);
+    if (!error) {
+      await fetchCars();
+    }
+  };
+
   const deleteCar = async (id: string) => {
     if (!user) return;
     const { error } = await (supabase as any)
@@ -124,7 +144,7 @@ export const CarsProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <CarsContext.Provider value={{ cars, loading, addCar, deleteCar, refreshCars: fetchCars, getCarDisplayName }}>
+    <CarsContext.Provider value={{ cars, loading, addCar, updateCar, deleteCar, refreshCars: fetchCars, getCarDisplayName }}>
       {children}
     </CarsContext.Provider>
   );

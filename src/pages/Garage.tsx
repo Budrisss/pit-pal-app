@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
-import { Plus, Car, Settings, Calendar } from "lucide-react";
+import { Plus, Car, Settings, Calendar, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -16,9 +16,17 @@ import { useCars } from "@/contexts/CarsContext";
 const Garage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { cars, loading, addCar } = useCars();
+  const { cars, loading, addCar, updateCar } = useCars();
   const [isAddCarOpen, setIsAddCarOpen] = useState(false);
+  const [editingCar, setEditingCar] = useState<string | null>(null);
   const [newCar, setNewCar] = useState({
+    name: "",
+    year: "",
+    make: "",
+    model: "",
+    category: "",
+  });
+  const [editCar, setEditCar] = useState({
     name: "",
     year: "",
     make: "",
@@ -67,6 +75,45 @@ const Garage = () => {
     toast({
       title: "Car Added!",
       description: `${newCar.name} has been added to your garage.`,
+    });
+  };
+
+  const handleEditCar = (id: string) => {
+    const car = cars.find(c => c.id === id);
+    if (car) {
+      setEditCar({
+        name: car.name,
+        year: car.year,
+        make: car.make,
+        model: car.model,
+        category: car.category,
+      });
+      setEditingCar(id);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingCar || !editCar.name || !editCar.make || !editCar.model) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in the car name, make, and model.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    await updateCar(editingCar, {
+      name: editCar.name,
+      year: editCar.year,
+      make: editCar.make,
+      model: editCar.model,
+      category: editCar.category || "Street",
+    });
+
+    setEditingCar(null);
+    toast({
+      title: "Car Updated!",
+      description: `${editCar.name} has been updated.`,
     });
   };
 
@@ -153,6 +200,84 @@ const Garage = () => {
               </Button>
               <Button onClick={handleSaveCar} className="flex-1">
                 Add Car
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Car Dialog */}
+      <Dialog open={!!editingCar} onOpenChange={(open) => !open && setEditingCar(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil size={24} className="text-primary" />
+              Edit Car
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 mt-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-name">Car Name *</Label>
+              <Input
+                id="edit-name"
+                value={editCar.name}
+                onChange={(e) => setEditCar({...editCar, name: e.target.value})}
+                placeholder="e.g. Track Beast"
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-year">Year</Label>
+                <Input
+                  id="edit-year"
+                  value={editCar.year}
+                  onChange={(e) => setEditCar({...editCar, year: e.target.value})}
+                  placeholder="2024"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-make">Make *</Label>
+                <Input
+                  id="edit-make"
+                  value={editCar.make}
+                  onChange={(e) => setEditCar({...editCar, make: e.target.value})}
+                  placeholder="BMW"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-model">Model *</Label>
+                <Input
+                  id="edit-model"
+                  value={editCar.model}
+                  onChange={(e) => setEditCar({...editCar, model: e.target.value})}
+                  placeholder="M3"
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-category">Category</Label>
+              <Select value={editCar.category} onValueChange={(value) => setEditCar({...editCar, category: value})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Street">Street</SelectItem>
+                  <SelectItem value="Track">Track</SelectItem>
+                  <SelectItem value="Street/Track">Street/Track</SelectItem>
+                  <SelectItem value="Race">Race</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" onClick={() => setEditingCar(null)} className="flex-1">
+                Cancel
+              </Button>
+              <Button onClick={handleSaveEdit} className="flex-1">
+                Save Changes
               </Button>
             </div>
           </div>
@@ -257,6 +382,7 @@ const Garage = () => {
                   events={car.events}
                   setups={car.setups}
                   isDefault={car.isDefault}
+                  onEdit={handleEditCar}
                 />
               ))}
             </div>
