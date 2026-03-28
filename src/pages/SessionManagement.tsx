@@ -1002,12 +1002,12 @@ const SessionManagement = () => {
               </Card>
             )}
 
-            {/* Countdown to Next — show when no active session, OR when active session is not user's group */}
-            {countdown && (!currentActiveSession || showMyNextCountdown) && (
+            {/* Countdown to Next — always show below My Run Group when available */}
+            {countdown && (
               <div className="rounded-xl border-2 border-primary/60 bg-gradient-to-br from-primary/10 to-card/80 backdrop-blur-sm p-5 text-center shadow-f1 relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 pointer-events-none" />
                 <p className="text-xs uppercase tracking-widest text-primary font-semibold mb-2 relative">
-                  {showMyNextCountdown ? "Your Next Session" : "Next"}: {countdown.nextSession.referenceName}
+                  {myRunGroup ? "Your Next Session" : "Next"}: {countdown.nextSession.referenceName}
                 </p>
                 <p className={`text-3xl sm:text-4xl font-bold tabular-nums relative ${countdown.isInBufferZone ? "text-destructive" : "text-foreground"}`}>
                   {formatCountdown(countdown)}
