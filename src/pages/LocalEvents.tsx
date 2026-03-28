@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { MapPin, Search, Calendar, DollarSign, Car, ExternalLink, Plus, ChevronRight, Filter, Building2 } from 'lucide-react';
+import { MapPin, Search, Calendar, DollarSign, Car, ExternalLink, Plus, ChevronRight, Filter, Building2, Pencil, Trash2, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
@@ -42,6 +44,8 @@ interface PublicEvent {
   registration_link: string | null;
   status: string;
   organizer_id: string;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 interface OrganizerProfile {
@@ -63,6 +67,9 @@ const LocalEvents = () => {
   const [creating, setCreating] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [viewMode, setViewMode] = useState<'local' | 'search'>('local');
+  const [editingEvent, setEditingEvent] = useState<PublicEvent | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
 
   const [newEvent, setNewEvent] = useState({
     name: '', date: '', time: '', description: '', track_name: '',
@@ -184,6 +191,54 @@ const LocalEvents = () => {
       setCreating(false);
     }
   };
+
+  const handleEditEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingEvent || !organizerProfile) return;
+    setCreating(true);
+    try {
+      let lat = editingEvent.latitude ?? null;
+      let lng = editingEvent.longitude ?? null;
+      const ev = editingEvent;
+      if (ev.zip_code) {
+        const geo = await geocodeZip(ev.zip_code);
+        if (geo) { lat = geo.latitude; lng = geo.longitude; }
+      }
+      const { error } = await supabase.from('public_events').update({
+        name: ev.name, date: ev.date, time: ev.time || null,
+        description: ev.description || null, track_name: ev.track_name || null,
+        address: ev.address || null, city: ev.city || null, state: ev.state || null,
+        zip_code: ev.zip_code || null, entry_fee: ev.entry_fee || null,
+        car_classes: ev.car_classes || null, registration_link: ev.registration_link || null,
+        latitude: lat, longitude: lng,
+      }).eq('id', ev.id);
+      if (error) throw error;
+      toast({ title: "Event updated!" });
+      setShowEditDialog(false);
+      setEditingEvent(null);
+      fetchEvents();
+    } catch (err: any) {
+      toast({ title: "Failed to update", description: err.message, variant: "destructive" });
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleDeleteEvent = async () => {
+    if (!deletingEventId) return;
+    try {
+      const { error } = await supabase.from('public_events').delete().eq('id', deletingEventId);
+      if (error) throw error;
+      toast({ title: "Event deleted" });
+      setDeletingEventId(null);
+      fetchEvents();
+    } catch (err: any) {
+      toast({ title: "Failed to delete", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const isOrganizerEvent = (event: PublicEvent) =>
+    organizerProfile && event.organizer_id === organizerProfile.id;
 
   const filteredEvents = events.filter(ev => {
     const matchesSearch = !searchQuery ||
@@ -418,9 +473,28 @@ const LocalEvents = () => {
                   <CardContent className="p-5 flex flex-col h-full">
                     <div className="flex items-start justify-between mb-3">
                       <h3 className="font-bold text-base leading-tight">{event.name}</h3>
-                      <Badge variant="secondary" className="shrink-0 ml-2 text-xs">
-                        {event.status}
-                      </Badge>
+                      <div className="flex items-center gap-1 shrink-0 ml-2">
+                        <Badge variant="secondary" className="text-xs">
+                          {event.status}
+                        </Badge>
+                        {isOrganizerEvent(event) && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-7 w-7">
+                                <MoreVertical size={14} />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => { setEditingEvent(event); setShowEditDialog(true); }}>
+                                <Pencil size={14} className="mr-2" /> Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive" onClick={() => setDeletingEventId(event.id)}>
+                                <Trash2 size={14} className="mr-2" /> Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                      </div>
                     </div>
 
                     {event.track_name && (
@@ -473,6 +547,93 @@ const LocalEvents = () => {
           </div>
         )}
       </section>
+
+      {/* Edit Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={(open) => { setShowEditDialog(open); if (!open) setEditingEvent(null); }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Event</DialogTitle>
+          </DialogHeader>
+          {editingEvent && (
+            <form onSubmit={handleEditEvent} className="space-y-4 mt-4">
+              <div className="space-y-2">
+                <Label>Event Name *</Label>
+                <Input value={editingEvent.name} onChange={e => setEditingEvent(p => p ? { ...p, name: e.target.value } : p)} required />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Date *</Label>
+                  <Input type="date" value={editingEvent.date} onChange={e => setEditingEvent(p => p ? { ...p, date: e.target.value } : p)} required />
+                </div>
+                <div className="space-y-2">
+                  <Label>Time</Label>
+                  <Input type="time" value={editingEvent.time || ''} onChange={e => setEditingEvent(p => p ? { ...p, time: e.target.value } : p)} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Track Name</Label>
+                <Input value={editingEvent.track_name || ''} onChange={e => setEditingEvent(p => p ? { ...p, track_name: e.target.value } : p)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Address</Label>
+                <Input value={editingEvent.address || ''} onChange={e => setEditingEvent(p => p ? { ...p, address: e.target.value } : p)} />
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-2">
+                  <Label>City</Label>
+                  <Input value={editingEvent.city || ''} onChange={e => setEditingEvent(p => p ? { ...p, city: e.target.value } : p)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>State</Label>
+                  <Select value={editingEvent.state || ''} onValueChange={v => setEditingEvent(p => p ? { ...p, state: v } : p)}>
+                    <SelectTrigger><SelectValue placeholder="CA" /></SelectTrigger>
+                    <SelectContent>{US_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>ZIP</Label>
+                  <Input value={editingEvent.zip_code || ''} onChange={e => setEditingEvent(p => p ? { ...p, zip_code: e.target.value } : p)} maxLength={5} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Entry Fee</Label>
+                  <Input value={editingEvent.entry_fee || ''} onChange={e => setEditingEvent(p => p ? { ...p, entry_fee: e.target.value } : p)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Car Classes</Label>
+                  <Input value={editingEvent.car_classes || ''} onChange={e => setEditingEvent(p => p ? { ...p, car_classes: e.target.value } : p)} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Registration Link</Label>
+                <Input type="url" value={editingEvent.registration_link || ''} onChange={e => setEditingEvent(p => p ? { ...p, registration_link: e.target.value } : p)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <Textarea value={editingEvent.description || ''} onChange={e => setEditingEvent(p => p ? { ...p, description: e.target.value } : p)} rows={3} />
+              </div>
+              <Button type="submit" disabled={creating} className="w-full">
+                {creating ? <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : 'Save Changes'}
+              </Button>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deletingEventId} onOpenChange={(open) => { if (!open) setDeletingEventId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Event</AlertDialogTitle>
+            <AlertDialogDescription>This will permanently remove this event. This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteEvent} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Navigation />
     </div>
