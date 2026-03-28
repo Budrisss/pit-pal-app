@@ -16,7 +16,7 @@ import { useCars } from "@/contexts/CarsContext";
 const Garage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { cars, loading, addCar, updateCar } = useCars();
+  const { cars, loading, addCar, updateCar, deleteCar } = useCars();
   const [isAddCarOpen, setIsAddCarOpen] = useState(false);
   const [editingCar, setEditingCar] = useState<string | null>(null);
   const [newCar, setNewCar] = useState({
@@ -114,6 +114,14 @@ const Garage = () => {
     toast({
       title: "Car Updated!",
       description: `${editCar.name} has been updated.`,
+    });
+  };
+
+  const handleDeleteCar = async (id: string) => {
+    await deleteCar(id);
+    toast({
+      title: "Car Deleted",
+      description: "The car has been removed from your garage.",
     });
   };
 
@@ -383,6 +391,7 @@ const Garage = () => {
                   setups={car.setups}
                   isDefault={car.isDefault}
                   onEdit={handleEditCar}
+                  onDelete={handleDeleteCar}
                 />
               ))}
             </div>
