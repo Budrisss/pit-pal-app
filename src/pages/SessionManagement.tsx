@@ -521,11 +521,19 @@ const SessionManagement = () => {
 
       if (eventRow?.public_event_id) {
         // Registered event — fetch organizer sessions as source of truth
-        const { data: orgSessions } = await (supabase as any)
-          .from("public_event_sessions")
-          .select("*")
-          .eq("event_id", eventRow.public_event_id)
-          .order("sort_order", { ascending: true });
+        const [sessionsRes, regTypesRes] = await Promise.all([
+          (supabase as any)
+            .from("public_event_sessions")
+            .select("*")
+            .eq("event_id", eventRow.public_event_id)
+            .order("sort_order", { ascending: true }),
+          (supabase as any)
+            .from("registration_types")
+            .select("id, name")
+            .eq("event_id", eventRow.public_event_id)
+            .order("created_at", { ascending: true }),
+        ]);
+        const orgSessions = sessionsRes.data;
         if (orgSessions && orgSessions.length > 0) {
           const mapped: Session[] = orgSessions.map((s: any) => ({
             id: s.id,
@@ -539,6 +547,9 @@ const SessionManagement = () => {
           localStorage.setItem(`sessions-${eventId}`, JSON.stringify(mapped));
         } else {
           setSessions([]);
+        }
+        if (regTypesRes.data && regTypesRes.data.length > 0) {
+          setRunGroups(regTypesRes.data);
         }
       } else {
         // Personal event — use localStorage / hardcoded defaults
