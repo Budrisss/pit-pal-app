@@ -757,8 +757,15 @@ const SessionManagement = () => {
   };
 
   const countdown = getCountdownToNext();
-  const currentActiveSession = calculateSessionStates().find(s => s.state === "active");
+  const allStatedSessions = calculateSessionStates();
+  const currentActiveSession = allStatedSessions.find(s => s.state === "active");
   const activeSessionRemainingTime = getActiveSessionRemainingTime();
+  // Check if the active session belongs to the user's selected run group
+  const activeIsMyGroup = myRunGroup && currentActiveSession
+    ? (currentActiveSession.registrationTypeId ? currentActiveSession.registrationTypeId === myRunGroup : currentActiveSession.referenceName === runGroups.find(rg => rg.id === myRunGroup)?.name)
+    : !myRunGroup;
+  // Show "my next" countdown even when another group is active
+  const showMyNextCountdown = myRunGroup && currentActiveSession && !activeIsMyGroup && countdown;
   const eventDate = parseISO(eventData.date);
   const today = new Date();
   const isSameDayEvent = today.toDateString() === eventDate.toDateString();
@@ -988,18 +995,20 @@ const SessionManagement = () => {
                   </Select>
                   {myRunGroup && (
                     <p className="text-xs text-muted-foreground mt-1.5">
-                      Countdown tracks <span className="text-primary font-medium">{myRunGroup}</span>
+                      Countdown tracks <span className="text-primary font-medium">{runGroups.find(rg => rg.id === myRunGroup)?.name || myRunGroup}</span>
                     </p>
                   )}
                 </CardContent>
               </Card>
             )}
 
-            {/* Countdown to Next */}
-            {countdown && !currentActiveSession && (
+            {/* Countdown to Next — show when no active session, OR when active session is not user's group */}
+            {countdown && (!currentActiveSession || showMyNextCountdown) && (
               <div className="rounded-xl border-2 border-primary/60 bg-gradient-to-br from-primary/10 to-card/80 backdrop-blur-sm p-5 text-center shadow-f1 relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 pointer-events-none" />
-                <p className="text-xs uppercase tracking-widest text-primary font-semibold mb-2 relative">Next: {countdown.nextSession.referenceName}</p>
+                <p className="text-xs uppercase tracking-widest text-primary font-semibold mb-2 relative">
+                  {showMyNextCountdown ? "Your Next Session" : "Next"}: {countdown.nextSession.referenceName}
+                </p>
                 <p className={`text-3xl sm:text-4xl font-bold tabular-nums relative ${countdown.isInBufferZone ? "text-destructive" : "text-foreground"}`}>
                   {formatCountdown(countdown)}
                 </p>
