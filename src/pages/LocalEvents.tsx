@@ -792,7 +792,7 @@ const LocalEvents = () => {
                 <Card className="bg-card/80 backdrop-blur-md border-border hover:border-primary/50 transition-colors h-full">
                   <CardContent className="p-5 flex flex-col h-full">
                     <div className="flex items-start justify-between mb-3">
-                      <h3 className="font-bold text-base leading-tight">{event.name}</h3>
+                      <h3 className="font-bold text-base leading-tight cursor-pointer hover:text-primary transition-colors" onClick={() => navigate(`/public-event/${event.id}`)}>{event.name}</h3>
                       <div className="flex items-center gap-1 shrink-0 ml-2">
                         <Badge variant="secondary" className="text-xs">
                           {event.status}
