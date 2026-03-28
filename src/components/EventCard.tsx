@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { useEvents } from "@/contexts/EventsContext";
 
 interface EventCardProps {
@@ -18,10 +19,11 @@ interface EventCardProps {
   status: "upcoming" | "completed";
   car?: string;
   address?: string;
+  isRegistered?: boolean;
   onEdit?: () => void;
 }
 
-const EventCard = ({ id, name, track, date, time, countdown, status, car, address, onEdit }: EventCardProps) => {
+const EventCard = ({ id, name, track, date, time, countdown, status, car, address, isRegistered, onEdit }: EventCardProps) => {
   const navigate = useNavigate();
   const { deleteEvent } = useEvents();
   const [isChecklistDialogOpen, setIsChecklistDialogOpen] = useState(false);
@@ -56,8 +58,14 @@ const EventCard = ({ id, name, track, date, time, countdown, status, car, addres
       <Card className={`bg-card/60 backdrop-blur-sm border border-border/50 hover:border-primary/30 transition-all duration-300 hover:shadow-racing h-full border-l-4 ${getBorderColor()}`}>
         <CardContent className="p-4 sm:p-5 space-y-3">
           {/* Header: Title + Menu */}
-          <div className="flex justify-between items-start gap-2">
+          <div className="flex items-start gap-2">
             <h3 className="text-base sm:text-lg font-bold text-foreground line-clamp-2 flex-1">{name}</h3>
+            {isRegistered && (
+              <Badge variant="secondary" className="shrink-0 text-[10px] gap-1 bg-primary/10 text-primary border-primary/20">
+                <UserCheck size={10} />
+                Registered
+              </Badge>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
