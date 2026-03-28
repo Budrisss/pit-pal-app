@@ -265,6 +265,7 @@ const SessionsEditor = ({
       ))}
     </div>
   );
+};
 
 const EventOrganizer = () => {
   const navigate = useNavigate();
