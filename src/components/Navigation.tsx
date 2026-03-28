@@ -43,7 +43,10 @@ const Navigation = () => {
         ))}
         {isOrganizer && (
           <button
-            onClick={toggleMode}
+            onClick={() => {
+              toggleMode();
+              navigate(isOrganizerMode ? "/dashboard" : "/event-organizer");
+            }}
             className="flex flex-col items-center p-2 sm:p-3 rounded-none transition-all duration-300 min-w-0 text-muted-foreground hover:text-f1-red hover:bg-f1-light-gray"
           >
             <Repeat size={18} className="sm:size-5" />

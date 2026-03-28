@@ -58,7 +58,10 @@ const DesktopNavigation = () => {
           ))}
           {isOrganizer && (
             <button
-              onClick={toggleMode}
+              onClick={() => {
+                toggleMode();
+                navigate(isOrganizerMode ? "/dashboard" : "/event-organizer");
+              }}
               className="flex items-center gap-2 px-6 py-3 transition-all duration-300 transform -skew-x-6 border-2 border-transparent uppercase tracking-wide font-bold text-sm text-f1-silver hover:text-white hover:bg-primary hover:border-f1-silver"
             >
               <Repeat size={18} className="transform skew-x-6" />
