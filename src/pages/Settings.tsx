@@ -1,10 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Settings as SettingsIcon, User, Bell, Car, Database, Camera, LogOut } from "lucide-react";
+import { Settings as SettingsIcon, User, Bell, Car, Database, Camera, LogOut, MapPin } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
 import RacingGallery from "@/components/RacingGallery";
 
@@ -12,6 +16,55 @@ const Settings = () => {
   const [showGallery, setShowGallery] = useState(false);
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [zipCode, setZipCode] = useState('');
+  const [savedZip, setSavedZip] = useState('');
+  const [savingZip, setSavingZip] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchLocation = async () => {
+      const { data } = await supabase
+        .from('user_locations')
+        .select('zip_code')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (data) {
+        setZipCode(data.zip_code);
+        setSavedZip(data.zip_code);
+      }
+    };
+    fetchLocation();
+  }, [user]);
+
+  const handleSaveZip = async () => {
+    if (!user || !/^\d{5}$/.test(zipCode)) {
+      toast({ title: "Invalid ZIP", description: "Enter a valid 5-digit US ZIP code.", variant: "destructive" });
+      return;
+    }
+    setSavingZip(true);
+    try {
+      const { data: geo, error: geoErr } = await supabase.functions.invoke('geocode-zip', {
+        body: { zip_code: zipCode },
+      });
+      if (geoErr || !geo?.success) throw new Error(geo?.error || 'Failed to geocode ZIP');
+
+      const { error } = await supabase.from('user_locations').upsert({
+        user_id: user.id,
+        zip_code: zipCode,
+        latitude: geo.latitude,
+        longitude: geo.longitude,
+      }, { onConflict: 'user_id' });
+
+      if (error) throw error;
+      setSavedZip(zipCode);
+      toast({ title: "Location saved!", description: `Set to ${geo.city}, ${geo.state} (${zipCode})` });
+    } catch (err: any) {
+      toast({ title: "Failed to save", description: err.message, variant: "destructive" });
+    } finally {
+      setSavingZip(false);
+    }
+  };
 
   const handleLogout = async () => {
     await signOut();
@@ -52,6 +105,36 @@ const Settings = () => {
               <p className="text-foreground font-medium">2018 Mazda MX-5 Miata</p>
             </div>
             <Button variant="outline" size="sm">Edit Profile</Button>
+          </CardContent>
+        </Card>
+
+        {/* Location */}
+        <Card className="bg-gradient-dark border-border/50">
+          <CardHeader>
+            <CardTitle className="text-lg text-foreground flex items-center gap-2">
+              <MapPin className="text-primary" size={20} />
+              Your Location
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground text-sm">Set your ZIP code to discover local events within 100 miles.</p>
+            <div className="flex gap-2">
+              <Input
+                value={zipCode}
+                onChange={e => setZipCode(e.target.value.replace(/\D/g, '').slice(0, 5))}
+                placeholder="Enter ZIP code"
+                maxLength={5}
+                className="flex-1"
+              />
+              <Button
+                size="sm"
+                onClick={handleSaveZip}
+                disabled={savingZip || zipCode === savedZip}
+              >
+                {savingZip ? '...' : 'Save'}
+              </Button>
+            </div>
+            {savedZip && <p className="text-xs text-muted-foreground">Current: {savedZip}</p>}
           </CardContent>
         </Card>
 

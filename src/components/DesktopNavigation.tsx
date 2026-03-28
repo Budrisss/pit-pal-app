@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Settings, Calendar, CheckSquare, Car, Home, Plus, LogOut } from "lucide-react";
+import { Settings, Calendar, Car, Home, MapPin, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -16,8 +16,8 @@ const DesktopNavigation = () => {
   const navItems = [
     { icon: Home, label: "Home", path: "/dashboard" },
     { icon: Car, label: "Garage", path: "/garage" },
+    { icon: MapPin, label: "Local Events", path: "/local-events" },
     { icon: Calendar, label: "Events", path: "/events" },
-    { icon: Plus, label: "Organizer", path: "/event-organizer" },
     { icon: Settings, label: "Settings", path: "/settings" },
   ];
 

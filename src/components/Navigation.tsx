@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Settings, Calendar, CheckSquare, Car, Home, Plus } from "lucide-react";
+import { Settings, Calendar, Car, Home, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const Navigation = () => {
@@ -8,8 +8,8 @@ const Navigation = () => {
   const navItems = [
     { icon: Home, label: "Home", path: "/dashboard" },
     { icon: Car, label: "Garage", path: "/garage" },
+    { icon: MapPin, label: "Local", path: "/local-events" },
     { icon: Calendar, label: "Events", path: "/events" },
-    { icon: Plus, label: "Organizer", path: "/event-organizer" },
     { icon: Settings, label: "Settings", path: "/settings" },
   ];
 
