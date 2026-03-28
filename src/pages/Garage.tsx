@@ -16,7 +16,7 @@ import { useCars } from "@/contexts/CarsContext";
 const Garage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { cars, loading, addCar, updateCar, uploadCarImage, deleteCar } = useCars();
+  const { cars, loading, addCar, updateCar, uploadCarImage, removeCarImage, deleteCar } = useCars();
   const [isAddCarOpen, setIsAddCarOpen] = useState(false);
   const [editingCar, setEditingCar] = useState<string | null>(null);
   const [newCar, setNewCar] = useState({
