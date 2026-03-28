@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus, Users, Calendar, MapPin, Pencil, Trash2, Tag, X, ClipboardList, Mail, Phone, MoreVertical, DollarSign, Building2, Clock, GripVertical } from "lucide-react";
+import { Plus, Users, Calendar, MapPin, Pencil, Trash2, Tag, X, ClipboardList, Mail, Phone, MoreVertical, DollarSign, Building2, Clock, GripVertical, Eye, Car, ExternalLink, UserCheck } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -292,6 +292,11 @@ const EventOrganizer = () => {
   const [participants, setParticipants] = useState<EventRegistration[]>([]);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
 
+  // Preview state
+  const [previewEvent, setPreviewEvent] = useState<PublicEvent | null>(null);
+  const [previewSessions, setPreviewSessions] = useState<EventSession[]>([]);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+
   const [newEvent, setNewEvent] = useState({
     name: '', date: '', time: '', description: '', track_name: '',
     address: '', city: '', state: '', zip_code: '', entry_fee: '',
@@ -539,6 +544,24 @@ const EventOrganizer = () => {
       duration_minutes: s.duration_minutes, sort_order: s.sort_order,
     })));
     setShowEditDialog(true);
+  };
+
+  const openPreview = async (event: PublicEvent) => {
+    setPreviewEvent(event);
+    setLoadingPreview(true);
+    const [{ data: regData }, { data: sessData }] = await Promise.all([
+      supabase.from('registration_types').select('*').eq('event_id', event.id),
+      supabase.from('public_event_sessions').select('*').eq('event_id', event.id).order('sort_order'),
+    ]);
+    if (regData) {
+      setPreviewEvent(prev => prev ? { ...prev, registration_types: regData.map((rt: any) => ({ id: rt.id, name: rt.name, description: rt.description || '', price: rt.price || '', max_spots: rt.max_spots })) } : prev);
+    }
+    setPreviewSessions((sessData || []).map((s: any) => ({
+      id: s.id, registration_type_id: s.registration_type_id,
+      name: s.name, start_time: s.start_time || '',
+      duration_minutes: s.duration_minutes, sort_order: s.sort_order,
+    })));
+    setLoadingPreview(false);
   };
 
   const openParticipantList = async (event: PublicEvent) => {
@@ -814,6 +837,9 @@ const EventOrganizer = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openPreview(event)}>
+                            <Eye size={14} className="mr-2" /> Preview Event
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => openParticipantList(event)}>
                             <ClipboardList size={14} className="mr-2" /> View Participants
                           </DropdownMenuItem>
@@ -927,6 +953,129 @@ const EventOrganizer = () => {
               <p className="text-xs text-muted-foreground text-center pt-2">
                 Total: {participants.length} participant{participants.length !== 1 ? 's' : ''}
               </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Preview Event Dialog */}
+      <Dialog open={!!previewEvent} onOpenChange={(open) => { if (!open) { setPreviewEvent(null); setPreviewSessions([]); } }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye size={18} /> Event Preview
+            </DialogTitle>
+          </DialogHeader>
+          {loadingPreview ? (
+            <div className="flex justify-center py-8">
+              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : previewEvent && (
+            <div className="mt-2">
+              <p className="text-xs text-muted-foreground mb-3 italic">This is how your event appears to users on the Local Events page.</p>
+              <Card className="bg-card/80 backdrop-blur-md border-border h-full">
+                <CardContent className="p-5 flex flex-col h-full">
+                  <div className="flex items-start justify-between mb-3">
+                    <h3 className="font-bold text-base leading-tight">{previewEvent.name}</h3>
+                    <Badge variant="secondary" className="text-xs shrink-0 ml-2">
+                      {previewEvent.status}
+                    </Badge>
+                  </div>
+
+                  {previewEvent.track_name && (
+                    <p className="text-sm text-primary font-medium mb-1">{previewEvent.track_name}</p>
+                  )}
+
+                  <div className="space-y-1.5 text-sm text-muted-foreground mb-3">
+                    <div className="flex items-center gap-2">
+                      <Calendar size={14} />
+                      <span>{new Date(previewEvent.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                      {previewEvent.time && <span>at {previewEvent.time}</span>}
+                    </div>
+                    {(previewEvent.city || previewEvent.state) && (
+                      <div className="flex items-center gap-2">
+                        <MapPin size={14} />
+                        <span>{[previewEvent.city, previewEvent.state].filter(Boolean).join(', ')}</span>
+                      </div>
+                    )}
+                    {previewEvent.entry_fee && (
+                      <div className="flex items-center gap-2">
+                        <DollarSign size={14} />
+                        <span>{previewEvent.entry_fee}</span>
+                      </div>
+                    )}
+                    {previewEvent.car_classes && (
+                      <div className="flex items-center gap-2">
+                        <Car size={14} />
+                        <span>{previewEvent.car_classes}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Registration Groups */}
+                  {previewEvent.registration_types && previewEvent.registration_types.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
+                        <Tag size={12} /> Registration Groups
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {previewEvent.registration_types.map((rt, idx) => {
+                          const count = rt.id ? (registrationCounts[rt.id] || 0) : 0;
+                          return (
+                            <Badge key={idx} variant="outline" className="text-xs font-normal">
+                              {rt.name}{rt.price ? ` · ${rt.price}` : ''}
+                              {rt.max_spots ? ` · ${count}/${rt.max_spots}` : ''}
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Sessions / Schedule */}
+                  {previewSessions.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
+                        <Clock size={12} /> Schedule
+                      </p>
+                      <div className="space-y-1">
+                        {previewSessions.map((s, idx) => {
+                          const groupName = s.registration_type_id
+                            ? previewEvent.registration_types?.find(rt => rt.id === s.registration_type_id)?.name
+                            : null;
+                          return (
+                            <div key={idx} className="flex items-center justify-between text-xs bg-muted/40 rounded px-2.5 py-1.5">
+                              <span className="font-medium">{s.name}</span>
+                              <div className="flex items-center gap-2 text-muted-foreground">
+                                {groupName && <Badge variant="outline" className="text-[10px] px-1.5 py-0">{groupName}</Badge>}
+                                {s.start_time && <span>{s.start_time}</span>}
+                                {s.duration_minutes && <span>{s.duration_minutes}min</span>}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {previewEvent.description && (
+                    <p className="text-xs text-muted-foreground mb-4">{previewEvent.description}</p>
+                  )}
+
+                  <div className="mt-auto flex gap-2">
+                    {previewEvent.registration_types && previewEvent.registration_types.length > 0 && (
+                      <Button size="sm" className="flex-1" disabled>
+                        <UserCheck size={14} className="mr-1" /> Register
+                      </Button>
+                    )}
+                    {previewEvent.registration_link && (
+                      <Button size="sm" variant="outline" className={previewEvent.registration_types?.length ? '' : 'w-full'} disabled>
+                        Info <ExternalLink size={14} className="ml-1" />
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           )}
         </DialogContent>
