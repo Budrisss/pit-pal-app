@@ -291,7 +291,8 @@ const SessionManagement = () => {
   const [showAddSession, setShowAddSession] = useState(false);
   const [announcements, setAnnouncements] = useState<{ id: string; message: string; created_at: string }[]>([]);
   const [publicEventId, setPublicEventId] = useState<string | null>(null);
-  const [myRunGroup, setMyRunGroup] = useState<string | null>(null); // stores run group NAME, not id
+  const [myRunGroup, setMyRunGroup] = useState<string | null>(null); // stores run group NAME
+  const [runGroups, setRunGroups] = useState<{ id: string; name: string }[]>([]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -520,11 +521,19 @@ const SessionManagement = () => {
 
       if (eventRow?.public_event_id) {
         // Registered event — fetch organizer sessions as source of truth
-        const { data: orgSessions } = await (supabase as any)
-          .from("public_event_sessions")
-          .select("*")
-          .eq("event_id", eventRow.public_event_id)
-          .order("sort_order", { ascending: true });
+        const [sessionsRes, regTypesRes] = await Promise.all([
+          (supabase as any)
+            .from("public_event_sessions")
+            .select("*")
+            .eq("event_id", eventRow.public_event_id)
+            .order("sort_order", { ascending: true }),
+          (supabase as any)
+            .from("registration_types")
+            .select("id, name")
+            .eq("event_id", eventRow.public_event_id)
+            .order("created_at", { ascending: true }),
+        ]);
+        const orgSessions = sessionsRes.data;
         if (orgSessions && orgSessions.length > 0) {
           const mapped: Session[] = orgSessions.map((s: any) => ({
             id: s.id,
@@ -538,6 +547,9 @@ const SessionManagement = () => {
           localStorage.setItem(`sessions-${eventId}`, JSON.stringify(mapped));
         } else {
           setSessions([]);
+        }
+        if (regTypesRes.data && regTypesRes.data.length > 0) {
+          setRunGroups(regTypesRes.data);
         }
       } else {
         // Personal event — use localStorage / hardcoded defaults
@@ -956,9 +968,14 @@ const SessionManagement = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Sessions (next up)</SelectItem>
-                      {[...new Set(sessions.map((s) => s.referenceName))].map((name) => (
-                        <SelectItem key={name} value={name}>{name}</SelectItem>
-                      ))}
+                      {(runGroups.length > 0
+                        ? runGroups.map((rg) => (
+                            <SelectItem key={rg.id} value={rg.name}>{rg.name}</SelectItem>
+                          ))
+                        : [...new Set(sessions.map((s) => s.referenceName))].map((name) => (
+                            <SelectItem key={name} value={name}>{name}</SelectItem>
+                          ))
+                      )}
                     </SelectContent>
                   </Select>
                   {myRunGroup && (
