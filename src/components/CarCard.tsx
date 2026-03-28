@@ -1,4 +1,4 @@
-import { Calendar, Settings, Star, Car } from "lucide-react";
+import { Calendar, Settings, Star, Car, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,7 @@ interface CarCardProps {
   events: number;
   setups: number;
   isDefault?: boolean;
+  onEdit?: (id: string) => void;
 }
 
 const CarCard = ({ 
@@ -31,7 +32,8 @@ const CarCard = ({
   category, 
   events, 
   setups, 
-  isDefault 
+  isDefault,
+  onEdit 
 }: CarCardProps) => {
   const getCategoryColor = () => {
     switch (category) {
@@ -59,9 +61,21 @@ const CarCard = ({
               <p className="text-xs sm:text-sm text-muted-foreground truncate">{year} {make} {model}</p>
             </div>
           </div>
-          <Badge className={`${getCategoryColor()} rounded-full px-2 sm:px-3 py-1 text-xs flex-shrink-0`}>
-            {category}
-          </Badge>
+          <div className="flex items-center gap-1.5">
+            {onEdit && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8 rounded-lg text-muted-foreground hover:text-foreground"
+                onClick={() => onEdit(id)}
+              >
+                <Pencil size={14} />
+              </Button>
+            )}
+            <Badge className={`${getCategoryColor()} rounded-full px-2 sm:px-3 py-1 text-xs flex-shrink-0`}>
+              {category}
+            </Badge>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-3 pt-2">
