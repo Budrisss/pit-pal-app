@@ -352,6 +352,7 @@ const EventOrganizer = () => {
   const [editRegTypes, setEditRegTypes] = useState<RegistrationType[]>([]);
   const [newSessions, setNewSessions] = useState<EventSession[]>([]);
   const [editSessions, setEditSessions] = useState<EventSession[]>([]);
+  const [originalEditSessionIds, setOriginalEditSessionIds] = useState<string[]>([]);
   const [registrationCounts, setRegistrationCounts] = useState<Record<string, number>>({});
   const [totalRegistrations, setTotalRegistrations] = useState(0);
 
@@ -571,8 +572,7 @@ const EventOrganizer = () => {
       if (error) throw error;
       const existingIds = (editingEvent.registration_types || []).filter(t => t.id).map(t => t.id!);
       await saveRegistrationTypes(ev.id, editRegTypes, existingIds);
-      const existingSessionIds = editSessions.filter(s => s.id).map(s => s.id!);
-      await saveSessions(ev.id, editSessions, existingSessionIds);
+      await saveSessions(ev.id, editSessions, originalEditSessionIds);
       toast({ title: "Event updated!" });
       setShowEditDialog(false);
       setEditingEvent(null);
@@ -609,11 +609,13 @@ const EventOrganizer = () => {
       id: rt.id, name: rt.name, description: rt.description || '',
       price: rt.price || '', max_spots: rt.max_spots,
     })));
-    setEditSessions((sessData || []).map((s: any) => ({
+    const mappedSessions = (sessData || []).map((s: any) => ({
       id: s.id, registration_type_id: s.registration_type_id,
       name: s.name, start_time: s.start_time || '',
       duration_minutes: s.duration_minutes, sort_order: s.sort_order,
-    })));
+    }));
+    setEditSessions(mappedSessions);
+    setOriginalEditSessionIds(mappedSessions.filter((s: EventSession) => s.id).map((s: EventSession) => s.id!));
     setShowEditDialog(true);
   };
 
