@@ -291,6 +291,7 @@ const SessionManagement = () => {
   const [showAddSession, setShowAddSession] = useState(false);
   const [announcements, setAnnouncements] = useState<{ id: string; message: string; created_at: string }[]>([]);
   const [publicEventId, setPublicEventId] = useState<string | null>(null);
+  const [myRunGroup, setMyRunGroup] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -325,7 +326,12 @@ const SessionManagement = () => {
 
   const getNextUpcomingSession = () => {
     const statedSessions = calculateSessionStates();
-    const upcomingSessions = statedSessions.filter(s => s.state === "upcoming");
+    let upcomingSessions = statedSessions.filter(s => s.state === "upcoming");
+    // If user selected a run group, only count sessions matching that group
+    if (myRunGroup) {
+      const filtered = upcomingSessions.filter(s => s.id === myRunGroup);
+      if (filtered.length > 0) upcomingSessions = filtered;
+    }
     if (upcomingSessions.length === 0) return null;
     return upcomingSessions.sort((a, b) => {
       const timeA = a.startTime.split(':').map(Number);
@@ -336,7 +342,13 @@ const SessionManagement = () => {
 
   const getActiveSessionRemainingTime = () => {
     const statedSessions = calculateSessionStates();
-    const activeSession = statedSessions.find(s => s.state === "active");
+    let activeSession: typeof statedSessions[number] | undefined = statedSessions.find(s => s.state === "active");
+    // If user selected a run group, prioritize showing that group's active state
+    if (myRunGroup) {
+      const myActive = statedSessions.find(s => s.id === myRunGroup && s.state === "active");
+      if (myActive) activeSession = myActive;
+      else if (activeSession && activeSession.id !== myRunGroup) activeSession = undefined;
+    }
     if (!activeSession) return null;
     const eventDate = parseISO(eventData.date);
     const [hours, minutes] = activeSession.startTime.split(':').map(Number);
@@ -551,6 +563,8 @@ const SessionManagement = () => {
       if (savedSettings) {
         try { setSettings(JSON.parse(savedSettings)); } catch {}
       }
+      const savedRunGroup = localStorage.getItem(`my-run-group-${eventId}`);
+      if (savedRunGroup) setMyRunGroup(savedRunGroup);
       setSessionsLoaded(true);
     };
 
@@ -914,6 +928,47 @@ const SessionManagement = () => {
                 )}
               </CardContent>
             </Card>
+
+        {/* My Run Group Selector */}
+            {sessions.length > 0 && (
+              <Card className="bg-card/60 backdrop-blur-sm border-border/50">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                    <Timer size={14} className="text-primary" />
+                    My Run Group
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Select
+                    value={myRunGroup || "all"}
+                    onValueChange={(v) => {
+                      const val = v === "all" ? null : v;
+                      setMyRunGroup(val);
+                      if (val) {
+                        localStorage.setItem(`my-run-group-${eventId}`, val);
+                      } else {
+                        localStorage.removeItem(`my-run-group-${eventId}`);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="Select your run group" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Sessions (next up)</SelectItem>
+                      {sessions.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>{s.referenceName}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {myRunGroup && (
+                    <p className="text-xs text-muted-foreground mt-1.5">
+                      Countdown tracks <span className="text-primary font-medium">{sessions.find(s => s.id === myRunGroup)?.referenceName}</span>
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             {/* Countdown to Next */}
             {countdown && !currentActiveSession && (
