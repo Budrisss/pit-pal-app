@@ -79,7 +79,7 @@ const CarCard = ({
 
         {/* Actions */}
         <div className="flex gap-2 sm:gap-3">
-          <Button variant="pulse" size="sm" className="flex-1 rounded-full text-xs sm:text-sm" onClick={() => console.log(`Events for car ${id}`)}>
+          <Button variant="outline" size="sm" className="flex-1 rounded-full border-2 hover:shadow-pulse text-xs sm:text-sm" onClick={() => console.log(`Events for car ${id}`)}>
             <Calendar size={14} className="sm:size-4" />
             <span className="ml-1 sm:ml-2">Events</span>
           </Button>
