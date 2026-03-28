@@ -91,7 +91,7 @@ const Garage = () => {
             </DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4">
+          <div className="space-y-4 mt-2">
             <div>
               <Label htmlFor="name">Car Name *</Label>
               <Input
