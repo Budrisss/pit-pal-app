@@ -61,7 +61,7 @@ const Landing = () => {
       >
         <div className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4">
           <Link to="/" className="flex items-center">
-            <img src={tracksideLogo} alt="TRACK SIDE ops" className="h-20 sm:h-24 w-auto invert dark:invert-0" />
+            <img src={tracksideLogo} alt="TRACK SIDE ops" className="h-14 sm:h-16 w-auto invert dark:invert-0" />
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
             <Button variant="ghost" size="sm" className="sm:size-default" asChild>
