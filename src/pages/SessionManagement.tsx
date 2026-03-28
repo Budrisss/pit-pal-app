@@ -30,6 +30,7 @@ interface Session {
   startTime: string;
   notes?: string;
   state?: "upcoming" | "active" | "completed";
+  registrationTypeId?: string | null;
 }
 
 interface EventData {
