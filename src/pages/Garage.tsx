@@ -92,7 +92,7 @@ const Garage = () => {
           </DialogHeader>
           
           <div className="space-y-4 mt-2">
-            <div>
+            <div className="space-y-1.5">
               <Label htmlFor="name">Car Name *</Label>
               <Input
                 id="name"
@@ -103,7 +103,7 @@ const Garage = () => {
             </div>
 
             <div className="grid grid-cols-3 gap-3">
-              <div>
+              <div className="space-y-1.5">
                 <Label htmlFor="year">Year</Label>
                 <Input
                   id="year"
@@ -112,7 +112,7 @@ const Garage = () => {
                   placeholder="2024"
                 />
               </div>
-              <div>
+              <div className="space-y-1.5">
                 <Label htmlFor="make">Make *</Label>
                 <Input
                   id="make"
@@ -121,7 +121,7 @@ const Garage = () => {
                   placeholder="BMW"
                 />
               </div>
-              <div>
+              <div className="space-y-1.5">
                 <Label htmlFor="model">Model *</Label>
                 <Input
                   id="model"
@@ -132,7 +132,7 @@ const Garage = () => {
               </div>
             </div>
             
-            <div>
+            <div className="space-y-1.5">
               <Label htmlFor="category">Category</Label>
               <Select value={newCar.category} onValueChange={(value) => setNewCar({...newCar, category: value})}>
                 <SelectTrigger>
