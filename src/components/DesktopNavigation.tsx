@@ -1,12 +1,25 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Settings, Calendar, Car, Home, MapPin, LogOut } from "lucide-react";
+import { Settings, Calendar, Car, Home, MapPin, LogOut, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const DesktopNavigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
+  const [isOrganizer, setIsOrganizer] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('organizer_profiles')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+      .then(({ data }) => setIsOrganizer(!!data));
+  }, [user]);
 
   const handleLogout = async () => {
     await signOut();
@@ -18,6 +31,7 @@ const DesktopNavigation = () => {
     { icon: Car, label: "Garage", path: "/garage" },
     { icon: MapPin, label: "Local Events", path: "/local-events" },
     { icon: Calendar, label: "Events", path: "/events" },
+    ...(isOrganizer ? [{ icon: ClipboardList, label: "Organizer", path: "/event-organizer" }] : []),
     { icon: Settings, label: "Settings", path: "/settings" },
   ];
 
