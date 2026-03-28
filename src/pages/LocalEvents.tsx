@@ -34,6 +34,18 @@ interface RegistrationType {
   description: string;
   price: string;
   max_spots: number | null;
+  registered_count?: number;
+}
+
+interface EventRegistration {
+  id: string;
+  registration_type_id: string;
+  user_id: string;
+  user_name: string;
+  user_email: string;
+  user_phone: string | null;
+  notes: string | null;
+  created_at: string;
 }
 
 interface PublicEvent {
