@@ -235,6 +235,7 @@ const PublicEventPreview = () => {
         address: [event.track_name, event.address, event.city, event.state].filter(Boolean).join(", "),
         description: event.description || null,
         status: "upcoming",
+        public_event_id: event.id,
       }).select("id").single();
 
       if (eventError) throw eventError;
