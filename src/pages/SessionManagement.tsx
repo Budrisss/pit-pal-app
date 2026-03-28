@@ -521,12 +521,31 @@ const SessionManagement = () => {
     }
   }, [eventId]);
 
-  // Fetch public_event_id for this event and set up realtime subscriptions
+  // Fetch public_event_id for this event, load organizer sessions, and set up realtime subscriptions
   useEffect(() => {
     if (!eventId) return;
 
+    const fetchOrganizerSessions = async (peId: string) => {
+      const { data: orgSessions } = await (supabase as any)
+        .from("public_event_sessions")
+        .select("*")
+        .eq("event_id", peId)
+        .order("sort_order", { ascending: true });
+      if (orgSessions && orgSessions.length > 0) {
+        const mapped: Session[] = orgSessions.map((s: any) => ({
+          id: s.id,
+          type: "practice" as const,
+          duration: s.duration_minutes || 20,
+          referenceName: s.name,
+          startTime: s.start_time || "00:00",
+          state: "upcoming" as const,
+        }));
+        setSessions(mapped);
+        localStorage.setItem(`sessions-${eventId}`, JSON.stringify(mapped));
+      }
+    };
+
     const setupRealtime = async () => {
-      // Check if this is a registered event
       const { data: eventRow } = await (supabase as any)
         .from("events")
         .select("public_event_id")
@@ -536,6 +555,9 @@ const SessionManagement = () => {
       const peId = eventRow?.public_event_id;
       if (!peId) return;
       setPublicEventId(peId);
+
+      // Load organizer sessions as the source of truth
+      await fetchOrganizerSessions(peId);
 
       // Fetch initial announcements
       const { data: annData } = await (supabase as any)
@@ -551,26 +573,7 @@ const SessionManagement = () => {
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "public_event_sessions", filter: `event_id=eq.${peId}` },
-          async () => {
-            // Re-fetch organizer sessions and map to local format
-            const { data: orgSessions } = await (supabase as any)
-              .from("public_event_sessions")
-              .select("*")
-              .eq("event_id", peId)
-              .order("sort_order", { ascending: true });
-            if (orgSessions) {
-              const mapped: Session[] = orgSessions.map((s: any, i: number) => ({
-                id: s.id,
-                type: "practice" as const,
-                duration: s.duration_minutes || 20,
-                referenceName: s.name,
-                startTime: s.start_time || "00:00",
-                state: "upcoming" as const,
-              }));
-              setSessions(mapped);
-              localStorage.setItem(`sessions-${eventId}`, JSON.stringify(mapped));
-            }
-          }
+          () => fetchOrganizerSessions(peId)
         )
         .subscribe();
 
