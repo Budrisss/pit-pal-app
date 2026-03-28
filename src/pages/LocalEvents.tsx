@@ -354,12 +354,50 @@ const LocalEvents = () => {
         notes: regForm.notes || null,
       });
       if (error) throw error;
-      toast({ title: "Registered!", description: "You're signed up for this event." });
+
+      // Create a personal event in the user's events table
+      const { data: newEvent, error: eventError } = await supabase.from('events').insert({
+        user_id: user.id,
+        name: registeringEvent.name,
+        date: registeringEvent.date,
+        time: registeringEvent.time || null,
+        address: [registeringEvent.track_name, registeringEvent.address, registeringEvent.city, registeringEvent.state].filter(Boolean).join(', '),
+        description: registeringEvent.description || null,
+        status: 'upcoming',
+      }).select('id').single();
+
+      if (eventError) throw eventError;
+
+      // Copy organizer's sessions into the user's personal sessions
+      if (newEvent) {
+        const { data: orgSessions } = await supabase
+          .from('public_event_sessions')
+          .select('*')
+          .eq('event_id', registeringEvent.id)
+          .order('sort_order');
+
+        if (orgSessions && orgSessions.length > 0) {
+          const sessionInserts = orgSessions.map((s: any) => ({
+            user_id: user.id,
+            event_id: newEvent.id,
+            name: s.name,
+            type: 'practice',
+            start_time: s.start_time || null,
+            duration: s.duration_minutes || null,
+            notes: null,
+            state: 'upcoming',
+          }));
+          await supabase.from('sessions').insert(sessionInserts);
+        }
+      }
+
+      toast({ title: "Registered!", description: "Event added to your schedule." });
       setRegisteringEvent(null);
       setSelectedRegTypeId('');
       setRegForm({ name: '', email: '', phone: '', notes: '' });
-      fetchUserRegistrations();
-      fetchRegistrationCounts(events.map(ev => ev.id));
+
+      // Navigate to the user's events page
+      navigate('/events');
     } catch (err: any) {
       toast({ title: "Registration failed", description: err.message, variant: "destructive" });
     } finally {
