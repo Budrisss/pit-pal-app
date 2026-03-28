@@ -49,6 +49,7 @@ const App = () => (
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 <Route path="/session-management/:eventId" element={<ProtectedRoute><SessionManagement /></ProtectedRoute>} />
                 <Route path="/local-events" element={<ProtectedRoute><LocalEvents /></ProtectedRoute>} />
+                <Route path="/public-event/:id" element={<ProtectedRoute><PublicEventPreview /></ProtectedRoute>} />
                 <Route path="/organizer-signup" element={<ProtectedRoute><OrganizerSignup /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

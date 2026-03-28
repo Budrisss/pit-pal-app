@@ -546,22 +546,8 @@ const EventOrganizer = () => {
     setShowEditDialog(true);
   };
 
-  const openPreview = async (event: PublicEvent) => {
-    setPreviewEvent(event);
-    setLoadingPreview(true);
-    const [{ data: regData }, { data: sessData }] = await Promise.all([
-      supabase.from('registration_types').select('*').eq('event_id', event.id),
-      supabase.from('public_event_sessions').select('*').eq('event_id', event.id).order('sort_order'),
-    ]);
-    if (regData) {
-      setPreviewEvent(prev => prev ? { ...prev, registration_types: regData.map((rt: any) => ({ id: rt.id, name: rt.name, description: rt.description || '', price: rt.price || '', max_spots: rt.max_spots })) } : prev);
-    }
-    setPreviewSessions((sessData || []).map((s: any) => ({
-      id: s.id, registration_type_id: s.registration_type_id,
-      name: s.name, start_time: s.start_time || '',
-      duration_minutes: s.duration_minutes, sort_order: s.sort_order,
-    })));
-    setLoadingPreview(false);
+  const openPreview = (event: PublicEvent) => {
+    navigate(`/public-event/${event.id}`);
   };
 
   const openParticipantList = async (event: PublicEvent) => {
