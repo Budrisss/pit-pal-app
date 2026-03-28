@@ -495,30 +495,66 @@ const SessionManagement = () => {
     }
   }, [currentTime, sessionsLoaded]);
 
-  // Load from localStorage
+  // Load sessions — for registered events, always fetch from organizer's public_event_sessions
+  // For personal events, load from localStorage with hardcoded defaults as fallback
   useEffect(() => {
-    const savedSessions = localStorage.getItem(`sessions-${eventId}`);
-    const savedNotes = localStorage.getItem(`session-notes-${eventId}`);
-    const savedSettings = localStorage.getItem(`session-settings-${eventId}`);
-    let loadedSessions = defaultSessions;
-    if (savedSessions) {
-      try { loadedSessions = JSON.parse(savedSessions); } catch { loadedSessions = defaultSessions; }
-    }
-    if (savedNotes) {
-      try {
-        const notesData = JSON.parse(savedNotes);
-        loadedSessions = loadedSessions.map(s => ({ ...s, notes: notesData[s.id] || s.notes || "" }));
-      } catch {}
-    }
-    if (savedSettings) {
-      try { setSettings(JSON.parse(savedSettings)); } catch {}
-    }
-    setSessions(loadedSessions);
-    setSessionsLoaded(true);
-    // Persist to localStorage so sessions survive navigation
-    if (!savedSessions && loadedSessions.length > 0) {
-      localStorage.setItem(`sessions-${eventId}`, JSON.stringify(loadedSessions));
-    }
+    const loadSessions = async () => {
+      // Check if this is a registered event first
+      const { data: eventRow } = await (supabase as any)
+        .from("events")
+        .select("public_event_id")
+        .eq("id", eventId)
+        .maybeSingle();
+
+      if (eventRow?.public_event_id) {
+        // Registered event — fetch organizer sessions as source of truth
+        const { data: orgSessions } = await (supabase as any)
+          .from("public_event_sessions")
+          .select("*")
+          .eq("event_id", eventRow.public_event_id)
+          .order("sort_order", { ascending: true });
+        if (orgSessions && orgSessions.length > 0) {
+          const mapped: Session[] = orgSessions.map((s: any) => ({
+            id: s.id,
+            type: "practice" as const,
+            duration: s.duration_minutes || 20,
+            referenceName: s.name,
+            startTime: s.start_time || "00:00",
+            state: "upcoming" as const,
+          }));
+          setSessions(mapped);
+          localStorage.setItem(`sessions-${eventId}`, JSON.stringify(mapped));
+        } else {
+          setSessions([]);
+        }
+      } else {
+        // Personal event — use localStorage / hardcoded defaults
+        const savedSessions = localStorage.getItem(`sessions-${eventId}`);
+        let loadedSessions = defaultSessions;
+        if (savedSessions) {
+          try { loadedSessions = JSON.parse(savedSessions); } catch { loadedSessions = defaultSessions; }
+        }
+        const savedNotes = localStorage.getItem(`session-notes-${eventId}`);
+        if (savedNotes) {
+          try {
+            const notesData = JSON.parse(savedNotes);
+            loadedSessions = loadedSessions.map(s => ({ ...s, notes: notesData[s.id] || s.notes || "" }));
+          } catch {}
+        }
+        setSessions(loadedSessions);
+        if (!savedSessions && loadedSessions.length > 0) {
+          localStorage.setItem(`sessions-${eventId}`, JSON.stringify(loadedSessions));
+        }
+      }
+
+      const savedSettings = localStorage.getItem(`session-settings-${eventId}`);
+      if (savedSettings) {
+        try { setSettings(JSON.parse(savedSettings)); } catch {}
+      }
+      setSessionsLoaded(true);
+    };
+
+    loadSessions();
   }, [eventId]);
 
   // Fetch public_event_id for this event, load organizer sessions, and set up realtime subscriptions
@@ -555,9 +591,6 @@ const SessionManagement = () => {
       const peId = eventRow?.public_event_id;
       if (!peId) return;
       setPublicEventId(peId);
-
-      // Load organizer sessions as the source of truth
-      await fetchOrganizerSessions(peId);
 
       // Fetch initial announcements
       const { data: annData } = await (supabase as any)
