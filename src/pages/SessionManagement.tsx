@@ -327,9 +327,9 @@ const SessionManagement = () => {
   const getNextUpcomingSession = () => {
     const statedSessions = calculateSessionStates();
     let upcomingSessions = statedSessions.filter(s => s.state === "upcoming");
-    // If user selected a run group, only count sessions matching that group
+    // If user selected a run group, only count sessions matching that group name
     if (myRunGroup) {
-      const filtered = upcomingSessions.filter(s => s.id === myRunGroup);
+      const filtered = upcomingSessions.filter(s => s.referenceName === myRunGroup);
       if (filtered.length > 0) upcomingSessions = filtered;
     }
     if (upcomingSessions.length === 0) return null;
