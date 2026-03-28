@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Clock, Calendar, Settings, Plus, Trash2, GripVertical, StickyNote, Timer, AlertCircle, Cloud, Thermometer, Eye, Wind } from "lucide-react";
+import { ArrowLeft, Clock, Calendar, Settings, Plus, Trash2, GripVertical, StickyNote, Timer, AlertCircle, Cloud, Thermometer, Eye, Wind, Play, CheckCircle2, MoreVertical } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -12,33 +12,32 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useEvents } from "@/contexts/EventsContext";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import SessionTireDataCard from "@/components/SessionTireDataCard";
-
+import Navigation from "@/components/Navigation";
+import DesktopNavigation from "@/components/DesktopNavigation";
 
 interface Session {
   id: string;
   type: "practice" | "qualifying" | "race";
-  duration: number; // in minutes
+  duration: number;
   referenceName: string;
-  startTime: string; // Format: "HH:MM"
+  startTime: string;
   notes?: string;
-  
   state?: "upcoming" | "active" | "completed";
 }
-
 
 interface EventData {
   id: string;
   name: string;
   track: string;
-  date: string; // ISO date string
-  time: string; // HH:MM format
+  date: string;
+  time: string;
   car: string;
   address?: string;
 }
@@ -54,17 +53,17 @@ interface WeatherData {
   warnings: string[];
 }
 
-interface Settings {
+interface SettingsData {
   bufferHours: number;
   bufferMinutes: number;
 }
 
-// Sortable Session Item Component for Time-Based System
-const SortableSessionItem = ({ session, totalSessions, onDelete, onMarkComplete, isSameDayEvent }: {
+// Sortable Session Item
+const SortableSessionItem = ({ session, onDelete, onMarkComplete, onEditNote, isSameDayEvent }: {
   session: Session;
-  totalSessions: number;
   onDelete: (id: string) => void;
   onMarkComplete: (id: string) => void;
+  onEditNote: (id: string) => void;
   isSameDayEvent: boolean;
 }) => {
   const {
@@ -80,29 +79,29 @@ const SortableSessionItem = ({ session, totalSessions, onDelete, onMarkComplete,
     transition,
   };
 
-  const getStateColor = () => {
+  const getBorderColor = () => {
     switch (session.state) {
-      case "active": return "border-green-500 bg-green-500/10";
-      case "completed": return "border-red-500 bg-red-500/10";
-      case "upcoming": return "border-blue-500 bg-blue-500/10";
-      default: return "border-border bg-background/50";
+      case "active": return "border-l-green-500";
+      case "completed": return "border-l-muted-foreground/40";
+      case "upcoming": return "border-l-primary";
+      default: return "border-l-border";
     }
   };
 
-  const getStateBadge = () => {
+  const getStateDot = () => {
     switch (session.state) {
-      case "active": return <Badge className="bg-green-500 text-white">Active</Badge>;
-      case "completed": return <Badge className="bg-red-500 text-white">Completed</Badge>;
-      case "upcoming": return <Badge className="bg-blue-500 text-white">Upcoming</Badge>;
-      default: return <Badge variant="outline">Unknown</Badge>;
+      case "active": return "bg-green-500 animate-pulse";
+      case "completed": return "bg-muted-foreground/40";
+      case "upcoming": return "bg-primary";
+      default: return "bg-border";
     }
   };
 
   return (
-    <div 
+    <div
       ref={setNodeRef}
       style={style}
-      className={`p-3 rounded-lg border ${getStateColor()}`}
+      className={`p-3 rounded-lg border border-border/50 bg-card/40 backdrop-blur-sm border-l-4 ${getBorderColor()} ${session.state === "completed" ? "opacity-60" : ""}`}
     >
       <div className="flex items-center gap-3">
         <div
@@ -110,44 +109,68 @@ const SortableSessionItem = ({ session, totalSessions, onDelete, onMarkComplete,
           {...listeners}
           className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
         >
-          <GripVertical size={16} />
+          <GripVertical size={14} />
         </div>
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            {getStateBadge()}
-            <Badge variant="outline" className="capitalize">
+
+        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${getStateDot()}`} />
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className="font-semibold text-sm text-foreground truncate">{session.referenceName}</span>
+            <Badge variant="outline" className="capitalize text-[10px] px-1.5 py-0">
               {session.type}
             </Badge>
-            <span className="text-sm text-muted-foreground">
-              {session.duration} min
-            </span>
-            <span className="text-sm font-medium text-foreground">
-              @ {session.startTime}
-            </span>
           </div>
-          <p className="font-medium text-foreground">
-            {session.referenceName}
-          </p>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span>{session.startTime}</span>
+            <span className="text-border">•</span>
+            <span>{session.duration} min</span>
+            {session.notes && (
+              <>
+                <span className="text-border">•</span>
+                <StickyNote size={10} className="text-racing-orange" />
+              </>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          {isSameDayEvent && session.state !== "completed" && (
+
+        <div className="flex items-center gap-1">
+          {isSameDayEvent && session.state === "active" && (
             <Button
-              variant="outline"
-              size="sm"
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-green-500 hover:bg-green-500/10"
               onClick={() => onMarkComplete(session.id)}
-              className="text-green-600 border-green-600 hover:bg-green-50"
             >
-              Mark Complete
+              <CheckCircle2 size={14} />
             </Button>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onDelete(session.id)}
-            className="text-destructive hover:bg-destructive/10"
-          >
-            <Trash2 size={16} />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-7 w-7">
+                <MoreVertical size={14} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onEditNote(session.id)}>
+                <StickyNote size={14} className="mr-2" />
+                {session.notes ? "Edit Notes" : "Add Notes"}
+              </DropdownMenuItem>
+              {isSameDayEvent && session.state !== "completed" && (
+                <DropdownMenuItem onClick={() => onMarkComplete(session.id)}>
+                  <CheckCircle2 size={14} className="mr-2" />
+                  Mark Complete
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() => onDelete(session.id)}
+              >
+                <Trash2 size={14} className="mr-2" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </div>
@@ -160,13 +183,11 @@ const SessionManagement = () => {
   const { getEventById } = useEvents();
   const { toast } = useToast();
 
-  // Generate sessions based on event type
   const getEventSessions = (eventId: string): { sessions: Session[], eventData: EventData } => {
     const today = new Date();
-    const todayISOString = today.toISOString().split('T')[0]; // YYYY-MM-DD format
-    
+    const todayISOString = today.toISOString().split('T')[0];
+
     if (eventId === "test-event") {
-      // Test event starting at 7pm today with 10-minute sessions
       return {
         sessions: [
           { id: "1", type: "practice", duration: 10, referenceName: "Evening Practice 1", startTime: "19:00", state: "upcoming" },
@@ -186,25 +207,13 @@ const SessionManagement = () => {
         }
       };
     } else {
-      // Get event from context
       const currentEvent = getEventById(eventId || "");
-      
+
       if (currentEvent) {
         const eventDate = new Date(currentEvent.eventDate);
         const isSameDayEvent = today.toDateString() === eventDate.toDateString();
-        
-        console.log('SessionManagement: Event found', {
-          eventId,
-          eventName: currentEvent.name,
-          eventDate: eventDate.toDateString(),
-          today: today.toDateString(),
-          isSameDayEvent,
-          schedule: currentEvent.schedule
-        });
-        
+
         if (isSameDayEvent && (!currentEvent.schedule || currentEvent.schedule.length === 0)) {
-          // Same-day events with empty schedule start with empty sessions for manual creation
-          console.log('Same-day event with empty schedule - starting with no sessions');
           return {
             sessions: [],
             eventData: {
@@ -218,8 +227,7 @@ const SessionManagement = () => {
             }
           };
         }
-        
-        // Use event data from context
+
         return {
           sessions: [
             { id: "1", type: "practice", duration: 20, referenceName: "Morning Warm-up", startTime: "08:00", state: "upcoming" },
@@ -239,8 +247,7 @@ const SessionManagement = () => {
           }
         };
       }
-      
-      // Fallback for unknown events
+
       return {
         sessions: [
           { id: "1", type: "practice", duration: 20, referenceName: "Morning Warm-up", startTime: "08:00", state: "upcoming" },
@@ -264,87 +271,60 @@ const SessionManagement = () => {
 
   const { sessions: defaultSessions, eventData } = getEventSessions(eventId || "");
 
-  // Core state for time-based system - initialize with empty array to prevent race condition
   const [sessions, setSessions] = useState<Session[]>([]);
   const [sessionsLoaded, setSessionsLoaded] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [settings, setSettings] = useState<Settings>({ bufferHours: 4, bufferMinutes: 0 });
+  const [settings, setSettings] = useState<SettingsData>({ bufferHours: 4, bufferMinutes: 0 });
   const [showSettings, setShowSettings] = useState(false);
   const [showNotePrompt, setShowNotePrompt] = useState(false);
   const [completedSessionId, setCompletedSessionId] = useState<string | null>(null);
   const [noteInput, setNoteInput] = useState("");
   const [eventState, setEventState] = useState<"pre-event" | "active" | "post-event">("pre-event");
-  
-  // Notes editing state
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editNoteText, setEditNoteText] = useState("");
-  
-  // Weather state
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
   const [weatherError, setWeatherError] = useState<string | null>(null);
-  
-  // New session form state
   const [newSessionType, setNewSessionType] = useState<"practice" | "qualifying" | "race">("practice");
   const [newSessionDuration, setNewSessionDuration] = useState("20");
   const [newSessionTime, setNewSessionTime] = useState("13:00");
+  const [showAddSession, setShowAddSession] = useState(false);
 
-  // Drag and drop sensors
   const sensors = useSensors(
     useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  // Real-time session state calculator
   const calculateSessionStates = () => {
     const now = currentTime;
     const eventDate = parseISO(eventData.date);
     const today = new Date();
     const isSameDayEvent = today.toDateString() === eventDate.toDateString();
-    
+
     return sessions.map(session => {
       const [hours, minutes] = session.startTime.split(':').map(Number);
       const sessionStart = new Date(eventDate);
       sessionStart.setHours(hours, minutes, 0, 0);
       const sessionEnd = addMinutes(sessionStart, session.duration);
 
-      // For same-day events, mark sessions as completed when they end
-      if (isSameDayEvent) {
-        // If the session was already manually marked as completed, keep it that way
-        if (session.state === "completed") {
-          return { ...session, state: "completed" as const };
-        }
-        
-        // Auto-complete if session has ended
-        if (isAfter(now, sessionEnd)) {
-          return { ...session, state: "completed" as const };
-        } else if (isAfter(now, sessionStart) && isBefore(now, sessionEnd)) {
-          return { ...session, state: "active" as const };
-        } else {
-          return { ...session, state: "upcoming" as const };
-        }
+      if (isSameDayEvent && session.state === "completed") {
+        return { ...session, state: "completed" as const };
+      }
+
+      if (isAfter(now, sessionEnd)) {
+        return { ...session, state: "completed" as const };
+      } else if (isAfter(now, sessionStart) && isBefore(now, sessionEnd)) {
+        return { ...session, state: "active" as const };
       } else {
-        // Original logic for non-same-day events
-        if (isAfter(now, sessionEnd)) {
-          return { ...session, state: "completed" as const };
-        } else if (isAfter(now, sessionStart) && isBefore(now, sessionEnd)) {
-          return { ...session, state: "active" as const };
-        } else {
-          return { ...session, state: "upcoming" as const };
-        }
+        return { ...session, state: "upcoming" as const };
       }
     });
   };
 
-  // Get next upcoming session
   const getNextUpcomingSession = () => {
     const statedSessions = calculateSessionStates();
-    const upcomingSessions = statedSessions.filter(session => session.state === "upcoming");
+    const upcomingSessions = statedSessions.filter(s => s.state === "upcoming");
     if (upcomingSessions.length === 0) return null;
-    
-    // Sort by start time to get the next one
     return upcomingSessions.sort((a, b) => {
       const timeA = a.startTime.split(':').map(Number);
       const timeB = b.startTime.split(':').map(Number);
@@ -352,357 +332,260 @@ const SessionManagement = () => {
     })[0];
   };
 
-  // Get remaining time for active session
   const getActiveSessionRemainingTime = () => {
     const statedSessions = calculateSessionStates();
     const activeSession = statedSessions.find(s => s.state === "active");
     if (!activeSession) return null;
-
     const eventDate = parseISO(eventData.date);
     const [hours, minutes] = activeSession.startTime.split(':').map(Number);
     const sessionStart = new Date(eventDate);
     sessionStart.setHours(hours, minutes, 0, 0);
     const sessionEnd = addMinutes(sessionStart, activeSession.duration);
-
     const diffMs = differenceInMilliseconds(sessionEnd, currentTime);
     if (diffMs <= 0) return null;
-
     const mins = Math.floor(diffMs / (1000 * 60));
     const secs = Math.floor((diffMs % (1000 * 60)) / 1000);
-
     return { minutes: mins, seconds: secs, totalMs: diffMs };
   };
 
-  // Calculate countdown to next session
   const getCountdownToNext = () => {
     const nextSession = getNextUpcomingSession();
     if (!nextSession) return null;
-
     const eventDate = parseISO(eventData.date);
     const [hours, minutes] = nextSession.startTime.split(':').map(Number);
     const sessionStart = new Date(eventDate);
     sessionStart.setHours(hours, minutes, 0, 0);
-
     const diffMs = differenceInMilliseconds(sessionStart, currentTime);
     if (diffMs <= 0) return null;
-
     const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     const hrs = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
     const secs = Math.floor((diffMs % (1000 * 60)) / 1000);
-
     const bufferMs = (settings.bufferHours * 60 + settings.bufferMinutes) * 60 * 1000;
     const isInBufferZone = diffMs <= bufferMs;
-
     return { days, hours: hrs, minutes: mins, seconds: secs, isInBufferZone, totalMs: diffMs, nextSession };
   };
 
-  // Check event state
   const determineEventState = () => {
     const statedSessions = calculateSessionStates();
-    const hasActive = statedSessions.some(session => session.state === "active");
-    const hasUpcoming = statedSessions.some(session => session.state === "upcoming");
-    const allCompleted = statedSessions.every(session => session.state === "completed");
-
-    if (allCompleted) return "post-event";
-    if (hasActive || hasUpcoming) return "active";
-    return "pre-event";
+    const allCompleted = statedSessions.every(s => s.state === "completed");
+    if (allCompleted && statedSessions.length > 0) return "post-event";
+    return "active";
   };
 
-  // Format countdown display
   const formatCountdown = (countdown: ReturnType<typeof getCountdownToNext>) => {
     if (!countdown) return "No upcoming sessions";
-
     const { days, hours, minutes, seconds } = countdown;
-    
-    if (days > 0) {
-      return `${days}d ${hours}h ${minutes}m`;
-    } else if (hours > 0) {
-      return `${hours}h ${minutes}m ${seconds}s`;
-    } else {
-      return `${minutes}m ${seconds}s`;
-    }
+    if (days > 0) return `${days}d ${hours}h ${minutes}m`;
+    if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+    return `${minutes}m ${seconds}s`;
   };
 
-  // Fetch weather data
   const fetchWeatherData = async () => {
     if (!eventData.address) {
-      setWeatherError("Weather not available - no address provided");
+      setWeatherError("No address provided");
       return;
     }
-
     setWeatherLoading(true);
     setWeatherError(null);
-
     try {
       const { data, error } = await supabase.functions.invoke('get-weather', {
         body: { address: eventData.address }
       });
-
-      if (error) throw error;
+      if (error) {
+        // Graceful fallback — don't crash
+        const msg = typeof error === 'object' && error.message ? error.message : String(error);
+        if (msg.includes('not configured') || msg.includes('API key')) {
+          setWeatherError("Weather unavailable");
+        } else {
+          setWeatherError("Weather unavailable");
+        }
+        return;
+      }
       setWeatherData(data);
-    } catch (error) {
-      console.error('Weather fetch error:', error);
-      setWeatherError('Failed to fetch weather data');
+    } catch {
+      setWeatherError("Weather unavailable");
     } finally {
       setWeatherLoading(false);
     }
   };
 
-  // Setup data save handler
   const handleSaveSetupData = async (sessionId: string, data: any) => {
     try {
       const { data: userData, error: userError } = await supabase.auth.getUser();
       if (userError || !userData.user) {
-        toast({
-          title: "Authentication required",
-          description: "Please log in to save setup data",
-          variant: "destructive"
-        });
+        toast({ title: "Authentication required", description: "Please log in to save setup data", variant: "destructive" });
         return;
       }
-
       const session = sessions.find(s => s.id === sessionId);
       if (!session) {
-        toast({
-          title: "Session not found",
-          description: "Could not find the selected session",
-          variant: "destructive"
-        });
+        toast({ title: "Session not found", variant: "destructive" });
         return;
       }
-
       const setupData = {
         session_id: sessionId,
         session_name: session.referenceName,
         user_id: userData.user.id,
-        // Front Left
         fl_cold_pressure: data.frontLeft.coldPressure ? parseFloat(data.frontLeft.coldPressure) : null,
         fl_hot_pressure: data.frontLeft.pressure ? parseFloat(data.frontLeft.pressure) : null,
         fl_temp_outside: data.frontLeft.tempOutside ? parseFloat(data.frontLeft.tempOutside) : null,
         fl_temp_center: data.frontLeft.tempCenter ? parseFloat(data.frontLeft.tempCenter) : null,
         fl_temp_inside: data.frontLeft.tempInside ? parseFloat(data.frontLeft.tempInside) : null,
-        // Front Right
         fr_cold_pressure: data.frontRight.coldPressure ? parseFloat(data.frontRight.coldPressure) : null,
         fr_hot_pressure: data.frontRight.pressure ? parseFloat(data.frontRight.pressure) : null,
         fr_temp_outside: data.frontRight.tempOutside ? parseFloat(data.frontRight.tempOutside) : null,
         fr_temp_center: data.frontRight.tempCenter ? parseFloat(data.frontRight.tempCenter) : null,
         fr_temp_inside: data.frontRight.tempInside ? parseFloat(data.frontRight.tempInside) : null,
-        // Rear Left
         rl_cold_pressure: data.rearLeft.coldPressure ? parseFloat(data.rearLeft.coldPressure) : null,
         rl_hot_pressure: data.rearLeft.pressure ? parseFloat(data.rearLeft.pressure) : null,
         rl_temp_outside: data.rearLeft.tempOutside ? parseFloat(data.rearLeft.tempOutside) : null,
         rl_temp_center: data.rearLeft.tempCenter ? parseFloat(data.rearLeft.tempCenter) : null,
         rl_temp_inside: data.rearLeft.tempInside ? parseFloat(data.rearLeft.tempInside) : null,
-        // Rear Right
         rr_cold_pressure: data.rearRight.coldPressure ? parseFloat(data.rearRight.coldPressure) : null,
         rr_hot_pressure: data.rearRight.pressure ? parseFloat(data.rearRight.pressure) : null,
         rr_temp_outside: data.rearRight.tempOutside ? parseFloat(data.rearRight.tempOutside) : null,
         rr_temp_center: data.rearRight.tempCenter ? parseFloat(data.rearRight.tempCenter) : null,
         rr_temp_inside: data.rearRight.tempInside ? parseFloat(data.rearRight.tempInside) : null,
       };
-
-      const { error } = await (supabase as any)
-        .from('setup_data')
-        .insert(setupData);
-
+      const { error } = await (supabase as any).from('setup_data').insert(setupData);
       if (error) throw error;
-
-      toast({
-        title: "Setup data saved",
-        description: `Tire data for ${session.referenceName} has been saved successfully`
-      });
+      toast({ title: "Setup data saved", description: `Tire data for ${session.referenceName} saved` });
     } catch (error) {
       console.error('Error saving setup data:', error);
-      toast({
-        title: "Error saving data",
-        description: "Failed to save setup data. Please try again.",
-        variant: "destructive"
-      });
+      toast({ title: "Error saving data", description: "Failed to save setup data.", variant: "destructive" });
     }
   };
 
   // Update current time every second
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
+    const interval = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch weather data on mount and every 10 minutes
+  // Fetch weather on mount
   useEffect(() => {
     fetchWeatherData();
-    const weatherInterval = setInterval(fetchWeatherData, 10 * 60 * 1000); // 10 minutes
+    const weatherInterval = setInterval(fetchWeatherData, 10 * 60 * 1000);
     return () => clearInterval(weatherInterval);
   }, [eventData.address]);
 
-  // Update session states and event state - only after sessions are loaded
+  // Update session states
   useEffect(() => {
     if (!sessionsLoaded || sessions.length === 0) return;
-    
     const updatedSessions = calculateSessionStates();
     setSessions(updatedSessions);
     setEventState(determineEventState());
 
-    // Check for sessions that just ended (for note prompt)
     const now = currentTime;
     const eventDate = parseISO(eventData.date);
-    
     const justEndedSession = updatedSessions.find(session => {
       const [hours, minutes] = session.startTime.split(':').map(Number);
       const sessionStart = new Date(eventDate);
       sessionStart.setHours(hours, minutes, 0, 0);
       const sessionEnd = addMinutes(sessionStart, session.duration);
-      
-      // Check if session just ended (within the last 30 seconds)
       const timeSinceEnd = differenceInMilliseconds(now, sessionEnd);
       const wasActive = sessions.find(s => s.id === session.id && s.state === "active");
-      
       return timeSinceEnd >= 0 && timeSinceEnd <= 30000 && wasActive && !showNotePrompt;
     });
-    
     if (justEndedSession) {
       setCompletedSessionId(justEndedSession.id);
       setShowNotePrompt(true);
     }
   }, [currentTime, sessionsLoaded]);
 
-  // Load data from localStorage first
+  // Load from localStorage
   useEffect(() => {
     const savedSessions = localStorage.getItem(`sessions-${eventId}`);
     const savedNotes = localStorage.getItem(`session-notes-${eventId}`);
     const savedSettings = localStorage.getItem(`session-settings-${eventId}`);
-    
     let loadedSessions = defaultSessions;
-    
-    // Load sessions from localStorage first
     if (savedSessions) {
-      try {
-        loadedSessions = JSON.parse(savedSessions);
-        console.log('Loaded sessions from localStorage:', loadedSessions);
-      } catch (error) {
-        console.error("Error loading sessions:", error);
-        loadedSessions = defaultSessions;
-      }
+      try { loadedSessions = JSON.parse(savedSessions); } catch { loadedSessions = defaultSessions; }
     }
-    
-    // Apply saved notes to sessions
     if (savedNotes) {
       try {
         const notesData = JSON.parse(savedNotes);
-        loadedSessions = loadedSessions.map(session => ({
-          ...session,
-          notes: notesData[session.id] || session.notes || ""
-        }));
-      } catch (error) {
-        console.error("Error loading session notes:", error);
-      }
+        loadedSessions = loadedSessions.map(s => ({ ...s, notes: notesData[s.id] || s.notes || "" }));
+      } catch {}
     }
-
-    // Load settings
     if (savedSettings) {
-      try {
-        setSettings(JSON.parse(savedSettings));
-      } catch (error) {
-        console.error("Error loading settings:", error);
-      }
+      try { setSettings(JSON.parse(savedSettings)); } catch {}
     }
-    
     setSessions(loadedSessions);
     setSessionsLoaded(true);
   }, [eventId]);
 
-  // Save session notes to localStorage
   const saveSessionNotes = (sessionId: string, notes: string) => {
     const savedNotes = localStorage.getItem(`session-notes-${eventId}`) || "{}";
     try {
       const notesData = JSON.parse(savedNotes);
       notesData[sessionId] = notes;
       localStorage.setItem(`session-notes-${eventId}`, JSON.stringify(notesData));
-      
-      setSessions(prev => prev.map(session => 
-        session.id === sessionId ? { ...session, notes } : session
-      ));
-    } catch (error) {
-      console.error("Error saving session notes:", error);
-    }
+      setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, notes } : s));
+    } catch {}
   };
 
-  // Save sessions to localStorage
   const saveSessions = (sessionsToSave: Session[]) => {
     localStorage.setItem(`sessions-${eventId}`, JSON.stringify(sessionsToSave));
   };
 
-  // Save settings to localStorage
-  const saveSettings = (newSettings: Settings) => {
+  const saveSettings = (newSettings: SettingsData) => {
     localStorage.setItem(`session-settings-${eventId}`, JSON.stringify(newSettings));
     setSettings(newSettings);
   };
 
-
-  // Drag and drop handler
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-
     if (over && active.id !== over.id) {
       setSessions((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over.id);
-        const reorderedSessions = arrayMove(items, oldIndex, newIndex);
-        saveSessions(reorderedSessions);
-        return reorderedSessions;
+        const reordered = arrayMove(items, oldIndex, newIndex);
+        saveSessions(reordered);
+        return reordered;
       });
     }
   };
 
   const handleAddSession = () => {
-    const sessionTypeDisplayName = newSessionType.charAt(0).toUpperCase() + newSessionType.slice(1);
-    const defaultReferenceName = `${sessionTypeDisplayName} Session`;
-    
+    const displayName = newSessionType.charAt(0).toUpperCase() + newSessionType.slice(1);
     const newSession: Session = {
       id: Date.now().toString(),
       type: newSessionType,
       duration: parseInt(newSessionDuration),
-      referenceName: defaultReferenceName,
+      referenceName: `${displayName} Session`,
       startTime: newSessionTime,
       state: "upcoming"
     };
-    
     setSessions(prev => {
-      const updatedSessions = [...prev, newSession];
-      saveSessions(updatedSessions);
-      return updatedSessions;
+      const updated = [...prev, newSession];
+      saveSessions(updated);
+      return updated;
     });
     setNewSessionDuration("20");
     setNewSessionType("practice");
     setNewSessionTime("13:00");
+    setShowAddSession(false);
   };
 
   const handleDeleteSession = (sessionId: string) => {
     setSessions(prev => {
-      const updatedSessions = prev.filter(s => s.id !== sessionId);
-      saveSessions(updatedSessions);
-      return updatedSessions;
+      const updated = prev.filter(s => s.id !== sessionId);
+      saveSessions(updated);
+      return updated;
     });
   };
 
   const handleMarkSessionComplete = (sessionId: string) => {
     setSessions(prev => {
-      const updatedSessions = prev.map(session => 
-        session.id === sessionId 
-          ? { ...session, state: "completed" as const }
-          : session
-      );
-      saveSessions(updatedSessions);
-      return updatedSessions;
+      const updated = prev.map(s => s.id === sessionId ? { ...s, state: "completed" as const } : s);
+      saveSessions(updated);
+      return updated;
     });
   };
 
   const handleSaveNoteFromPrompt = () => {
-    if (completedSessionId && noteInput.trim()) {
-      saveSessionNotes(completedSessionId, noteInput);
-    }
+    if (completedSessionId && noteInput.trim()) saveSessionNotes(completedSessionId, noteInput);
     setShowNotePrompt(false);
     setNoteInput("");
     setCompletedSessionId(null);
@@ -720,342 +603,236 @@ const SessionManagement = () => {
     setEditNoteText("");
   };
 
-  const handleCancelEdit = () => {
-    setEditingNoteId(null);
-    setEditNoteText("");
-  };
-
-  const handleBackToEvents = () => {
-    navigate('/events');
-  };
-
   const countdown = getCountdownToNext();
   const currentActiveSession = calculateSessionStates().find(s => s.state === "active");
   const activeSessionRemainingTime = getActiveSessionRemainingTime();
-  
-  // Check if this is a same-day event
   const eventDate = parseISO(eventData.date);
   const today = new Date();
   const isSameDayEvent = today.toDateString() === eventDate.toDateString();
+  const completedCount = calculateSessionStates().filter(s => s.state === "completed").length;
+  const activeCount = calculateSessionStates().filter(s => s.state === "active").length;
 
   return (
-    <div className="min-h-screen bg-background pb-20 lg:pb-0 lg:pt-20">
-      {/* Header */}
-      <div className="bg-gradient-hero p-4 sm:p-6 lg:p-8 rounded-b-3xl mb-6 lg:mx-6">
-        <div className="flex items-center gap-4 mb-4 max-w-7xl mx-auto">
-          <Button 
-            variant="ghost" 
-            size="default" 
-            onClick={handleBackToEvents}
-            className="text-white hover:bg-white/10"
-          >
-            <ArrowLeft size={24} />
+    <div className="min-h-screen bg-gradient-dark pb-20 lg:pb-0 lg:pt-20">
+      <DesktopNavigation />
+
+      <div className="p-4 sm:p-6 lg:p-8 space-y-5 max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center gap-3 pt-2">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/events')} className="flex-shrink-0">
+            <ArrowLeft size={20} />
           </Button>
-          <div className="flex-1">
-            <h1 className="text-2xl lg:text-3xl font-bold text-white">
-              Session Management
-            </h1>
-            <p className="text-white/80 text-sm lg:text-base">Event: {eventData.name}</p>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground truncate">{eventData.name}</h1>
+            <p className="text-sm text-muted-foreground truncate">{eventData.track} • {eventData.car}</p>
           </div>
-          {/* Settings Button */}
           <Dialog open={showSettings} onOpenChange={setShowSettings}>
             <DialogTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
-                <Settings size={20} />
-              </Button>
+              <Button variant="ghost" size="icon"><Settings size={18} /></Button>
             </DialogTrigger>
             <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Session Management Settings</DialogTitle>
-              </DialogHeader>
+              <DialogHeader><DialogTitle>Settings</DialogTitle></DialogHeader>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Buffer Time Before Event (when countdown turns red)</Label>
+                  <Label>Buffer Time (countdown turns red)</Label>
                   <div className="flex gap-2">
                     <div className="flex-1">
-                      <Label htmlFor="buffer-hours" className="text-sm text-muted-foreground">Hours</Label>
-                      <Input
-                        id="buffer-hours"
-                        type="number"
-                        value={settings.bufferHours}
-                        onChange={(e) => setSettings(prev => ({ ...prev, bufferHours: parseInt(e.target.value) || 0 }))}
-                        min="0"
-                        max="24"
-                      />
+                      <Label className="text-xs text-muted-foreground">Hours</Label>
+                      <Input type="number" value={settings.bufferHours} onChange={(e) => setSettings(p => ({ ...p, bufferHours: parseInt(e.target.value) || 0 }))} min="0" max="24" />
                     </div>
                     <div className="flex-1">
-                      <Label htmlFor="buffer-minutes" className="text-sm text-muted-foreground">Minutes</Label>
-                      <Input
-                        id="buffer-minutes"
-                        type="number"
-                        value={settings.bufferMinutes}
-                        onChange={(e) => setSettings(prev => ({ ...prev, bufferMinutes: parseInt(e.target.value) || 0 }))}
-                        min="0"
-                        max="59"
-                      />
+                      <Label className="text-xs text-muted-foreground">Minutes</Label>
+                      <Input type="number" value={settings.bufferMinutes} onChange={(e) => setSettings(p => ({ ...p, bufferMinutes: parseInt(e.target.value) || 0 }))} min="0" max="59" />
                     </div>
                   </div>
                 </div>
-                <Button onClick={() => {
-                  saveSettings(settings);
-                  setShowSettings(false);
-                }}>
-                  Save Settings
-                </Button>
+                <Button onClick={() => { saveSettings(settings); setShowSettings(false); }}>Save</Button>
               </div>
             </DialogContent>
           </Dialog>
         </div>
-      </div>
 
-      <div className="px-4 lg:px-8 max-w-7xl mx-auto space-y-6">
-        {/* Top Row - Time, Event Details, Weather */}
-        <div className="lg:grid lg:grid-cols-3 lg:gap-6 space-y-6 lg:space-y-0">
-          {/* Current Time Display - Big and Prominent */}
-          <Card className="bg-gradient-dark border-border/50">
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <div className="text-3xl lg:text-4xl font-bold text-foreground mb-2">
-                  {format(currentTime, "HH:mm:ss")}
-                </div>
-                <div className="text-sm lg:text-lg text-muted-foreground">
-                  {format(currentTime, "EEEE, MMMM d, yyyy")}
-                </div>
+        {/* Live Clock + Status Strip */}
+        <div className="relative overflow-hidden rounded-xl border border-primary/20 bg-card/60 backdrop-blur-md p-4 sm:p-5">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-transparent" />
+          <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight tabular-nums">
+                {format(currentTime, "HH:mm:ss")}
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Event Details Card */}
-          <Card className="bg-gradient-dark border-border/50">
-            <CardHeader>
-              <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
-                <Calendar className="text-primary" size={20} />
-                Event Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Track:</span>
-                  <span className="text-foreground font-medium">{eventData.track}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Date:</span>
-                  <span className="text-foreground font-medium">{format(parseISO(eventData.date), "MMMM d, yyyy")}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Vehicle:</span>
-                  <span className="text-foreground font-medium">{eventData.car}</span>
-                </div>
+              <p className="text-sm text-muted-foreground">{format(currentTime, "EEEE, MMMM d, yyyy")}</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="text-center px-3">
+                <p className="text-2xl font-bold text-foreground">{sessions.length}</p>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Sessions</p>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Weather Conditions */}
-          {eventData.address && (
-            <Card className="bg-gradient-dark border-border/50">
-              <CardHeader>
-                <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
-                  <Cloud className="text-primary" size={20} />
-                  Track Conditions
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {weatherLoading && (
-                  <div className="text-center py-4">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                    <p className="text-muted-foreground mt-2">Loading weather...</p>
-                  </div>
-                )}
-                
-                {weatherError && (
-                  <div className="text-center py-4 text-muted-foreground">
-                    <AlertCircle size={24} className="mx-auto mb-2" />
-                    <p>{weatherError}</p>
-                  </div>
-                )}
-                
-                {weatherData && (
-                  <div className="space-y-4">
-                    {/* Weather warnings */}
-                    {weatherData.warnings.length > 0 && (
-                      <div className="space-y-2">
-                        {weatherData.warnings.map((warning, index) => (
-                          <div key={index} className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-                            <p className="text-sm text-destructive font-medium">{warning}</p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    
-                    {/* Weather grid */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="flex items-center gap-2">
-                        <Thermometer size={16} className="text-primary" />
-                        <div>
-                          <p className="text-sm text-muted-foreground">Temperature</p>
-                          <p className="font-medium">{weatherData.temperature}°F</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <Cloud size={16} className="text-primary" />
-                        <div>
-                          <p className="text-sm text-muted-foreground">Condition</p>
-                          <p className="font-medium">{weatherData.condition}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <Wind size={16} className="text-primary" />
-                        <div>
-                          <p className="text-sm text-muted-foreground">Wind</p>
-                          <p className="font-medium">{weatherData.windSpeed} mph {weatherData.windDirection}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <Eye size={16} className="text-primary" />
-                        <div>
-                          <p className="text-sm text-muted-foreground">Visibility</p>
-                          <p className="font-medium">{weatherData.visibility} mi</p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {weatherData.precipitation > 0 && (
-                      <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                        <p className="text-sm text-blue-400">
-                          💧 Precipitation: {weatherData.precipitation}" • Humidity: {weatherData.humidity}%
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
+              <div className="w-px h-8 bg-border" />
+              <div className="text-center px-3">
+                <p className="text-2xl font-bold text-green-500">{completedCount}</p>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Done</p>
+              </div>
+              <div className="w-px h-8 bg-border" />
+              <div className="text-center px-3">
+                <p className="text-2xl font-bold text-primary">{activeCount}</p>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Live</p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Session Status & Countdown - Full Width */}
-        <Card className="bg-gradient-dark border-border/50">
-          <CardHeader>
-            <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
-              <Timer className="text-primary" size={20} />
-              Session Status
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {/* Current Active Session */}
-              {currentActiveSession && (
-                <div className="p-4 rounded-lg border border-green-500 bg-green-500/10">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge className="bg-green-500 text-white">Currently Active</Badge>
-                    <Badge variant="outline" className="capitalize">
-                      {currentActiveSession.type}
-                    </Badge>
-                  </div>
-                  <p className="font-bold text-lg text-foreground">
-                    {currentActiveSession.referenceName}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-muted-foreground">
-                      Started at {currentActiveSession.startTime} • {currentActiveSession.duration} minutes
-                    </p>
-                    {activeSessionRemainingTime && (
-                      <div className="text-right">
-                        <p className="text-sm text-muted-foreground">Time Remaining</p>
-                        <p className="text-xl font-bold text-green-400">
-                          {activeSessionRemainingTime.minutes}m {activeSessionRemainingTime.seconds}s
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Countdown to Next Session */}
-              {countdown && (
-                <div className="text-center space-y-2">
-                  <p className="text-sm text-muted-foreground">
-                    Next: {countdown.nextSession.referenceName}
-                  </p>
-                  <div className={`text-3xl font-bold ${
-                    countdown.isInBufferZone ? "text-red-500" : "text-foreground"
-                  }`}>
-                    {formatCountdown(countdown)}
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    until {countdown.nextSession.referenceName}
+        {/* Active Session Banner */}
+        {currentActiveSession && (
+          <div className="rounded-xl border border-green-500/30 bg-green-500/10 backdrop-blur-sm p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
+                <div>
+                  <p className="font-bold text-foreground">{currentActiveSession.referenceName}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Started at {currentActiveSession.startTime} • {currentActiveSession.type}
                   </p>
                 </div>
-              )}
-
-              {/* Post-Event State */}
-              {eventState === "post-event" && (
-                <div className="text-center p-6 rounded-lg border border-orange-500 bg-orange-500/10">
-                  <AlertCircle className="mx-auto mb-4 text-orange-500" size={48} />
-                  <h3 className="text-xl font-bold text-foreground mb-2">
-                    Sorry for missing your sessions, how did it go?
-                  </h3>
-                  <p className="text-muted-foreground mb-4">
-                    All sessions have been completed. Would you like to add notes about today's event?
+              </div>
+              {activeSessionRemainingTime && (
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-green-400 tabular-nums">
+                    {activeSessionRemainingTime.minutes}:{activeSessionRemainingTime.seconds.toString().padStart(2, '0')}
                   </p>
-                  <div className="space-y-3">
-                    <Textarea
-                      placeholder="How did the event go? Any setup changes needed for next time?"
-                      value={noteInput}
-                      onChange={(e) => setNoteInput(e.target.value)}
-                      className="h-20"
-                    />
-                    <Button 
-                      onClick={() => {
-                        if (noteInput.trim()) {
-                          // Save general event notes
-                          localStorage.setItem(`event-summary-${eventId}`, noteInput);
-                          setNoteInput("");
-                        }
-                      }}
-                      disabled={!noteInput.trim()}
-                    >
-                      Save Event Summary
-                    </Button>
-                  </div>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Remaining</p>
                 </div>
               )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        )}
 
-        {/* Session Tire Data Card - For recording tire temps and pressure per session */}
-        <SessionTireDataCard
-          sessions={sessions}
-          onSaveData={handleSaveSetupData}
-        />
+        {/* Countdown to Next */}
+        {countdown && !currentActiveSession && (
+          <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-4 text-center">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Next: {countdown.nextSession.referenceName}</p>
+            <p className={`text-3xl font-bold tabular-nums ${countdown.isInBufferZone ? "text-destructive" : "text-foreground"}`}>
+              {formatCountdown(countdown)}
+            </p>
+          </div>
+        )}
 
+        {/* Main Grid */}
+        <div className="lg:grid lg:grid-cols-3 lg:gap-5 space-y-5 lg:space-y-0">
+          {/* Left Column — Event Info + Weather */}
+          <div className="space-y-5">
+            {/* Event Details */}
+            <Card className="bg-card/60 backdrop-blur-sm border-border/50">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                  <Calendar size={14} className="text-primary" />
+                  Event Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Track</span>
+                  <span className="font-medium text-foreground">{eventData.track}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Date</span>
+                  <span className="font-medium text-foreground">{format(parseISO(eventData.date), "MMM d, yyyy")}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Vehicle</span>
+                  <span className="font-medium text-foreground truncate ml-4">{eventData.car}</span>
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* Bottom Row - Session Management */}
-        <div className="lg:grid lg:grid-cols-2 lg:gap-6 space-y-6 lg:space-y-0">
-          {/* Add New Session */}
-          <Card className="bg-gradient-dark border-border/50">
-            <Accordion type="single" collapsible defaultValue="add-session">
-              <AccordionItem value="add-session">
-                <AccordionTrigger className="px-6 py-4 hover:no-underline">
-                  <div className="flex items-center gap-2">
-                    <Plus className="text-primary" size={20} />
-                    <span className="text-lg font-bold text-foreground">Add New Session</span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="px-6 pb-6">
+            {/* Weather */}
+            {eventData.address && (
+              <Card className="bg-card/60 backdrop-blur-sm border-border/50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                    <Cloud size={14} className="text-primary" />
+                    Track Conditions
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {weatherLoading && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
+                      Loading weather...
+                    </div>
+                  )}
+                  {weatherError && (
+                    <p className="text-sm text-muted-foreground py-2">{weatherError}</p>
+                  )}
+                  {weatherData && (
+                    <div className="space-y-3">
+                      {weatherData.warnings.length > 0 && (
+                        <div className="space-y-1">
+                          {weatherData.warnings.map((w, i) => (
+                            <div key={i} className="p-2 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive">{w}</div>
+                          ))}
+                        </div>
+                      )}
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="flex items-center gap-2">
+                          <Thermometer size={14} className="text-primary" />
+                          <div>
+                            <p className="text-[10px] text-muted-foreground">Temp</p>
+                            <p className="font-medium">{weatherData.temperature}°F</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Cloud size={14} className="text-primary" />
+                          <div>
+                            <p className="text-[10px] text-muted-foreground">Condition</p>
+                            <p className="font-medium">{weatherData.condition}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Wind size={14} className="text-primary" />
+                          <div>
+                            <p className="text-[10px] text-muted-foreground">Wind</p>
+                            <p className="font-medium">{weatherData.windSpeed} mph</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Eye size={14} className="text-primary" />
+                          <div>
+                            <p className="text-[10px] text-muted-foreground">Visibility</p>
+                            <p className="font-medium">{weatherData.visibility} mi</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Right Column — Session Schedule (spans 2 cols) */}
+          <div className="lg:col-span-2 space-y-5">
+            {/* Schedule Header */}
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+                <Clock size={18} className="text-primary" />
+                Session Schedule
+                <Badge variant="secondary" className="text-xs">{sessions.length}</Badge>
+              </h2>
+              <Dialog open={showAddSession} onOpenChange={setShowAddSession}>
+                <DialogTrigger asChild>
+                  <Button variant="pulse" size="sm">
+                    <Plus size={14} />
+                    Add Session
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader><DialogTitle>Add New Session</DialogTitle></DialogHeader>
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="session-type">Session Type</Label>
-                        <Select value={newSessionType} onValueChange={(value) => setNewSessionType(value as "practice" | "qualifying" | "race")}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select session type" />
-                          </SelectTrigger>
+                        <Label>Type</Label>
+                        <Select value={newSessionType} onValueChange={(v) => setNewSessionType(v as any)}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="practice">Practice</SelectItem>
                             <SelectItem value="qualifying">Qualifying</SelectItem>
@@ -1064,190 +841,137 @@ const SessionManagement = () => {
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="duration">Duration (minutes)</Label>
-                        <Input
-                          id="duration"
-                          type="number"
-                          value={newSessionDuration}
-                          onChange={(e) => setNewSessionDuration(e.target.value)}
-                          min="1"
-                          max="120"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="session-time">Start Time</Label>
-                        <Input
-                          id="session-time"
-                          type="time"
-                          value={newSessionTime}
-                          onChange={(e) => setNewSessionTime(e.target.value)}
-                        />
+                        <Label>Duration (min)</Label>
+                        <Input type="number" value={newSessionDuration} onChange={(e) => setNewSessionDuration(e.target.value)} min="1" max="120" />
                       </div>
                     </div>
-                    <Button 
-                      onClick={handleAddSession}
-                      className="w-full"
-                    >
-                      <Plus size={16} />
+                    <div className="space-y-2">
+                      <Label>Start Time</Label>
+                      <Input type="time" value={newSessionTime} onChange={(e) => setNewSessionTime(e.target.value)} />
+                    </div>
+                    <Button onClick={handleAddSession} className="w-full">
+                      <Plus size={14} />
                       Add Session
                     </Button>
                   </div>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </Card>
+                </DialogContent>
+              </Dialog>
+            </div>
 
-          {/* Session Schedule */}
-          <Card className="bg-gradient-dark border-border/50">
-            <CardHeader>
-              <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
-                <Clock className="text-primary" size={20} />
-                Session Schedule ({sessions.length} sessions)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <DndContext 
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext 
-                  items={sessions.map(s => s.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {sessions.map((session) => (
-                      <div key={session.id} className="space-y-2">
-                        <SortableSessionItem
-                          session={session}
-                          totalSessions={sessions.length}
-                          onDelete={handleDeleteSession}
-                          onMarkComplete={handleMarkSessionComplete}
-                          isSameDayEvent={isSameDayEvent}
-                        />
-                        {/* Session notes display and editing */}
-                        <div className="ml-8 space-y-2">
-                          {editingNoteId === session.id ? (
-                            // Edit mode
-                            <div className="p-3 bg-secondary/30 rounded">
-                              <div className="flex items-center gap-1 mb-2">
-                                <StickyNote size={12} />
-                                <span className="font-medium text-sm">Edit Notes:</span>
-                              </div>
-                              <Textarea
-                                value={editNoteText}
-                                onChange={(e) => setEditNoteText(e.target.value)}
-                                placeholder="Add session notes: tire pressure, brake feel, handling balance, sector times..."
-                                className="h-20 text-sm"
-                              />
-                              <div className="flex gap-2 mt-2">
-                                <Button 
-                                  size="sm" 
-                                  onClick={() => handleSaveNote(session.id)}
-                                >
-                                  Save
-                                </Button>
-                                <Button 
-                                  size="sm" 
-                                  variant="outline" 
-                                  onClick={handleCancelEdit}
-                                >
-                                  Cancel
-                                </Button>
-                              </div>
-                            </div>
-                          ) : (
-                            // Display mode
-                            <div>
-                              {session.notes ? (
-                                <div className="p-2 bg-secondary/30 rounded text-sm text-muted-foreground">
-                                  <div className="flex items-center justify-between mb-1">
-                                    <div className="flex items-center gap-1">
-                                      <StickyNote size={12} />
-                                      <span className="font-medium">Notes:</span>
-                                    </div>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => handleEditNote(session.id)}
-                                      className="h-6 px-2 text-xs"
-                                    >
-                                      Edit
-                                    </Button>
-                                  </div>
-                                  <p>{session.notes}</p>
-                                </div>
-                              ) : (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleEditNote(session.id)}
-                                  className="text-muted-foreground hover:text-foreground h-8 px-2 text-xs"
-                                >
-                                  <Plus size={12} className="mr-1" />
-                                  Add notes
-                                </Button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                    {sessions.length === 0 && (
-                      <div className="text-center py-8 space-y-4">
-                        <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                          <div className="flex items-center gap-2 justify-center mb-2">
-                            <AlertCircle className="text-blue-400" size={20} />
-                            <span className="font-medium text-blue-400">Same-Day Event</span>
+            {/* Session List */}
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={sessions.map(s => s.id)} strategy={verticalListSortingStrategy}>
+                <div className="space-y-2">
+                  {sessions.map((session) => (
+                    <div key={session.id} className="space-y-1">
+                      <SortableSessionItem
+                        session={session}
+                        onDelete={handleDeleteSession}
+                        onMarkComplete={handleMarkSessionComplete}
+                        onEditNote={handleEditNote}
+                        isSameDayEvent={isSameDayEvent}
+                      />
+                      {/* Inline note editing */}
+                      {editingNoteId === session.id && (
+                        <div className="ml-6 p-3 bg-card/60 backdrop-blur-sm border border-border/50 rounded-lg">
+                          <Textarea
+                            value={editNoteText}
+                            onChange={(e) => setEditNoteText(e.target.value)}
+                            placeholder="Tire pressure, brake feel, handling notes..."
+                            className="h-20 text-sm mb-2"
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={() => handleSaveNote(session.id)}>Save</Button>
+                            <Button size="sm" variant="outline" onClick={() => { setEditingNoteId(null); setEditNoteText(""); }}>Cancel</Button>
                           </div>
-                          <p className="text-sm text-foreground mb-2">
-                            Events created after 8:00 AM on the same day start with an empty schedule to avoid conflicts.
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Use the "Add New Session" form to create your custom session schedule.
-                          </p>
                         </div>
+                      )}
+                      {/* Show existing note */}
+                      {editingNoteId !== session.id && session.notes && (
+                        <div className="ml-6 px-3 py-2 bg-card/30 border border-border/30 rounded text-xs text-muted-foreground cursor-pointer hover:bg-card/50 transition-colors"
+                          onClick={() => handleEditNote(session.id)}
+                        >
+                          <span className="text-racing-orange mr-1">📝</span> {session.notes}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {sessions.length === 0 && (
+                    <div className="text-center py-12">
+                      <div className="mx-auto w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
+                        <Timer size={28} className="text-muted-foreground" />
                       </div>
-                    )}
+                      <h3 className="text-base font-semibold text-foreground mb-1">No sessions yet</h3>
+                      <p className="text-sm text-muted-foreground mb-4">Add sessions to build your schedule</p>
+                      <Button variant="pulse" size="sm" onClick={() => setShowAddSession(true)}>
+                        <Plus size={14} />
+                        Add First Session
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </SortableContext>
+            </DndContext>
+
+            {/* Post-Event Summary */}
+            {eventState === "post-event" && (
+              <Card className="border-racing-orange/30 bg-racing-orange/5 backdrop-blur-sm">
+                <CardContent className="pt-5 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle size={18} className="text-racing-orange" />
+                    <h3 className="font-bold text-foreground">Event Complete</h3>
                   </div>
-                </SortableContext>
-              </DndContext>
-            </CardContent>
-          </Card>
+                  <p className="text-sm text-muted-foreground">All sessions completed. Add notes about today's event:</p>
+                  <Textarea
+                    placeholder="How did the event go? Setup changes for next time?"
+                    value={noteInput}
+                    onChange={(e) => setNoteInput(e.target.value)}
+                    className="h-20"
+                  />
+                  <Button
+                    onClick={() => {
+                      if (noteInput.trim()) {
+                        localStorage.setItem(`event-summary-${eventId}`, noteInput);
+                        setNoteInput("");
+                        toast({ title: "Summary saved" });
+                      }
+                    }}
+                    disabled={!noteInput.trim()}
+                    size="sm"
+                  >
+                    Save Summary
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
+
+        {/* Tire Data */}
+        <SessionTireDataCard sessions={sessions} onSaveData={handleSaveSetupData} />
       </div>
 
       {/* Note Prompt Dialog */}
       <Dialog open={showNotePrompt} onOpenChange={setShowNotePrompt}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Session Completed</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Session Completed</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <p className="text-muted-foreground">
-              Your session has ended. Would you like to add notes about how it went?
-            </p>
+            <p className="text-muted-foreground text-sm">Would you like to add notes about how it went?</p>
             <Textarea
-              placeholder="Session notes: tire pressure, brake feel, handling balance, sector times..."
+              placeholder="Tire pressure, brake feel, handling balance..."
               value={noteInput}
               onChange={(e) => setNoteInput(e.target.value)}
               className="h-24"
             />
             <div className="flex gap-2">
-              <Button onClick={handleSaveNoteFromPrompt} disabled={!noteInput.trim()}>
-                Save Notes
-              </Button>
-              <Button variant="outline" onClick={() => {
-                setShowNotePrompt(false);
-                setNoteInput("");
-                setCompletedSessionId(null);
-              }}>
-                Skip
-              </Button>
+              <Button onClick={handleSaveNoteFromPrompt} disabled={!noteInput.trim()}>Save Notes</Button>
+              <Button variant="outline" onClick={() => { setShowNotePrompt(false); setNoteInput(""); setCompletedSessionId(null); }}>Skip</Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
+
+      <Navigation />
     </div>
   );
 };
