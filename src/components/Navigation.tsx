@@ -1,10 +1,11 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Settings, Calendar, Car, Home, MapPin, ClipboardList, Users, Repeat } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useOrganizerMode } from "@/contexts/OrganizerModeContext";
 
 const Navigation = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { isOrganizer, isOrganizerMode, toggleMode } = useOrganizerMode();
 
   const userNavItems = [
