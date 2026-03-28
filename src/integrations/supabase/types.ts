@@ -244,6 +244,47 @@ export type Database = {
           },
         ]
       }
+      registration_types: {
+        Row: {
+          created_at: string
+          description: string | null
+          event_id: string
+          id: string
+          max_spots: number | null
+          name: string
+          price: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          event_id: string
+          id?: string
+          max_spots?: number | null
+          name: string
+          price?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          event_id?: string
+          id?: string
+          max_spots?: number | null
+          name?: string
+          price?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registration_types_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sessions: {
         Row: {
           created_at: string
