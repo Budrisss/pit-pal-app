@@ -292,7 +292,7 @@ const SessionManagement = () => {
   const [showAddSession, setShowAddSession] = useState(false);
   const [announcements, setAnnouncements] = useState<{ id: string; message: string; created_at: string }[]>([]);
   const [publicEventId, setPublicEventId] = useState<string | null>(null);
-  const [myRunGroup, setMyRunGroup] = useState<string | null>(null); // stores run group NAME
+  const [myRunGroup, setMyRunGroup] = useState<string | null>(null); // stores run group ID
   const [runGroups, setRunGroups] = useState<{ id: string; name: string }[]>([]);
 
   const sensors = useSensors(
@@ -329,9 +329,12 @@ const SessionManagement = () => {
   const getNextUpcomingSession = () => {
     const statedSessions = calculateSessionStates();
     let upcomingSessions = statedSessions.filter(s => s.state === "upcoming");
-    // If user selected a run group, only count sessions matching that group name
+    // If user selected a run group, only count sessions matching that group
     if (myRunGroup) {
-      const filtered = upcomingSessions.filter(s => s.referenceName === myRunGroup);
+      const selectedGroup = runGroups.find(rg => rg.id === myRunGroup);
+      const filtered = upcomingSessions.filter(s =>
+        s.registrationTypeId ? s.registrationTypeId === myRunGroup : s.referenceName === selectedGroup?.name
+      );
       if (filtered.length > 0) upcomingSessions = filtered;
     }
     if (upcomingSessions.length === 0) return null;
@@ -347,9 +350,12 @@ const SessionManagement = () => {
     let activeSession: typeof statedSessions[number] | undefined = statedSessions.find(s => s.state === "active");
     // If user selected a run group, prioritize showing that group's active state
     if (myRunGroup) {
-      const myActive = statedSessions.find(s => s.referenceName === myRunGroup && s.state === "active");
+      const selectedGroup = runGroups.find(rg => rg.id === myRunGroup);
+      const matchesFn = (s: typeof statedSessions[number]) =>
+        s.registrationTypeId ? s.registrationTypeId === myRunGroup : s.referenceName === selectedGroup?.name;
+      const myActive = statedSessions.find(s => matchesFn(s) && s.state === "active");
       if (myActive) activeSession = myActive;
-      else if (activeSession && activeSession.referenceName !== myRunGroup) activeSession = undefined;
+      else if (activeSession && !matchesFn(activeSession)) activeSession = undefined;
     }
     if (!activeSession) return null;
     const eventDate = parseISO(eventData.date);
@@ -543,6 +549,7 @@ const SessionManagement = () => {
             referenceName: s.name,
             startTime: s.start_time || "00:00",
             state: "upcoming" as const,
+            registrationTypeId: s.registration_type_id || null,
           }));
           setSessions(mapped);
           localStorage.setItem(`sessions-${eventId}`, JSON.stringify(mapped));
