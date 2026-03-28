@@ -8,7 +8,7 @@ import { useEvents } from "@/contexts/EventsContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
 
-import pitLaneHero from "@/assets/pit-lane-hero.jpg";
+import dashboardHero from "@/assets/dashboard-hero.jpg";
 import tracksideLogo from "@/assets/trackside-logo-v2.png";
 
 const Dashboard = () => {
