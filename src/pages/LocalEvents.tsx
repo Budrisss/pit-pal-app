@@ -364,6 +364,7 @@ const LocalEvents = () => {
         address: [registeringEvent.track_name, registeringEvent.address, registeringEvent.city, registeringEvent.state].filter(Boolean).join(', '),
         description: registeringEvent.description || null,
         status: 'upcoming',
+        public_event_id: registeringEvent.id,
       }).select('id').single();
 
       if (eventError) throw eventError;
