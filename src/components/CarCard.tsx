@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Calendar, Settings, Star, Car, Pencil, Trash2 } from "lucide-react";
+import { useState, useRef } from "react";
+import { Calendar, Settings, Star, Car, Pencil, Trash2, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,7 @@ interface CarCardProps {
   isDefault?: boolean;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onImageUpload?: (id: string, file: File) => void;
 }
 
 const CarCard = ({ 
@@ -33,13 +34,16 @@ const CarCard = ({
   make, 
   model, 
   category, 
+  image,
   events, 
   setups, 
   isDefault,
   onEdit,
-  onDelete 
+  onDelete,
+  onImageUpload
 }: CarCardProps) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getCategoryColor = () => {
     switch (category) {
@@ -51,14 +55,43 @@ const CarCard = ({
     }
   };
 
+  const hasImage = image && !image.includes("placeholder") && image.startsWith("http");
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && onImageUpload) {
+      onImageUpload(id, file);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   return (
     <>
       <Card className="bg-card border-border hover:shadow-pulse transition-all duration-300 rounded-xl lg:rounded-2xl h-full">
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-3 min-w-0 flex-1">
-              <div className="size-10 sm:size-12 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
-                <Car size={20} className="sm:size-6 text-muted-foreground" />
+              <div
+                className="size-10 sm:size-12 rounded-xl bg-muted flex items-center justify-center flex-shrink-0 relative overflow-hidden cursor-pointer group"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {hasImage ? (
+                  <img src={image} alt={name} className="size-full object-cover" />
+                ) : (
+                  <Car size={20} className="sm:size-6 text-muted-foreground" />
+                )}
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <Camera size={14} className="text-white" />
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
               </div>
               <div className="min-w-0">
                 <CardTitle className="text-base sm:text-lg font-bold text-foreground flex items-center gap-1.5 truncate">
