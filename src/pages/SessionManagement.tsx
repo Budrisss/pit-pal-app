@@ -601,7 +601,7 @@ const SessionManagement = () => {
         .select("*")
         .eq("event_id", peId)
         .order("sort_order", { ascending: true });
-      if (orgSessions && orgSessions.length > 0) {
+      if (orgSessions) {
         const mapped: Session[] = orgSessions.map((s: any) => ({
           id: s.id,
           type: "practice" as const,
@@ -609,6 +609,7 @@ const SessionManagement = () => {
           referenceName: s.name,
           startTime: s.start_time || "00:00",
           state: "upcoming" as const,
+          registrationTypeId: s.registration_type_id || null,
         }));
         setSessions(mapped);
         localStorage.setItem(`sessions-${eventId}`, JSON.stringify(mapped));
