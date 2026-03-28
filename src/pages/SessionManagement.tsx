@@ -724,15 +724,15 @@ const SessionManagement = () => {
         <div className="lg:grid lg:grid-cols-3 lg:gap-5 space-y-5 lg:space-y-0">
           {/* Left Column — Event Info + Weather */}
           <div className="space-y-5">
-            {/* Event Details */}
+            {/* Event Details + Track Conditions Combined */}
             <Card className="bg-card/60 backdrop-blur-sm border-border/50">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                   <Calendar size={14} className="text-primary" />
-                  Event Details
+                  Event Info
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2 text-sm">
+              <CardContent className="space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Track</span>
                   <span className="font-medium text-foreground">{eventData.track}</span>
@@ -745,72 +745,70 @@ const SessionManagement = () => {
                   <span className="text-muted-foreground">Vehicle</span>
                   <span className="font-medium text-foreground truncate ml-4">{eventData.car}</span>
                 </div>
+
+                {/* Weather / Track Conditions */}
+                {eventData.address && (
+                  <>
+                    <div className="border-t border-border/50 pt-3 mt-3">
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 mb-2">
+                        <Cloud size={12} className="text-primary" />
+                        Track Conditions
+                      </p>
+                    </div>
+                    {weatherLoading && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
+                        Loading weather...
+                      </div>
+                    )}
+                    {weatherError && (
+                      <p className="text-sm text-muted-foreground">{weatherError}</p>
+                    )}
+                    {weatherData && (
+                      <>
+                        {weatherData.warnings.length > 0 && (
+                          <div className="space-y-1">
+                            {weatherData.warnings.map((w, i) => (
+                              <div key={i} className="p-2 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive">{w}</div>
+                            ))}
+                          </div>
+                        )}
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="flex items-center gap-2">
+                            <Thermometer size={14} className="text-primary" />
+                            <div>
+                              <p className="text-[10px] text-muted-foreground">Temp</p>
+                              <p className="font-medium">{weatherData.temperature}°F</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Cloud size={14} className="text-primary" />
+                            <div>
+                              <p className="text-[10px] text-muted-foreground">Condition</p>
+                              <p className="font-medium">{weatherData.condition}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Wind size={14} className="text-primary" />
+                            <div>
+                              <p className="text-[10px] text-muted-foreground">Wind</p>
+                              <p className="font-medium">{weatherData.windSpeed} mph</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Eye size={14} className="text-primary" />
+                            <div>
+                              <p className="text-[10px] text-muted-foreground">Visibility</p>
+                              <p className="font-medium">{weatherData.visibility} mi</p>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </>
+                )}
               </CardContent>
             </Card>
-
-            {/* Weather */}
-            {eventData.address && (
-              <Card className="bg-card/60 backdrop-blur-sm border-border/50">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                    <Cloud size={14} className="text-primary" />
-                    Track Conditions
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {weatherLoading && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
-                      Loading weather...
-                    </div>
-                  )}
-                  {weatherError && (
-                    <p className="text-sm text-muted-foreground py-2">{weatherError}</p>
-                  )}
-                  {weatherData && (
-                    <div className="space-y-3">
-                      {weatherData.warnings.length > 0 && (
-                        <div className="space-y-1">
-                          {weatherData.warnings.map((w, i) => (
-                            <div key={i} className="p-2 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive">{w}</div>
-                          ))}
-                        </div>
-                      )}
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div className="flex items-center gap-2">
-                          <Thermometer size={14} className="text-primary" />
-                          <div>
-                            <p className="text-[10px] text-muted-foreground">Temp</p>
-                            <p className="font-medium">{weatherData.temperature}°F</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Cloud size={14} className="text-primary" />
-                          <div>
-                            <p className="text-[10px] text-muted-foreground">Condition</p>
-                            <p className="font-medium">{weatherData.condition}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Wind size={14} className="text-primary" />
-                          <div>
-                            <p className="text-[10px] text-muted-foreground">Wind</p>
-                            <p className="font-medium">{weatherData.windSpeed} mph</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Eye size={14} className="text-primary" />
-                          <div>
-                            <p className="text-[10px] text-muted-foreground">Visibility</p>
-                            <p className="font-medium">{weatherData.visibility} mi</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
           </div>
 
           {/* Right Column — Session Schedule (spans 2 cols) */}
