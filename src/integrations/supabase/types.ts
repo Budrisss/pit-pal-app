@@ -71,6 +71,57 @@ export type Database = {
         }
         Relationships: []
       }
+      event_registrations: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          notes: string | null
+          registration_type_id: string
+          user_email: string
+          user_id: string
+          user_name: string
+          user_phone: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          notes?: string | null
+          registration_type_id: string
+          user_email: string
+          user_id: string
+          user_name: string
+          user_phone?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          notes?: string | null
+          registration_type_id?: string
+          user_email?: string
+          user_id?: string
+          user_name?: string
+          user_phone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_registrations_registration_type_id_fkey"
+            columns: ["registration_type_id"]
+            isOneToOne: false
+            referencedRelation: "registration_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           address: string | null

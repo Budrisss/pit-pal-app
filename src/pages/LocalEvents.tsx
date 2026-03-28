@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { MapPin, Search, Calendar, DollarSign, Car, ExternalLink, Plus, ChevronRight, Filter, Building2, Pencil, Trash2, MoreVertical, X, Users, Tag } from 'lucide-react';
+import { MapPin, Search, Calendar, DollarSign, Car, ExternalLink, Plus, ChevronRight, Filter, Building2, Pencil, Trash2, MoreVertical, X, Users, Tag, UserCheck, ClipboardList, Phone, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -34,6 +34,18 @@ interface RegistrationType {
   description: string;
   price: string;
   max_spots: number | null;
+  registered_count?: number;
+}
+
+interface EventRegistration {
+  id: string;
+  registration_type_id: string;
+  user_id: string;
+  user_name: string;
+  user_email: string;
+  user_phone: string | null;
+  notes: string | null;
+  created_at: string;
 }
 
 interface PublicEvent {
@@ -175,6 +187,19 @@ const LocalEvents = () => {
   });
   const [newRegTypes, setNewRegTypes] = useState<RegistrationType[]>([]);
   const [editRegTypes, setEditRegTypes] = useState<RegistrationType[]>([]);
+  
+  // Registration state
+  const [registeringEvent, setRegisteringEvent] = useState<PublicEvent | null>(null);
+  const [selectedRegTypeId, setSelectedRegTypeId] = useState<string>('');
+  const [regForm, setRegForm] = useState({ name: '', email: '', phone: '', notes: '' });
+  const [registering, setRegistering] = useState(false);
+  const [userRegistrations, setUserRegistrations] = useState<Set<string>>(new Set());
+  
+  // Participant list state
+  const [participantEvent, setParticipantEvent] = useState<PublicEvent | null>(null);
+  const [participants, setParticipants] = useState<EventRegistration[]>([]);
+  const [loadingParticipants, setLoadingParticipants] = useState(false);
+  const [registrationCounts, setRegistrationCounts] = useState<Record<string, number>>({});
 
   // Check if user is an organizer
   useEffect(() => {
@@ -253,9 +278,104 @@ const LocalEvents = () => {
     }
   }, [viewMode, userLocation]);
 
+  // Fetch user's existing registrations
+  const fetchUserRegistrations = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('event_registrations')
+      .select('registration_type_id')
+      .eq('user_id', user.id);
+    if (data) {
+      setUserRegistrations(new Set(data.map((r: any) => r.registration_type_id)));
+    }
+  }, [user]);
+
+  // Fetch registration counts per type
+  const fetchRegistrationCounts = useCallback(async (eventIds: string[]) => {
+    if (eventIds.length === 0) return;
+    const { data } = await supabase
+      .from('event_registrations')
+      .select('registration_type_id')
+      .in('event_id', eventIds);
+    if (data) {
+      const counts: Record<string, number> = {};
+      data.forEach((r: any) => {
+        counts[r.registration_type_id] = (counts[r.registration_type_id] || 0) + 1;
+      });
+      setRegistrationCounts(counts);
+    }
+  }, []);
+
   useEffect(() => {
     fetchEvents();
   }, [fetchEvents]);
+
+  useEffect(() => {
+    fetchUserRegistrations();
+  }, [fetchUserRegistrations]);
+
+  useEffect(() => {
+    if (events.length > 0) {
+      fetchRegistrationCounts(events.map(e => e.id));
+    }
+  }, [events, fetchRegistrationCounts]);
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!registeringEvent || !selectedRegTypeId || !user) return;
+    setRegistering(true);
+    try {
+      const { error } = await supabase.from('event_registrations').insert({
+        event_id: registeringEvent.id,
+        registration_type_id: selectedRegTypeId,
+        user_id: user.id,
+        user_name: regForm.name,
+        user_email: regForm.email,
+        user_phone: regForm.phone || null,
+        notes: regForm.notes || null,
+      });
+      if (error) throw error;
+      toast({ title: "Registered!", description: "You're signed up for this event." });
+      setRegisteringEvent(null);
+      setSelectedRegTypeId('');
+      setRegForm({ name: '', email: '', phone: '', notes: '' });
+      fetchUserRegistrations();
+      fetchRegistrationCounts(events.map(ev => ev.id));
+    } catch (err: any) {
+      toast({ title: "Registration failed", description: err.message, variant: "destructive" });
+    } finally {
+      setRegistering(false);
+    }
+  };
+
+  const handleCancelRegistration = async (regTypeId: string) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('event_registrations')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('registration_type_id', regTypeId);
+      if (error) throw error;
+      toast({ title: "Registration cancelled" });
+      fetchUserRegistrations();
+      fetchRegistrationCounts(events.map(ev => ev.id));
+    } catch (err: any) {
+      toast({ title: "Failed to cancel", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const openParticipantList = async (event: PublicEvent) => {
+    setParticipantEvent(event);
+    setLoadingParticipants(true);
+    const { data } = await supabase
+      .from('event_registrations')
+      .select('*')
+      .eq('event_id', event.id)
+      .order('created_at', { ascending: true });
+    setParticipants((data as EventRegistration[]) || []);
+    setLoadingParticipants(false);
+  };
 
   const geocodeZip = async (zip: string) => {
     const { data, error } = await supabase.functions.invoke('geocode-zip', {
@@ -666,6 +786,9 @@ const LocalEvents = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openParticipantList(event)}>
+                                <ClipboardList size={14} className="mr-2" /> Participants
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => openEditDialog(event)}>
                                 <Pencil size={14} className="mr-2" /> Edit
                               </DropdownMenuItem>
@@ -715,12 +838,23 @@ const LocalEvents = () => {
                           <Tag size={12} /> Registration Groups
                         </p>
                         <div className="flex flex-wrap gap-1.5">
-                          {event.registration_types.map((rt, idx) => (
-                            <Badge key={idx} variant="outline" className="text-xs font-normal">
-                              {rt.name}{rt.price ? ` · ${rt.price}` : ''}
-                              {rt.max_spots ? ` · ${rt.max_spots} spots` : ''}
-                            </Badge>
-                          ))}
+                          {event.registration_types.map((rt, idx) => {
+                            const count = rt.id ? (registrationCounts[rt.id] || 0) : 0;
+                            const isFull = rt.max_spots ? count >= rt.max_spots : false;
+                            const isRegistered = rt.id ? userRegistrations.has(rt.id) : false;
+                            return (
+                              <Badge 
+                                key={idx} 
+                                variant={isRegistered ? "default" : isFull ? "secondary" : "outline"} 
+                                className={`text-xs font-normal ${isRegistered ? '' : ''}`}
+                              >
+                                {rt.name}{rt.price ? ` · ${rt.price}` : ''}
+                                {rt.max_spots ? ` · ${count}/${rt.max_spots}` : ''}
+                                {isRegistered && <UserCheck size={10} className="ml-1" />}
+                                {isFull && !isRegistered && ' · FULL'}
+                              </Badge>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
@@ -729,11 +863,23 @@ const LocalEvents = () => {
                       <p className="text-xs text-muted-foreground mb-4 line-clamp-2">{event.description}</p>
                     )}
 
-                    <div className="mt-auto">
+                    <div className="mt-auto flex gap-2">
+                      {event.registration_types && event.registration_types.length > 0 && !isOrganizerEvent(event) && (
+                        <Button 
+                          size="sm" 
+                          className="flex-1"
+                          onClick={() => {
+                            setRegisteringEvent(event);
+                            setRegForm({ name: '', email: user?.email || '', phone: '', notes: '' });
+                          }}
+                        >
+                          <UserCheck size={14} className="mr-1" /> Register
+                        </Button>
+                      )}
                       {event.registration_link && (
-                        <Button size="sm" variant="outline" className="w-full" asChild>
+                        <Button size="sm" variant="outline" className={event.registration_types?.length ? '' : 'w-full'} asChild>
                           <a href={event.registration_link} target="_blank" rel="noopener noreferrer">
-                            Register <ExternalLink size={14} className="ml-1" />
+                            Info <ExternalLink size={14} className="ml-1" />
                           </a>
                         </Button>
                       )}
@@ -836,6 +982,136 @@ const LocalEvents = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Registration Dialog */}
+      <Dialog open={!!registeringEvent} onOpenChange={(open) => { if (!open) { setRegisteringEvent(null); setSelectedRegTypeId(''); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Register for {registeringEvent?.name}</DialogTitle>
+          </DialogHeader>
+          {registeringEvent && (
+            <form onSubmit={handleRegister} className="space-y-4 mt-2">
+              <div className="space-y-2">
+                <Label>Select Registration Group *</Label>
+                <Select value={selectedRegTypeId} onValueChange={setSelectedRegTypeId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a group..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(registeringEvent.registration_types || []).map(rt => {
+                      const count = rt.id ? (registrationCounts[rt.id] || 0) : 0;
+                      const isFull = rt.max_spots ? count >= rt.max_spots : false;
+                      const isRegistered = rt.id ? userRegistrations.has(rt.id) : false;
+                      return (
+                        <SelectItem 
+                          key={rt.id} 
+                          value={rt.id || ''} 
+                          disabled={isFull || isRegistered}
+                        >
+                          {rt.name}{rt.price ? ` — ${rt.price}` : ''}
+                          {rt.max_spots ? ` (${count}/${rt.max_spots})` : ''}
+                          {isRegistered ? ' ✓ Registered' : ''}
+                          {isFull && !isRegistered ? ' — FULL' : ''}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Show selected group description */}
+              {selectedRegTypeId && (() => {
+                const sel = (registeringEvent.registration_types || []).find(r => r.id === selectedRegTypeId);
+                return sel?.description ? (
+                  <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">{sel.description}</p>
+                ) : null;
+              })()}
+
+              <div className="space-y-2">
+                <Label>Your Name *</Label>
+                <Input value={regForm.name} onChange={e => setRegForm(p => ({ ...p, name: e.target.value }))} required placeholder="John Doe" />
+              </div>
+              <div className="space-y-2">
+                <Label>Email *</Label>
+                <Input type="email" value={regForm.email} onChange={e => setRegForm(p => ({ ...p, email: e.target.value }))} required placeholder="john@email.com" />
+              </div>
+              <div className="space-y-2">
+                <Label>Phone</Label>
+                <Input value={regForm.phone} onChange={e => setRegForm(p => ({ ...p, phone: e.target.value }))} placeholder="555-123-4567" />
+              </div>
+              <div className="space-y-2">
+                <Label>Notes</Label>
+                <Textarea value={regForm.notes} onChange={e => setRegForm(p => ({ ...p, notes: e.target.value }))} placeholder="Experience level, car info, etc." rows={2} />
+              </div>
+              <Button type="submit" disabled={registering || !selectedRegTypeId} className="w-full">
+                {registering ? <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : 'Confirm Registration'}
+              </Button>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Participant List Dialog */}
+      <Dialog open={!!participantEvent} onOpenChange={(open) => { if (!open) setParticipantEvent(null); }}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardList size={20} /> Participants — {participantEvent?.name}
+            </DialogTitle>
+          </DialogHeader>
+          {loadingParticipants ? (
+            <div className="flex justify-center py-8">
+              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : participants.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Users size={32} className="mx-auto mb-2 opacity-50" />
+              <p>No registrations yet.</p>
+            </div>
+          ) : (
+            <div className="space-y-4 mt-2">
+              {/* Group by registration type */}
+              {(participantEvent?.registration_types || []).map(rt => {
+                const groupParticipants = participants.filter(p => p.registration_type_id === rt.id);
+                if (groupParticipants.length === 0) return null;
+                return (
+                  <div key={rt.id}>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-semibold text-sm flex items-center gap-2">
+                        <Tag size={14} className="text-primary" /> {rt.name}
+                        {rt.price && <span className="text-muted-foreground font-normal">({rt.price})</span>}
+                      </h4>
+                      <Badge variant="secondary" className="text-xs">
+                        {groupParticipants.length}{rt.max_spots ? `/${rt.max_spots}` : ''} registered
+                      </Badge>
+                    </div>
+                    <div className="border border-border rounded-lg divide-y divide-border">
+                      {groupParticipants.map(p => (
+                        <div key={p.id} className="p-3 flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="font-medium text-sm truncate">{p.user_name}</p>
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                              <span className="flex items-center gap-1"><Mail size={10} /> {p.user_email}</span>
+                              {p.user_phone && <span className="flex items-center gap-1"><Phone size={10} /> {p.user_phone}</span>}
+                            </div>
+                            {p.notes && <p className="text-xs text-muted-foreground mt-1 italic">{p.notes}</p>}
+                          </div>
+                          <span className="text-xs text-muted-foreground shrink-0">
+                            {new Date(p.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+              <p className="text-xs text-muted-foreground text-center pt-2">
+                Total: {participants.length} participant{participants.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Navigation />
     </div>
