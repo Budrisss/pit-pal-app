@@ -282,6 +282,8 @@ const EventOrganizer = () => {
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
   const [newRegTypes, setNewRegTypes] = useState<RegistrationType[]>([]);
   const [editRegTypes, setEditRegTypes] = useState<RegistrationType[]>([]);
+  const [newSessions, setNewSessions] = useState<EventSession[]>([]);
+  const [editSessions, setEditSessions] = useState<EventSession[]>([]);
   const [registrationCounts, setRegistrationCounts] = useState<Record<string, number>>({});
   const [totalRegistrations, setTotalRegistrations] = useState(0);
 
