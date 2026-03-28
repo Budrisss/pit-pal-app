@@ -61,10 +61,6 @@ const CarCard = ({
         </div>
       </CardHeader>
       <CardContent className="space-y-3 lg:space-y-4">
-        {/* Car Image Placeholder */}
-        <div className="w-full h-24 sm:h-32 lg:h-40 bg-muted rounded-lg flex items-center justify-center">
-          <Car size={32} className="sm:size-12 lg:size-16 text-muted-foreground" />
-        </div>
 
         {/* Specs Grid */}
         <div className="grid grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm">
