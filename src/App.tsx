@@ -19,6 +19,8 @@ import Setups from "./pages/Setups";
 import Checklists from "./pages/Checklists";
 import Settings from "./pages/Settings";
 import SessionManagement from "./pages/SessionManagement";
+import LocalEvents from "./pages/LocalEvents";
+import OrganizerSignup from "./pages/OrganizerSignup";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,6 +47,8 @@ const App = () => (
                 <Route path="/checklists" element={<ProtectedRoute><Checklists /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 <Route path="/session-management/:eventId" element={<ProtectedRoute><SessionManagement /></ProtectedRoute>} />
+                <Route path="/local-events" element={<ProtectedRoute><LocalEvents /></ProtectedRoute>} />
+                <Route path="/organizer-signup" element={<ProtectedRoute><OrganizerSignup /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
