@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Plus, Users, Calendar, MapPin, Pencil, Trash2, Tag, X, ClipboardList, Mail, Phone, MoreVertical, Building2, Clock, Eye, Radio } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Separator } from "@/components/ui/separator";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrganizerMode } from "@/contexts/OrganizerModeContext";
 import { useToast } from "@/hooks/use-toast";
