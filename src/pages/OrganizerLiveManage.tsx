@@ -578,10 +578,7 @@ const OrganizerLiveManage = () => {
             </div>
           )}
         </motion.div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold flex items-center gap-2">
-              <Clock size={16} className="text-primary" /> Schedule
-            </h2>
+      </div>
             <Button variant="outline" size="sm" onClick={handleAddSession}>
               <Plus size={14} className="mr-1" /> Add Session
             </Button>
