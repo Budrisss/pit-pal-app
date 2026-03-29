@@ -60,12 +60,13 @@ interface SettingsData {
 }
 
 // Sortable Session Item
-const SortableSessionItem = ({ session, onDelete, onMarkComplete, onEditNote, isSameDayEvent }: {
+const SortableSessionItem = ({ session, onDelete, onMarkComplete, onEditNote, isSameDayEvent, isRegisteredEvent }: {
   session: Session;
   onDelete: (id: string) => void;
   onMarkComplete: (id: string) => void;
   onEditNote: (id: string) => void;
   isSameDayEvent: boolean;
+  isRegisteredEvent?: boolean;
 }) => {
   const {
     attributes,
