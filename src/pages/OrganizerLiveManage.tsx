@@ -407,13 +407,177 @@ const OrganizerLiveManage = () => {
           </div>
         )}
 
-        {/* Sessions */}
+        {/* Announcements */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           className="mb-6"
         >
+          <h2 className="font-semibold flex items-center gap-2 mb-3">
+            <Megaphone size={16} className="text-primary" /> Announcements
+          </h2>
+          <div className="flex gap-2 mb-4">
+            <Textarea
+              value={newAnnouncement}
+              onChange={(e) => setNewAnnouncement(e.target.value)}
+              placeholder="Post an update to participants..."
+              className="min-h-[60px] text-sm"
+              rows={2}
+            />
+            <Button
+              onClick={handlePostAnnouncement}
+              disabled={!newAnnouncement.trim() || postingAnnouncement}
+              size="icon"
+              className="shrink-0 self-end h-10 w-10"
+            >
+              <Send size={16} />
+            </Button>
+          </div>
+          {announcements.length === 0 ? (
+            <p className="text-sm text-muted-foreground italic">
+              No announcements yet.
+            </p>
+          ) : (
+            <div className="space-y-2 max-h-80 overflow-y-auto">
+              {announcements.map((a) => (
+                <div
+                  key={a.id}
+                  className="border border-border rounded-lg p-3 bg-muted/20 relative group"
+                >
+                  <p className="text-sm pr-6">{a.message}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    {new Date(a.created_at).toLocaleString()}
+                  </p>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
+                    onClick={() => handleDeleteAnnouncement(a.id)}
+                  >
+                    <X size={12} />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </motion.div>
+
+        <Separator className="mb-6" />
+
+        {/* Sessions */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mb-6"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold flex items-center gap-2">
+              <Clock size={16} className="text-primary" /> Schedule
+            </h2>
+            <Button variant="outline" size="sm" onClick={handleAddSession}>
+              <Plus size={14} className="mr-1" /> Add Session
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">
+            Changes are pushed to participants in real-time.
+          </p>
+
+          {sessions.length === 0 ? (
+            <Card className="bg-card/60 border-border">
+              <CardContent className="p-6 text-center text-muted-foreground text-sm">
+                No sessions yet. Add one to get started.
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-2">
+              {sessions.map((s) => (
+                <Card key={s.id} className="bg-card/80 border-border">
+                  <CardContent className="p-3">
+                    <div className="flex items-start gap-2">
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={s.name}
+                            onChange={(e) =>
+                              handleUpdateSession(s.id!, "name", e.target.value)
+                            }
+                            className="h-8 text-sm font-medium"
+                          />
+                          <Badge variant="outline" className="text-[10px] shrink-0">
+                            {getRunGroupName(s.registration_type_id)}
+                          </Badge>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Start Time</Label>
+                            <Input
+                              type="time"
+                              value={s.start_time || ""}
+                              onChange={(e) =>
+                                handleUpdateSession(s.id!, "start_time", e.target.value)
+                              }
+                              className="h-8 text-sm"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Duration (min)</Label>
+                            <Input
+                              type="number"
+                              value={s.duration_minutes ?? ""}
+                              onChange={(e) =>
+                                handleUpdateSession(
+                                  s.id!,
+                                  "duration_minutes",
+                                  e.target.value ? parseInt(e.target.value) : null
+                                )
+                              }
+                              className="h-8 text-sm"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Run Group</Label>
+                            <Select
+                              value={s.registration_type_id || "none"}
+                              onValueChange={(v) =>
+                                handleUpdateSession(
+                                  s.id!,
+                                  "registration_type_id",
+                                  v === "none" ? null : v
+                                )
+                              }
+                            >
+                              <SelectTrigger className="h-8 text-sm">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">All groups</SelectItem>
+                                {registrationTypes.map((rt) => (
+                                  <SelectItem key={rt.id} value={rt.id}>
+                                    {rt.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0 h-8 w-8 text-muted-foreground hover:text-destructive"
+                        onClick={() => setDeletingSessionId(s.id!)}
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </motion.div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold flex items-center gap-2">
               <Clock size={16} className="text-primary" /> Schedule
