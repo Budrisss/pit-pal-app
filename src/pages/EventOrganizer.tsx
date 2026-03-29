@@ -180,6 +180,7 @@ const SessionsEditor = ({
   onChange: (sessions: EventSession[]) => void;
   registrationTypes: RegistrationType[];
 }) => {
+  const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
   const addSession = () => onChange([...sessions, { ...emptySession(), sort_order: sessions.length }]);
   const removeSession = (i: number) => onChange(sessions.filter((_, idx) => idx !== i));
   const updateSession = (i: number, field: keyof EventSession, value: any) => {
@@ -190,6 +191,22 @@ const SessionsEditor = ({
 
   return (
     <div className="space-y-3">
+      <AlertDialog open={deleteIndex !== null} onOpenChange={(open) => { if (!open) setDeleteIndex(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Session</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{deleteIndex !== null ? sessions[deleteIndex]?.name || 'this session' : ''}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (deleteIndex !== null) { removeSession(deleteIndex); setDeleteIndex(null); } }}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <div className="flex items-center justify-between">
         <Label className="flex items-center gap-1.5">
           <Clock size={14} /> Sessions / Schedule
@@ -208,7 +225,7 @@ const SessionsEditor = ({
             variant="ghost"
             size="icon"
             className="absolute top-1 right-1 h-6 w-6 text-muted-foreground hover:text-destructive"
-            onClick={() => removeSession(i)}
+            onClick={() => setDeleteIndex(i)}
           >
             <X size={14} />
           </Button>
