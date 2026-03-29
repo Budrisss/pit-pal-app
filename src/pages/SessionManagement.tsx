@@ -1027,7 +1027,7 @@ const SessionManagement = () => {
             )}
 
             {/* Countdown to Next — always show below My Run Group when available */}
-            {countdown && (
+            {countdown ? (
               <div className="rounded-xl border-2 border-primary/60 bg-gradient-to-br from-primary/10 to-card/80 backdrop-blur-sm p-5 text-center shadow-f1 relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 pointer-events-none" />
                 <p className="text-xs uppercase tracking-widest text-primary font-semibold mb-2 relative">
@@ -1037,7 +1037,11 @@ const SessionManagement = () => {
                   {formatCountdown(countdown)}
                 </p>
               </div>
-            )}
+            ) : myRunGroup ? (
+              <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-5 text-center">
+                <p className="text-sm text-muted-foreground">🏁 No more sessions today</p>
+              </div>
+            ) : null}
 
             {/* Live Announcements */}
             {publicEventId && announcements.length > 0 && (
