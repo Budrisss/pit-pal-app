@@ -132,7 +132,7 @@ const Dashboard = () => {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="flex justify-center mb-6 lg:hidden"
           >
-            <img src={tracksideLogo} alt="Track Side Ops" className="h-12 w-auto invert" />
+            <img src={tracksideLogo} alt="Track Side Ops" className="h-20 w-auto invert" />
           </motion.div>
 
           <motion.h1
