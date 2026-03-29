@@ -651,69 +651,6 @@ const EventOrganizer = () => {
       return sum + (rt.id ? (registrationCounts[rt.id] || 0) : 0);
     }, 0);
   };
-  // Live event management
-  const openLiveManagement = async (event: PublicEvent) => {
-    setLiveEventId(event.id);
-    // Fetch sessions
-    const { data: sessData } = await supabase
-      .from('public_event_sessions')
-      .select('*')
-      .eq('event_id', event.id)
-      .order('sort_order');
-    setLiveSessions((sessData || []).map((s: any) => ({
-      id: s.id, registration_type_id: s.registration_type_id,
-      name: s.name, start_time: s.start_time || '',
-      duration_minutes: s.duration_minutes, sort_order: s.sort_order,
-    })));
-    // Fetch announcements
-    const { data: annData } = await supabase
-      .from('event_announcements')
-      .select('id, message, created_at')
-      .eq('event_id', event.id)
-      .order('created_at', { ascending: false });
-    setAnnouncements(annData || []);
-  };
-
-  const handleUpdateLiveSession = async (sessionId: string, field: string, value: any) => {
-    const { error } = await supabase
-      .from('public_event_sessions')
-      .update({ [field]: value })
-      .eq('id', sessionId);
-    if (error) {
-      toast({ title: "Failed to update session", variant: "destructive" });
-    } else {
-      setLiveSessions(prev => prev.map(s => s.id === sessionId ? { ...s, [field]: value } : s));
-      toast({ title: "Schedule updated live!" });
-    }
-  };
-
-  const handlePostAnnouncement = async () => {
-    if (!newAnnouncement.trim() || !liveEventId || !organizerProfile) return;
-    setPostingAnnouncement(true);
-    const { data, error } = await supabase
-      .from('event_announcements')
-      .insert({
-        event_id: liveEventId,
-        organizer_id: organizerProfile.id,
-        message: newAnnouncement.trim(),
-      })
-      .select('id, message, created_at')
-      .single();
-    if (error) {
-      toast({ title: "Failed to post", description: error.message, variant: "destructive" });
-    } else if (data) {
-      setAnnouncements(prev => [data, ...prev]);
-      setNewAnnouncement("");
-      toast({ title: "Announcement posted!" });
-    }
-    setPostingAnnouncement(false);
-  };
-
-  const handleDeleteAnnouncement = async (id: string) => {
-    await supabase.from('event_announcements').delete().eq('id', id);
-    setAnnouncements(prev => prev.filter(a => a.id !== id));
-  };
-
 
   if (!loading && !organizerProfile) {
     return (
