@@ -1144,14 +1144,6 @@ const SessionManagement = () => {
                           </div>
                         </div>
                       )}
-                      {/* Show existing note */}
-                      {editingNoteId !== session.id && session.notes && (
-                        <div className="ml-6 px-3 py-2 bg-card/30 border border-border/30 rounded text-xs text-muted-foreground cursor-pointer hover:bg-card/50 transition-colors"
-                          onClick={() => handleEditNote(session.id)}
-                        >
-                          <span className="text-racing-orange mr-1">📝</span> {session.notes}
-                        </div>
-                      )}
                     </div>
                   ))}
                   {sessions.length === 0 && (
