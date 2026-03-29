@@ -1,79 +1,26 @@
 
 
-# Organizer/User Mode Toggle with Live Updates
+## Plan: Improve Session Notes UX
 
-## Overview
+### Summary
+Hide session notes by default. Add a "Show Notes" option in the dropdown menu that expands notes inline below the session card. Show a small colored dot indicator on sessions that have saved notes.
 
-Separate the app into two distinct modes for users who are also organizers: **User Mode** (default, full access to Garage, Events, Local Events, etc.) and **Organizer Mode** (focused on managing their events, live schedule updates, and announcements). A toggle in the navigation bar lets them switch between modes.
+### Changes
 
-## Architecture
+**`src/pages/SessionManagement.tsx`**
 
-```text
-┌─────────────────────────────────────┐
-│         Navigation Bar              │
-│  [User Mode] ←toggle→ [Org Mode]   │
-│                                     │
-│  User Mode nav:                     │
-│    Home | Garage | Local | Events   │
-│    | Settings                       │
-│                                     │
-│  Organizer Mode nav:                │
-│    Organizer Dashboard | Settings   │
-│    | Logout                         │
-└─────────────────────────────────────┘
-```
+1. **Add expanded notes state**: Add a `useState<Set<string>>` to track which session IDs have their notes expanded.
 
-## Steps
+2. **Update `SortableSessionItem` component**:
+   - Add `onToggleNotes` callback and `isNotesExpanded` prop.
+   - In the dropdown menu, add a "Show Notes" / "Hide Notes" toggle item (only visible when notes exist).
+   - Add a small colored dot (orange/amber) next to the session name when `session.notes` is truthy — replacing the current inline `StickyNote` icon in the subtitle row.
+   - Below the session row content, render a collapsible section: when `isNotesExpanded` is true, show the notes text in a subtle `bg-muted/30 rounded p-2 mt-2 text-xs` block.
 
-### 1. Create an Organizer Mode Context
-- New file: `src/contexts/OrganizerModeContext.tsx`
-- Stores `isOrganizerMode` boolean + `toggleMode()` function
-- Also stores `isOrganizer` (fetched from `organizer_profiles` table) — removes duplicated logic from both nav components
-- Persists mode choice in `localStorage`
+3. **Wire toggle in parent**: Pass toggle handler and expanded state down to each `SortableSessionItem`.
 
-### 2. Update Navigation Components
-- **Both `Navigation.tsx` and `DesktopNavigation.tsx`**:
-  - Consume `OrganizerModeContext` instead of querying `organizer_profiles` directly
-  - Show a toggle button (e.g., a switch or icon button) when user is an organizer
-  - In **User Mode**: show Home, Garage, Local, Events, Settings (hide Organizer)
-  - In **Organizer Mode**: show Organizer Dashboard, Settings, Logout only
-  - Remove the registration badge logic from nav (it stays on the Organizer page itself)
-
-### 3. Database: Add `event_announcements` Table
-- New migration with columns: `id`, `event_id`, `organizer_id`, `message` (text), `created_at`
-- RLS: organizers can INSERT/UPDATE/DELETE their own announcements; authenticated users can SELECT announcements for events they're registered for (or all, for simplicity)
-- Enable realtime: `ALTER PUBLICATION supabase_realtime ADD TABLE public.event_announcements;`
-
-### 4. Enable Realtime on `public_event_sessions`
-- Add `ALTER PUBLICATION supabase_realtime ADD TABLE public.public_event_sessions;` so schedule changes push live to participants
-
-### 5. Live Schedule Editing on Organizer Dashboard
-- On the Event Organizer page, add an **"Active Event"** management section when an event is happening (or selectable for any event)
-- Allow inline editing of session times/durations with immediate save to `public_event_sessions`
-- Changes propagate via realtime to participants viewing the event
-
-### 6. Announcements Section on Organizer Dashboard
-- Add a text input + "Post" button on the Event Organizer page per event
-- Organizer types a message → inserts into `event_announcements`
-- Shows list of past announcements with timestamps
-
-### 7. Participant-Facing: Show Live Updates & Announcements
-- On `PublicEventPreview.tsx` (and optionally `LocalEvents.tsx` event detail):
-  - Subscribe to `public_event_sessions` changes via realtime — auto-update schedule display
-  - Subscribe to `event_announcements` — show announcements feed with newest first
-  - Visual indicator (pulse/badge) when new announcement arrives
-
-### 8. Wrap App with OrganizerModeContext
-- In `App.tsx`, add `<OrganizerModeProvider>` inside `<AuthProvider>`
-
-## Technical Details
-
-- **Realtime subscriptions**: Use `supabase.channel().on('postgres_changes', ...)` pattern for both sessions and announcements tables
-- **Mode toggle UI**: On mobile nav, a small switch icon; on desktop, a styled toggle button with "User" / "Organizer" labels
-- **`event_announcements` schema**:
-  - `id uuid PK default gen_random_uuid()`
-  - `event_id uuid NOT NULL`
-  - `organizer_id uuid NOT NULL`
-  - `message text NOT NULL`
-  - `created_at timestamptz default now()`
+### Technical Details
+- No database changes needed — notes already stored in `sessions` table.
+- The existing "Add/Edit Notes" dropdown item stays for editing. The new "Show/Hide Notes" item is purely for display toggle.
+- The colored dot will be a small `w-1.5 h-1.5 rounded-full bg-amber-500` element positioned near the session name.
 
