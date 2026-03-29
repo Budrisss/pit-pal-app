@@ -115,7 +115,6 @@ const OrganizerLiveManage = () => {
         "postgres_changes",
         { event: "*", schema: "public", table: "public_event_sessions", filter: `event_id=eq.${eventId}` },
         () => {
-          // Refetch sessions on any change
           supabase
             .from("public_event_sessions")
             .select("*")
@@ -158,7 +157,6 @@ const OrganizerLiveManage = () => {
     };
   }, [eventId]);
 
-  // Update a session field
   const handleUpdateSession = async (sessionId: string, field: string, value: any) => {
     const { error } = await supabase
       .from("public_event_sessions")
@@ -173,7 +171,6 @@ const OrganizerLiveManage = () => {
     }
   };
 
-  // Add a new session
   const handleAddSession = async () => {
     if (!eventId) return;
     const { error } = await supabase.from("public_event_sessions").insert({
@@ -188,7 +185,6 @@ const OrganizerLiveManage = () => {
     }
   };
 
-  // Delete a session
   const handleDeleteSession = async () => {
     if (!deletingSessionId) return;
     const { error } = await supabase
@@ -203,7 +199,6 @@ const OrganizerLiveManage = () => {
     setDeletingSessionId(null);
   };
 
-  // Post announcement
   const handlePostAnnouncement = async () => {
     if (!newAnnouncement.trim() || !eventId || !organizerProfileId) return;
     setPostingAnnouncement(true);
@@ -221,7 +216,6 @@ const OrganizerLiveManage = () => {
     setPostingAnnouncement(false);
   };
 
-  // Delete announcement
   const handleDeleteAnnouncement = async (id: string) => {
     await supabase.from("event_announcements").delete().eq("id", id);
   };
@@ -231,7 +225,6 @@ const OrganizerLiveManage = () => {
     return registrationTypes.find((rt) => rt.id === regTypeId)?.name || "Unknown";
   };
 
-  // Session state calculation
   const sessionStates = useMemo(() => {
     if (!eventDate) return [];
     const now = currentTime;
@@ -281,7 +274,7 @@ const OrganizerLiveManage = () => {
     const hrs = Math.floor(diffMs / 3600000);
     const mins = Math.floor((diffMs % 3600000) / 60000);
     const secs = Math.floor((diffMs % 60000) / 1000);
-    const isBufferZone = diffMs <= 5 * 60 * 1000; // 5 minutes
+    const isBufferZone = diffMs <= 5 * 60 * 1000;
     return { hours: hrs, minutes: mins, seconds: secs, isBufferZone, sessionName: next.name, runGroup: getRunGroupName(next.registration_type_id) };
   }, [sessionStates, eventDate, currentTime]);
 
@@ -574,184 +567,6 @@ const OrganizerLiveManage = () => {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
-            </div>
-          )}
-        </motion.div>
-      </div>
-
-      {/* Delete Session Confirmation */}
-      <AlertDialog
-        open={!!deletingSessionId}
-        onOpenChange={(open) => {
-          if (!open) setDeletingSessionId(null);
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Session</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure? This will remove the session for all participants.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteSession}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <Navigation />
-    </div>
-  );
-};
-
-export default OrganizerLiveManage;
-            <div className="space-y-2">
-              {sessions.map((s) => (
-                <Card key={s.id} className="bg-card/80 border-border">
-                  <CardContent className="p-3">
-                    <div className="flex items-start gap-2">
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Input
-                            value={s.name}
-                            onChange={(e) =>
-                              handleUpdateSession(s.id!, "name", e.target.value)
-                            }
-                            className="h-8 text-sm font-medium"
-                          />
-                          <Badge variant="outline" className="text-[10px] shrink-0">
-                            {getRunGroupName(s.registration_type_id)}
-                          </Badge>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <div className="space-y-1">
-                            <Label className="text-xs">Start Time</Label>
-                            <Input
-                              type="time"
-                              value={s.start_time || ""}
-                              onChange={(e) =>
-                                handleUpdateSession(s.id!, "start_time", e.target.value)
-                              }
-                              className="h-8 text-sm"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs">Duration (min)</Label>
-                            <Input
-                              type="number"
-                              value={s.duration_minutes ?? ""}
-                              onChange={(e) =>
-                                handleUpdateSession(
-                                  s.id!,
-                                  "duration_minutes",
-                                  e.target.value ? parseInt(e.target.value) : null
-                                )
-                              }
-                              className="h-8 text-sm"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs">Run Group</Label>
-                            <Select
-                              value={s.registration_type_id || "none"}
-                              onValueChange={(v) =>
-                                handleUpdateSession(
-                                  s.id!,
-                                  "registration_type_id",
-                                  v === "none" ? null : v
-                                )
-                              }
-                            >
-                              <SelectTrigger className="h-8 text-sm">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none">All groups</SelectItem>
-                                {registrationTypes.map((rt) => (
-                                  <SelectItem key={rt.id} value={rt.id}>
-                                    {rt.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="shrink-0 h-8 w-8 text-muted-foreground hover:text-destructive"
-                        onClick={() => setDeletingSessionId(s.id!)}
-                      >
-                        <Trash2 size={14} />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </motion.div>
-
-        <Separator className="mb-6" />
-
-        {/* Announcements */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <h2 className="font-semibold flex items-center gap-2 mb-3">
-            <Megaphone size={16} className="text-primary" /> Announcements
-          </h2>
-          <div className="flex gap-2 mb-4">
-            <Textarea
-              value={newAnnouncement}
-              onChange={(e) => setNewAnnouncement(e.target.value)}
-              placeholder="Post an update to participants..."
-              className="min-h-[60px] text-sm"
-              rows={2}
-            />
-            <Button
-              onClick={handlePostAnnouncement}
-              disabled={!newAnnouncement.trim() || postingAnnouncement}
-              size="icon"
-              className="shrink-0 self-end h-10 w-10"
-            >
-              <Send size={16} />
-            </Button>
-          </div>
-          {announcements.length === 0 ? (
-            <p className="text-sm text-muted-foreground italic">
-              No announcements yet.
-            </p>
-          ) : (
-            <div className="space-y-2 max-h-80 overflow-y-auto">
-              {announcements.map((a) => (
-                <div
-                  key={a.id}
-                  className="border border-border rounded-lg p-3 bg-muted/20 relative group"
-                >
-                  <p className="text-sm pr-6">{a.message}</p>
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    {new Date(a.created_at).toLocaleString()}
-                  </p>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
-                    onClick={() => handleDeleteAnnouncement(a.id)}
-                  >
-                    <X size={12} />
-                  </Button>
-                </div>
               ))}
             </div>
           )}
