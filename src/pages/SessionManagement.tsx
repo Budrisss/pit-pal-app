@@ -358,7 +358,7 @@ const SessionManagement = () => {
       const filtered = upcomingSessions.filter(s =>
         s.registrationTypeId ? s.registrationTypeId === myRunGroup : s.referenceName === selectedGroup?.name
       );
-      if (filtered.length > 0) upcomingSessions = filtered;
+      upcomingSessions = filtered;
     }
     if (upcomingSessions.length === 0) return null;
     return upcomingSessions.sort((a, b) => {
