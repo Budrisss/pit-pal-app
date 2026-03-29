@@ -530,7 +530,7 @@ const SessionManagement = () => {
         .maybeSingle();
 
       if (eventRow?.public_event_id) {
-        // Registered event — fetch organizer sessions as source of truth
+        setIsRegisteredEvent(true);
         const [sessionsRes, regTypesRes] = await Promise.all([
           (supabase as any)
             .from("public_event_sessions")
@@ -1051,44 +1051,46 @@ const SessionManagement = () => {
                 Session Schedule
                 <Badge variant="secondary" className="text-xs">{sessions.length}</Badge>
               </h2>
-              <Dialog open={showAddSession} onOpenChange={setShowAddSession}>
-                <DialogTrigger asChild>
-                  <Button variant="pulse" size="sm">
-                    <Plus size={14} />
-                    Add Session
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader><DialogTitle>Add New Session</DialogTitle></DialogHeader>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Type</Label>
-                        <Select value={newSessionType} onValueChange={(v) => setNewSessionType(v as any)}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="practice">Practice</SelectItem>
-                            <SelectItem value="qualifying">Qualifying</SelectItem>
-                            <SelectItem value="race">Race</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Duration (min)</Label>
-                        <Input type="number" value={newSessionDuration} onChange={(e) => setNewSessionDuration(e.target.value)} min="1" max="120" />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Start Time</Label>
-                      <Input type="time" value={newSessionTime} onChange={(e) => setNewSessionTime(e.target.value)} />
-                    </div>
-                    <Button onClick={handleAddSession} className="w-full">
+              {!isRegisteredEvent && (
+                <Dialog open={showAddSession} onOpenChange={setShowAddSession}>
+                  <DialogTrigger asChild>
+                    <Button variant="pulse" size="sm">
                       <Plus size={14} />
                       Add Session
                     </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader><DialogTitle>Add New Session</DialogTitle></DialogHeader>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Type</Label>
+                          <Select value={newSessionType} onValueChange={(v) => setNewSessionType(v as any)}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="practice">Practice</SelectItem>
+                              <SelectItem value="qualifying">Qualifying</SelectItem>
+                              <SelectItem value="race">Race</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Duration (min)</Label>
+                          <Input type="number" value={newSessionDuration} onChange={(e) => setNewSessionDuration(e.target.value)} min="1" max="120" />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Start Time</Label>
+                        <Input type="time" value={newSessionTime} onChange={(e) => setNewSessionTime(e.target.value)} />
+                      </div>
+                      <Button onClick={handleAddSession} className="w-full">
+                        <Plus size={14} />
+                        Add Session
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              )}
             </div>
 
             {/* Session List */}
