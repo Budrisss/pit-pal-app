@@ -360,7 +360,7 @@ const OrganizerLiveManage = () => {
         )}
 
         {/* Next Session Countdown */}
-        {!activeSession && nextCountdown && (
+        {nextCountdown && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -389,7 +389,7 @@ const OrganizerLiveManage = () => {
           </motion.div>
         )}
 
-        {!activeSession && !nextCountdown && sessions.length > 0 && (
+        {!nextCountdown && sessions.length > 0 && (
           <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-5 mb-4 text-center">
             <p className="text-sm text-muted-foreground">🏁 No more sessions today</p>
           </div>
