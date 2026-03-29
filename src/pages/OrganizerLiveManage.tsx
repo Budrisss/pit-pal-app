@@ -231,6 +231,59 @@ const OrganizerLiveManage = () => {
     return registrationTypes.find((rt) => rt.id === regTypeId)?.name || "Unknown";
   };
 
+  // Session state calculation
+  const sessionStates = useMemo(() => {
+    if (!eventDate) return [];
+    const now = currentTime;
+    const evDate = parseISO(eventDate);
+    return sessions.map((s) => {
+      if (!s.start_time || !s.duration_minutes) return { ...s, state: "upcoming" as const };
+      const [h, m] = s.start_time.split(":").map(Number);
+      const start = new Date(evDate);
+      start.setHours(h, m, 0, 0);
+      const end = addMinutes(start, s.duration_minutes);
+      if (isAfter(now, end)) return { ...s, state: "completed" as const };
+      if (isAfter(now, start) && isBefore(now, end)) return { ...s, state: "active" as const };
+      return { ...s, state: "upcoming" as const };
+    });
+  }, [sessions, eventDate, currentTime]);
+
+  const activeSession = sessionStates.find((s) => s.state === "active");
+  const activeRemaining = useMemo(() => {
+    if (!activeSession?.start_time || !activeSession?.duration_minutes || !eventDate) return null;
+    const evDate = parseISO(eventDate);
+    const [h, m] = activeSession.start_time.split(":").map(Number);
+    const start = new Date(evDate);
+    start.setHours(h, m, 0, 0);
+    const end = addMinutes(start, activeSession.duration_minutes);
+    const diffMs = differenceInMilliseconds(end, currentTime);
+    if (diffMs <= 0) return null;
+    return { minutes: Math.floor(diffMs / 60000), seconds: Math.floor((diffMs % 60000) / 1000) };
+  }, [activeSession, eventDate, currentTime]);
+
+  const nextCountdown = useMemo(() => {
+    if (!eventDate) return null;
+    const evDate = parseISO(eventDate);
+    const upcoming = sessionStates
+      .filter((s) => s.state === "upcoming" && s.start_time)
+      .sort((a, b) => {
+        const [ah, am] = a.start_time.split(":").map(Number);
+        const [bh, bm] = b.start_time.split(":").map(Number);
+        return ah * 60 + am - (bh * 60 + bm);
+      });
+    if (upcoming.length === 0) return null;
+    const next = upcoming[0];
+    const [h, m] = next.start_time.split(":").map(Number);
+    const start = new Date(evDate);
+    start.setHours(h, m, 0, 0);
+    const diffMs = differenceInMilliseconds(start, currentTime);
+    if (diffMs <= 0) return null;
+    const hrs = Math.floor(diffMs / 3600000);
+    const mins = Math.floor((diffMs % 3600000) / 60000);
+    const secs = Math.floor((diffMs % 60000) / 1000);
+    return { hours: hrs, minutes: mins, seconds: secs, sessionName: next.name, runGroup: getRunGroupName(next.registration_type_id) };
+  }, [sessionStates, eventDate, currentTime]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
