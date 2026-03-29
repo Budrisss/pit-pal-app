@@ -60,12 +60,13 @@ interface SettingsData {
 }
 
 // Sortable Session Item
-const SortableSessionItem = ({ session, onDelete, onMarkComplete, onEditNote, isSameDayEvent }: {
+const SortableSessionItem = ({ session, onDelete, onMarkComplete, onEditNote, isSameDayEvent, isRegisteredEvent }: {
   session: Session;
   onDelete: (id: string) => void;
   onMarkComplete: (id: string) => void;
   onEditNote: (id: string) => void;
   isSameDayEvent: boolean;
+  isRegisteredEvent?: boolean;
 }) => {
   const {
     attributes,
@@ -106,9 +107,8 @@ const SortableSessionItem = ({ session, onDelete, onMarkComplete, onEditNote, is
     >
       <div className="flex items-center gap-3">
         <div
-          {...attributes}
-          {...listeners}
-          className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
+          {...(isRegisteredEvent ? {} : { ...attributes, ...listeners })}
+          className={`${isRegisteredEvent ? 'text-muted-foreground/30' : 'cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground'}`}
         >
           <GripVertical size={14} />
         </div>
@@ -157,19 +157,21 @@ const SortableSessionItem = ({ session, onDelete, onMarkComplete, onEditNote, is
                 <StickyNote size={14} className="mr-2" />
                 {session.notes ? "Edit Notes" : "Add Notes"}
               </DropdownMenuItem>
-              {isSameDayEvent && session.state !== "completed" && (
+              {!isRegisteredEvent && isSameDayEvent && session.state !== "completed" && (
                 <DropdownMenuItem onClick={() => onMarkComplete(session.id)}>
                   <CheckCircle2 size={14} className="mr-2" />
                   Mark Complete
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={() => onDelete(session.id)}
-              >
-                <Trash2 size={14} className="mr-2" />
-                Delete
-              </DropdownMenuItem>
+              {!isRegisteredEvent && (
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => onDelete(session.id)}
+                >
+                  <Trash2 size={14} className="mr-2" />
+                  Delete
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -292,6 +294,7 @@ const SessionManagement = () => {
   const [showAddSession, setShowAddSession] = useState(false);
   const [announcements, setAnnouncements] = useState<{ id: string; message: string; created_at: string }[]>([]);
   const [publicEventId, setPublicEventId] = useState<string | null>(null);
+  const [isRegisteredEvent, setIsRegisteredEvent] = useState(false);
   const [myRunGroup, setMyRunGroup] = useState<string | null>(null); // stores run group ID
   const [runGroups, setRunGroups] = useState<{ id: string; name: string }[]>([]);
 
@@ -527,7 +530,7 @@ const SessionManagement = () => {
         .maybeSingle();
 
       if (eventRow?.public_event_id) {
-        // Registered event — fetch organizer sessions as source of truth
+        setIsRegisteredEvent(true);
         const [sessionsRes, regTypesRes] = await Promise.all([
           (supabase as any)
             .from("public_event_sessions")
@@ -1048,44 +1051,46 @@ const SessionManagement = () => {
                 Session Schedule
                 <Badge variant="secondary" className="text-xs">{sessions.length}</Badge>
               </h2>
-              <Dialog open={showAddSession} onOpenChange={setShowAddSession}>
-                <DialogTrigger asChild>
-                  <Button variant="pulse" size="sm">
-                    <Plus size={14} />
-                    Add Session
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader><DialogTitle>Add New Session</DialogTitle></DialogHeader>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Type</Label>
-                        <Select value={newSessionType} onValueChange={(v) => setNewSessionType(v as any)}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="practice">Practice</SelectItem>
-                            <SelectItem value="qualifying">Qualifying</SelectItem>
-                            <SelectItem value="race">Race</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Duration (min)</Label>
-                        <Input type="number" value={newSessionDuration} onChange={(e) => setNewSessionDuration(e.target.value)} min="1" max="120" />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Start Time</Label>
-                      <Input type="time" value={newSessionTime} onChange={(e) => setNewSessionTime(e.target.value)} />
-                    </div>
-                    <Button onClick={handleAddSession} className="w-full">
+              {!isRegisteredEvent && (
+                <Dialog open={showAddSession} onOpenChange={setShowAddSession}>
+                  <DialogTrigger asChild>
+                    <Button variant="pulse" size="sm">
                       <Plus size={14} />
                       Add Session
                     </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader><DialogTitle>Add New Session</DialogTitle></DialogHeader>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Type</Label>
+                          <Select value={newSessionType} onValueChange={(v) => setNewSessionType(v as any)}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="practice">Practice</SelectItem>
+                              <SelectItem value="qualifying">Qualifying</SelectItem>
+                              <SelectItem value="race">Race</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Duration (min)</Label>
+                          <Input type="number" value={newSessionDuration} onChange={(e) => setNewSessionDuration(e.target.value)} min="1" max="120" />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Start Time</Label>
+                        <Input type="time" value={newSessionTime} onChange={(e) => setNewSessionTime(e.target.value)} />
+                      </div>
+                      <Button onClick={handleAddSession} className="w-full">
+                        <Plus size={14} />
+                        Add Session
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              )}
             </div>
 
             {/* Session List */}
@@ -1100,6 +1105,7 @@ const SessionManagement = () => {
                         onMarkComplete={handleMarkSessionComplete}
                         onEditNote={handleEditNote}
                         isSameDayEvent={isSameDayEvent}
+                        isRegisteredEvent={isRegisteredEvent}
                       />
                       {/* Inline note editing */}
                       {editingNoteId === session.id && (
@@ -1131,12 +1137,18 @@ const SessionManagement = () => {
                       <div className="mx-auto w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
                         <Timer size={28} className="text-muted-foreground" />
                       </div>
-                      <h3 className="text-base font-semibold text-foreground mb-1">No sessions yet</h3>
-                      <p className="text-sm text-muted-foreground mb-4">Add sessions to build your schedule</p>
-                      <Button variant="pulse" size="sm" onClick={() => setShowAddSession(true)}>
-                        <Plus size={14} />
-                        Add First Session
-                      </Button>
+                      <h3 className="text-base font-semibold text-foreground mb-1">
+                        {isRegisteredEvent ? "No sessions scheduled" : "No sessions yet"}
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        {isRegisteredEvent ? "The organizer hasn't added sessions yet" : "Add sessions to build your schedule"}
+                      </p>
+                      {!isRegisteredEvent && (
+                        <Button variant="pulse" size="sm" onClick={() => setShowAddSession(true)}>
+                          <Plus size={14} />
+                          Add First Session
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>
