@@ -612,12 +612,6 @@ const OrganizerLiveManage = () => {
 };
 
 export default OrganizerLiveManage;
-            <Card className="bg-card/60 border-border">
-              <CardContent className="p-6 text-center text-muted-foreground text-sm">
-                No sessions yet. Add one to get started.
-              </CardContent>
-            </Card>
-          ) : (
             <div className="space-y-2">
               {sessions.map((s) => (
                 <Card key={s.id} className="bg-card/80 border-border">
