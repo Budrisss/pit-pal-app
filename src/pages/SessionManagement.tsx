@@ -107,9 +107,8 @@ const SortableSessionItem = ({ session, onDelete, onMarkComplete, onEditNote, is
     >
       <div className="flex items-center gap-3">
         <div
-          {...attributes}
-          {...listeners}
-          className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
+          {...(isRegisteredEvent ? {} : { ...attributes, ...listeners })}
+          className={`${isRegisteredEvent ? 'text-muted-foreground/30' : 'cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground'}`}
         >
           <GripVertical size={14} />
         </div>
@@ -158,19 +157,21 @@ const SortableSessionItem = ({ session, onDelete, onMarkComplete, onEditNote, is
                 <StickyNote size={14} className="mr-2" />
                 {session.notes ? "Edit Notes" : "Add Notes"}
               </DropdownMenuItem>
-              {isSameDayEvent && session.state !== "completed" && (
+              {!isRegisteredEvent && isSameDayEvent && session.state !== "completed" && (
                 <DropdownMenuItem onClick={() => onMarkComplete(session.id)}>
                   <CheckCircle2 size={14} className="mr-2" />
                   Mark Complete
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={() => onDelete(session.id)}
-              >
-                <Trash2 size={14} className="mr-2" />
-                Delete
-              </DropdownMenuItem>
+              {!isRegisteredEvent && (
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => onDelete(session.id)}
+                >
+                  <Trash2 size={14} className="mr-2" />
+                  Delete
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
