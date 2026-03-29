@@ -47,6 +47,7 @@ const OrganizerLiveManage = () => {
   const { toast } = useToast();
 
   const [eventName, setEventName] = useState("");
+  const [eventDate, setEventDate] = useState("");
   const [sessions, setSessions] = useState<EventSession[]>([]);
   const [registrationTypes, setRegistrationTypes] = useState<RegistrationType[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -69,14 +70,17 @@ const OrganizerLiveManage = () => {
     setLoading(true);
     try {
       const [eventRes, sessRes, regTypesRes, annRes, regsRes] = await Promise.all([
-        supabase.from("public_events").select("name, organizer_id").eq("id", eventId).single(),
+        supabase.from("public_events").select("name, organizer_id, date").eq("id", eventId).single(),
         supabase.from("public_event_sessions").select("*").eq("event_id", eventId).order("sort_order"),
         supabase.from("registration_types").select("id, name").eq("event_id", eventId),
         supabase.from("event_announcements").select("id, message, created_at").eq("event_id", eventId).order("created_at", { ascending: false }),
         supabase.from("event_registrations").select("id").eq("event_id", eventId),
       ]);
 
-      if (eventRes.data) setEventName(eventRes.data.name);
+      if (eventRes.data) {
+        setEventName(eventRes.data.name);
+        setEventDate(eventRes.data.date);
+      }
       setSessions(
         (sessRes.data || []).map((s: any) => ({
           id: s.id,
