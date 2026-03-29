@@ -378,12 +378,6 @@ const EventOrganizer = () => {
   const [participants, setParticipants] = useState<EventRegistration[]>([]);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
 
-  // Live management state
-  const [liveEventId, setLiveEventId] = useState<string | null>(null);
-  const [liveSessions, setLiveSessions] = useState<EventSession[]>([]);
-  const [announcements, setAnnouncements] = useState<Array<{ id: string; message: string; created_at: string }>>([]);
-  const [newAnnouncement, setNewAnnouncement] = useState("");
-  const [postingAnnouncement, setPostingAnnouncement] = useState(false);
 
 
   const [newEvent, setNewEvent] = useState({
