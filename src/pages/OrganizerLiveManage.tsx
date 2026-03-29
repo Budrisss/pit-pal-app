@@ -359,6 +359,14 @@ const OrganizerLiveManage = () => {
           </motion.div>
         )}
 
+        {activeSession && nextCountdown && (
+          <div className="flex items-center gap-3 my-2">
+            <div className="h-px flex-1 bg-border/60" />
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground">up next</span>
+            <div className="h-px flex-1 bg-border/60" />
+          </div>
+        )}
+
         {/* Next Session Countdown */}
         {nextCountdown && (
           <motion.div
