@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { addMinutes, parseISO, differenceInMilliseconds, isAfter, isBefore } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +47,7 @@ const OrganizerLiveManage = () => {
   const { toast } = useToast();
 
   const [eventName, setEventName] = useState("");
+  const [eventDate, setEventDate] = useState("");
   const [sessions, setSessions] = useState<EventSession[]>([]);
   const [registrationTypes, setRegistrationTypes] = useState<RegistrationType[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -68,14 +70,17 @@ const OrganizerLiveManage = () => {
     setLoading(true);
     try {
       const [eventRes, sessRes, regTypesRes, annRes, regsRes] = await Promise.all([
-        supabase.from("public_events").select("name, organizer_id").eq("id", eventId).single(),
+        supabase.from("public_events").select("name, organizer_id, date").eq("id", eventId).single(),
         supabase.from("public_event_sessions").select("*").eq("event_id", eventId).order("sort_order"),
         supabase.from("registration_types").select("id, name").eq("event_id", eventId),
         supabase.from("event_announcements").select("id, message, created_at").eq("event_id", eventId).order("created_at", { ascending: false }),
         supabase.from("event_registrations").select("id").eq("event_id", eventId),
       ]);
 
-      if (eventRes.data) setEventName(eventRes.data.name);
+      if (eventRes.data) {
+        setEventName(eventRes.data.name);
+        setEventDate(eventRes.data.date);
+      }
       setSessions(
         (sessRes.data || []).map((s: any) => ({
           id: s.id,
@@ -226,6 +231,59 @@ const OrganizerLiveManage = () => {
     return registrationTypes.find((rt) => rt.id === regTypeId)?.name || "Unknown";
   };
 
+  // Session state calculation
+  const sessionStates = useMemo(() => {
+    if (!eventDate) return [];
+    const now = currentTime;
+    const evDate = parseISO(eventDate);
+    return sessions.map((s) => {
+      if (!s.start_time || !s.duration_minutes) return { ...s, state: "upcoming" as const };
+      const [h, m] = s.start_time.split(":").map(Number);
+      const start = new Date(evDate);
+      start.setHours(h, m, 0, 0);
+      const end = addMinutes(start, s.duration_minutes);
+      if (isAfter(now, end)) return { ...s, state: "completed" as const };
+      if (isAfter(now, start) && isBefore(now, end)) return { ...s, state: "active" as const };
+      return { ...s, state: "upcoming" as const };
+    });
+  }, [sessions, eventDate, currentTime]);
+
+  const activeSession = sessionStates.find((s) => s.state === "active");
+  const activeRemaining = useMemo(() => {
+    if (!activeSession?.start_time || !activeSession?.duration_minutes || !eventDate) return null;
+    const evDate = parseISO(eventDate);
+    const [h, m] = activeSession.start_time.split(":").map(Number);
+    const start = new Date(evDate);
+    start.setHours(h, m, 0, 0);
+    const end = addMinutes(start, activeSession.duration_minutes);
+    const diffMs = differenceInMilliseconds(end, currentTime);
+    if (diffMs <= 0) return null;
+    return { minutes: Math.floor(diffMs / 60000), seconds: Math.floor((diffMs % 60000) / 1000) };
+  }, [activeSession, eventDate, currentTime]);
+
+  const nextCountdown = useMemo(() => {
+    if (!eventDate) return null;
+    const evDate = parseISO(eventDate);
+    const upcoming = sessionStates
+      .filter((s) => s.state === "upcoming" && s.start_time)
+      .sort((a, b) => {
+        const [ah, am] = a.start_time.split(":").map(Number);
+        const [bh, bm] = b.start_time.split(":").map(Number);
+        return ah * 60 + am - (bh * 60 + bm);
+      });
+    if (upcoming.length === 0) return null;
+    const next = upcoming[0];
+    const [h, m] = next.start_time.split(":").map(Number);
+    const start = new Date(evDate);
+    start.setHours(h, m, 0, 0);
+    const diffMs = differenceInMilliseconds(start, currentTime);
+    if (diffMs <= 0) return null;
+    const hrs = Math.floor(diffMs / 3600000);
+    const mins = Math.floor((diffMs % 3600000) / 60000);
+    const secs = Math.floor((diffMs % 60000) / 1000);
+    return { hours: hrs, minutes: mins, seconds: secs, sessionName: next.name, runGroup: getRunGroupName(next.registration_type_id) };
+  }, [sessionStates, eventDate, currentTime]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
@@ -270,6 +328,65 @@ const OrganizerLiveManage = () => {
             </Badge>
           </div>
         </motion.div>
+
+        {/* Active Session Banner */}
+        {activeSession && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-xl border border-green-500/30 bg-green-500/10 backdrop-blur-sm p-4 mb-4"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
+                <div>
+                  <p className="font-bold text-foreground">{activeSession.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {getRunGroupName(activeSession.registration_type_id)} • Started at {activeSession.start_time}
+                  </p>
+                </div>
+              </div>
+              {activeRemaining && (
+                <div className="text-right">
+                  <p className="text-2xl font-mono font-bold text-green-500">
+                    {activeRemaining.minutes}:{activeRemaining.seconds.toString().padStart(2, "0")}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">remaining</p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Next Session Countdown */}
+        {!activeSession && nextCountdown && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-xl border border-primary/30 bg-primary/5 backdrop-blur-sm p-4 mb-4"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Next Session</p>
+                <p className="font-bold text-foreground">{nextCountdown.sessionName}</p>
+                <p className="text-xs text-muted-foreground">{nextCountdown.runGroup}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-mono font-bold text-primary">
+                  {nextCountdown.hours > 0 && `${nextCountdown.hours}:`}
+                  {nextCountdown.minutes.toString().padStart(2, "0")}:{nextCountdown.seconds.toString().padStart(2, "0")}
+                </p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">until start</p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {!activeSession && !nextCountdown && sessions.length > 0 && (
+          <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-4 mb-4 text-center">
+            <p className="text-sm text-muted-foreground">🏁 No more sessions today</p>
+          </div>
+        )}
 
         {/* Sessions */}
         <motion.div
