@@ -1037,11 +1037,11 @@ const SessionManagement = () => {
                   {formatCountdown(countdown)}
                 </p>
               </div>
-            ) : myRunGroup ? (
+            ) : (
               <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-5 text-center">
                 <p className="text-sm text-muted-foreground">🏁 No more sessions today</p>
               </div>
-            ) : null}
+            )}
 
             {/* Live Announcements */}
             {publicEventId && announcements.length > 0 && (
