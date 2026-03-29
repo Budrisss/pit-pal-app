@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Clock, Calendar, Settings, Plus, Trash2, GripVertical, StickyNote, Timer, AlertCircle, Cloud, Thermometer, Eye, Wind, Play, CheckCircle2, MoreVertical, Megaphone } from "lucide-react";
+import { ArrowLeft, Clock, Calendar, Settings, Plus, Trash2, GripVertical, StickyNote, Timer, AlertCircle, Cloud, Thermometer, Eye, Wind, Play, CheckCircle2, MoreVertical, Megaphone, FileText } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -60,13 +60,15 @@ interface SettingsData {
 }
 
 // Sortable Session Item
-const SortableSessionItem = ({ session, onDelete, onMarkComplete, onEditNote, isSameDayEvent, isRegisteredEvent }: {
+const SortableSessionItem = ({ session, onDelete, onMarkComplete, onEditNote, onToggleNotes, isSameDayEvent, isRegisteredEvent, isNotesExpanded }: {
   session: Session;
   onDelete: (id: string) => void;
   onMarkComplete: (id: string) => void;
   onEditNote: (id: string) => void;
+  onToggleNotes: (id: string) => void;
   isSameDayEvent: boolean;
   isRegisteredEvent?: boolean;
+  isNotesExpanded?: boolean;
 }) => {
   const {
     attributes,
@@ -118,6 +120,9 @@ const SortableSessionItem = ({ session, onDelete, onMarkComplete, onEditNote, is
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
             <span className="font-semibold text-sm text-foreground truncate">{session.referenceName}</span>
+            {session.notes && (
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0" />
+            )}
             <Badge variant="outline" className="capitalize text-[10px] px-1.5 py-0">
               {session.type}
             </Badge>
@@ -126,12 +131,6 @@ const SortableSessionItem = ({ session, onDelete, onMarkComplete, onEditNote, is
             <span>{session.startTime}</span>
             <span className="text-border">•</span>
             <span>{session.duration} min</span>
-            {session.notes && (
-              <>
-                <span className="text-border">•</span>
-                <StickyNote size={10} className="text-racing-orange" />
-              </>
-            )}
           </div>
         </div>
 
@@ -157,6 +156,12 @@ const SortableSessionItem = ({ session, onDelete, onMarkComplete, onEditNote, is
                 <StickyNote size={14} className="mr-2" />
                 {session.notes ? "Edit Notes" : "Add Notes"}
               </DropdownMenuItem>
+              {session.notes && (
+                <DropdownMenuItem onClick={() => onToggleNotes(session.id)}>
+                  <FileText size={14} className="mr-2" />
+                  {isNotesExpanded ? "Hide Notes" : "Show Notes"}
+                </DropdownMenuItem>
+              )}
               {!isRegisteredEvent && isSameDayEvent && session.state !== "completed" && (
                 <DropdownMenuItem onClick={() => onMarkComplete(session.id)}>
                   <CheckCircle2 size={14} className="mr-2" />
@@ -176,6 +181,11 @@ const SortableSessionItem = ({ session, onDelete, onMarkComplete, onEditNote, is
           </DropdownMenu>
         </div>
       </div>
+      {isNotesExpanded && session.notes && (
+        <div className="mt-2 p-2.5 text-xs text-muted-foreground bg-muted/30 rounded-md border-l-2 border-amber-500/50 italic leading-relaxed">
+          {session.notes}
+        </div>
+      )}
     </div>
   );
 };
