@@ -307,6 +307,16 @@ const SessionManagement = () => {
   const [isRegisteredEvent, setIsRegisteredEvent] = useState(false);
   const [myRunGroup, setMyRunGroup] = useState<string | null>(null); // stores run group ID
   const [runGroups, setRunGroups] = useState<{ id: string; name: string }[]>([]);
+  const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
+
+  const handleToggleNotes = (sessionId: string) => {
+    setExpandedNotes(prev => {
+      const next = new Set(prev);
+      if (next.has(sessionId)) next.delete(sessionId);
+      else next.add(sessionId);
+      return next;
+    });
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -1114,8 +1124,10 @@ const SessionManagement = () => {
                         onDelete={handleDeleteSession}
                         onMarkComplete={handleMarkSessionComplete}
                         onEditNote={handleEditNote}
+                        onToggleNotes={handleToggleNotes}
                         isSameDayEvent={isSameDayEvent}
                         isRegisteredEvent={isRegisteredEvent}
+                        isNotesExpanded={expandedNotes.has(session.id)}
                       />
                       {/* Inline note editing */}
                       {editingNoteId === session.id && (
