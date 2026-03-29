@@ -579,10 +579,6 @@ const OrganizerLiveManage = () => {
           )}
         </motion.div>
       </div>
-            <Button variant="outline" size="sm" onClick={handleAddSession}>
-              <Plus size={14} className="mr-1" /> Add Session
-            </Button>
-          </div>
           <p className="text-xs text-muted-foreground mb-3">
             Changes are pushed to participants in real-time.
           </p>
