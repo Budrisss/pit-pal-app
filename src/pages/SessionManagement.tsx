@@ -1105,6 +1105,7 @@ const SessionManagement = () => {
                         onMarkComplete={handleMarkSessionComplete}
                         onEditNote={handleEditNote}
                         isSameDayEvent={isSameDayEvent}
+                        isRegisteredEvent={isRegisteredEvent}
                       />
                       {/* Inline note editing */}
                       {editingNoteId === session.id && (
