@@ -335,24 +335,24 @@ const OrganizerLiveManage = () => {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-xl border border-green-500/30 bg-green-500/10 backdrop-blur-sm p-4 mb-4"
+            className="rounded-xl border-2 border-green-500/40 bg-green-500/10 backdrop-blur-sm p-5 sm:p-6 mb-4"
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
+                <div className="w-4 h-4 rounded-full bg-green-500 animate-pulse" />
                 <div>
-                  <p className="font-bold text-foreground">{activeSession.name}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-lg font-bold text-foreground">{activeSession.name}</p>
+                  <p className="text-sm text-muted-foreground">
                     {getRunGroupName(activeSession.registration_type_id)} • Started at {activeSession.start_time}
                   </p>
                 </div>
               </div>
               {activeRemaining && (
                 <div className="text-right">
-                  <p className="text-2xl font-mono font-bold text-green-500">
+                  <p className="text-4xl sm:text-5xl font-mono font-bold text-green-500">
                     {activeRemaining.minutes}:{activeRemaining.seconds.toString().padStart(2, "0")}
                   </p>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">remaining</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">remaining</p>
                 </div>
               )}
             </div>
@@ -364,31 +364,33 @@ const OrganizerLiveManage = () => {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`rounded-xl border backdrop-blur-sm p-4 mb-4 ${
+            className={`rounded-xl border-2 backdrop-blur-sm p-5 sm:p-6 mb-4 ${
               nextCountdown.isBufferZone
-                ? "border-destructive/40 bg-destructive/10"
-                : "border-primary/30 bg-primary/5"
+                ? "border-destructive/50 bg-destructive/10"
+                : "border-orange-500/40 bg-orange-500/10"
             }`}
           >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Next Session</p>
-                <p className="font-bold text-foreground">{nextCountdown.sessionName}</p>
-                <p className="text-xs text-muted-foreground">{nextCountdown.runGroup}</p>
+                <p className="text-lg font-bold text-foreground">{nextCountdown.sessionName}</p>
+                <p className="text-sm text-muted-foreground">{nextCountdown.runGroup}</p>
               </div>
               <div className="text-right">
-                <p className={`text-2xl font-mono font-bold ${nextCountdown.isBufferZone ? "text-destructive animate-pulse" : "text-primary"}`}>
+                <p className={`text-4xl sm:text-5xl font-mono font-bold ${
+                  nextCountdown.isBufferZone ? "text-destructive animate-pulse" : "text-orange-500"
+                }`}>
                   {nextCountdown.hours > 0 && `${nextCountdown.hours}:`}
                   {nextCountdown.minutes.toString().padStart(2, "0")}:{nextCountdown.seconds.toString().padStart(2, "0")}
                 </p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">until start</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">until start</p>
               </div>
             </div>
           </motion.div>
         )}
 
         {!activeSession && !nextCountdown && sessions.length > 0 && (
-          <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-4 mb-4 text-center">
+          <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-5 mb-4 text-center">
             <p className="text-sm text-muted-foreground">🏁 No more sessions today</p>
           </div>
         )}
