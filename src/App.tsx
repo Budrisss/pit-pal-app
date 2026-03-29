@@ -23,6 +23,7 @@ import SessionManagement from "./pages/SessionManagement";
 import LocalEvents from "./pages/LocalEvents";
 import OrganizerSignup from "./pages/OrganizerSignup";
 import PublicEventPreview from "./pages/PublicEventPreview";
+import OrganizerLiveManage from "./pages/OrganizerLiveManage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -53,6 +54,7 @@ const App = () => (
                 <Route path="/local-events" element={<ProtectedRoute><LocalEvents /></ProtectedRoute>} />
                 <Route path="/public-event/:id" element={<ProtectedRoute><PublicEventPreview /></ProtectedRoute>} />
                 <Route path="/organizer-signup" element={<ProtectedRoute><OrganizerSignup /></ProtectedRoute>} />
+                <Route path="/live-manage/:eventId" element={<ProtectedRoute><OrganizerLiveManage /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>

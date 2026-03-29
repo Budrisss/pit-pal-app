@@ -9,9 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus, Users, Calendar, MapPin, Pencil, Trash2, Tag, X, ClipboardList, Mail, Phone, MoreVertical, DollarSign, Building2, Clock, GripVertical, Eye, Megaphone, Send, Radio } from "lucide-react";
+import { Plus, Users, Calendar, MapPin, Pencil, Trash2, Tag, X, ClipboardList, Mail, Phone, MoreVertical, Building2, Clock, Eye, Radio } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Separator } from "@/components/ui/separator";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrganizerMode } from "@/contexts/OrganizerModeContext";
 import { useToast } from "@/hooks/use-toast";
@@ -378,12 +378,6 @@ const EventOrganizer = () => {
   const [participants, setParticipants] = useState<EventRegistration[]>([]);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
 
-  // Live management state
-  const [liveEventId, setLiveEventId] = useState<string | null>(null);
-  const [liveSessions, setLiveSessions] = useState<EventSession[]>([]);
-  const [announcements, setAnnouncements] = useState<Array<{ id: string; message: string; created_at: string }>>([]);
-  const [newAnnouncement, setNewAnnouncement] = useState("");
-  const [postingAnnouncement, setPostingAnnouncement] = useState(false);
 
 
   const [newEvent, setNewEvent] = useState({
@@ -657,69 +651,6 @@ const EventOrganizer = () => {
       return sum + (rt.id ? (registrationCounts[rt.id] || 0) : 0);
     }, 0);
   };
-  // Live event management
-  const openLiveManagement = async (event: PublicEvent) => {
-    setLiveEventId(event.id);
-    // Fetch sessions
-    const { data: sessData } = await supabase
-      .from('public_event_sessions')
-      .select('*')
-      .eq('event_id', event.id)
-      .order('sort_order');
-    setLiveSessions((sessData || []).map((s: any) => ({
-      id: s.id, registration_type_id: s.registration_type_id,
-      name: s.name, start_time: s.start_time || '',
-      duration_minutes: s.duration_minutes, sort_order: s.sort_order,
-    })));
-    // Fetch announcements
-    const { data: annData } = await supabase
-      .from('event_announcements')
-      .select('id, message, created_at')
-      .eq('event_id', event.id)
-      .order('created_at', { ascending: false });
-    setAnnouncements(annData || []);
-  };
-
-  const handleUpdateLiveSession = async (sessionId: string, field: string, value: any) => {
-    const { error } = await supabase
-      .from('public_event_sessions')
-      .update({ [field]: value })
-      .eq('id', sessionId);
-    if (error) {
-      toast({ title: "Failed to update session", variant: "destructive" });
-    } else {
-      setLiveSessions(prev => prev.map(s => s.id === sessionId ? { ...s, [field]: value } : s));
-      toast({ title: "Schedule updated live!" });
-    }
-  };
-
-  const handlePostAnnouncement = async () => {
-    if (!newAnnouncement.trim() || !liveEventId || !organizerProfile) return;
-    setPostingAnnouncement(true);
-    const { data, error } = await supabase
-      .from('event_announcements')
-      .insert({
-        event_id: liveEventId,
-        organizer_id: organizerProfile.id,
-        message: newAnnouncement.trim(),
-      })
-      .select('id, message, created_at')
-      .single();
-    if (error) {
-      toast({ title: "Failed to post", description: error.message, variant: "destructive" });
-    } else if (data) {
-      setAnnouncements(prev => [data, ...prev]);
-      setNewAnnouncement("");
-      toast({ title: "Announcement posted!" });
-    }
-    setPostingAnnouncement(false);
-  };
-
-  const handleDeleteAnnouncement = async (id: string) => {
-    await supabase.from('event_announcements').delete().eq('id', id);
-    setAnnouncements(prev => prev.filter(a => a.id !== id));
-  };
-
 
   if (!loading && !organizerProfile) {
     return (
@@ -911,7 +842,7 @@ const EventOrganizer = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openLiveManagement(event)}>
+                          <DropdownMenuItem onClick={() => navigate(`/live-manage/${event.id}`)}>
                             <Radio size={14} className="mr-2" /> Live Manage
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => openPreview(event)}>
@@ -1035,104 +966,6 @@ const EventOrganizer = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Live Management Dialog */}
-      <Dialog open={!!liveEventId} onOpenChange={(open) => { if (!open) setLiveEventId(null); }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Radio size={20} className="text-primary animate-pulse" /> Live Event Management
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-6 mt-2">
-            {/* Live Schedule Editing */}
-            <div>
-              <h3 className="font-semibold text-sm flex items-center gap-2 mb-3">
-                <Clock size={16} className="text-primary" /> Live Schedule
-              </h3>
-              <p className="text-xs text-muted-foreground mb-3">Changes are pushed to participants in real-time.</p>
-              {liveSessions.length === 0 ? (
-                <p className="text-sm text-muted-foreground italic">No sessions for this event.</p>
-              ) : (
-                <div className="space-y-2">
-                  {liveSessions.map((s) => (
-                    <div key={s.id} className="border border-border rounded-lg p-3 bg-muted/30">
-                      <p className="font-medium text-sm mb-2">{s.name}</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1">
-                          <Label className="text-xs">Start Time</Label>
-                          <Input
-                            type="time"
-                            value={s.start_time || ''}
-                            onChange={(e) => handleUpdateLiveSession(s.id!, 'start_time', e.target.value)}
-                            className="h-8 text-sm"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Duration (min)</Label>
-                          <Input
-                            type="number"
-                            value={s.duration_minutes ?? ''}
-                            onChange={(e) => handleUpdateLiveSession(s.id!, 'duration_minutes', e.target.value ? parseInt(e.target.value) : null)}
-                            className="h-8 text-sm"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <Separator />
-
-            {/* Announcements */}
-            <div>
-              <h3 className="font-semibold text-sm flex items-center gap-2 mb-3">
-                <Megaphone size={16} className="text-primary" /> Announcements
-              </h3>
-              <div className="flex gap-2 mb-4">
-                <Textarea
-                  value={newAnnouncement}
-                  onChange={(e) => setNewAnnouncement(e.target.value)}
-                  placeholder="Post an update to participants..."
-                  className="min-h-[60px] text-sm"
-                  rows={2}
-                />
-                <Button
-                  onClick={handlePostAnnouncement}
-                  disabled={!newAnnouncement.trim() || postingAnnouncement}
-                  size="icon"
-                  className="shrink-0 self-end h-10 w-10"
-                >
-                  <Send size={16} />
-                </Button>
-              </div>
-              {announcements.length === 0 ? (
-                <p className="text-sm text-muted-foreground italic">No announcements yet.</p>
-              ) : (
-                <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {announcements.map((a) => (
-                    <div key={a.id} className="border border-border rounded-lg p-3 bg-muted/20 relative group">
-                      <p className="text-sm pr-6">{a.message}</p>
-                      <p className="text-[10px] text-muted-foreground mt-1">
-                        {new Date(a.created_at).toLocaleString()}
-                      </p>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
-                        onClick={() => handleDeleteAnnouncement(a.id)}
-                      >
-                        <X size={12} />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       <Navigation />
 
