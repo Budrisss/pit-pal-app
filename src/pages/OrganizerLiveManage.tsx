@@ -281,7 +281,8 @@ const OrganizerLiveManage = () => {
     const hrs = Math.floor(diffMs / 3600000);
     const mins = Math.floor((diffMs % 3600000) / 60000);
     const secs = Math.floor((diffMs % 60000) / 1000);
-    return { hours: hrs, minutes: mins, seconds: secs, sessionName: next.name, runGroup: getRunGroupName(next.registration_type_id) };
+    const isBufferZone = diffMs <= 5 * 60 * 1000; // 5 minutes
+    return { hours: hrs, minutes: mins, seconds: secs, isBufferZone, sessionName: next.name, runGroup: getRunGroupName(next.registration_type_id) };
   }, [sessionStates, eventDate, currentTime]);
 
   if (loading) {
@@ -363,7 +364,11 @@ const OrganizerLiveManage = () => {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-xl border border-primary/30 bg-primary/5 backdrop-blur-sm p-4 mb-4"
+            className={`rounded-xl border backdrop-blur-sm p-4 mb-4 ${
+              nextCountdown.isBufferZone
+                ? "border-destructive/40 bg-destructive/10"
+                : "border-primary/30 bg-primary/5"
+            }`}
           >
             <div className="flex items-center justify-between">
               <div>
@@ -372,7 +377,7 @@ const OrganizerLiveManage = () => {
                 <p className="text-xs text-muted-foreground">{nextCountdown.runGroup}</p>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-mono font-bold text-primary">
+                <p className={`text-2xl font-mono font-bold ${nextCountdown.isBufferZone ? "text-destructive animate-pulse" : "text-primary"}`}>
                   {nextCountdown.hours > 0 && `${nextCountdown.hours}:`}
                   {nextCountdown.minutes.toString().padStart(2, "0")}:{nextCountdown.seconds.toString().padStart(2, "0")}
                 </p>
