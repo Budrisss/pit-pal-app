@@ -580,7 +580,38 @@ const OrganizerLiveManage = () => {
         </motion.div>
       </div>
 
-          {sessions.length === 0 ? (
+      {/* Delete Session Confirmation */}
+      <AlertDialog
+        open={!!deletingSessionId}
+        onOpenChange={(open) => {
+          if (!open) setDeletingSessionId(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Session</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure? This will remove the session for all participants.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteSession}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Navigation />
+    </div>
+  );
+};
+
+export default OrganizerLiveManage;
             <Card className="bg-card/60 border-border">
               <CardContent className="p-6 text-center text-muted-foreground text-sm">
                 No sessions yet. Add one to get started.
