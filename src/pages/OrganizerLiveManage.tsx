@@ -360,10 +360,14 @@ const OrganizerLiveManage = () => {
         )}
 
         {activeSession && nextCountdown && (
-          <div className="flex items-center gap-3 my-2">
-            <div className="h-px flex-1 bg-border/60" />
-            <span className="text-[10px] uppercase tracking-widest text-muted-foreground">up next</span>
-            <div className="h-px flex-1 bg-border/60" />
+          <div className="flex items-center gap-3 my-3">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-orange-500/40 to-transparent" />
+            <div className="flex items-center gap-1.5 text-orange-500">
+              <ChevronDown size={14} className="animate-bounce" />
+              <span className="text-[10px] uppercase tracking-widest font-semibold">up next</span>
+              <ChevronDown size={14} className="animate-bounce" />
+            </div>
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-orange-500/40 to-transparent" />
           </div>
         )}
 
