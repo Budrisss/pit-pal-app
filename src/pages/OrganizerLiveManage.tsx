@@ -329,6 +329,65 @@ const OrganizerLiveManage = () => {
           </div>
         </motion.div>
 
+        {/* Active Session Banner */}
+        {activeSession && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-xl border border-green-500/30 bg-green-500/10 backdrop-blur-sm p-4 mb-4"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
+                <div>
+                  <p className="font-bold text-foreground">{activeSession.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {getRunGroupName(activeSession.registration_type_id)} • Started at {activeSession.start_time}
+                  </p>
+                </div>
+              </div>
+              {activeRemaining && (
+                <div className="text-right">
+                  <p className="text-2xl font-mono font-bold text-green-500">
+                    {activeRemaining.minutes}:{activeRemaining.seconds.toString().padStart(2, "0")}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">remaining</p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Next Session Countdown */}
+        {!activeSession && nextCountdown && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-xl border border-primary/30 bg-primary/5 backdrop-blur-sm p-4 mb-4"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Next Session</p>
+                <p className="font-bold text-foreground">{nextCountdown.sessionName}</p>
+                <p className="text-xs text-muted-foreground">{nextCountdown.runGroup}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-mono font-bold text-primary">
+                  {nextCountdown.hours > 0 && `${nextCountdown.hours}:`}
+                  {nextCountdown.minutes.toString().padStart(2, "0")}:{nextCountdown.seconds.toString().padStart(2, "0")}
+                </p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">until start</p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {!activeSession && !nextCountdown && sessions.length > 0 && (
+          <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-4 mb-4 text-center">
+            <p className="text-sm text-muted-foreground">🏁 No more sessions today</p>
+          </div>
+        )}
+
         {/* Sessions */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
