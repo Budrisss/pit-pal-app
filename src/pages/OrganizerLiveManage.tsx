@@ -579,9 +579,6 @@ const OrganizerLiveManage = () => {
           )}
         </motion.div>
       </div>
-          <p className="text-xs text-muted-foreground mb-3">
-            Changes are pushed to participants in real-time.
-          </p>
 
           {sessions.length === 0 ? (
             <Card className="bg-card/60 border-border">
