@@ -1084,7 +1084,7 @@ const LocalEvents = () => {
                       {registeringEvent.registration_types.map(rt => {
                         const count = rt.id ? (registrationCounts[rt.id] || 0) : 0;
                         const isFull = rt.max_spots ? count >= rt.max_spots : false;
-                        const isRegistered = rt.id ? userRegistrations.has(rt.id) : false;
+                        const isRegistered = rt.id ? [...userRegistrations].some(k => k.startsWith(rt.id + '_')) : false;
                         return (
                           <SelectItem 
                             key={rt.id} 
