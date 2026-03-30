@@ -398,7 +398,7 @@ const OrganizerLiveManage = () => {
   useEffect(() => {
     const blueFlags = activeFlags.filter(f => f.flag_type === "blue");
     if (blueFlags.length === 0) return;
-    const timers: NodeJS.Timeout[] = [];
+    const timers: ReturnType<typeof setTimeout>[] = [];
     for (const f of blueFlags) {
       const age = Date.now() - new Date(f.created_at).getTime();
       const remaining = BLUE_FLAG_TTL_MS - age;

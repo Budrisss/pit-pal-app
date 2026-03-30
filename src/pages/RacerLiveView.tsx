@@ -194,7 +194,7 @@ const RacerLiveView = () => {
   useEffect(() => {
     const blues = activeFlags.filter(f => f.flag_type === "blue");
     if (blues.length === 0) return;
-    const timers: NodeJS.Timeout[] = [];
+    const timers: ReturnType<typeof setTimeout>[] = [];
     for (const f of blues) {
       const remaining = BLUE_FLAG_TTL_MS - (Date.now() - new Date(f.created_at).getTime());
       if (remaining > 0) {
