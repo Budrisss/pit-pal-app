@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, Calendar, MapPin, DollarSign, Car, Clock, Tag, UserCheck, ExternalLink, Users, Building2, Megaphone, Bell } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, DollarSign, Car, Clock, Tag, UserCheck, ExternalLink, Users, Building2, Megaphone, Bell, Radio } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrganizerMode } from "@/contexts/OrganizerModeContext";
@@ -478,10 +478,15 @@ const PublicEventPreview = () => {
 
               {/* Main Register Button */}
               {!isOrganizerPreview && event.status === "upcoming" && (
-                <div className="mt-5">
+                <div className="mt-5 space-y-2">
                   <Button className="w-full" size="lg" onClick={() => openRegDialog()}>
                     <UserCheck size={18} className="mr-2" /> Register for This Event
                   </Button>
+                  {userRegistrations.size > 0 && (
+                    <Button variant="outline" className="w-full" size="lg" onClick={() => navigate(`/race-live/${event.id}`)}>
+                      <Radio size={18} className="mr-2" /> Open Race Live View
+                    </Button>
+                  )}
                 </div>
               )}
             </CardContent>

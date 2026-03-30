@@ -110,6 +110,54 @@ export type Database = {
           },
         ]
       }
+      event_flags: {
+        Row: {
+          created_at: string
+          event_id: string
+          flag_type: string
+          id: string
+          is_active: boolean
+          message: string | null
+          organizer_id: string
+          target_user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          flag_type: string
+          id?: string
+          is_active?: boolean
+          message?: string | null
+          organizer_id: string
+          target_user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          flag_type?: string
+          id?: string
+          is_active?: boolean
+          message?: string | null
+          organizer_id?: string
+          target_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_flags_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_flags_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "organizer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_registrations: {
         Row: {
           created_at: string

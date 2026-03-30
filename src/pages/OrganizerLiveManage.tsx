@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Radio, Clock, Megaphone, Send, Users, Plus, Trash2, X, ChevronDown } from "lucide-react";
+import { ArrowLeft, Radio, Clock, Megaphone, Send, Users, Plus, Trash2, X, ChevronDown, Flag, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrganizerMode } from "@/contexts/OrganizerModeContext";
 import { useToast } from "@/hooks/use-toast";
@@ -39,6 +39,15 @@ interface Announcement {
   created_at: string;
 }
 
+interface EventFlag {
+  id: string;
+  flag_type: string;
+  message: string | null;
+  target_user_id: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
 const OrganizerLiveManage = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
@@ -57,6 +66,8 @@ const OrganizerLiveManage = () => {
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
+  const [activeFlags, setActiveFlags] = useState<EventFlag[]>([]);
+  const [flagMessage, setFlagMessage] = useState("");
 
   // Live clock
   useEffect(() => {
@@ -69,12 +80,13 @@ const OrganizerLiveManage = () => {
     if (!eventId) return;
     setLoading(true);
     try {
-      const [eventRes, sessRes, regTypesRes, annRes, regsRes] = await Promise.all([
+      const [eventRes, sessRes, regTypesRes, annRes, regsRes, flagsRes] = await Promise.all([
         supabase.from("public_events").select("name, organizer_id, date").eq("id", eventId).single(),
         supabase.from("public_event_sessions").select("*").eq("event_id", eventId).order("sort_order"),
         supabase.from("registration_types").select("id, name").eq("event_id", eventId),
         supabase.from("event_announcements").select("id, message, created_at").eq("event_id", eventId).order("created_at", { ascending: false }),
         supabase.from("event_registrations").select("id").eq("event_id", eventId),
+        supabase.from("event_flags").select("*").eq("event_id", eventId).eq("is_active", true),
       ]);
 
       if (eventRes.data) {
@@ -94,6 +106,7 @@ const OrganizerLiveManage = () => {
       setRegistrationTypes((regTypesRes.data as RegistrationType[]) || []);
       setAnnouncements((annRes.data as Announcement[]) || []);
       setTotalRegistrations(regsRes.data?.length || 0);
+      setActiveFlags((flagsRes.data as EventFlag[]) || []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -148,6 +161,14 @@ const OrganizerLiveManage = () => {
             .then(({ data }) => {
               if (data) setAnnouncements(data as Announcement[]);
             });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "event_flags", filter: `event_id=eq.${eventId}` },
+        () => {
+          supabase.from("event_flags").select("*").eq("event_id", eventId).eq("is_active", true)
+            .then(({ data }) => { if (data) setActiveFlags(data as EventFlag[]); });
         }
       )
       .subscribe();
@@ -218,6 +239,32 @@ const OrganizerLiveManage = () => {
 
   const handleDeleteAnnouncement = async (id: string) => {
     await supabase.from("event_announcements").delete().eq("id", id);
+  };
+
+  const handleSendFlag = async (flagType: string) => {
+    if (!eventId || !organizerProfileId) return;
+    // Deactivate existing flags of same type
+    await supabase.from("event_flags").update({ is_active: false }).eq("event_id", eventId).eq("is_active", true);
+    // Insert new flag
+    const { error } = await supabase.from("event_flags").insert({
+      event_id: eventId,
+      organizer_id: organizerProfileId,
+      flag_type: flagType,
+      message: flagMessage.trim() || null,
+      is_active: true,
+    });
+    if (error) {
+      toast({ title: "Failed to send flag", variant: "destructive" });
+    } else {
+      setFlagMessage("");
+      toast({ title: `${flagType.toUpperCase()} flag sent!` });
+    }
+  };
+
+  const handleClearFlags = async () => {
+    if (!eventId) return;
+    await supabase.from("event_flags").update({ is_active: false }).eq("event_id", eventId).eq("is_active", true);
+    toast({ title: "All flags cleared" });
   };
 
   const getRunGroupName = (regTypeId: string | null) => {
@@ -400,7 +447,59 @@ const OrganizerLiveManage = () => {
           </div>
         )}
 
-        {/* Announcements */}
+        {/* Flag Control Panel */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="mb-6"
+        >
+          <h2 className="font-semibold flex items-center gap-2 mb-3">
+            <Flag size={16} className="text-primary" /> Flag Control
+          </h2>
+          {activeFlags.length > 0 && (
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
+              <span className="text-xs text-muted-foreground">Active:</span>
+              {activeFlags.map(f => (
+                <Badge key={f.id} variant="outline" className="text-xs">
+                  {f.flag_type.toUpperCase()} {f.message && `— ${f.message}`}
+                </Badge>
+              ))}
+              <Button variant="ghost" size="sm" className="text-xs h-6" onClick={handleClearFlags}>
+                Clear All
+              </Button>
+            </div>
+          )}
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-3">
+            <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white text-xs h-10" onClick={() => handleSendFlag("green")}>
+              🟢 Green
+            </Button>
+            <Button size="sm" className="bg-yellow-500 hover:bg-yellow-600 text-black text-xs h-10" onClick={() => handleSendFlag("yellow")}>
+              ⚠️ Yellow
+            </Button>
+            <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white text-xs h-10" onClick={() => handleSendFlag("red")}>
+              🔴 Red
+            </Button>
+            <Button size="sm" className="bg-gray-900 hover:bg-black text-white text-xs h-10 border border-white/20" onClick={() => handleSendFlag("black")}>
+              🏴 Black
+            </Button>
+            <Button size="sm" className="bg-white hover:bg-gray-100 text-black text-xs h-10 border" onClick={() => handleSendFlag("white")}>
+              🏳️ White
+            </Button>
+            <Button size="sm" className="bg-gray-800 hover:bg-gray-900 text-white text-xs h-10 border border-white/20" onClick={() => handleSendFlag("checkered")}>
+              🏁 Finish
+            </Button>
+          </div>
+          <Input
+            value={flagMessage}
+            onChange={(e) => setFlagMessage(e.target.value)}
+            placeholder="Optional message (e.g. 'Turn 5', 'Car #42')"
+            className="text-sm"
+          />
+        </motion.div>
+
+        <Separator className="mb-6" />
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
