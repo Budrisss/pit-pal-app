@@ -366,13 +366,15 @@ const EventFormFields = ({ values, onChange, isEdit = false, presetTracks = [], 
         <SelectContent className="max-h-[300px] overflow-y-auto">
           <SelectItem value="manual">Enter manually</SelectItem>
           <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-            Preset Tracks {search.length < 2 && typeFilter === "all" ? "(type to search)" : `(${filteredPresets.length} results)`}
+            Preset Tracks ({presetTracks.length} total)
+            {(search.length >= 2 || typeFilter !== "all") && ` — ${allFilteredPresets.length} match${allFilteredPresets.length !== 1 ? 'es' : ''}`}
+            {allFilteredPresets.length > 50 && ` (showing 50)`}
           </div>
           <div className="px-2 pb-1 space-y-1">
             <Input
               value={search}
               onChange={(e) => setPresetSearch?.(e.target.value)}
-              placeholder="Search 390+ tracks..."
+              placeholder={`Search ${presetTracks.length} tracks...`}
               className="h-8 text-xs"
               onClick={(e) => e.stopPropagation()}
               onKeyDown={(e) => e.stopPropagation()}
