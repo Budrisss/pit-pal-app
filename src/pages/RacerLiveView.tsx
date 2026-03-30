@@ -280,13 +280,22 @@ const RacerLiveView = () => {
     return Math.ceil(remaining / 1000);
   }, [isTargetedBlackFlagAccepted, blackFlagAcceptedAt, currentTime]);
 
-  // Clear accepted state when banner timer expires
+  // Clear accepted state and deactivate flag in DB when banner timer expires
   useEffect(() => {
-    if (bannerTimeRemaining === 0) {
+    if (bannerTimeRemaining === 0 && blackFlagAccepted) {
+      const flagIdToDeactivate = blackFlagAccepted;
       setBlackFlagAccepted(null);
       setBlackFlagAcceptedAt(null);
+      // Deactivate the flag in the database so the organizer sees it cleared
+      supabase
+        .from("event_flags")
+        .update({ is_active: false })
+        .eq("id", flagIdToDeactivate)
+        .then(() => {
+          console.log("Black flag auto-cleared after 60s post-accept");
+        });
     }
-  }, [bannerTimeRemaining]);
+  }, [bannerTimeRemaining, blackFlagAccepted]);
 
   const activeRemaining = useMemo(() => {
     if (!activeSession?.start_time || !activeSession?.duration_minutes || !eventDate) return null;
