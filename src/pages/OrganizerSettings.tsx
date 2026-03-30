@@ -302,7 +302,7 @@ const OrganizerSettings = () => {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => setDefaultSessions([...defaultSessions, { name: '', start_time: '', duration_minutes: parseInt(defaultDuration) || 20 }])}
+                  onClick={() => setDefaultSessions([...defaultSessions, { name: '', start_time: '', duration_minutes: parseInt(defaultDuration) || 20, run_group: null }])}
                 >
                   <Plus size={14} className="mr-1" /> Add Session
                 </Button>
