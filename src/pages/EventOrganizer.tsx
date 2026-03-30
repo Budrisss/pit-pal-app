@@ -737,7 +737,7 @@ const EventOrganizer = () => {
                   onChange={(field, value) => setNewEvent(p => ({ ...p, [field]: value }))}
                 />
                 <RegistrationTypesEditor types={newRegTypes} onChange={setNewRegTypes} />
-                <SessionsEditor sessions={newSessions} onChange={setNewSessions} registrationTypes={newRegTypes} />
+                <SessionsEditor sessions={newSessions} onChange={setNewSessions} registrationTypes={newRegTypes} defaultDuration={defaultSessionDuration} />
                 <Button type="submit" disabled={creating} className="w-full">
                   {creating ? <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : 'Publish Event'}
                 </Button>
