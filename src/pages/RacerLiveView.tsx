@@ -57,6 +57,7 @@ const RacerLiveView = () => {
   const [loading, setLoading] = useState(true);
   const [userRegTypeId, setUserRegTypeId] = useState<string | null>(null);
   const [regTypeName, setRegTypeName] = useState<string | null>(null);
+  const [userCarNumber, setUserCarNumber] = useState<number | null>(null);
 
   // Wake lock
   useEffect(() => {

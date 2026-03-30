@@ -783,6 +783,72 @@ const OrganizerLiveManage = () => {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Black Flag Dialog */}
+      <Dialog open={showBlackFlagDialog} onOpenChange={setShowBlackFlagDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">🏴 Send Black Flag</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Target Driver</Label>
+              <Input
+                value={blackFlagSearch}
+                onChange={e => setBlackFlagSearch(e.target.value)}
+                placeholder="Search by car # or name..."
+                className="text-sm"
+              />
+              <div className="border border-border rounded-lg max-h-48 overflow-y-auto divide-y divide-border">
+                <div
+                  className={`p-3 cursor-pointer hover:bg-muted/50 transition-colors ${blackFlagTarget === "all" ? "bg-primary/10 border-l-2 border-l-primary" : ""}`}
+                  onClick={() => setBlackFlagTarget("all")}
+                >
+                  <p className="text-sm font-medium">All Drivers</p>
+                  <p className="text-[10px] text-muted-foreground">Global black flag</p>
+                </div>
+                {registrations
+                  .filter(r => r.car_number != null)
+                  .filter(r => {
+                    if (!blackFlagSearch.trim()) return true;
+                    const q = blackFlagSearch.toLowerCase();
+                    return r.car_number?.toString().includes(q) || r.user_name.toLowerCase().includes(q);
+                  })
+                  .sort((a, b) => (a.car_number || 0) - (b.car_number || 0))
+                  .map(r => (
+                    <div
+                      key={r.user_id}
+                      className={`p-3 cursor-pointer hover:bg-muted/50 transition-colors ${blackFlagTarget === r.user_id ? "bg-primary/10 border-l-2 border-l-primary" : ""}`}
+                      onClick={() => setBlackFlagTarget(r.user_id)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium">#{r.car_number} — {r.user_name}</p>
+                        <Badge variant="outline" className="text-[10px]">
+                          {registrationTypes.find(rt => rt.id === r.registration_type_id)?.name || "—"}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm">Message (optional)</Label>
+              <Input
+                value={blackFlagMessage}
+                onChange={e => setBlackFlagMessage(e.target.value)}
+                placeholder="e.g. Report to pit lane"
+                className="text-sm"
+              />
+            </div>
+            <Button
+              onClick={handleSendBlackFlag}
+              className="w-full bg-gray-900 hover:bg-black text-white"
+            >
+              🏴 Send Black Flag
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Navigation />
     </div>
   );
