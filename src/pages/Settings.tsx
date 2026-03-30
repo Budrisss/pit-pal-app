@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Settings as SettingsIcon, User, Bell, Car, Database, Camera, LogOut, MapPin } from "lucide-react";
+import { useOrganizerMode } from "@/contexts/OrganizerModeContext";
+import OrganizerSettings from "@/pages/OrganizerSettings";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -13,6 +15,7 @@ import Navigation from "@/components/Navigation";
 import RacingGallery from "@/components/RacingGallery";
 
 const Settings = () => {
+  const { isOrganizerMode } = useOrganizerMode();
   const [showGallery, setShowGallery] = useState(false);
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
@@ -70,6 +73,10 @@ const Settings = () => {
     await signOut();
     navigate('/');
   };
+
+  if (isOrganizerMode) {
+    return <OrganizerSettings />;
+  }
 
   if (showGallery) {
     return <RacingGallery onClose={() => setShowGallery(false)} />;
