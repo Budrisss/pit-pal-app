@@ -715,7 +715,7 @@ const OrganizerLiveManage = () => {
                           </div>
                         ))}
                       </div>
-                    )
+                    )}
                   </div>
                 </div>
               )}
