@@ -320,7 +320,7 @@ const EventFormFields = ({ values, onChange, isEdit = false, presetTracks = [], 
   const search = presetSearch || "";
   const typeFilter = presetTypeFilter || "all";
 
-  const filteredPresets = (search.length >= 2 || typeFilter !== "all")
+  const allFilteredPresets = (search.length >= 2 || typeFilter !== "all")
     ? presetTracks.filter(t => {
         const matchesType = typeFilter === "all" || t.track_type === typeFilter;
         const matchesSearch = search.length < 2 ||
@@ -328,8 +328,9 @@ const EventFormFields = ({ values, onChange, isEdit = false, presetTracks = [], 
           (t.city && t.city.toLowerCase().includes(search.toLowerCase())) ||
           (t.state && t.state.toLowerCase().includes(search.toLowerCase()));
         return matchesType && matchesSearch;
-      }).slice(0, 20)
+      })
     : [];
+  const filteredPresets = allFilteredPresets.slice(0, 50);
 
   return (
   <>
