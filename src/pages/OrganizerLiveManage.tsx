@@ -618,30 +618,23 @@ const OrganizerLiveManage = () => {
           <h2 className="font-semibold flex items-center gap-2 mb-3">
             <Flag size={16} className="text-primary" /> Flag Control
           </h2>
-          {/* Always show flag sections */}
-            <div className="space-y-3 mb-3">
+          <div className="space-y-3 mb-3">
               {activeFlags.length > 0 && (
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground font-medium">Active Flags</span>
-                <Button variant="ghost" size="sm" className="text-xs h-6" onClick={handleClearFlags}>
-                  Clear All
-                </Button>
-              </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground font-medium">Active Flags</span>
+                  <Button variant="ghost" size="sm" className="text-xs h-6" onClick={handleClearFlags}>
+                    Clear All
+                  </Button>
+                </div>
               )}
-                <span className="text-xs text-muted-foreground font-medium">Active Flags</span>
-                <Button variant="ghost" size="sm" className="text-xs h-6" onClick={handleClearFlags}>
-                  Clear All
-                </Button>
-              </div>
 
               {/* Track Status — Global flags */}
-              {activeFlags.filter(f => f.flag_type !== "yellow_turn" && f.flag_type !== "blue" && !(f.flag_type === "black" && f.target_user_id)).length > 0 && (
-                <div className="rounded-lg border border-border bg-muted/40 p-3 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold">🏁 Track Status</span>
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">Replaces previous</Badge>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground">Only one global flag active at a time</p>
+              <div className="rounded-lg border border-border bg-muted/40 p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold">🏁 Track Status</span>
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">Replaces previous</Badge>
+                </div>
+                {activeFlags.filter(f => f.flag_type !== "yellow_turn" && f.flag_type !== "blue" && !(f.flag_type === "black" && f.target_user_id)).length > 0 ? (
                   <div className="space-y-1.5">
                     {activeFlags.filter(f => f.flag_type !== "yellow_turn" && f.flag_type !== "blue" && !(f.flag_type === "black" && f.target_user_id)).map(f => (
                       <div key={f.id} className="flex items-center justify-between bg-background/60 rounded-md px-3 py-2">
@@ -651,9 +644,6 @@ const OrganizerLiveManage = () => {
                           </span>
                           <span className="text-xs font-medium">{f.flag_type.toUpperCase()}</span>
                           {f.message && <span className="text-xs text-muted-foreground">— {f.message}</span>}
-                          {f.flag_type === "black" && f.target_user_id && (
-                            <Badge variant="outline" className="text-[10px]">Targeted</Badge>
-                          )}
                         </div>
                         <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => handleClearSingleFlag(f.id)}>
                           <X size={12} />
@@ -661,17 +651,19 @@ const OrganizerLiveManage = () => {
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <p className="text-[10px] text-muted-foreground">No global flag active</p>
+                )}
+              </div>
 
               {/* Local Cautions — Stackable flags */}
-              {activeFlags.filter(f => f.flag_type === "yellow_turn" || f.flag_type === "blue" || (f.flag_type === "black" && f.target_user_id)).length > 0 && (
-                <div className="rounded-lg border border-warning/40 bg-warning/5 p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold">⚠️ Local Cautions</span>
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-warning/50 text-warning">Stacks</Badge>
-                    </div>
+              <div className="rounded-lg border border-warning/40 bg-warning/5 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold">⚠️ Local Cautions</span>
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-warning/50 text-warning">Stacks</Badge>
+                  </div>
+                  {activeFlags.filter(f => f.flag_type === "yellow_turn" || f.flag_type === "blue" || (f.flag_type === "black" && f.target_user_id)).length > 0 && (
                     <Button variant="ghost" size="sm" className="text-xs h-6 text-muted-foreground hover:text-destructive" onClick={async () => {
                       if (!eventId) return;
                       const localFlags = activeFlags.filter(f => f.flag_type === "yellow_turn" || f.flag_type === "blue" || (f.flag_type === "black" && f.target_user_id));
@@ -681,8 +673,9 @@ const OrganizerLiveManage = () => {
                     }}>
                       Clear Local
                     </Button>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground">These persist through track status changes</p>
+                  )}
+                </div>
+                {activeFlags.filter(f => f.flag_type === "yellow_turn" || f.flag_type === "blue" || (f.flag_type === "black" && f.target_user_id)).length > 0 ? (
                   <div className="space-y-1.5">
                     {activeFlags.filter(f => f.flag_type === "yellow_turn").length > 0 && (
                       <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-md px-3 py-2 space-y-1.5">
@@ -724,10 +717,11 @@ const OrganizerLiveManage = () => {
                       </div>
                     )}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <p className="text-[10px] text-muted-foreground">No local cautions active</p>
+                )}
+              </div>
             </div>
-          )}
           <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 mb-3">
             <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white text-xs h-10" onClick={() => handleSendFlag("green")}>
               🟢 Green
