@@ -190,7 +190,7 @@ const PublicEventPreview = () => {
   }, [id]);
 
   const openRegDialog = (preselectedRegTypeId?: string) => {
-    setRegForm({ name: "", email: user?.email || "", phone: "", notes: "", carNumber: "" });
+    setRegForm({ name: "", email: user?.email || "", phone: "", notes: "", carNumber: "", carId: "" });
     setSelectedRegTypeId(preselectedRegTypeId || (regTypes.length === 1 ? regTypes[0].id : ""));
     setShowRegDialog(true);
   };
