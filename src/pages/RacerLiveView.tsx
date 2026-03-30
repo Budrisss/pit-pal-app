@@ -57,6 +57,7 @@ const RacerLiveView = () => {
   const [loading, setLoading] = useState(true);
   const [userRegTypeId, setUserRegTypeId] = useState<string | null>(null);
   const [regTypeName, setRegTypeName] = useState<string | null>(null);
+  const [userCarNumber, setUserCarNumber] = useState<number | null>(null);
 
   // Wake lock
   useEffect(() => {
@@ -94,7 +95,7 @@ const RacerLiveView = () => {
       supabase.from("public_event_sessions").select("*").eq("event_id", eventId).order("sort_order"),
       supabase.from("event_flags").select("*").eq("event_id", eventId).eq("is_active", true),
       supabase.from("event_announcements").select("id, message, created_at").eq("event_id", eventId).order("created_at", { ascending: false }).limit(10),
-      user ? supabase.from("event_registrations").select("registration_type_id").eq("event_id", eventId).eq("user_id", user.id).limit(1) : Promise.resolve({ data: null }),
+      user ? supabase.from("event_registrations").select("registration_type_id, car_number").eq("event_id", eventId).eq("user_id", user.id).limit(1) : Promise.resolve({ data: null }),
     ]);
     if (eventRes.data) {
       setEventName(eventRes.data.name);
@@ -104,9 +105,10 @@ const RacerLiveView = () => {
     setFlags((flagRes.data as EventFlag[]) || []);
     setAnnouncements((annRes.data as Announcement[]) || []);
     if (regRes.data && regRes.data.length > 0) {
-      const rtId = (regRes.data[0] as any).registration_type_id;
+      const reg = regRes.data[0] as any;
+      const rtId = reg.registration_type_id;
       setUserRegTypeId(rtId);
-      // Fetch reg type name
+      setUserCarNumber(reg.car_number || null);
       const { data: rtData } = await supabase.from("registration_types").select("name").eq("id", rtId).single();
       if (rtData) setRegTypeName(rtData.name);
     }
@@ -246,10 +248,17 @@ const RacerLiveView = () => {
         <Button variant="ghost" size="icon" className="text-white/60 hover:text-white h-8 w-8" onClick={() => navigate(-1)}>
           <ArrowLeft size={18} />
         </Button>
-        <span className="text-sm font-semibold truncate max-w-[60%]">{eventName}</span>
-        <span className="text-sm font-mono text-white/60">
-          {currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-        </span>
+        <span className="text-sm font-semibold truncate max-w-[40%]">{eventName}</span>
+        <div className="flex items-center gap-2">
+          {userCarNumber && (
+            <Badge className="bg-primary text-primary-foreground font-mono font-bold text-sm px-2 py-0.5">
+              #{userCarNumber}
+            </Badge>
+          )}
+          <span className="text-sm font-mono text-white/60">
+            {currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+          </span>
+        </div>
       </div>
 
       {/* Flag Zone - dominant area */}

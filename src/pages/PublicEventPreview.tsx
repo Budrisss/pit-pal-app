@@ -82,7 +82,7 @@ const PublicEventPreview = () => {
   // Registration state
   const [showRegDialog, setShowRegDialog] = useState(false);
   const [selectedRegTypeId, setSelectedRegTypeId] = useState<string>("");
-  const [regForm, setRegForm] = useState({ name: "", email: "", phone: "", notes: "" });
+  const [regForm, setRegForm] = useState({ name: "", email: "", phone: "", notes: "", carNumber: "" });
   const [registering, setRegistering] = useState(false);
   const [userRegistrations, setUserRegistrations] = useState<Set<string>>(new Set());
 
@@ -188,7 +188,7 @@ const PublicEventPreview = () => {
   }, [id]);
 
   const openRegDialog = (preselectedRegTypeId?: string) => {
-    setRegForm({ name: "", email: user?.email || "", phone: "", notes: "" });
+    setRegForm({ name: "", email: user?.email || "", phone: "", notes: "", carNumber: "" });
     setSelectedRegTypeId(preselectedRegTypeId || (regTypes.length === 1 ? regTypes[0].id : ""));
     setShowRegDialog(true);
   };
@@ -214,6 +214,9 @@ const PublicEventPreview = () => {
       }
 
       if (!regTypeId) throw new Error("Please select a registration group");
+      if (!regForm.carNumber.trim()) throw new Error("Car number is required");
+      const carNum = parseInt(regForm.carNumber);
+      if (isNaN(carNum) || carNum <= 0) throw new Error("Car number must be a positive number");
 
       const { error } = await supabase.from("event_registrations").insert({
         event_id: event.id,
@@ -223,7 +226,14 @@ const PublicEventPreview = () => {
         user_email: regForm.email,
         user_phone: regForm.phone || null,
         notes: regForm.notes || null,
+        car_number: carNum,
       });
+      if (error) {
+        if (error.message?.includes("idx_unique_car_number_per_event")) {
+          throw new Error(`Car #${carNum} is already taken for this event`);
+        }
+        throw error;
+      }
       if (error) throw error;
 
       // Create a personal event in the user's events table
@@ -684,6 +694,11 @@ const PublicEventPreview = () => {
             <div className="space-y-2">
               <Label>Your Name *</Label>
               <Input value={regForm.name} onChange={e => setRegForm(p => ({ ...p, name: e.target.value }))} required placeholder="John Doe" />
+            </div>
+            <div className="space-y-2">
+              <Label>Car Number *</Label>
+              <Input type="number" min="1" value={regForm.carNumber} onChange={e => setRegForm(p => ({ ...p, carNumber: e.target.value }))} required placeholder="42" />
+              <p className="text-[10px] text-muted-foreground">Must be unique for this event</p>
             </div>
             <div className="space-y-2">
               <Label>Email *</Label>

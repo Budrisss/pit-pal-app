@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { addMinutes, parseISO, differenceInMilliseconds, isAfter, isBefore } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -48,6 +49,13 @@ interface EventFlag {
   created_at: string;
 }
 
+interface EventRegistrationWithCar {
+  user_id: string;
+  user_name: string;
+  car_number: number | null;
+  registration_type_id: string;
+}
+
 const OrganizerLiveManage = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
@@ -68,6 +76,11 @@ const OrganizerLiveManage = () => {
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
   const [activeFlags, setActiveFlags] = useState<EventFlag[]>([]);
   const [flagMessage, setFlagMessage] = useState("");
+  const [showBlackFlagDialog, setShowBlackFlagDialog] = useState(false);
+  const [blackFlagTarget, setBlackFlagTarget] = useState<string>("all");
+  const [blackFlagMessage, setBlackFlagMessage] = useState("");
+  const [registrations, setRegistrations] = useState<EventRegistrationWithCar[]>([]);
+  const [blackFlagSearch, setBlackFlagSearch] = useState("");
 
   // Live clock
   useEffect(() => {
@@ -85,7 +98,7 @@ const OrganizerLiveManage = () => {
         supabase.from("public_event_sessions").select("*").eq("event_id", eventId).order("sort_order"),
         supabase.from("registration_types").select("id, name").eq("event_id", eventId),
         supabase.from("event_announcements").select("id, message, created_at").eq("event_id", eventId).order("created_at", { ascending: false }),
-        supabase.from("event_registrations").select("id").eq("event_id", eventId),
+        supabase.from("event_registrations").select("id, user_id, user_name, car_number, registration_type_id").eq("event_id", eventId),
         supabase.from("event_flags").select("*").eq("event_id", eventId).eq("is_active", true),
       ]);
 
@@ -106,6 +119,7 @@ const OrganizerLiveManage = () => {
       setRegistrationTypes((regTypesRes.data as RegistrationType[]) || []);
       setAnnouncements((annRes.data as Announcement[]) || []);
       setTotalRegistrations(regsRes.data?.length || 0);
+      setRegistrations((regsRes.data as EventRegistrationWithCar[]) || []);
       setActiveFlags((flagsRes.data as EventFlag[]) || []);
     } catch (err) {
       console.error(err);
@@ -258,6 +272,32 @@ const OrganizerLiveManage = () => {
     } else {
       setFlagMessage("");
       toast({ title: `${flagType.toUpperCase()} flag sent!` });
+    }
+  };
+
+  const handleSendBlackFlag = async () => {
+    if (!eventId || !organizerProfileId) return;
+    await supabase.from("event_flags").update({ is_active: false }).eq("event_id", eventId).eq("is_active", true);
+    const targetUserId = blackFlagTarget === "all" ? null : blackFlagTarget;
+    const targetReg = registrations.find(r => r.user_id === targetUserId);
+    const messagePrefix = targetReg?.car_number ? `Car #${targetReg.car_number}` : null;
+    const fullMessage = [messagePrefix, blackFlagMessage.trim()].filter(Boolean).join(" — ") || null;
+    const { error } = await supabase.from("event_flags").insert({
+      event_id: eventId,
+      organizer_id: organizerProfileId,
+      flag_type: "black",
+      message: fullMessage,
+      target_user_id: targetUserId,
+      is_active: true,
+    });
+    if (error) {
+      toast({ title: "Failed to send black flag", variant: "destructive" });
+    } else {
+      toast({ title: targetReg?.car_number ? `🏴 Black flag sent to Car #${targetReg.car_number}` : "🏴 Black flag sent to all drivers" });
+      setShowBlackFlagDialog(false);
+      setBlackFlagTarget("all");
+      setBlackFlagMessage("");
+      setBlackFlagSearch("");
     }
   };
 
@@ -525,7 +565,7 @@ const OrganizerLiveManage = () => {
             <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white text-xs h-10" onClick={() => handleSendFlag("red")}>
               🔴 Red
             </Button>
-            <Button size="sm" className="bg-gray-900 hover:bg-black text-white text-xs h-10 border border-white/20" onClick={() => handleSendFlag("black")}>
+            <Button size="sm" className="bg-gray-900 hover:bg-black text-white text-xs h-10 border border-white/20" onClick={() => setShowBlackFlagDialog(true)}>
               🏴 Black
             </Button>
             <Button size="sm" className="bg-white hover:bg-gray-100 text-black text-xs h-10 border" onClick={() => handleSendFlag("white")}>
@@ -742,6 +782,72 @@ const OrganizerLiveManage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Black Flag Dialog */}
+      <Dialog open={showBlackFlagDialog} onOpenChange={setShowBlackFlagDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">🏴 Send Black Flag</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Target Driver</Label>
+              <Input
+                value={blackFlagSearch}
+                onChange={e => setBlackFlagSearch(e.target.value)}
+                placeholder="Search by car # or name..."
+                className="text-sm"
+              />
+              <div className="border border-border rounded-lg max-h-48 overflow-y-auto divide-y divide-border">
+                <div
+                  className={`p-3 cursor-pointer hover:bg-muted/50 transition-colors ${blackFlagTarget === "all" ? "bg-primary/10 border-l-2 border-l-primary" : ""}`}
+                  onClick={() => setBlackFlagTarget("all")}
+                >
+                  <p className="text-sm font-medium">All Drivers</p>
+                  <p className="text-[10px] text-muted-foreground">Global black flag</p>
+                </div>
+                {registrations
+                  .filter(r => r.car_number != null)
+                  .filter(r => {
+                    if (!blackFlagSearch.trim()) return true;
+                    const q = blackFlagSearch.toLowerCase();
+                    return r.car_number?.toString().includes(q) || r.user_name.toLowerCase().includes(q);
+                  })
+                  .sort((a, b) => (a.car_number || 0) - (b.car_number || 0))
+                  .map(r => (
+                    <div
+                      key={r.user_id}
+                      className={`p-3 cursor-pointer hover:bg-muted/50 transition-colors ${blackFlagTarget === r.user_id ? "bg-primary/10 border-l-2 border-l-primary" : ""}`}
+                      onClick={() => setBlackFlagTarget(r.user_id)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium">#{r.car_number} — {r.user_name}</p>
+                        <Badge variant="outline" className="text-[10px]">
+                          {registrationTypes.find(rt => rt.id === r.registration_type_id)?.name || "—"}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm">Message (optional)</Label>
+              <Input
+                value={blackFlagMessage}
+                onChange={e => setBlackFlagMessage(e.target.value)}
+                placeholder="e.g. Report to pit lane"
+                className="text-sm"
+              />
+            </div>
+            <Button
+              onClick={handleSendBlackFlag}
+              className="w-full bg-gray-900 hover:bg-black text-white"
+            >
+              🏴 Send Black Flag
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Navigation />
     </div>
