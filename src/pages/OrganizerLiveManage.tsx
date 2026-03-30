@@ -511,6 +511,8 @@ const OrganizerLiveManage = () => {
           flag_type: "checkered",
           message: "Session complete",
           is_active: true,
+          session_id: prevId,
+        });
         });
         toast({ title: "🏁 Checkered flag auto-sent — session ended" });
       };
