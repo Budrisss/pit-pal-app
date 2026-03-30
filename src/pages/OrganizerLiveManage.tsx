@@ -636,7 +636,7 @@ const OrganizerLiveManage = () => {
                   </div>
                   <p className="text-[10px] text-muted-foreground">Only one global flag active at a time</p>
                   <div className="space-y-1.5">
-                    {activeFlags.filter(f => f.flag_type !== "yellow_turn" && f.flag_type !== "blue").map(f => (
+                    {activeFlags.filter(f => f.flag_type !== "yellow_turn" && f.flag_type !== "blue" && !(f.flag_type === "black" && f.target_user_id)).map(f => (
                       <div key={f.id} className="flex items-center justify-between bg-background/60 rounded-md px-3 py-2">
                         <div className="flex items-center gap-2">
                           <span className="text-sm">
