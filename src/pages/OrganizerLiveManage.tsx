@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Radio, Clock, Megaphone, Send, Users, Plus, Trash2, X, ChevronDown, Flag, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Radio, Clock, Megaphone, Send, Users, Plus, Trash2, X, ChevronDown, Flag, AlertTriangle, Pencil, Check } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrganizerMode } from "@/contexts/OrganizerModeContext";
 import { useToast } from "@/hooks/use-toast";
@@ -88,6 +88,8 @@ const OrganizerLiveManage = () => {
   const [blueFlagTarget, setBlueFlagTarget] = useState<string>("all");
   const [blueFlagMessage, setBlueFlagMessage] = useState("");
   const [blueFlagSearch, setBlueFlagSearch] = useState("");
+  const [editingFlagId, setEditingFlagId] = useState<string | null>(null);
+  const [editingFlagMessage, setEditingFlagMessage] = useState("");
 
   // Live clock
   useEffect(() => {
@@ -350,6 +352,13 @@ const OrganizerLiveManage = () => {
       }
     }
     toast({ title: "Flag cleared" });
+  };
+
+  const handleUpdateFlagMessage = async (flagId: string, message: string) => {
+    await supabase.from("event_flags").update({ message: message.trim() || null }).eq("id", flagId);
+    setEditingFlagId(null);
+    setEditingFlagMessage("");
+    toast({ title: "Flag message updated" });
   };
 
   const handleSendBlackFlag = async () => {
@@ -684,17 +693,45 @@ const OrganizerLiveManage = () => {
                 {activeFlags.filter(f => !isLocalCaution(f) && !isBlueExpired(f)).length > 0 ? (
                   <div className="space-y-1.5">
                     {activeFlags.filter(f => !isLocalCaution(f) && !isBlueExpired(f)).map(f => (
-                      <div key={f.id} className="flex items-center justify-between bg-background/60 rounded-md px-3 py-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm">
-                            {f.flag_type === "green" ? "🟢" : f.flag_type === "yellow" ? "⚠️" : f.flag_type === "red" ? "🔴" : f.flag_type === "black" ? "🏴" : f.flag_type === "white" ? "🏳️" : "🏁"}
-                          </span>
-                          <span className="text-xs font-medium">{f.flag_type.toUpperCase()}</span>
-                          {f.message && <span className="text-xs text-muted-foreground">— {f.message}</span>}
+                      <div key={f.id} className="bg-background/60 rounded-md px-3 py-2 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">
+                              {f.flag_type === "green" ? "🟢" : f.flag_type === "yellow" ? "⚠️" : f.flag_type === "red" ? "🔴" : f.flag_type === "black" ? "🏴" : f.flag_type === "white" ? "🏳️" : "🏁"}
+                            </span>
+                            <span className="text-xs font-medium">{f.flag_type.toUpperCase()}</span>
+                            {editingFlagId !== f.id && f.message && <span className="text-xs text-muted-foreground">— {f.message}</span>}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {editingFlagId === f.id ? (
+                              <>
+                                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary" onClick={() => handleUpdateFlagMessage(f.id, editingFlagMessage)}>
+                                  <Check size={12} />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground" onClick={() => { setEditingFlagId(null); setEditingFlagMessage(""); }}>
+                                  <X size={12} />
+                                </Button>
+                              </>
+                            ) : (
+                              <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-foreground" onClick={() => { setEditingFlagId(f.id); setEditingFlagMessage(f.message || ""); }}>
+                                <Pencil size={12} />
+                              </Button>
+                            )}
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => handleClearSingleFlag(f.id)}>
+                              <X size={12} />
+                            </Button>
+                          </div>
                         </div>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => handleClearSingleFlag(f.id)}>
-                          <X size={12} />
-                        </Button>
+                        {editingFlagId === f.id && (
+                          <Input
+                            value={editingFlagMessage}
+                            onChange={(e) => setEditingFlagMessage(e.target.value)}
+                            placeholder="Add a message..."
+                            className="h-7 text-xs"
+                            autoFocus
+                            onKeyDown={(e) => { if (e.key === "Enter") handleUpdateFlagMessage(f.id, editingFlagMessage); if (e.key === "Escape") { setEditingFlagId(null); setEditingFlagMessage(""); } }}
+                          />
+                        )}
                       </div>
                     ))}
                   </div>
