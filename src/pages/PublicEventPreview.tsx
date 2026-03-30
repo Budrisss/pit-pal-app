@@ -521,7 +521,7 @@ const PublicEventPreview = () => {
               {regTypes.map((rt) => {
                 const count = regCounts[rt.id] || 0;
                 const isFull = rt.max_spots ? count >= rt.max_spots : false;
-                const isRegistered = userRegistrations.has(rt.id);
+                const isRegistered = [...userRegistrations].some(k => k.startsWith(rt.id + '_'));
                 return (
                   <Card key={rt.id} className={`border-border ${isRegistered ? 'bg-primary/10 border-primary/30' : 'bg-card/60'}`}>
                     <CardContent className="p-4">
