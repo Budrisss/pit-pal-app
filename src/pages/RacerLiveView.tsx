@@ -171,9 +171,14 @@ const RacerLiveView = () => {
     return activeFlags.filter(f => f.flag_type === "yellow_turn");
   }, [activeFlags]);
 
-  // Non-yellow-turn flags for priority display
+  // Blue flags shown as banners too
+  const blueFlags = useMemo(() => {
+    return activeFlags.filter(f => f.flag_type === "blue" && (f.target_user_id === null || f.target_user_id === user?.id));
+  }, [activeFlags, user?.id]);
+
+  // Non-yellow-turn, non-blue flags for priority display
   const priorityFlags = useMemo(() => {
-    return activeFlags.filter(f => f.flag_type !== "yellow_turn");
+    return activeFlags.filter(f => f.flag_type !== "yellow_turn" && f.flag_type !== "blue");
   }, [activeFlags]);
 
   // Track when targeted black flags first appear + vibrate
