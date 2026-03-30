@@ -41,6 +41,12 @@ interface OrganizerProfile {
   description: string | null;
 }
 
+interface DefaultSession {
+  name: string;
+  start_time: string;
+  duration_minutes: number | null;
+}
+
 const OrganizerSettings = () => {
   const { signOut, user } = useAuth();
   const { organizerProfileId } = useOrganizerMode();
