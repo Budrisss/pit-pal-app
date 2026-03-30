@@ -122,17 +122,27 @@ const MyRegistrations = () => {
                       {reg.event?.track_name && `${reg.event.track_name} • `}
                       {[reg.event?.city, reg.event?.state].filter(Boolean).join(", ")}
                     </p>
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
                       <span className="text-xs text-muted-foreground flex items-center gap-1">
                         <CalendarDays size={12} />
                         {reg.event?.date ? formatDate(reg.event.date) : "—"}
                       </span>
+                      {reg.car_number && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                          #{reg.car_number}
+                        </Badge>
+                      )}
                       {reg.reg_type && (
                         <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                           {reg.reg_type.name}
                         </Badge>
                       )}
                     </div>
+                    {reg.car && (
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        🚗 {reg.car.year} {reg.car.make} {reg.car.model}
+                      </p>
+                    )}
                   </div>
                   <ChevronRight size={16} className="text-muted-foreground shrink-0 mt-1" />
                 </div>
