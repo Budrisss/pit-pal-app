@@ -188,9 +188,25 @@ const RacerLiveView = () => {
     return activeFlags.filter(f => f.flag_type === "yellow_turn");
   }, [activeFlags]);
 
-  // Blue flags shown as banners too
+  // Blue flags shown as banners — auto-expire after 10s
+  const BLUE_FLAG_TTL_MS = 10_000;
+  const [, setBlueTick] = useState(0);
+  useEffect(() => {
+    const blues = activeFlags.filter(f => f.flag_type === "blue");
+    if (blues.length === 0) return;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    for (const f of blues) {
+      const remaining = BLUE_FLAG_TTL_MS - (Date.now() - new Date(f.created_at).getTime());
+      if (remaining > 0) {
+        timers.push(setTimeout(() => setBlueTick(t => t + 1), remaining));
+      }
+    }
+    return () => timers.forEach(t => clearTimeout(t));
+  }, [activeFlags]);
+
   const blueFlags = useMemo(() => {
-    return activeFlags.filter(f => f.flag_type === "blue" && (f.target_user_id === null || f.target_user_id === user?.id));
+    const now = Date.now();
+    return activeFlags.filter(f => f.flag_type === "blue" && (f.target_user_id === null || f.target_user_id === user?.id) && (now - new Date(f.created_at).getTime()) < BLUE_FLAG_TTL_MS);
   }, [activeFlags, user?.id]);
 
   // Non-yellow-turn, non-blue flags for priority display

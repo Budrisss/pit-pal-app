@@ -392,6 +392,31 @@ const OrganizerLiveManage = () => {
     });
   }, [sessions, eventDate, currentTime]);
 
+  // Auto-expire blue flags after 10 seconds
+  const BLUE_FLAG_TTL_MS = 10_000;
+  const [, setBlueFlagTick] = useState(0);
+  useEffect(() => {
+    const blueFlags = activeFlags.filter(f => f.flag_type === "blue");
+    if (blueFlags.length === 0) return;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    for (const f of blueFlags) {
+      const age = Date.now() - new Date(f.created_at).getTime();
+      const remaining = BLUE_FLAG_TTL_MS - age;
+      if (remaining <= 0) {
+        supabase.from("event_flags").update({ is_active: false }).eq("id", f.id).then(() => {});
+      } else {
+        timers.push(setTimeout(() => {
+          supabase.from("event_flags").update({ is_active: false }).eq("id", f.id).then(() => {});
+          setBlueFlagTick(t => t + 1);
+        }, remaining));
+      }
+    }
+    return () => timers.forEach(t => clearTimeout(t));
+  }, [activeFlags]);
+
+  const isBlueExpired = (f: EventFlag) => f.flag_type === "blue" && (Date.now() - new Date(f.created_at).getTime()) >= BLUE_FLAG_TTL_MS;
+  const isLocalCaution = (f: EventFlag) => f.flag_type === "yellow_turn" || (f.flag_type === "blue" && !isBlueExpired(f)) || (f.flag_type === "black" && f.target_user_id);
+
   const activeSession = sessionStates.find((s) => s.state === "active");
 
   // Auto-send checkered flag when a session ends
@@ -634,9 +659,9 @@ const OrganizerLiveManage = () => {
                   <span className="text-xs font-semibold">🏁 Track Status</span>
                   <Badge variant="outline" className="text-[10px] px-1.5 py-0">Replaces previous</Badge>
                 </div>
-                {activeFlags.filter(f => f.flag_type !== "yellow_turn" && f.flag_type !== "blue" && !(f.flag_type === "black" && f.target_user_id)).length > 0 ? (
+                {activeFlags.filter(f => !isLocalCaution(f) && !isBlueExpired(f)).length > 0 ? (
                   <div className="space-y-1.5">
-                    {activeFlags.filter(f => f.flag_type !== "yellow_turn" && f.flag_type !== "blue" && !(f.flag_type === "black" && f.target_user_id)).map(f => (
+                    {activeFlags.filter(f => !isLocalCaution(f) && !isBlueExpired(f)).map(f => (
                       <div key={f.id} className="flex items-center justify-between bg-background/60 rounded-md px-3 py-2">
                         <div className="flex items-center gap-2">
                           <span className="text-sm">
@@ -663,10 +688,10 @@ const OrganizerLiveManage = () => {
                     <span className="text-xs font-semibold">⚠️ Local Cautions</span>
                     <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-warning/50 text-warning">Stacks</Badge>
                   </div>
-                  {activeFlags.filter(f => f.flag_type === "yellow_turn" || f.flag_type === "blue" || (f.flag_type === "black" && f.target_user_id)).length > 0 && (
+                  {activeFlags.filter(isLocalCaution).length > 0 && (
                     <Button variant="ghost" size="sm" className="text-xs h-6 text-muted-foreground hover:text-destructive" onClick={async () => {
                       if (!eventId) return;
-                      const localFlags = activeFlags.filter(f => f.flag_type === "yellow_turn" || f.flag_type === "blue" || (f.flag_type === "black" && f.target_user_id));
+                      const localFlags = activeFlags.filter(isLocalCaution);
                       for (const f of localFlags) {
                         await supabase.from("event_flags").update({ is_active: false }).eq("id", f.id);
                       }
@@ -675,7 +700,7 @@ const OrganizerLiveManage = () => {
                     </Button>
                   )}
                 </div>
-                {activeFlags.filter(f => f.flag_type === "yellow_turn" || f.flag_type === "blue" || (f.flag_type === "black" && f.target_user_id)).length > 0 ? (
+                {activeFlags.filter(isLocalCaution).length > 0 ? (
                   <div className="space-y-1.5">
                     {activeFlags.filter(f => f.flag_type === "yellow_turn").length > 0 && (
                       <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-md px-3 py-2 space-y-1.5">
@@ -690,10 +715,10 @@ const OrganizerLiveManage = () => {
                         ))}
                       </div>
                     )}
-                    {activeFlags.filter(f => f.flag_type === "blue").length > 0 && (
+                    {activeFlags.filter(f => f.flag_type === "blue" && !isBlueExpired(f)).length > 0 && (
                       <div className="bg-blue-500/10 border border-blue-500/30 rounded-md px-3 py-2 space-y-1.5">
                         <p className="text-[10px] text-blue-600 dark:text-blue-400 uppercase tracking-wider font-bold">🔵 Blue Flags</p>
-                        {activeFlags.filter(f => f.flag_type === "blue").map(f => (
+                        {activeFlags.filter(f => f.flag_type === "blue" && !isBlueExpired(f)).map(f => (
                           <div key={f.id} className="flex items-center justify-between">
                             <span className="text-xs font-medium">{f.message}</span>
                             <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-destructive" onClick={() => handleClearSingleFlag(f.id)}>
