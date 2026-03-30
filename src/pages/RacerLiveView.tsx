@@ -89,11 +89,12 @@ const RacerLiveView = () => {
   const fetchData = useCallback(async () => {
     if (!eventId) return;
     setLoading(true);
-    const [eventRes, sessRes, flagRes, annRes] = await Promise.all([
+    const [eventRes, sessRes, flagRes, annRes, regRes] = await Promise.all([
       supabase.from("public_events").select("name, date").eq("id", eventId).single(),
       supabase.from("public_event_sessions").select("*").eq("event_id", eventId).order("sort_order"),
       supabase.from("event_flags").select("*").eq("event_id", eventId).eq("is_active", true),
       supabase.from("event_announcements").select("id, message, created_at").eq("event_id", eventId).order("created_at", { ascending: false }).limit(10),
+      user ? supabase.from("event_registrations").select("registration_type_id").eq("event_id", eventId).eq("user_id", user.id).limit(1) : Promise.resolve({ data: null }),
     ]);
     if (eventRes.data) {
       setEventName(eventRes.data.name);
@@ -102,6 +103,13 @@ const RacerLiveView = () => {
     setSessions((sessRes.data as EventSession[]) || []);
     setFlags((flagRes.data as EventFlag[]) || []);
     setAnnouncements((annRes.data as Announcement[]) || []);
+    if (regRes.data && regRes.data.length > 0) {
+      const rtId = (regRes.data[0] as any).registration_type_id;
+      setUserRegTypeId(rtId);
+      // Fetch reg type name
+      const { data: rtData } = await supabase.from("registration_types").select("name").eq("id", rtId).single();
+      if (rtData) setRegTypeName(rtData.name);
+    }
     setLoading(false);
   }, [eventId]);
 
