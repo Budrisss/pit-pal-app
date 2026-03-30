@@ -312,28 +312,68 @@ const RacerLiveView = () => {
           )}
         </AnimatePresence>
 
-        {/* Session Info Bar */}
-        <div className="bg-gray-900 border-t border-white/10 px-4 py-3 shrink-0">
+        {/* Your Session Banner - personalized to racer's run group */}
+        {userRegTypeId && (myActiveSession || myNextSession) && (
+          <div className={`border-t border-white/10 px-4 py-3 shrink-0 ${myActiveSession ? 'bg-green-900/60' : 'bg-blue-900/40'}`}>
+            {myActiveSession && myActiveRemaining ? (
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] text-green-300 uppercase tracking-widest font-bold flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse inline-block" />
+                    YOUR SESSION — ON TRACK
+                  </p>
+                  <p className="text-sm font-bold text-white mt-0.5">{myActiveSession.name}</p>
+                  {regTypeName && <p className="text-[10px] text-white/50">{regTypeName}</p>}
+                </div>
+                <div className="text-right">
+                  <motion.p
+                    key={myActiveRemaining.minutes}
+                    className="text-4xl font-mono font-black text-green-400"
+                    animate={myActiveRemaining.minutes < 2 ? { scale: [1, 1.05, 1] } : {}}
+                    transition={{ repeat: Infinity, duration: 1 }}
+                  >
+                    {myActiveRemaining.minutes}:{myActiveRemaining.seconds.toString().padStart(2, "0")}
+                  </motion.p>
+                  <p className="text-[10px] text-green-300/60 uppercase tracking-wider">remaining</p>
+                </div>
+              </div>
+            ) : myNextSession && myNextCountdown ? (
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] text-blue-300 uppercase tracking-widest font-bold">YOUR NEXT SESSION</p>
+                  <p className="text-sm font-bold text-white mt-0.5">{myNextSession.name}</p>
+                  {regTypeName && <p className="text-[10px] text-white/50">{regTypeName}</p>}
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-mono font-bold text-blue-400">
+                    {myNextCountdown.minutes}:{myNextCountdown.seconds.toString().padStart(2, "0")}
+                  </p>
+                  <p className="text-[10px] text-blue-300/60 uppercase tracking-wider">until start</p>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        )}
+
+        {/* Global Session Info Bar */}
+        <div className="bg-gray-900 border-t border-white/10 px-4 py-2.5 shrink-0">
           {activeSession ? (
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-white/40 uppercase tracking-wider">Active Session</p>
-                <p className="text-base font-bold">{activeSession.name}</p>
+                <p className="text-[10px] text-white/40 uppercase tracking-wider">Current Track Session</p>
+                <p className="text-sm font-bold">{activeSession.name}</p>
               </div>
               {activeRemaining && (
-                <div className="text-right">
-                  <p className="text-3xl font-mono font-bold text-green-400">
-                    {activeRemaining.minutes}:{activeRemaining.seconds.toString().padStart(2, "0")}
-                  </p>
-                  <p className="text-[10px] text-white/40 uppercase">remaining</p>
-                </div>
+                <p className="text-xl font-mono font-bold text-green-400">
+                  {activeRemaining.minutes}:{activeRemaining.seconds.toString().padStart(2, "0")}
+                </p>
               )}
             </div>
           ) : nextSession ? (
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-white/40 uppercase tracking-wider">Up Next</p>
-                <p className="text-base font-bold">{nextSession.name}</p>
+                <p className="text-[10px] text-white/40 uppercase tracking-wider">Up Next</p>
+                <p className="text-sm font-bold">{nextSession.name}</p>
               </div>
               <p className="text-sm text-white/40">Starts at {nextSession.start_time}</p>
             </div>
