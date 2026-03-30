@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
 import RacingGallery from "@/components/RacingGallery";
+import SavedTracksManager from "@/components/SavedTracksManager";
 
 const Settings = () => {
   const { isOrganizerMode } = useOrganizerMode();
@@ -145,7 +146,10 @@ const Settings = () => {
           </CardContent>
         </Card>
 
-        {/* Notifications */}
+        {/* Saved Tracks */}
+        <SavedTracksManager />
+
+
         <Card className="bg-gradient-dark border-border/50">
           <CardHeader>
             <CardTitle className="text-lg text-foreground flex items-center gap-2">
