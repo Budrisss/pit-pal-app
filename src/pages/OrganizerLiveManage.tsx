@@ -619,58 +619,90 @@ const OrganizerLiveManage = () => {
             <Flag size={16} className="text-primary" /> Flag Control
           </h2>
           {activeFlags.length > 0 && (
-            <div className="space-y-2 mb-3">
+            <div className="space-y-3 mb-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground font-medium">Active Flags</span>
                 <Button variant="ghost" size="sm" className="text-xs h-6" onClick={handleClearFlags}>
                   Clear All
                 </Button>
               </div>
-              <div className="space-y-1.5">
-                {activeFlags.filter(f => f.flag_type !== "yellow_turn" && f.flag_type !== "blue").map(f => (
-                  <div key={f.id} className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-2">
+
+              {/* Track Status — Global flags */}
+              {activeFlags.filter(f => f.flag_type !== "yellow_turn" && f.flag_type !== "blue").length > 0 && (
+                <div className="rounded-lg border border-border bg-muted/40 p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold">🏁 Track Status</span>
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">Replaces previous</Badge>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">Only one global flag active at a time</p>
+                  <div className="space-y-1.5">
+                    {activeFlags.filter(f => f.flag_type !== "yellow_turn" && f.flag_type !== "blue").map(f => (
+                      <div key={f.id} className="flex items-center justify-between bg-background/60 rounded-md px-3 py-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">
+                            {f.flag_type === "green" ? "🟢" : f.flag_type === "yellow" ? "⚠️" : f.flag_type === "red" ? "🔴" : f.flag_type === "black" ? "🏴" : f.flag_type === "white" ? "🏳️" : "🏁"}
+                          </span>
+                          <span className="text-xs font-medium">{f.flag_type.toUpperCase()}</span>
+                          {f.message && <span className="text-xs text-muted-foreground">— {f.message}</span>}
+                          {f.flag_type === "black" && f.target_user_id && (
+                            <Badge variant="outline" className="text-[10px]">Targeted</Badge>
+                          )}
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => handleClearSingleFlag(f.id)}>
+                          <X size={12} />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Local Cautions — Stackable flags */}
+              {activeFlags.filter(f => f.flag_type === "yellow_turn" || f.flag_type === "blue").length > 0 && (
+                <div className="rounded-lg border border-warning/40 bg-warning/5 p-3 space-y-2">
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm">
-                        {f.flag_type === "green" ? "🟢" : f.flag_type === "yellow" ? "⚠️" : f.flag_type === "red" ? "🔴" : f.flag_type === "black" ? "🏴" : f.flag_type === "white" ? "🏳️" : "🏁"}
-                      </span>
-                      <span className="text-xs font-medium">{f.flag_type.toUpperCase()}</span>
-                      {f.message && <span className="text-xs text-muted-foreground">— {f.message}</span>}
-                      {f.flag_type === "black" && f.target_user_id && (
-                        <Badge variant="outline" className="text-[10px]">Targeted</Badge>
-                      )}
+                      <span className="text-xs font-semibold">⚠️ Local Cautions</span>
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-warning/50 text-warning">Stacks</Badge>
                     </div>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => handleClearSingleFlag(f.id)}>
-                      <X size={12} />
+                    <Button variant="ghost" size="sm" className="text-xs h-6 text-muted-foreground hover:text-destructive" onClick={async () => {
+                      if (!eventId) return;
+                      await supabase.from("event_flags").update({ is_active: false }).eq("event_id", eventId).eq("is_active", true).in("flag_type", ["yellow_turn", "blue"]);
+                    }}>
+                      Clear Local
                     </Button>
                   </div>
-                ))}
-                {activeFlags.filter(f => f.flag_type === "yellow_turn").length > 0 && (
-                  <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg px-3 py-2 space-y-1.5">
-                    <p className="text-[10px] text-yellow-600 dark:text-yellow-400 uppercase tracking-wider font-bold">⚠️ Local Yellow Flags</p>
-                    {activeFlags.filter(f => f.flag_type === "yellow_turn").map(f => (
-                      <div key={f.id} className="flex items-center justify-between">
-                        <span className="text-xs font-medium">{f.message}</span>
-                        <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-destructive" onClick={() => handleClearSingleFlag(f.id)}>
-                          <X size={10} />
-                        </Button>
+                  <p className="text-[10px] text-muted-foreground">These persist through track status changes</p>
+                  <div className="space-y-1.5">
+                    {activeFlags.filter(f => f.flag_type === "yellow_turn").length > 0 && (
+                      <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-md px-3 py-2 space-y-1.5">
+                        <p className="text-[10px] text-yellow-600 dark:text-yellow-400 uppercase tracking-wider font-bold">⚠️ Local Yellow Flags</p>
+                        {activeFlags.filter(f => f.flag_type === "yellow_turn").map(f => (
+                          <div key={f.id} className="flex items-center justify-between">
+                            <span className="text-xs font-medium">{f.message}</span>
+                            <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-destructive" onClick={() => handleClearSingleFlag(f.id)}>
+                              <X size={10} />
+                            </Button>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                )}
-                {activeFlags.filter(f => f.flag_type === "blue").length > 0 && (
-                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg px-3 py-2 space-y-1.5">
-                    <p className="text-[10px] text-blue-600 dark:text-blue-400 uppercase tracking-wider font-bold">🔵 Blue Flags</p>
-                    {activeFlags.filter(f => f.flag_type === "blue").map(f => (
-                      <div key={f.id} className="flex items-center justify-between">
-                        <span className="text-xs font-medium">{f.message}</span>
-                        <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-destructive" onClick={() => handleClearSingleFlag(f.id)}>
-                          <X size={10} />
-                        </Button>
+                    )}
+                    {activeFlags.filter(f => f.flag_type === "blue").length > 0 && (
+                      <div className="bg-blue-500/10 border border-blue-500/30 rounded-md px-3 py-2 space-y-1.5">
+                        <p className="text-[10px] text-blue-600 dark:text-blue-400 uppercase tracking-wider font-bold">🔵 Blue Flags</p>
+                        {activeFlags.filter(f => f.flag_type === "blue").map(f => (
+                          <div key={f.id} className="flex items-center justify-between">
+                            <span className="text-xs font-medium">{f.message}</span>
+                            <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-destructive" onClick={() => handleClearSingleFlag(f.id)}>
+                              <X size={10} />
+                            </Button>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           )}
           <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 mb-3">
