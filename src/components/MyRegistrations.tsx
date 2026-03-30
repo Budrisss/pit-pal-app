@@ -12,6 +12,8 @@ interface Registration {
   event_id: string;
   registration_type_id: string;
   user_name: string;
+  car_number: number | null;
+  car_id: string | null;
   created_at: string;
   event?: {
     id: string;
@@ -24,6 +26,12 @@ interface Registration {
   };
   reg_type?: {
     name: string;
+  };
+  car?: {
+    name: string;
+    year: string;
+    make: string;
+    model: string;
   };
 }
 
@@ -39,7 +47,7 @@ const MyRegistrations = () => {
       setLoading(true);
       const { data: regs } = await supabase
         .from("event_registrations")
-        .select("id, event_id, registration_type_id, user_name, created_at")
+        .select("id, event_id, registration_type_id, user_name, car_number, car_id, created_at")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
@@ -51,20 +59,31 @@ const MyRegistrations = () => {
 
       const eventIds = [...new Set(regs.map((r) => r.event_id))];
       const regTypeIds = [...new Set(regs.map((r) => r.registration_type_id))];
+      const carIds = [...new Set(regs.map((r) => r.car_id).filter(Boolean))] as string[];
 
-      const [{ data: events }, { data: regTypes }] = await Promise.all([
+      const promises: any[] = [
         supabase.from("public_events").select("id, name, date, time, track_name, city, state").in("id", eventIds),
         supabase.from("registration_types").select("id, name").in("id", regTypeIds),
-      ]);
+      ];
+      if (carIds.length > 0) {
+        promises.push((supabase as any).from("cars").select("id, name, year, make, model").in("id", carIds));
+      }
 
-      const eventMap = Object.fromEntries((events || []).map((e) => [e.id, e]));
-      const regTypeMap = Object.fromEntries((regTypes || []).map((r) => [r.id, r]));
+      const results = await Promise.all(promises);
+      const events = results[0].data;
+      const regTypes = results[1].data;
+      const carsData = carIds.length > 0 ? results[2]?.data : [];
+
+      const eventMap = Object.fromEntries((events || []).map((e: any) => [e.id, e]));
+      const regTypeMap = Object.fromEntries((regTypes || []).map((r: any) => [r.id, r]));
+      const carMap = Object.fromEntries((carsData || []).map((c: any) => [c.id, c]));
 
       setRegistrations(
         regs.map((r) => ({
           ...r,
           event: eventMap[r.event_id],
           reg_type: regTypeMap[r.registration_type_id],
+          car: r.car_id ? carMap[r.car_id] : undefined,
         }))
       );
       setLoading(false);
@@ -103,17 +122,27 @@ const MyRegistrations = () => {
                       {reg.event?.track_name && `${reg.event.track_name} • `}
                       {[reg.event?.city, reg.event?.state].filter(Boolean).join(", ")}
                     </p>
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
                       <span className="text-xs text-muted-foreground flex items-center gap-1">
                         <CalendarDays size={12} />
                         {reg.event?.date ? formatDate(reg.event.date) : "—"}
                       </span>
+                      {reg.car_number && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                          #{reg.car_number}
+                        </Badge>
+                      )}
                       {reg.reg_type && (
                         <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                           {reg.reg_type.name}
                         </Badge>
                       )}
                     </div>
+                    {reg.car && (
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        🚗 {reg.car.year} {reg.car.make} {reg.car.model}
+                      </p>
+                    )}
                   </div>
                   <ChevronRight size={16} className="text-muted-foreground shrink-0 mt-1" />
                 </div>

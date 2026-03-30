@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useOrganizerMode } from "@/contexts/OrganizerModeContext";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
+import { useCars } from "@/contexts/CarsContext";
 import Navigation from "@/components/Navigation";
 import DesktopNavigation from "@/components/DesktopNavigation";
 
@@ -69,6 +70,7 @@ const PublicEventPreview = () => {
   const { user } = useAuth();
   const { isOrganizerMode, organizerProfileId } = useOrganizerMode();
   const { toast } = useToast();
+  const { cars } = useCars();
 
   const [event, setEvent] = useState<PublicEventData | null>(null);
   const [sessions, setSessions] = useState<EventSession[]>([]);
@@ -82,7 +84,7 @@ const PublicEventPreview = () => {
   // Registration state
   const [showRegDialog, setShowRegDialog] = useState(false);
   const [selectedRegTypeId, setSelectedRegTypeId] = useState<string>("");
-  const [regForm, setRegForm] = useState({ name: "", email: "", phone: "", notes: "", carNumber: "" });
+  const [regForm, setRegForm] = useState({ name: "", email: "", phone: "", notes: "", carNumber: "", carId: "" });
   const [registering, setRegistering] = useState(false);
   const [userRegistrations, setUserRegistrations] = useState<Set<string>>(new Set());
 
@@ -132,17 +134,17 @@ const PublicEventPreview = () => {
     fetchAll();
   }, [id]);
 
-  // Fetch user's registrations for this event
+  // Fetch user's registrations for this event (track regTypeId + carNumber combos)
   useEffect(() => {
     if (!user || !id) return;
     const fetchUserRegs = async () => {
       const { data } = await supabase
         .from("event_registrations")
-        .select("registration_type_id")
+        .select("registration_type_id, car_number")
         .eq("event_id", id)
         .eq("user_id", user.id);
       if (data) {
-        setUserRegistrations(new Set(data.map((r: any) => r.registration_type_id)));
+        setUserRegistrations(new Set(data.map((r: any) => `${r.registration_type_id}_${r.car_number}`)));
       }
     };
     fetchUserRegs();
@@ -188,7 +190,7 @@ const PublicEventPreview = () => {
   }, [id]);
 
   const openRegDialog = (preselectedRegTypeId?: string) => {
-    setRegForm({ name: "", email: user?.email || "", phone: "", notes: "", carNumber: "" });
+    setRegForm({ name: "", email: user?.email || "", phone: "", notes: "", carNumber: "", carId: "" });
     setSelectedRegTypeId(preselectedRegTypeId || (regTypes.length === 1 ? regTypes[0].id : ""));
     setShowRegDialog(true);
   };
@@ -218,7 +220,7 @@ const PublicEventPreview = () => {
       const carNum = parseInt(regForm.carNumber);
       if (isNaN(carNum) || carNum <= 0) throw new Error("Car number must be a positive number");
 
-      const { error } = await supabase.from("event_registrations").insert({
+      const { error } = await (supabase as any).from("event_registrations").insert({
         event_id: event.id,
         registration_type_id: regTypeId,
         user_id: user.id,
@@ -227,6 +229,7 @@ const PublicEventPreview = () => {
         user_phone: regForm.phone || null,
         notes: regForm.notes || null,
         car_number: carNum,
+        car_id: regForm.carId || null,
       });
       if (error) {
         if (error.message?.includes("idx_unique_car_number_per_event")) {
@@ -518,7 +521,7 @@ const PublicEventPreview = () => {
               {regTypes.map((rt) => {
                 const count = regCounts[rt.id] || 0;
                 const isFull = rt.max_spots ? count >= rt.max_spots : false;
-                const isRegistered = userRegistrations.has(rt.id);
+                const isRegistered = [...userRegistrations].some(k => k.startsWith(rt.id + '_'));
                 return (
                   <Card key={rt.id} className={`border-border ${isRegistered ? 'bg-primary/10 border-primary/30' : 'bg-card/60'}`}>
                     <CardContent className="p-4">
@@ -644,12 +647,12 @@ const PublicEventPreview = () => {
                     {regTypes.map(rt => {
                       const count = regCounts[rt.id] || 0;
                       const isFull = rt.max_spots ? count >= rt.max_spots : false;
-                      const isRegistered = userRegistrations.has(rt.id);
+                      const isRegistered = [...userRegistrations].some(k => k.startsWith(rt.id + '_'));
                       return (
                         <SelectItem
                           key={rt.id}
                           value={rt.id}
-                          disabled={isFull || isRegistered}
+                          disabled={isFull}
                         >
                           {rt.name}{rt.price ? ` — ${rt.price}` : ""}
                           {rt.max_spots ? ` (${count}/${rt.max_spots})` : ""}
@@ -698,8 +701,25 @@ const PublicEventPreview = () => {
             <div className="space-y-2">
               <Label>Car Number *</Label>
               <Input type="number" min="1" value={regForm.carNumber} onChange={e => setRegForm(p => ({ ...p, carNumber: e.target.value }))} required placeholder="42" />
-              <p className="text-[10px] text-muted-foreground">Must be unique for this event</p>
+              <p className="text-[10px] text-muted-foreground">Must be unique for this event. Use a different number to register with another car.</p>
             </div>
+            {cars.length > 0 && (
+              <div className="space-y-2">
+                <Label>Select Car from Garage</Label>
+                <Select value={regForm.carId} onValueChange={v => setRegForm(p => ({ ...p, carId: v }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Optional — link a car from your garage" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cars.map(car => (
+                      <SelectItem key={car.id} value={car.id}>
+                        {car.year} {car.make} {car.model} — {car.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Email *</Label>
               <Input type="email" value={regForm.email} onChange={e => setRegForm(p => ({ ...p, email: e.target.value }))} required placeholder="john@email.com" />

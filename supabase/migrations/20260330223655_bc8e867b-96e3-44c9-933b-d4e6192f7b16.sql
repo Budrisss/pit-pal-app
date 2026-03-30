@@ -1,0 +1,1 @@
+ALTER TABLE public.event_registrations ADD COLUMN car_id uuid;

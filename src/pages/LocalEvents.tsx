@@ -18,6 +18,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
 import Navigation from '@/components/Navigation';
 import DesktopNavigation from '@/components/DesktopNavigation';
+import { useCars } from '@/contexts/CarsContext';
 
 import dashboardHero from '@/assets/dashboard-hero.jpg';
 import tracksideLogo from '@/assets/trackside-logo-v2.png';
@@ -168,6 +169,7 @@ const LocalEvents = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { isOrganizerMode } = useOrganizerMode();
+  const { cars } = useCars();
 
   const [events, setEvents] = useState<PublicEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -193,7 +195,7 @@ const LocalEvents = () => {
   // Registration state
   const [registeringEvent, setRegisteringEvent] = useState<PublicEvent | null>(null);
   const [selectedRegTypeId, setSelectedRegTypeId] = useState<string>('');
-  const [regForm, setRegForm] = useState({ name: '', email: '', phone: '', notes: '', carNumber: '' });
+  const [regForm, setRegForm] = useState({ name: '', email: '', phone: '', notes: '', carNumber: '', carId: '' });
   const [registering, setRegistering] = useState(false);
   const [userRegistrations, setUserRegistrations] = useState<Set<string>>(new Set());
   
@@ -280,15 +282,15 @@ const LocalEvents = () => {
     }
   }, [viewMode, userLocation]);
 
-  // Fetch user's existing registrations
+  // Fetch user's existing registrations (track regTypeId + carNumber combos)
   const fetchUserRegistrations = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase
       .from('event_registrations')
-      .select('registration_type_id')
+      .select('registration_type_id, car_number')
       .eq('user_id', user.id);
     if (data) {
-      setUserRegistrations(new Set(data.map((r: any) => r.registration_type_id)));
+      setUserRegistrations(new Set(data.map((r: any) => `${r.registration_type_id}_${r.car_number}`)));
     }
   }, [user]);
 
@@ -344,16 +346,17 @@ const LocalEvents = () => {
 
       if (!regTypeId) throw new Error('Please select a registration group');
 
-      // Prevent duplicate registration for the same group
-      if (userRegistrations.has(regTypeId)) {
-        throw new Error('You are already registered for this group. Please select a different group or cancel your existing registration first.');
-      }
-
       if (!regForm.carNumber.trim()) throw new Error('Car number is required');
       const carNum = parseInt(regForm.carNumber);
       if (isNaN(carNum) || carNum <= 0) throw new Error('Car number must be a positive number');
 
-      const { error } = await supabase.from('event_registrations').insert({
+      // Prevent duplicate registration for the same group + car number
+      const comboKey = `${regTypeId}_${carNum}`;
+      if (userRegistrations.has(comboKey)) {
+        throw new Error('You are already registered for this group with this car number. Use a different car number to register again.');
+      }
+
+      const { error } = await (supabase as any).from('event_registrations').insert({
         event_id: registeringEvent.id,
         registration_type_id: regTypeId,
         user_id: user.id,
@@ -362,6 +365,7 @@ const LocalEvents = () => {
         user_phone: regForm.phone || null,
         notes: regForm.notes || null,
         car_number: carNum,
+        car_id: regForm.carId || null,
       });
       if (error) {
         if (error.message?.includes('idx_unique_car_number_per_event')) {
@@ -410,7 +414,7 @@ const LocalEvents = () => {
       toast({ title: "Registered!", description: "Event added to your schedule." });
       setRegisteringEvent(null);
       setSelectedRegTypeId('');
-      setRegForm({ name: '', email: '', phone: '', notes: '', carNumber: '' });
+      setRegForm({ name: '', email: '', phone: '', notes: '', carNumber: '', carId: '' });
 
       // Navigate to the user's events page
       navigate('/events');
@@ -914,7 +918,7 @@ const LocalEvents = () => {
                           {event.registration_types.map((rt, idx) => {
                             const count = rt.id ? (registrationCounts[rt.id] || 0) : 0;
                             const isFull = rt.max_spots ? count >= rt.max_spots : false;
-                            const isRegistered = rt.id ? userRegistrations.has(rt.id) : false;
+                            const isRegistered = rt.id ? [...userRegistrations].some(k => k.startsWith(rt.id + '_')) : false;
                             return (
                               <Badge 
                                 key={idx} 
@@ -943,7 +947,7 @@ const LocalEvents = () => {
                           className="flex-1"
                           onClick={() => {
                             setRegisteringEvent(event);
-                            setRegForm({ name: '', email: user?.email || '', phone: '', notes: '', carNumber: '' });
+                            setRegForm({ name: '', email: user?.email || '', phone: '', notes: '', carNumber: '', carId: '' });
                             // Auto-select if only one reg type
                             if (event.registration_types?.length === 1 && event.registration_types[0].id) {
                               setSelectedRegTypeId(event.registration_types[0].id);
@@ -1080,7 +1084,7 @@ const LocalEvents = () => {
                       {registeringEvent.registration_types.map(rt => {
                         const count = rt.id ? (registrationCounts[rt.id] || 0) : 0;
                         const isFull = rt.max_spots ? count >= rt.max_spots : false;
-                        const isRegistered = rt.id ? userRegistrations.has(rt.id) : false;
+                        const isRegistered = rt.id ? [...userRegistrations].some(k => k.startsWith(rt.id + '_')) : false;
                         return (
                           <SelectItem 
                             key={rt.id} 
@@ -1096,9 +1100,9 @@ const LocalEvents = () => {
                       })}
                     </SelectContent>
                   </Select>
-                  {selectedRegTypeId && userRegistrations.has(selectedRegTypeId) && (
-                    <p className="text-xs text-destructive mt-1">
-                      ⚠️ You're already registered for this group. Select a different group or cancel your existing registration first.
+                  {selectedRegTypeId && [...userRegistrations].some(k => k.startsWith(selectedRegTypeId + '_')) && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      ℹ️ You have an existing registration for this group. You can register again with a different car number.
                     </p>
                   )}
                 </div>
@@ -1139,8 +1143,25 @@ const LocalEvents = () => {
               <div className="space-y-2">
                 <Label>Car Number *</Label>
                 <Input type="number" min="1" value={regForm.carNumber} onChange={e => setRegForm(p => ({ ...p, carNumber: e.target.value }))} required placeholder="42" />
-                <p className="text-[10px] text-muted-foreground">Must be unique for this event</p>
+                <p className="text-[10px] text-muted-foreground">Must be unique for this event. Use a different number to register with another car.</p>
               </div>
+              {cars.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Select Car from Garage</Label>
+                  <Select value={regForm.carId} onValueChange={v => setRegForm(p => ({ ...p, carId: v }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Optional — link a car from your garage" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {cars.map(car => (
+                        <SelectItem key={car.id} value={car.id}>
+                          {car.year} {car.make} {car.model} — {car.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>Email *</Label>
                 <Input type="email" value={regForm.email} onChange={e => setRegForm(p => ({ ...p, email: e.target.value }))} required placeholder="john@email.com" />
