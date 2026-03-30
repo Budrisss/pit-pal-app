@@ -335,7 +335,13 @@ const OrganizerLiveManage = () => {
 
   const handleSendBlackFlag = async () => {
     if (!eventId || !organizerProfileId) return;
-    await supabase.from("event_flags").update({ is_active: false }).eq("event_id", eventId).eq("is_active", true);
+    await supabase
+      .from("event_flags")
+      .update({ is_active: false })
+      .eq("event_id", eventId)
+      .eq("is_active", true)
+      .neq("flag_type", "yellow_turn")
+      .neq("flag_type", "blue");
     const targetUserId = blackFlagTarget === "all" ? null : blackFlagTarget;
     const targetReg = registrations.find(r => r.user_id === targetUserId);
     const messagePrefix = targetReg?.car_number ? `Car #${targetReg.car_number}` : null;
@@ -399,7 +405,13 @@ const OrganizerLiveManage = () => {
       const autoGreen = async () => {
         const hasGreen = activeFlags.some(f => f.flag_type === "green" && f.is_active);
         if (hasGreen) return;
-        await supabase.from("event_flags").update({ is_active: false }).eq("event_id", eventId).eq("is_active", true);
+        await supabase
+          .from("event_flags")
+          .update({ is_active: false })
+          .eq("event_id", eventId)
+          .eq("is_active", true)
+          .neq("flag_type", "yellow_turn")
+          .neq("flag_type", "blue");
         await supabase.from("event_flags").insert({
           event_id: eventId,
           organizer_id: organizerProfileId,
@@ -417,7 +429,13 @@ const OrganizerLiveManage = () => {
       const autoCheckered = async () => {
         const hasCheckered = activeFlags.some(f => f.flag_type === "checkered" && f.is_active);
         if (hasCheckered) return;
-        await supabase.from("event_flags").update({ is_active: false }).eq("event_id", eventId).eq("is_active", true);
+        await supabase
+          .from("event_flags")
+          .update({ is_active: false })
+          .eq("event_id", eventId)
+          .eq("is_active", true)
+          .neq("flag_type", "yellow_turn")
+          .neq("flag_type", "blue");
         await supabase.from("event_flags").insert({
           event_id: eventId,
           organizer_id: organizerProfileId,
