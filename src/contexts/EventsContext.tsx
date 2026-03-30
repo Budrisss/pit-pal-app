@@ -28,7 +28,7 @@ interface EventsContextType {
   loading: boolean;
   addEvent: (event: Omit<Event, "id">) => Promise<void>;
   updateEvent: (event: Event) => Promise<void>;
-  deleteEvent: (id: string) => Promise<void>;
+  deleteEvent: (id: string, cancelRegistration?: boolean) => Promise<void>;
   getEventById: (id: string) => Event | undefined;
   refreshEvents: () => Promise<void>;
 }
@@ -146,8 +146,27 @@ export const EventsProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const deleteEvent = async (id: string) => {
+  const deleteEvent = async (id: string, cancelRegistration?: boolean) => {
     if (!user) return;
+
+    // If cancelling registration, look up the public_event_id and remove from event_registrations
+    if (cancelRegistration) {
+      const { data: eventRow } = await (supabase as any)
+        .from("events")
+        .select("public_event_id")
+        .eq("id", id)
+        .eq("user_id", user.id)
+        .single();
+
+      if (eventRow?.public_event_id) {
+        await (supabase as any)
+          .from("event_registrations")
+          .delete()
+          .eq("event_id", eventRow.public_event_id)
+          .eq("user_id", user.id);
+      }
+    }
+
     const { error } = await (supabase as any)
       .from("events")
       .delete()

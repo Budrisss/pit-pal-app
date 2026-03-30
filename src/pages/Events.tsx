@@ -225,8 +225,9 @@ const Events = () => {
                   status={event.status}
                   car={event.car}
                   address={event.address}
-                  isRegistered={!!event.publicEventId}
-                  onEdit={() => handleEditEvent(event)}
+                   isRegistered={!!event.publicEventId}
+                   publicEventId={event.publicEventId}
+                   onEdit={() => handleEditEvent(event)}
                 />
               ))}
             </div>
