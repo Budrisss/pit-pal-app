@@ -1039,11 +1039,10 @@ const OrganizerLiveManage = () => {
                 <History size={16} className="text-primary" /> Flag Review by Session
               </h2>
               <p className="text-xs text-muted-foreground mb-3">
-                Review all flags sent during completed sessions — including stats and details.
+                Review all flags sent during each session — including stats and details.
               </p>
               <div className="space-y-2">
                 {sessionStates
-                  .filter(s => s.state === "completed")
                   .map(session => {
                     const sessionFlags = flagHistory.filter(f => f.session_id === session.id);
                     const activeSessionFlags = activeFlags.filter(f => f.session_id === session.id);
