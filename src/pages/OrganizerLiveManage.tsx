@@ -655,12 +655,15 @@ const OrganizerLiveManage = () => {
               </div>
             </div>
           )}
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-3">
+          <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 mb-3">
             <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white text-xs h-10" onClick={() => handleSendFlag("green")}>
               🟢 Green
             </Button>
             <Button size="sm" className="bg-yellow-500 hover:bg-yellow-600 text-black text-xs h-10" onClick={() => setShowYellowFlagDialog(true)}>
               ⚠️ Yellow
+            </Button>
+            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-10" onClick={() => setShowBlueFlagDialog(true)}>
+              🔵 Blue
             </Button>
             <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white text-xs h-10" onClick={() => handleSendFlag("red")}>
               🔴 Red
