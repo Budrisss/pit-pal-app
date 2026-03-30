@@ -1,30 +1,13 @@
 
 
-## Plan: Distinguish Global vs Local Flags in Active Flags List
+## Plan: Show All Sessions in Flag Review
 
-### What Changes
+### Problem
+The "Flag Review by Session" section currently filters to only `completed` sessions. This means active or upcoming sessions with flags aren't visible in the review list.
 
-Restructure the Active Flags section into two clearly labeled groups with visual distinction:
+### Change
+In `src/pages/OrganizerLiveManage.tsx`, remove the `.filter(s => s.state === "completed")` on line 1046 so all sessions appear in the flag review section. Also update the visibility condition (line ~1029) to show the section whenever there are any sessions, not just completed ones. Add a small status badge (e.g., "Active", "Completed", "Upcoming") next to each session name for clarity.
 
-1. **"Track Status" section** — for global flags (green, yellow, red, black, white, checkered)
-   - Header: "🏁 Track Status" with a subtle label like "Replaces previous"
-   - Keep existing styling but add a section header with a muted description explaining these override each other
-
-2. **"Local Cautions" section** — for stackable flags (yellow_turn, blue)
-   - Header: "⚠️ Local Cautions" with label "These stack — won't be cleared by track status changes"
-   - Group the existing yellow_turn and blue flag blocks under this header
-   - Add a "Clear All Local" button specific to this section
-
-### File: `src/pages/OrganizerLiveManage.tsx` (lines ~622-674)
-
-- Replace the single "Active Flags" header with two sub-sections
-- **Track Status** block: wraps the global flags list (lines 630-646) with its own header, bordered container, and a subtle "only one active at a time" note
-- **Local Cautions** block: wraps yellow_turn + blue sections (lines 647-672) with its own header, bordered container, and a "stacks with track status" note
-- Keep "Clear All" at top level; optionally add per-section clear buttons
-- Add `Badge` labels: `<Badge variant="outline">Replaces</Badge>` on global flags, `<Badge variant="outline">Stacks</Badge>` on local cautions
-
-### Visual Design
-- Global section: darker muted background, single-flag emphasis
-- Local section: slightly highlighted border (amber/blue gradient border), shows stacking nature
-- Small descriptive text under each section header explaining behavior
+### Files Modified
+- `src/pages/OrganizerLiveManage.tsx` — Remove completed-only filter, add session state badge, update section visibility condition and description text.
 
