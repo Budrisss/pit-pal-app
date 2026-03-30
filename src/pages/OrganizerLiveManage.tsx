@@ -572,23 +572,52 @@ const OrganizerLiveManage = () => {
             <Flag size={16} className="text-primary" /> Flag Control
           </h2>
           {activeFlags.length > 0 && (
-            <div className="flex items-center gap-2 mb-3 flex-wrap">
-              <span className="text-xs text-muted-foreground">Active:</span>
-              {activeFlags.map(f => (
-                <Badge key={f.id} variant="outline" className="text-xs">
-                  {f.flag_type.toUpperCase()} {f.message && `— ${f.message}`}
-                </Badge>
-              ))}
-              <Button variant="ghost" size="sm" className="text-xs h-6" onClick={handleClearFlags}>
-                Clear All
-              </Button>
+            <div className="space-y-2 mb-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground font-medium">Active Flags</span>
+                <Button variant="ghost" size="sm" className="text-xs h-6" onClick={handleClearFlags}>
+                  Clear All
+                </Button>
+              </div>
+              <div className="space-y-1.5">
+                {activeFlags.filter(f => f.flag_type !== "yellow_turn").map(f => (
+                  <div key={f.id} className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">
+                        {f.flag_type === "green" ? "🟢" : f.flag_type === "yellow" ? "⚠️" : f.flag_type === "red" ? "🔴" : f.flag_type === "black" ? "🏴" : f.flag_type === "white" ? "🏳️" : "🏁"}
+                      </span>
+                      <span className="text-xs font-medium">{f.flag_type.toUpperCase()}</span>
+                      {f.message && <span className="text-xs text-muted-foreground">— {f.message}</span>}
+                      {f.flag_type === "black" && f.target_user_id && (
+                        <Badge variant="outline" className="text-[10px]">Targeted</Badge>
+                      )}
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => handleClearSingleFlag(f.id)}>
+                      <X size={12} />
+                    </Button>
+                  </div>
+                ))}
+                {activeFlags.filter(f => f.flag_type === "yellow_turn").length > 0 && (
+                  <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg px-3 py-2 space-y-1.5">
+                    <p className="text-[10px] text-yellow-600 dark:text-yellow-400 uppercase tracking-wider font-bold">⚠️ Local Yellow Flags</p>
+                    {activeFlags.filter(f => f.flag_type === "yellow_turn").map(f => (
+                      <div key={f.id} className="flex items-center justify-between">
+                        <span className="text-xs font-medium">{f.message}</span>
+                        <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-destructive" onClick={() => handleClearSingleFlag(f.id)}>
+                          <X size={10} />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-3">
             <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white text-xs h-10" onClick={() => handleSendFlag("green")}>
               🟢 Green
             </Button>
-            <Button size="sm" className="bg-yellow-500 hover:bg-yellow-600 text-black text-xs h-10" onClick={() => handleSendFlag("yellow")}>
+            <Button size="sm" className="bg-yellow-500 hover:bg-yellow-600 text-black text-xs h-10" onClick={() => setShowYellowFlagDialog(true)}>
               ⚠️ Yellow
             </Button>
             <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white text-xs h-10" onClick={() => handleSendFlag("red")}>
@@ -607,7 +636,7 @@ const OrganizerLiveManage = () => {
           <Input
             value={flagMessage}
             onChange={(e) => setFlagMessage(e.target.value)}
-            placeholder="Optional message (e.g. 'Turn 5', 'Car #42')"
+            placeholder="Optional message for global flags"
             className="text-sm"
           />
         </motion.div>
