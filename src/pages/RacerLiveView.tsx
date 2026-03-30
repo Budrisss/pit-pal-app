@@ -64,6 +64,7 @@ const RacerLiveView = () => {
   // Black flag accept state
   const [blackFlagAccepted, setBlackFlagAccepted] = useState<string | null>(null);
   const [blackFlagAcceptedAt, setBlackFlagAcceptedAt] = useState<number | null>(null);
+  const [blackFlagDismissed, setBlackFlagDismissed] = useState<Set<string>>(new Set());
   const [blackFlagReceivedAt, setBlackFlagReceivedAt] = useState<Record<string, number>>({});
   const prevFlagIdsRef = useRef<Set<string>>(new Set());
 
@@ -155,18 +156,13 @@ const RacerLiveView = () => {
 
   // Active flags for this user
   const activeFlags = useMemo(() => {
-    const acceptedExpired =
-      blackFlagAccepted &&
-      blackFlagAcceptedAt &&
-      currentTime.getTime() - blackFlagAcceptedAt >= 60000;
-
     return flags.filter(f => {
       if (!f.is_active) return false;
       if (f.target_user_id && f.target_user_id !== user?.id) return false;
-      if (acceptedExpired && f.id === blackFlagAccepted) return false;
+      if (blackFlagDismissed.has(f.id)) return false;
       return true;
     });
-  }, [flags, user?.id, blackFlagAccepted, blackFlagAcceptedAt, currentTime]);
+  }, [flags, user?.id, blackFlagDismissed]);
 
   // Track when targeted black flags first appear + vibrate
   useEffect(() => {
@@ -187,10 +183,18 @@ const RacerLiveView = () => {
       if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]);
     }
 
-    // Clear accepted state if the accepted flag is no longer active
+    // Clear accepted/dismissed state if the accepted flag is no longer in the raw flags list
     if (blackFlagAccepted && !currentIds.has(blackFlagAccepted)) {
       setBlackFlagAccepted(null);
     }
+    // Clean up dismissed flags that are no longer present
+    setBlackFlagDismissed(prev => {
+      const cleaned = new Set<string>();
+      for (const id of prev) {
+        if (currentIds.has(id)) cleaned.add(id);
+      }
+      return cleaned.size !== prev.size ? cleaned : prev;
+    });
 
     // Clean up old receivedAt entries
     setBlackFlagReceivedAt(prev => {
@@ -294,6 +298,8 @@ const RacerLiveView = () => {
   useEffect(() => {
     if (bannerTimeRemaining === 0 && blackFlagAccepted) {
       const flagIdToDeactivate = blackFlagAccepted;
+      // Add to dismissed set FIRST so it stays filtered out of activeFlags
+      setBlackFlagDismissed(prev => new Set(prev).add(flagIdToDeactivate));
       setBlackFlagAccepted(null);
       setBlackFlagAcceptedAt(null);
       // Deactivate the flag in the database so the organizer sees it cleared
@@ -301,8 +307,12 @@ const RacerLiveView = () => {
         .from("event_flags")
         .update({ is_active: false })
         .eq("id", flagIdToDeactivate)
-        .then(() => {
-          console.log("Black flag auto-cleared after 60s post-accept");
+        .then(({ error }) => {
+          if (error) {
+            console.error("Failed to auto-clear black flag:", error);
+          } else {
+            console.log("Black flag auto-cleared after 60s post-accept");
+          }
         });
     }
   }, [bannerTimeRemaining, blackFlagAccepted]);
