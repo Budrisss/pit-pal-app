@@ -119,6 +119,7 @@ const OrganizerLiveManage = () => {
       setRegistrationTypes((regTypesRes.data as RegistrationType[]) || []);
       setAnnouncements((annRes.data as Announcement[]) || []);
       setTotalRegistrations(regsRes.data?.length || 0);
+      setRegistrations((regsRes.data as EventRegistrationWithCar[]) || []);
       setActiveFlags((flagsRes.data as EventFlag[]) || []);
     } catch (err) {
       console.error(err);
