@@ -1024,6 +1024,117 @@ const OrganizerLiveManage = () => {
             </div>
           )}
         </motion.div>
+
+        {/* Flag History Review */}
+        {sessionStates.filter(s => s.state === "completed").length > 0 && (
+          <>
+            <Separator className="mb-6" />
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="mb-6"
+            >
+              <h2 className="font-semibold flex items-center gap-2 mb-3">
+                <History size={16} className="text-primary" /> Flag Review by Session
+              </h2>
+              <p className="text-xs text-muted-foreground mb-3">
+                Review all flags sent during completed sessions — including stats and details.
+              </p>
+              <div className="space-y-2">
+                {sessionStates
+                  .filter(s => s.state === "completed")
+                  .map(session => {
+                    const sessionFlags = flagHistory.filter(f => f.session_id === session.id);
+                    const activeSessionFlags = activeFlags.filter(f => f.session_id === session.id);
+                    const allSessionFlags = [...sessionFlags, ...activeSessionFlags];
+                    const isExpanded = expandedHistorySession === session.id;
+
+                    const flagCounts: Record<string, number> = {};
+                    allSessionFlags.forEach(f => {
+                      const label = f.flag_type === "yellow_turn" ? "yellow (local)" : f.flag_type === "black" && f.target_user_id ? "black (targeted)" : f.flag_type;
+                      flagCounts[label] = (flagCounts[label] || 0) + 1;
+                    });
+
+                    return (
+                      <Card key={session.id} className="bg-card/80 border-border">
+                        <CardContent className="p-0">
+                          <button
+                            className="w-full flex items-center justify-between p-3 text-left hover:bg-muted/30 transition-colors rounded-lg"
+                            onClick={() => setExpandedHistorySession(isExpanded ? null : session.id!)}
+                          >
+                            <div className="flex items-center gap-2">
+                              <ChevronRight size={14} className={`transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+                              <span className="text-sm font-medium">{session.name}</span>
+                              <Badge variant="outline" className="text-[10px]">
+                                {getRunGroupName(session.registration_type_id)}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {allSessionFlags.length === 0 ? (
+                                <span className="text-[10px] text-muted-foreground">No flags</span>
+                              ) : (
+                                <Badge variant="secondary" className="text-[10px]">
+                                  {allSessionFlags.length} flag{allSessionFlags.length !== 1 ? "s" : ""}
+                                </Badge>
+                              )}
+                            </div>
+                          </button>
+
+                          {isExpanded && (
+                            <div className="px-3 pb-3 space-y-3">
+                              {allSessionFlags.length === 0 ? (
+                                <p className="text-xs text-muted-foreground italic pl-6">No flags were recorded during this session.</p>
+                              ) : (
+                                <>
+                                  {/* Stats Summary */}
+                                  <div className="flex flex-wrap gap-1.5 pl-6">
+                                    {Object.entries(flagCounts).map(([type, count]) => (
+                                      <Badge key={type} variant="outline" className="text-[10px] gap-1">
+                                        <span>
+                                          {type === "green" ? "🟢" : type === "yellow" ? "⚠️" : type === "yellow (local)" ? "⚠️" : type === "red" ? "🔴" : type.startsWith("black") ? "🏴" : type === "blue" ? "🔵" : type === "white" ? "🏳️" : type === "checkered" ? "🏁" : "🚩"}
+                                        </span>
+                                        {type} × {count}
+                                      </Badge>
+                                    ))}
+                                  </div>
+
+                                  {/* Detailed Flag List */}
+                                  <div className="pl-6 space-y-1.5 max-h-60 overflow-y-auto">
+                                    {allSessionFlags.map(f => {
+                                      const flagTime = format(new Date(f.created_at), "h:mm:ss a");
+                                      const flagEmoji = f.flag_type === "green" ? "🟢" : f.flag_type === "yellow" ? "⚠️" : f.flag_type === "yellow_turn" ? "⚠️" : f.flag_type === "red" ? "🔴" : f.flag_type === "black" ? "🏴" : f.flag_type === "blue" ? "🔵" : f.flag_type === "white" ? "🏳️" : "🏁";
+                                      const label = f.flag_type === "yellow_turn" ? "Yellow (Local)" : f.flag_type === "black" && f.target_user_id ? "Black (Targeted)" : f.flag_type.charAt(0).toUpperCase() + f.flag_type.slice(1);
+
+                                      return (
+                                        <div key={f.id} className="flex items-start gap-2 text-xs bg-muted/30 rounded-md px-2.5 py-1.5">
+                                          <span className="shrink-0 mt-0.5">{flagEmoji}</span>
+                                          <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-1.5">
+                                              <span className="font-medium">{label}</span>
+                                              <span className="text-muted-foreground">at {flagTime}</span>
+                                            </div>
+                                            {f.message && <p className="text-muted-foreground truncate">{f.message}</p>}
+                                          </div>
+                                          <Badge variant={f.is_active ? "default" : "outline"} className="text-[9px] shrink-0">
+                                            {f.is_active ? "Active" : "Cleared"}
+                                          </Badge>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+              </div>
+            </motion.div>
+          </>
+        )}
       </div>
 
       {/* Delete Session Confirmation */}
