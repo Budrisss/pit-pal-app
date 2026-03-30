@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { addMinutes, parseISO, differenceInMilliseconds, isAfter, isBefore } from "date-fns";
+import { addMinutes, parseISO, differenceInMilliseconds, isAfter, isBefore, format } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Radio, Clock, Megaphone, Send, Users, Plus, Trash2, X, ChevronDown, Flag, AlertTriangle, Pencil, Check } from "lucide-react";
+import { ArrowLeft, Radio, Clock, Megaphone, Send, Users, Plus, Trash2, X, ChevronDown, Flag, AlertTriangle, Pencil, Check, History, ChevronRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrganizerMode } from "@/contexts/OrganizerModeContext";
 import { useToast } from "@/hooks/use-toast";
@@ -47,6 +47,7 @@ interface EventFlag {
   target_user_id: string | null;
   is_active: boolean;
   created_at: string;
+  session_id: string | null;
 }
 
 interface EventRegistrationWithCar {
@@ -90,6 +91,8 @@ const OrganizerLiveManage = () => {
   const [blueFlagSearch, setBlueFlagSearch] = useState("");
   const [editingFlagId, setEditingFlagId] = useState<string | null>(null);
   const [editingFlagMessage, setEditingFlagMessage] = useState("");
+  const [flagHistory, setFlagHistory] = useState<EventFlag[]>([]);
+  const [expandedHistorySession, setExpandedHistorySession] = useState<string | null>(null);
 
   // Live clock
   useEffect(() => {
@@ -102,13 +105,14 @@ const OrganizerLiveManage = () => {
     if (!eventId) return;
     setLoading(true);
     try {
-      const [eventRes, sessRes, regTypesRes, annRes, regsRes, flagsRes] = await Promise.all([
+      const [eventRes, sessRes, regTypesRes, annRes, regsRes, flagsRes, flagHistoryRes] = await Promise.all([
         supabase.from("public_events").select("name, organizer_id, date").eq("id", eventId).single(),
         supabase.from("public_event_sessions").select("*").eq("event_id", eventId).order("sort_order"),
         supabase.from("registration_types").select("id, name").eq("event_id", eventId),
         supabase.from("event_announcements").select("id, message, created_at").eq("event_id", eventId).order("created_at", { ascending: false }),
         supabase.from("event_registrations").select("id, user_id, user_name, car_number, registration_type_id").eq("event_id", eventId),
         supabase.from("event_flags").select("*").eq("event_id", eventId).eq("is_active", true),
+        supabase.from("event_flags").select("*").eq("event_id", eventId).eq("is_active", false).not("session_id", "is", null).order("created_at", { ascending: true }),
       ]);
 
       if (eventRes.data) {
@@ -130,6 +134,7 @@ const OrganizerLiveManage = () => {
       setTotalRegistrations(regsRes.data?.length || 0);
       setRegistrations((regsRes.data as EventRegistrationWithCar[]) || []);
       setActiveFlags((flagsRes.data as EventFlag[]) || []);
+      setFlagHistory((flagHistoryRes.data as EventFlag[]) || []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -192,6 +197,8 @@ const OrganizerLiveManage = () => {
         () => {
           supabase.from("event_flags").select("*").eq("event_id", eventId).eq("is_active", true)
             .then(({ data }) => { if (data) setActiveFlags(data as EventFlag[]); });
+          supabase.from("event_flags").select("*").eq("event_id", eventId).eq("is_active", false).not("session_id", "is", null).order("created_at", { ascending: true })
+            .then(({ data }) => { if (data) setFlagHistory(data as EventFlag[]); });
         }
       )
       .subscribe();
@@ -275,6 +282,7 @@ const OrganizerLiveManage = () => {
       flag_type: flagType,
       message: flagMessage.trim() || null,
       is_active: true,
+      session_id: activeSessionIdRef.current,
     });
     if (error) {
       toast({ title: "Failed to send flag", variant: "destructive" });
@@ -294,6 +302,7 @@ const OrganizerLiveManage = () => {
       flag_type: "yellow_turn",
       message: fullMessage,
       is_active: true,
+      session_id: activeSessionIdRef.current,
     });
     if (error) {
       toast({ title: "Failed to send yellow flag", variant: "destructive" });
@@ -318,6 +327,7 @@ const OrganizerLiveManage = () => {
       message: fullMessage,
       target_user_id: targetUserId,
       is_active: true,
+      session_id: activeSessionIdRef.current,
     });
     if (error) {
       toast({ title: "Failed to send blue flag", variant: "destructive" });
@@ -346,6 +356,7 @@ const OrganizerLiveManage = () => {
           flag_type: "green",
           message: null,
           is_active: true,
+          session_id: activeSessionIdRef.current,
         });
         toast({ title: "🟢 Green flag restored — caution cleared" });
         return;
@@ -384,6 +395,7 @@ const OrganizerLiveManage = () => {
       message: fullMessage,
       target_user_id: targetUserId,
       is_active: true,
+      session_id: activeSessionIdRef.current,
     });
     if (error) {
       toast({ title: "Failed to send black flag", variant: "destructive" });
@@ -449,6 +461,8 @@ const OrganizerLiveManage = () => {
   const isLocalCaution = (f: EventFlag) => f.flag_type === "yellow_turn" || (f.flag_type === "blue" && !isBlueExpired(f)) || (f.flag_type === "black" && f.target_user_id);
 
   const activeSession = sessionStates.find((s) => s.state === "active");
+  const activeSessionIdRef = useRef<string | null>(null);
+  activeSessionIdRef.current = activeSession?.id || null;
 
   // Auto-send checkered flag when a session ends
   const prevActiveSessionId = useRef<string | null>(null);
@@ -474,6 +488,7 @@ const OrganizerLiveManage = () => {
           flag_type: "green",
           message: null,
           is_active: true,
+          session_id: currentActiveId,
         });
         toast({ title: "🟢 Green flag auto-sent — session started" });
       };
@@ -498,6 +513,7 @@ const OrganizerLiveManage = () => {
           flag_type: "checkered",
           message: "Session complete",
           is_active: true,
+          session_id: prevId,
         });
         toast({ title: "🏁 Checkered flag auto-sent — session ended" });
       };
@@ -1008,6 +1024,117 @@ const OrganizerLiveManage = () => {
             </div>
           )}
         </motion.div>
+
+        {/* Flag History Review */}
+        {sessionStates.filter(s => s.state === "completed").length > 0 && (
+          <>
+            <Separator className="mb-6" />
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="mb-6"
+            >
+              <h2 className="font-semibold flex items-center gap-2 mb-3">
+                <History size={16} className="text-primary" /> Flag Review by Session
+              </h2>
+              <p className="text-xs text-muted-foreground mb-3">
+                Review all flags sent during completed sessions — including stats and details.
+              </p>
+              <div className="space-y-2">
+                {sessionStates
+                  .filter(s => s.state === "completed")
+                  .map(session => {
+                    const sessionFlags = flagHistory.filter(f => f.session_id === session.id);
+                    const activeSessionFlags = activeFlags.filter(f => f.session_id === session.id);
+                    const allSessionFlags = [...sessionFlags, ...activeSessionFlags];
+                    const isExpanded = expandedHistorySession === session.id;
+
+                    const flagCounts: Record<string, number> = {};
+                    allSessionFlags.forEach(f => {
+                      const label = f.flag_type === "yellow_turn" ? "yellow (local)" : f.flag_type === "black" && f.target_user_id ? "black (targeted)" : f.flag_type;
+                      flagCounts[label] = (flagCounts[label] || 0) + 1;
+                    });
+
+                    return (
+                      <Card key={session.id} className="bg-card/80 border-border">
+                        <CardContent className="p-0">
+                          <button
+                            className="w-full flex items-center justify-between p-3 text-left hover:bg-muted/30 transition-colors rounded-lg"
+                            onClick={() => setExpandedHistorySession(isExpanded ? null : session.id!)}
+                          >
+                            <div className="flex items-center gap-2">
+                              <ChevronRight size={14} className={`transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+                              <span className="text-sm font-medium">{session.name}</span>
+                              <Badge variant="outline" className="text-[10px]">
+                                {getRunGroupName(session.registration_type_id)}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {allSessionFlags.length === 0 ? (
+                                <span className="text-[10px] text-muted-foreground">No flags</span>
+                              ) : (
+                                <Badge variant="secondary" className="text-[10px]">
+                                  {allSessionFlags.length} flag{allSessionFlags.length !== 1 ? "s" : ""}
+                                </Badge>
+                              )}
+                            </div>
+                          </button>
+
+                          {isExpanded && (
+                            <div className="px-3 pb-3 space-y-3">
+                              {allSessionFlags.length === 0 ? (
+                                <p className="text-xs text-muted-foreground italic pl-6">No flags were recorded during this session.</p>
+                              ) : (
+                                <>
+                                  {/* Stats Summary */}
+                                  <div className="flex flex-wrap gap-1.5 pl-6">
+                                    {Object.entries(flagCounts).map(([type, count]) => (
+                                      <Badge key={type} variant="outline" className="text-[10px] gap-1">
+                                        <span>
+                                          {type === "green" ? "🟢" : type === "yellow" ? "⚠️" : type === "yellow (local)" ? "⚠️" : type === "red" ? "🔴" : type.startsWith("black") ? "🏴" : type === "blue" ? "🔵" : type === "white" ? "🏳️" : type === "checkered" ? "🏁" : "🚩"}
+                                        </span>
+                                        {type} × {count}
+                                      </Badge>
+                                    ))}
+                                  </div>
+
+                                  {/* Detailed Flag List */}
+                                  <div className="pl-6 space-y-1.5 max-h-60 overflow-y-auto">
+                                    {allSessionFlags.map(f => {
+                                      const flagTime = format(new Date(f.created_at), "h:mm:ss a");
+                                      const flagEmoji = f.flag_type === "green" ? "🟢" : f.flag_type === "yellow" ? "⚠️" : f.flag_type === "yellow_turn" ? "⚠️" : f.flag_type === "red" ? "🔴" : f.flag_type === "black" ? "🏴" : f.flag_type === "blue" ? "🔵" : f.flag_type === "white" ? "🏳️" : "🏁";
+                                      const label = f.flag_type === "yellow_turn" ? "Yellow (Local)" : f.flag_type === "black" && f.target_user_id ? "Black (Targeted)" : f.flag_type.charAt(0).toUpperCase() + f.flag_type.slice(1);
+
+                                      return (
+                                        <div key={f.id} className="flex items-start gap-2 text-xs bg-muted/30 rounded-md px-2.5 py-1.5">
+                                          <span className="shrink-0 mt-0.5">{flagEmoji}</span>
+                                          <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-1.5">
+                                              <span className="font-medium">{label}</span>
+                                              <span className="text-muted-foreground">at {flagTime}</span>
+                                            </div>
+                                            {f.message && <p className="text-muted-foreground truncate">{f.message}</p>}
+                                          </div>
+                                          <Badge variant={f.is_active ? "default" : "outline"} className="text-[9px] shrink-0">
+                                            {f.is_active ? "Active" : "Cleared"}
+                                          </Badge>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+              </div>
+            </motion.div>
+          </>
+        )}
       </div>
 
       {/* Delete Session Confirmation */}

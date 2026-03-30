@@ -1,0 +1,1 @@
+ALTER TABLE public.event_flags ADD COLUMN session_id uuid REFERENCES public.public_event_sessions(id) ON DELETE SET NULL DEFAULT NULL;

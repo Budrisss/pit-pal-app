@@ -119,6 +119,7 @@ export type Database = {
           is_active: boolean
           message: string | null
           organizer_id: string
+          session_id: string | null
           target_user_id: string | null
         }
         Insert: {
@@ -129,6 +130,7 @@ export type Database = {
           is_active?: boolean
           message?: string | null
           organizer_id: string
+          session_id?: string | null
           target_user_id?: string | null
         }
         Update: {
@@ -139,6 +141,7 @@ export type Database = {
           is_active?: boolean
           message?: string | null
           organizer_id?: string
+          session_id?: string | null
           target_user_id?: string | null
         }
         Relationships: [
@@ -154,6 +157,13 @@ export type Database = {
             columns: ["organizer_id"]
             isOneToOne: false
             referencedRelation: "organizer_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_flags_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "public_event_sessions"
             referencedColumns: ["id"]
           },
         ]
