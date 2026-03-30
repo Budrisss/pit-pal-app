@@ -280,6 +280,7 @@ const OrganizerLiveManage = () => {
       flag_type: flagType,
       message: flagMessage.trim() || null,
       is_active: true,
+      session_id: activeSessionIdRef.current,
     });
     if (error) {
       toast({ title: "Failed to send flag", variant: "destructive" });
