@@ -160,6 +160,7 @@ export type Database = {
       }
       event_registrations: {
         Row: {
+          car_number: number | null
           created_at: string
           event_id: string
           id: string
@@ -171,6 +172,7 @@ export type Database = {
           user_phone: string | null
         }
         Insert: {
+          car_number?: number | null
           created_at?: string
           event_id: string
           id?: string
@@ -182,6 +184,7 @@ export type Database = {
           user_phone?: string | null
         }
         Update: {
+          car_number?: number | null
           created_at?: string
           event_id?: string
           id?: string
