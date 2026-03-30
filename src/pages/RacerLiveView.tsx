@@ -266,9 +266,27 @@ const RacerLiveView = () => {
   const handleAcceptBlackFlag = () => {
     if (primaryFlag && canAcceptBlackFlag) {
       setBlackFlagAccepted(primaryFlag.id);
+      setBlackFlagAcceptedAt(Date.now());
       if (navigator.vibrate) navigator.vibrate(200);
     }
   };
+
+  // Auto-dismiss accepted black flag banner after 60 seconds
+  const bannerTimeRemaining = useMemo(() => {
+    if (!isTargetedBlackFlagAccepted || !blackFlagAcceptedAt) return null;
+    const elapsed = currentTime.getTime() - blackFlagAcceptedAt;
+    const remaining = 60000 - elapsed;
+    if (remaining <= 0) return 0;
+    return Math.ceil(remaining / 1000);
+  }, [isTargetedBlackFlagAccepted, blackFlagAcceptedAt, currentTime]);
+
+  // Clear accepted state when banner timer expires
+  useEffect(() => {
+    if (bannerTimeRemaining === 0) {
+      setBlackFlagAccepted(null);
+      setBlackFlagAcceptedAt(null);
+    }
+  }, [bannerTimeRemaining]);
 
   const activeRemaining = useMemo(() => {
     if (!activeSession?.start_time || !activeSession?.duration_minutes || !eventDate) return null;
