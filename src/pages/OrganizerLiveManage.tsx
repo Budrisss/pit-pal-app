@@ -877,7 +877,7 @@ const OrganizerLiveManage = () => {
                                   s.id!,
                                   "duration_minutes",
                                   e.target.value ? parseInt(e.target.value) : null
-                    )
+                    )}
                               className="h-8 text-sm"
                             />
                           </div>
