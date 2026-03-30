@@ -376,6 +376,7 @@ const EventOrganizer = () => {
   const [totalRegistrations, setTotalRegistrations] = useState(0);
   const [defaultSessionDuration, setDefaultSessionDuration] = useState<number>(20);
   const [defaultRegTypeNames, setDefaultRegTypeNames] = useState<string[]>([]);
+  const [defaultSessionTemplates, setDefaultSessionTemplates] = useState<EventSession[]>([]);
 
   // Participant list state
   const [participantEvent, setParticipantEvent] = useState<PublicEvent | null>(null);
