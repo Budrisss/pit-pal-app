@@ -81,6 +81,9 @@ const OrganizerLiveManage = () => {
   const [blackFlagMessage, setBlackFlagMessage] = useState("");
   const [registrations, setRegistrations] = useState<EventRegistrationWithCar[]>([]);
   const [blackFlagSearch, setBlackFlagSearch] = useState("");
+  const [showYellowFlagDialog, setShowYellowFlagDialog] = useState(false);
+  const [yellowFlagTurns, setYellowFlagTurns] = useState("");
+  const [yellowFlagMessage, setYellowFlagMessage] = useState("");
 
   // Live clock
   useEffect(() => {
