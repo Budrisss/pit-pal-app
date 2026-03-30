@@ -145,6 +145,7 @@ const OrganizerSettings = () => {
       organizer_profile_id: organizerProfileId,
       default_session_duration: parseInt(defaultDuration),
       default_reg_types: defaultRegTypes,
+      default_sessions: defaultSessions,
       notif_new_registration: notifNewReg,
       notif_cancel_registration: notifCancelReg,
       notif_session_reminder: notifSessionReminder,
