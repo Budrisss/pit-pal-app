@@ -53,45 +53,53 @@ const OrganizerSettings = () => {
   const [website, setWebsite] = useState("");
   const [description, setDescription] = useState("");
 
-  // Event Defaults (localStorage)
-  const [defaultDuration, setDefaultDuration] = useState(() =>
-    localStorage.getItem("org_default_duration") || "20"
-  );
-  const [defaultRegTypes, setDefaultRegTypes] = useState(() =>
-    localStorage.getItem("org_default_reg_types") || "Beginner\nIntermediate\nAdvanced"
-  );
+  // Event Defaults
+  const [defaultDuration, setDefaultDuration] = useState("20");
+  const [defaultRegTypes, setDefaultRegTypes] = useState("Beginner\nIntermediate\nAdvanced");
 
-  // Notification Preferences (localStorage)
-  const [notifNewReg, setNotifNewReg] = useState(() =>
-    localStorage.getItem("org_notif_new_reg") !== "false"
-  );
-  const [notifCancelReg, setNotifCancelReg] = useState(() =>
-    localStorage.getItem("org_notif_cancel_reg") !== "false"
-  );
-  const [notifSessionReminder, setNotifSessionReminder] = useState(() =>
-    localStorage.getItem("org_notif_session_reminder") !== "false"
-  );
-  const [notifAnnouncement, setNotifAnnouncement] = useState(() =>
-    localStorage.getItem("org_notif_announcement") === "true"
-  );
+  // Notification Preferences
+  const [notifNewReg, setNotifNewReg] = useState(true);
+  const [notifCancelReg, setNotifCancelReg] = useState(true);
+  const [notifSessionReminder, setNotifSessionReminder] = useState(true);
+  const [notifAnnouncement, setNotifAnnouncement] = useState(false);
+
+  const [savingSettings, setSavingSettings] = useState(false);
 
   useEffect(() => {
     if (!organizerProfileId) return;
-    supabase
+
+    // Fetch profile and settings in parallel
+    const fetchProfile = supabase
       .from("organizer_profiles")
       .select("id, org_name, contact_email, phone, website, description")
       .eq("id", organizerProfileId)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) {
-          setProfile(data);
-          setOrgName(data.org_name);
-          setContactEmail(data.contact_email);
-          setPhone(data.phone || "");
-          setWebsite(data.website || "");
-          setDescription(data.description || "");
-        }
-      });
+      .maybeSingle();
+
+    const fetchSettings = supabase
+      .from("organizer_settings" as any)
+      .select("*")
+      .eq("organizer_profile_id", organizerProfileId)
+      .maybeSingle();
+
+    Promise.all([fetchProfile, fetchSettings]).then(([profileRes, settingsRes]) => {
+      if (profileRes.data) {
+        setProfile(profileRes.data);
+        setOrgName(profileRes.data.org_name);
+        setContactEmail(profileRes.data.contact_email);
+        setPhone(profileRes.data.phone || "");
+        setWebsite(profileRes.data.website || "");
+        setDescription(profileRes.data.description || "");
+      }
+      if (settingsRes.data) {
+        const s = settingsRes.data as any;
+        setDefaultDuration(String(s.default_session_duration));
+        setDefaultRegTypes(s.default_reg_types);
+        setNotifNewReg(s.notif_new_registration);
+        setNotifCancelReg(s.notif_cancel_registration);
+        setNotifSessionReminder(s.notif_session_reminder);
+        setNotifAnnouncement(s.notif_announcement_confirm);
+      }
+    });
   }, [organizerProfileId]);
 
   const handleSaveProfile = async () => {
@@ -119,14 +127,30 @@ const OrganizerSettings = () => {
     }
   };
 
-  const handleSaveDefaults = () => {
-    localStorage.setItem("org_default_duration", defaultDuration);
-    localStorage.setItem("org_default_reg_types", defaultRegTypes);
-    toast({ title: "Event defaults saved!" });
+  const handleSaveDefaults = async () => {
+    if (!organizerProfileId) return;
+    setSavingSettings(true);
+    const payload = {
+      organizer_profile_id: organizerProfileId,
+      default_session_duration: parseInt(defaultDuration),
+      default_reg_types: defaultRegTypes,
+      notif_new_registration: notifNewReg,
+      notif_cancel_registration: notifCancelReg,
+      notif_session_reminder: notifSessionReminder,
+      notif_announcement_confirm: notifAnnouncement,
+    };
+    const { error } = await supabase
+      .from("organizer_settings" as any)
+      .upsert(payload as any, { onConflict: "organizer_profile_id" });
+    setSavingSettings(false);
+    if (error) {
+      toast({ title: "Failed to save", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Settings saved!" });
+    }
   };
 
-  const handleToggleNotif = (key: string, value: boolean, setter: (v: boolean) => void) => {
-    localStorage.setItem(key, String(value));
+  const handleToggleNotif = (value: boolean, setter: (v: boolean) => void) => {
     setter(value);
   };
 
@@ -251,9 +275,9 @@ const OrganizerSettings = () => {
               />
               <p className="text-xs text-muted-foreground">One type per line</p>
             </div>
-            <Button onClick={handleSaveDefaults} variant="outline" className="w-full">
+            <Button onClick={handleSaveDefaults} variant="outline" className="w-full" disabled={savingSettings}>
               <Save size={16} className="mr-2" />
-              Save Defaults
+              {savingSettings ? "Saving..." : "Save Defaults & Notifications"}
             </Button>
           </CardContent>
         </Card>
@@ -272,28 +296,28 @@ const OrganizerSettings = () => {
                 <p className="text-foreground">New Registrations</p>
                 <p className="text-xs text-muted-foreground">Alert when a driver registers</p>
               </div>
-              <Switch checked={notifNewReg} onCheckedChange={(v) => handleToggleNotif("org_notif_new_reg", v, setNotifNewReg)} />
+              <Switch checked={notifNewReg} onCheckedChange={(v) => handleToggleNotif(v, setNotifNewReg)} />
             </div>
             <div className="flex justify-between items-center">
               <div>
                 <p className="text-foreground">Registration Cancellations</p>
                 <p className="text-xs text-muted-foreground">Alert when a driver cancels</p>
               </div>
-              <Switch checked={notifCancelReg} onCheckedChange={(v) => handleToggleNotif("org_notif_cancel_reg", v, setNotifCancelReg)} />
+              <Switch checked={notifCancelReg} onCheckedChange={(v) => handleToggleNotif(v, setNotifCancelReg)} />
             </div>
             <div className="flex justify-between items-center">
               <div>
                 <p className="text-foreground">Session Reminders</p>
                 <p className="text-xs text-muted-foreground">Remind before sessions start</p>
               </div>
-              <Switch checked={notifSessionReminder} onCheckedChange={(v) => handleToggleNotif("org_notif_session_reminder", v, setNotifSessionReminder)} />
+              <Switch checked={notifSessionReminder} onCheckedChange={(v) => handleToggleNotif(v, setNotifSessionReminder)} />
             </div>
             <div className="flex justify-between items-center">
               <div>
                 <p className="text-foreground">Announcement Confirmations</p>
                 <p className="text-xs text-muted-foreground">Confirm when announcements are delivered</p>
               </div>
-              <Switch checked={notifAnnouncement} onCheckedChange={(v) => handleToggleNotif("org_notif_announcement", v, setNotifAnnouncement)} />
+              <Switch checked={notifAnnouncement} onCheckedChange={(v) => handleToggleNotif(v, setNotifAnnouncement)} />
             </div>
           </CardContent>
         </Card>

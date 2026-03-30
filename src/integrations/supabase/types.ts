@@ -263,6 +263,53 @@ export type Database = {
         }
         Relationships: []
       }
+      organizer_settings: {
+        Row: {
+          created_at: string
+          default_reg_types: string
+          default_session_duration: number
+          id: string
+          notif_announcement_confirm: boolean
+          notif_cancel_registration: boolean
+          notif_new_registration: boolean
+          notif_session_reminder: boolean
+          organizer_profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_reg_types?: string
+          default_session_duration?: number
+          id?: string
+          notif_announcement_confirm?: boolean
+          notif_cancel_registration?: boolean
+          notif_new_registration?: boolean
+          notif_session_reminder?: boolean
+          organizer_profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_reg_types?: string
+          default_session_duration?: number
+          id?: string
+          notif_announcement_confirm?: boolean
+          notif_cancel_registration?: boolean
+          notif_new_registration?: boolean
+          notif_session_reminder?: boolean
+          organizer_profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organizer_settings_organizer_profile_id_fkey"
+            columns: ["organizer_profile_id"]
+            isOneToOne: true
+            referencedRelation: "organizer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       public_event_sessions: {
         Row: {
           created_at: string
