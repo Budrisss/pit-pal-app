@@ -325,6 +325,7 @@ const OrganizerLiveManage = () => {
       message: fullMessage,
       target_user_id: targetUserId,
       is_active: true,
+      session_id: activeSessionIdRef.current,
     });
     if (error) {
       toast({ title: "Failed to send blue flag", variant: "destructive" });
