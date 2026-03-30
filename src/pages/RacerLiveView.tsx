@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { parseISO, addMinutes, differenceInMilliseconds, isAfter, isBefore } from "date-fns";
 import { ArrowLeft, Volume2 } from "lucide-react";
@@ -42,6 +42,8 @@ const FLAG_CONFIG: Record<string, { bg: string; text: string; label: string; tex
   checkered: { bg: "bg-black", text: "🏁", label: "SESSION OVER", textColor: "text-white" },
 };
 
+const BLACK_FLAG_LOCKOUT_MS = 60000; // 60 seconds
+
 const RacerLiveView = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
@@ -58,6 +60,11 @@ const RacerLiveView = () => {
   const [userRegTypeId, setUserRegTypeId] = useState<string | null>(null);
   const [regTypeName, setRegTypeName] = useState<string | null>(null);
   const [userCarNumber, setUserCarNumber] = useState<number | null>(null);
+
+  // Black flag accept state
+  const [blackFlagAccepted, setBlackFlagAccepted] = useState<string | null>(null);
+  const [blackFlagReceivedAt, setBlackFlagReceivedAt] = useState<Record<string, number>>({});
+  const prevFlagIdsRef = useRef<Set<string>>(new Set());
 
   // Wake lock
   useEffect(() => {
@@ -125,9 +132,7 @@ const RacerLiveView = () => {
       .on("postgres_changes", { event: "*", schema: "public", table: "event_flags", filter: `event_id=eq.${eventId}` }, () => {
         supabase.from("event_flags").select("*").eq("event_id", eventId).eq("is_active", true)
           .then(({ data }) => {
-            if (data) {
-              setFlags(data as EventFlag[]);
-            }
+            if (data) setFlags(data as EventFlag[]);
           });
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "event_announcements", filter: `event_id=eq.${eventId}` }, (payload) => {
@@ -152,15 +157,94 @@ const RacerLiveView = () => {
     return flags.filter(f => f.is_active && (!f.target_user_id || f.target_user_id === user?.id));
   }, [flags, user?.id]);
 
-  // Determine the highest-priority flag to display
+  // Track when targeted black flags first appear + vibrate
+  useEffect(() => {
+    const currentIds = new Set(activeFlags.map(f => f.id));
+    const newTargetedBlackFlags = activeFlags.filter(
+      f => f.flag_type === "black" && f.target_user_id === user?.id && !prevFlagIdsRef.current.has(f.id)
+    );
+
+    if (newTargetedBlackFlags.length > 0) {
+      setBlackFlagReceivedAt(prev => {
+        const updated = { ...prev };
+        newTargetedBlackFlags.forEach(f => {
+          if (!updated[f.id]) updated[f.id] = Date.now();
+        });
+        return updated;
+      });
+      // Vibrate for urgency
+      if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]);
+    }
+
+    // Clear accepted state if the accepted flag is no longer active
+    if (blackFlagAccepted && !currentIds.has(blackFlagAccepted)) {
+      setBlackFlagAccepted(null);
+    }
+
+    // Clean up old receivedAt entries
+    setBlackFlagReceivedAt(prev => {
+      const cleaned: Record<string, number> = {};
+      for (const id of Object.keys(prev)) {
+        if (currentIds.has(id)) cleaned[id] = prev[id];
+      }
+      return cleaned;
+    });
+
+    prevFlagIdsRef.current = currentIds;
+  }, [activeFlags, user?.id, blackFlagAccepted]);
+
+  // Separate targeted black flags from other flags for priority
+  const targetedBlackFlag = useMemo(() => {
+    return activeFlags.find(f => f.flag_type === "black" && f.target_user_id === user?.id) || null;
+  }, [activeFlags, user?.id]);
+
+  const globalBlackFlag = useMemo(() => {
+    return activeFlags.find(f => f.flag_type === "black" && f.target_user_id === null) || null;
+  }, [activeFlags]);
+
+  const isTargetedBlackFlagAccepted = targetedBlackFlag && blackFlagAccepted === targetedBlackFlag.id;
+
+  // Determine the highest-priority flag to display (excluding accepted targeted black flags)
   const priorityOrder = ["red", "black", "checkered", "yellow", "white", "green"];
   const primaryFlag = useMemo(() => {
     for (const type of priorityOrder) {
-      const flag = activeFlags.find(f => f.flag_type === type);
+      const flag = activeFlags.find(f => {
+        if (f.flag_type !== type) return false;
+        // Skip accepted targeted black flags from full-screen display
+        if (f.flag_type === "black" && f.target_user_id === user?.id && blackFlagAccepted === f.id) return false;
+        return true;
+      });
       if (flag) return flag;
     }
-    return activeFlags[0] || null;
-  }, [activeFlags]);
+    return activeFlags.find(f => {
+      if (f.flag_type === "black" && f.target_user_id === user?.id && blackFlagAccepted === f.id) return false;
+      return true;
+    }) || null;
+  }, [activeFlags, blackFlagAccepted, user?.id]);
+
+  // Is the current primary flag a targeted black flag that needs the accept UI?
+  const isTargetedBlackFlagFullScreen = primaryFlag?.flag_type === "black" && primaryFlag?.target_user_id === user?.id;
+  const isGlobalBlackFlag = primaryFlag?.flag_type === "black" && primaryFlag?.target_user_id === null;
+
+  // Countdown for accept button
+  const acceptCountdown = useMemo(() => {
+    if (!isTargetedBlackFlagFullScreen || !primaryFlag) return null;
+    const receivedAt = blackFlagReceivedAt[primaryFlag.id];
+    if (!receivedAt) return null;
+    const elapsed = currentTime.getTime() - receivedAt;
+    const remaining = BLACK_FLAG_LOCKOUT_MS - elapsed;
+    if (remaining <= 0) return 0;
+    return Math.ceil(remaining / 1000);
+  }, [isTargetedBlackFlagFullScreen, primaryFlag, blackFlagReceivedAt, currentTime]);
+
+  const canAcceptBlackFlag = acceptCountdown === 0;
+
+  const handleAcceptBlackFlag = () => {
+    if (primaryFlag && canAcceptBlackFlag) {
+      setBlackFlagAccepted(primaryFlag.id);
+      if (navigator.vibrate) navigator.vibrate(200);
+    }
+  };
 
   // Session timing
   const sessionStates = useMemo(() => {
@@ -261,6 +345,32 @@ const RacerLiveView = () => {
         </div>
       </div>
 
+      {/* Accepted targeted black flag banner */}
+      {isTargetedBlackFlagAccepted && targetedBlackFlag && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: "auto", opacity: 1 }}
+          className="bg-black border-b-2 border-red-600 px-4 py-2.5 shrink-0 flex items-center justify-between"
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-lg">⚫</span>
+            <div>
+              <p className="text-sm font-black text-red-500 uppercase tracking-wider">
+                BLACK FLAG ACTIVE — PIT IN IMMEDIATELY
+              </p>
+              {targetedBlackFlag.message && (
+                <p className="text-xs text-white/60 mt-0.5">{targetedBlackFlag.message}</p>
+              )}
+            </div>
+          </div>
+          {userCarNumber && (
+            <Badge className="bg-red-600 text-white font-mono font-bold text-sm">
+              #{userCarNumber}
+            </Badge>
+          )}
+        </motion.div>
+      )}
+
       {/* Flag Zone - dominant area */}
       <div className="flex-1 flex flex-col">
         <AnimatePresence mode="wait">
@@ -303,6 +413,39 @@ const RacerLiveView = () => {
                   >
                     {primaryFlag.message}
                   </motion.p>
+                )}
+
+                {/* Targeted black flag: Accept button */}
+                {isTargetedBlackFlagFullScreen && (
+                  <div className="mt-8">
+                    {canAcceptBlackFlag ? (
+                      <motion.div
+                        animate={{ scale: [1, 1.05, 1] }}
+                        transition={{ repeat: Infinity, duration: 1.5 }}
+                      >
+                        <Button
+                          onClick={handleAcceptBlackFlag}
+                          className="bg-red-600 hover:bg-red-700 text-white text-lg sm:text-xl font-black px-8 py-6 h-auto uppercase tracking-wider shadow-lg shadow-red-600/50"
+                        >
+                          ACKNOWLEDGE — PIT IN
+                        </Button>
+                      </motion.div>
+                    ) : acceptCountdown !== null ? (
+                      <Button
+                        disabled
+                        className="bg-white/10 text-white/40 text-lg sm:text-xl font-bold px-8 py-6 h-auto uppercase tracking-wider cursor-not-allowed"
+                      >
+                        Accept in {acceptCountdown}s...
+                      </Button>
+                    ) : null}
+                  </div>
+                )}
+
+                {/* Global black flag: no accept, explicit message */}
+                {isGlobalBlackFlag && (
+                  <p className="text-sm sm:text-lg mt-6 text-white/60 uppercase tracking-widest">
+                    ALL DRIVERS — CANNOT BE DISMISSED
+                  </p>
                 )}
               </div>
             </motion.div>
