@@ -39,6 +39,15 @@ interface Announcement {
   created_at: string;
 }
 
+interface EventFlag {
+  id: string;
+  flag_type: string;
+  message: string | null;
+  target_user_id: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
 const OrganizerLiveManage = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
@@ -57,6 +66,8 @@ const OrganizerLiveManage = () => {
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
+  const [activeFlags, setActiveFlags] = useState<EventFlag[]>([]);
+  const [flagMessage, setFlagMessage] = useState("");
 
   // Live clock
   useEffect(() => {
