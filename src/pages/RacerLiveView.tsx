@@ -290,6 +290,8 @@ const RacerLiveView = () => {
   useEffect(() => {
     if (bannerTimeRemaining === 0 && blackFlagAccepted) {
       const flagIdToDeactivate = blackFlagAccepted;
+      // Add to dismissed set FIRST so it stays filtered out of activeFlags
+      setBlackFlagDismissed(prev => new Set(prev).add(flagIdToDeactivate));
       setBlackFlagAccepted(null);
       setBlackFlagAcceptedAt(null);
       // Deactivate the flag in the database so the organizer sees it cleared
@@ -297,8 +299,12 @@ const RacerLiveView = () => {
         .from("event_flags")
         .update({ is_active: false })
         .eq("id", flagIdToDeactivate)
-        .then(() => {
-          console.log("Black flag auto-cleared after 60s post-accept");
+        .then(({ error }) => {
+          if (error) {
+            console.error("Failed to auto-clear black flag:", error);
+          } else {
+            console.log("Black flag auto-cleared after 60s post-accept");
+          }
         });
     }
   }, [bannerTimeRemaining, blackFlagAccepted]);
