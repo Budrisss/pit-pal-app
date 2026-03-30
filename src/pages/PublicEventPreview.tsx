@@ -70,6 +70,7 @@ const PublicEventPreview = () => {
   const { user } = useAuth();
   const { isOrganizerMode, organizerProfileId } = useOrganizerMode();
   const { toast } = useToast();
+  const { cars } = useCars();
 
   const [event, setEvent] = useState<PublicEventData | null>(null);
   const [sessions, setSessions] = useState<EventSession[]>([]);
