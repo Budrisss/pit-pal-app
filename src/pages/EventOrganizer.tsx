@@ -175,13 +175,15 @@ const SessionsEditor = ({
   sessions,
   onChange,
   registrationTypes,
+  defaultDuration = null,
 }: {
   sessions: EventSession[];
   onChange: (sessions: EventSession[]) => void;
   registrationTypes: RegistrationType[];
+  defaultDuration?: number | null;
 }) => {
   const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
-  const addSession = () => onChange([...sessions, { ...emptySession(), sort_order: sessions.length }]);
+  const addSession = () => onChange([...sessions, { ...emptySession(), duration_minutes: defaultDuration, sort_order: sessions.length }]);
   const removeSession = (i: number) => onChange(sessions.filter((_, idx) => idx !== i));
   const updateSession = (i: number, field: keyof EventSession, value: any) => {
     const updated = [...sessions];
@@ -372,6 +374,8 @@ const EventOrganizer = () => {
   const [originalEditSessionIds, setOriginalEditSessionIds] = useState<string[]>([]);
   const [registrationCounts, setRegistrationCounts] = useState<Record<string, number>>({});
   const [totalRegistrations, setTotalRegistrations] = useState(0);
+  const [defaultSessionDuration, setDefaultSessionDuration] = useState<number>(20);
+  const [defaultRegTypeNames, setDefaultRegTypeNames] = useState<string[]>([]);
 
   // Participant list state
   const [participantEvent, setParticipantEvent] = useState<PublicEvent | null>(null);
@@ -386,7 +390,7 @@ const EventOrganizer = () => {
     car_classes: '', registration_link: '',
   });
 
-  // Fetch organizer profile
+  // Fetch organizer profile and settings
   useEffect(() => {
     if (!user) return;
     const fetchOrganizer = async () => {
@@ -397,6 +401,21 @@ const EventOrganizer = () => {
         .maybeSingle();
       if (data) {
         setOrganizerProfile(data);
+        // Fetch saved defaults
+        const { data: settings } = await supabase
+          .from('organizer_settings' as any)
+          .select('default_session_duration, default_reg_types')
+          .eq('organizer_profile_id', data.id)
+          .maybeSingle();
+        if (settings) {
+          const s = settings as any;
+          setDefaultSessionDuration(s.default_session_duration || 20);
+          // Pre-parse default reg types into RegistrationType objects
+          if (s.default_reg_types) {
+            const names = (s.default_reg_types as string).split('\n').filter((n: string) => n.trim());
+            setDefaultRegTypeNames(names);
+          }
+        }
       } else {
         setLoading(false);
       }
@@ -694,7 +713,15 @@ const EventOrganizer = () => {
               {organizerProfile?.org_name} — Manage your events and registrations
             </p>
           </div>
-          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+          <Dialog open={showCreateDialog} onOpenChange={(open) => {
+              if (open) {
+                // Pre-populate with saved defaults
+                if (defaultRegTypeNames.length > 0) {
+                  setNewRegTypes(defaultRegTypeNames.map(name => ({ name, description: '', price: '', max_spots: null })));
+                }
+              }
+              setShowCreateDialog(open);
+            }}>
             <DialogTrigger asChild>
               <Button>
                 <Plus size={16} className="mr-1" /> Create Event
@@ -710,7 +737,7 @@ const EventOrganizer = () => {
                   onChange={(field, value) => setNewEvent(p => ({ ...p, [field]: value }))}
                 />
                 <RegistrationTypesEditor types={newRegTypes} onChange={setNewRegTypes} />
-                <SessionsEditor sessions={newSessions} onChange={setNewSessions} registrationTypes={newRegTypes} />
+                <SessionsEditor sessions={newSessions} onChange={setNewSessions} registrationTypes={newRegTypes} defaultDuration={defaultSessionDuration} />
                 <Button type="submit" disabled={creating} className="w-full">
                   {creating ? <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : 'Publish Event'}
                 </Button>
