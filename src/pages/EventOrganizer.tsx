@@ -541,6 +541,11 @@ const EventOrganizer = () => {
     fetchOrganizer();
   }, [user]);
 
+  useEffect(() => {
+    supabase.from('preset_tracks').select('id, name, address, city, state, track_type').order('name')
+      .then(({ data }) => { if (data) setPresetTracks(data as PresetTrack[]); });
+  }, []);
+
   // Fetch organizer's events
   const fetchEvents = useCallback(async () => {
     if (!organizerProfile) return;
