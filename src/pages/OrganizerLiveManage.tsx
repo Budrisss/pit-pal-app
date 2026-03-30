@@ -667,7 +667,10 @@ const OrganizerLiveManage = () => {
                     </div>
                     <Button variant="ghost" size="sm" className="text-xs h-6 text-muted-foreground hover:text-destructive" onClick={async () => {
                       if (!eventId) return;
-                      await supabase.from("event_flags").update({ is_active: false }).eq("event_id", eventId).eq("is_active", true).in("flag_type", ["yellow_turn", "blue"]);
+                      const localFlags = activeFlags.filter(f => f.flag_type === "yellow_turn" || f.flag_type === "blue" || (f.flag_type === "black" && f.target_user_id));
+                      for (const f of localFlags) {
+                        await supabase.from("event_flags").update({ is_active: false }).eq("id", f.id);
+                      }
                     }}>
                       Clear Local
                     </Button>
