@@ -156,18 +156,13 @@ const RacerLiveView = () => {
 
   // Active flags for this user
   const activeFlags = useMemo(() => {
-    const acceptedExpired =
-      blackFlagAccepted &&
-      blackFlagAcceptedAt &&
-      currentTime.getTime() - blackFlagAcceptedAt >= 60000;
-
     return flags.filter(f => {
       if (!f.is_active) return false;
       if (f.target_user_id && f.target_user_id !== user?.id) return false;
-      if (acceptedExpired && f.id === blackFlagAccepted) return false;
+      if (blackFlagDismissed.has(f.id)) return false;
       return true;
     });
-  }, [flags, user?.id, blackFlagAccepted, blackFlagAcceptedAt, currentTime]);
+  }, [flags, user?.id, blackFlagDismissed]);
 
   // Track when targeted black flags first appear + vibrate
   useEffect(() => {
