@@ -287,6 +287,84 @@ const OrganizerSettings = () => {
               />
               <p className="text-xs text-muted-foreground">One type per line</p>
             </div>
+
+            {/* Default Session Schedule */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-1.5">
+                  <Clock size={14} /> Default Session Schedule
+                </Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setDefaultSessions([...defaultSessions, { name: '', start_time: '', duration_minutes: parseInt(defaultDuration) || 20 }])}
+                >
+                  <Plus size={14} className="mr-1" /> Add Session
+                </Button>
+              </div>
+              {defaultSessions.length === 0 && (
+                <p className="text-xs text-muted-foreground italic">No default sessions. Add sessions to pre-populate new events.</p>
+              )}
+              {defaultSessions.map((session, i) => (
+                <div key={i} className="border border-border rounded-lg p-3 space-y-2 bg-muted/30 relative">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-1 right-1 h-6 w-6 text-muted-foreground hover:text-destructive"
+                    onClick={() => setDefaultSessions(defaultSessions.filter((_, idx) => idx !== i))}
+                  >
+                    <X size={14} />
+                  </Button>
+                  <div className="pr-6">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Session Name</Label>
+                      <Input
+                        value={session.name}
+                        onChange={(e) => {
+                          const updated = [...defaultSessions];
+                          updated[i] = { ...updated[i], name: e.target.value };
+                          setDefaultSessions(updated);
+                        }}
+                        placeholder="e.g. Group 1 - Morning Run"
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Start Time</Label>
+                      <Input
+                        type="time"
+                        value={session.start_time || ''}
+                        onChange={(e) => {
+                          const updated = [...defaultSessions];
+                          updated[i] = { ...updated[i], start_time: e.target.value };
+                          setDefaultSessions(updated);
+                        }}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Duration (min)</Label>
+                      <Input
+                        type="number"
+                        value={session.duration_minutes ?? ''}
+                        onChange={(e) => {
+                          const updated = [...defaultSessions];
+                          updated[i] = { ...updated[i], duration_minutes: e.target.value ? parseInt(e.target.value) : null };
+                          setDefaultSessions(updated);
+                        }}
+                        placeholder={defaultDuration}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
             <Button onClick={handleSaveDefaults} variant="outline" className="w-full" disabled={savingSettings}>
               <Save size={16} className="mr-2" />
               {savingSettings ? "Saving..." : "Save Defaults & Notifications"}
