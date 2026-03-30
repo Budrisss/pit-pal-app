@@ -1,84 +1,44 @@
 
 
-# Racer Live View — Real-Time In-Car Display
+# Black Flag by Car Number — Targeted Driver Alerts
 
 ## Overview
-Create a mobile-optimized "Racer Live View" page that registered drivers can access during an event. The organizer controls what racers see via the existing Live Management page, extended with flag controls and targeted messages. The racer view is designed for phone use in-car: large text, high-contrast colors, and minimal interaction needed.
-
-## Architecture
-
-```text
-Organizer (Live Manage)              Racer (Live View)
-┌─────────────────────┐              ┌─────────────────────┐
-│ Flag Control Panel   │──realtime──▶│ Full-screen flag     │
-│ (green/yellow/red/   │             │ display with color   │
-│  black/checkered)    │             │ + message            │
-│                      │             │                      │
-│ Announcements        │──realtime──▶│ Toast/banner alerts  │
-│ (existing system)    │             │ + announcement feed  │
-│                      │             │                      │
-│ Session schedule     │──realtime──▶│ Current session +    │
-│ (existing system)    │             │ time remaining       │
-└─────────────────────┘              └─────────────────────┘
-```
+Add a **car number** field to event registration (required, numeric, unique per event). Organizers can then send a black flag to a specific car number via a dedicated dialog. The racer view displays the driver's car number in the header.
 
 ## Database Changes
 
-**New table: `event_flags`**
-- `id` (uuid, PK)
-- `event_id` (uuid, NOT NULL)
-- `organizer_id` (uuid, NOT NULL)
-- `flag_type` (text, NOT NULL) — values: `green`, `yellow`, `red`, `black`, `checkered`, `white`
-- `message` (text, nullable) — e.g., "Yellow at Turn 5", "Car #42 report to pits"
-- `target_user_id` (uuid, nullable) — null = all racers, set = specific racer (for black flags)
-- `is_active` (boolean, default true)
-- `created_at` (timestamptz, default now())
+**1. Add `car_number` column to `event_registrations`**
+```sql
+ALTER TABLE public.event_registrations ADD COLUMN car_number integer;
+-- Unique constraint: no duplicate car numbers per event
+CREATE UNIQUE INDEX idx_unique_car_number_per_event 
+  ON public.event_registrations(event_id, car_number);
+```
 
-RLS: Authenticated users can SELECT (so racers see flags). Organizers can INSERT/UPDATE/DELETE (via organizer_profiles join). Enable realtime.
+## Implementation
 
-## Implementation Plan
+### 1. Registration form updates
+- **`PublicEventPreview.tsx`** and **`LocalEvents.tsx`**: Add a required "Car Number" numeric input to the registration form. Include `car_number` in the insert payload.
+- Validate uniqueness client-side by checking existing registrations for the event before submitting. The unique index provides server-side enforcement as well.
 
-### 1. Database migration
-Create `event_flags` table with RLS policies. Add to realtime publication.
+### 2. Black flag dialog on Live Management
+- **`OrganizerLiveManage.tsx`**:
+  - Fetch registrations with `car_number` and `user_id` for the event.
+  - When the organizer clicks the Black flag button, open a **Dialog** instead of immediately sending.
+  - Dialog shows a searchable list of registered car numbers with driver names. Organizer selects a car number, optionally adds a message, and confirms.
+  - On confirm, insert a flag with `flag_type: 'black'`, `target_user_id` set to the selected driver's `user_id`, and message auto-prefixed with "Car #XX".
+  - Also keep an option for "All Drivers" black flag (no target).
 
-### 2. Organizer Flag Controls (edit `OrganizerLiveManage.tsx`)
-Add a "Flag Control" section above announcements with:
-- Row of flag buttons: Green (🟢), Yellow (⚠️), Red (🔴), Black (🏴), White (🏳️), Checkered (🏁)
-- Optional message input per flag (e.g., "Turn 5" for yellow, car number for black)
-- Active flag display showing current flag status
-- "Clear All Flags" button to set all `is_active = false`
+### 3. Racer Live View — car number in header
+- **`RacerLiveView.tsx`**:
+  - Fetch the user's `car_number` from `event_registrations` alongside the existing `registration_type_id` query.
+  - Display car number as a prominent badge in the top header bar (e.g., `#42`).
+  - Black flag filtering already uses `target_user_id` — no logic changes needed there.
 
-### 3. New Racer Live View page (`src/pages/RacerLiveView.tsx`)
-Route: `/race-live/:eventId`
-
-Mobile-first, full-screen layout:
-- **Top bar**: Event name, live clock
-- **Flag zone** (dominant area): Full-width colored banner matching active flag — green bg for green, yellow bg + "CAUTION" for yellow, red bg + "STOP" for red, black bg + "PIT IN" for black flag, checkered pattern for session end. Large text, impossible to miss.
-- **Session info**: Current session name, time remaining (large countdown)
-- **Announcements feed**: Scrollable list of recent organizer messages with newest on top, toast notification on new arrival
-- Realtime subscriptions for `event_flags`, `event_announcements`, and `public_event_sessions`
-
-### 4. Racer access route
-- Add `/race-live/:eventId` to App.tsx as a protected route
-- Add a "Join Live View" button on the PublicEventPreview page for registered users
-- Add entry point from the driver's SessionManagement page
-
-### 5. Realtime notifications
-- When a new flag or announcement arrives via realtime subscription, show a toast notification with sound-like visual emphasis (pulsing border, color flash)
-- Black flags targeted to a specific user only show for that user
-
-## Technical Details
-
-- Flag colors map: `green` → `bg-green-500`, `yellow` → `bg-yellow-400 text-black`, `red` → `bg-red-600`, `black` → `bg-black text-white`, `checkered` → checkerboard CSS pattern, `white` → `bg-white text-black`
-- Racer view uses `screen.wakeLock` API (if available) to keep phone screen on
-- Page uses existing realtime pattern from OrganizerLiveManage
-- No new edge functions needed — all data flows through Supabase realtime + direct queries
-
-## Files to Create/Edit
-- **Create**: Migration for `event_flags` table
-- **Create**: `src/pages/RacerLiveView.tsx`
-- **Edit**: `src/pages/OrganizerLiveManage.tsx` — add flag control panel
-- **Edit**: `src/App.tsx` — add route
-- **Edit**: `src/pages/PublicEventPreview.tsx` — add "Join Live View" button
-- **Edit**: `src/pages/SessionManagement.tsx` — add "Open Live View" button
+## Files to Edit
+- **Migration**: Add `car_number` column + unique index on `event_registrations`
+- **`src/pages/PublicEventPreview.tsx`**: Add car number field to registration form + insert
+- **`src/pages/LocalEvents.tsx`**: Same registration form update
+- **`src/pages/OrganizerLiveManage.tsx`**: Fetch registrations with car numbers, add black flag dialog with car selection
+- **`src/pages/RacerLiveView.tsx`**: Fetch and display car number in header
 
