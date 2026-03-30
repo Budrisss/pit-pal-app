@@ -354,6 +354,13 @@ const OrganizerLiveManage = () => {
     toast({ title: "Flag cleared" });
   };
 
+  const handleUpdateFlagMessage = async (flagId: string, message: string) => {
+    await supabase.from("event_flags").update({ message: message.trim() || null }).eq("id", flagId);
+    setEditingFlagId(null);
+    setEditingFlagMessage("");
+    toast({ title: "Flag message updated" });
+  };
+
   const handleSendBlackFlag = async () => {
     if (!eventId || !organizerProfileId) return;
     const targetUserId = blackFlagTarget === "all" ? null : blackFlagTarget;
