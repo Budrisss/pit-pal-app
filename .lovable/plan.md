@@ -1,48 +1,30 @@
 
 
-# Black Flag Accept/Dismiss Logic for Racer Live View
+## Plan: Cancel Registration When Deleting a Registered Event
 
-## Problem
-Currently, a targeted black flag takes over the entire racer screen and blocks the green flag view for the targeted driver indefinitely. We need differentiated behavior:
+When a user deletes a personal event that was created from a public event registration, prompt them to also cancel their registration. If confirmed, delete their `event_registrations` record so they are removed from the participant list and run groups.
 
-- **Targeted black flag** (specific car): Appears full-screen for 60 seconds minimum. Driver can tap "Accept" to acknowledge and minimize it to a persistent banner. If not accepted, it stays full-screen but other drivers still see green.
-- **Global black flag** (all drivers, `target_user_id` is null): Full-screen, cannot be accepted or minimized. Everyone must pit.
+### Changes
 
-## Approach
-This is entirely a **client-side UI change** in `RacerLiveView.tsx`. No database changes needed — we already have `target_user_id` to distinguish targeted vs global flags.
+**1. `src/contexts/EventsContext.tsx`**
+- Update `deleteEvent` to accept an optional `cancelRegistration: boolean` parameter
+- Before deleting the event, look up the event's `public_event_id`
+- If `cancelRegistration` is true and `public_event_id` exists, delete the matching row from `event_registrations` (matching `event_id = public_event_id` and `user_id`)
+- Then proceed with the normal event deletion
 
-## Implementation — `src/pages/RacerLiveView.tsx`
+**2. `src/components/EventCard.tsx`**
+- In the delete flow, check if the event `isRegistered` (or has a `publicEventId`)
+- If it's a registered event, show a modified confirmation dialog that asks "This event is linked to a registration. Do you also want to cancel your registration?" with options: "Delete & Cancel Registration", "Delete Only", "Cancel"
+- Pass the appropriate flag to `deleteEvent`
 
-### 1. New state for black flag acknowledgment
-- `blackFlagAccepted: string | null` — stores the flag ID that was accepted
-- `blackFlagReceivedAt: Record<string, number>` — tracks when each black flag first appeared (timestamp)
+**3. `src/pages/EventDetails.tsx`**
+- Apply the same registration-cancellation prompt in the delete handler if the event has a `public_event_id`
 
-### 2. Track when a targeted black flag arrives
-- When a new black flag with `target_user_id === user.id` appears in `activeFlags`, record `Date.now()` as its received time
-- Play a haptic/vibration if available for urgency
+### Data Flow
+- `EventCard` already receives `isRegistered` prop and the event `id`
+- Need to also pass `publicEventId` to `EventCard` so it can be forwarded to the context
+- The context's `deleteEvent` will query the event record to get `public_event_id`, then conditionally delete from `event_registrations`
 
-### 3. Display logic (priority system update)
-- **Global black flag** (`target_user_id === null`, `flag_type === "black"`): Full-screen, no Accept button, current behavior unchanged
-- **Targeted black flag** (`target_user_id === user.id`):
-  - If NOT accepted and less than 60s elapsed → full-screen black flag, Accept button disabled (greyed out with countdown)
-  - If NOT accepted and 60s+ elapsed → full-screen black flag, Accept button enabled and pulsing
-  - If accepted → collapse to a persistent warning banner at top (below header), showing "⚫ BLACK FLAG — PIT IN" with car number. The underlying green/session flag shows normally behind it.
-
-### 4. Accept button UI
-- Large "ACKNOWLEDGE — PIT IN" button at bottom of the black flag screen
-- Disabled for first 60 seconds with countdown text: "Accept in 45s..."
-- After 60s: enabled, pulsing orange/red
-- On tap: sets `blackFlagAccepted` to the flag ID, collapses to banner
-
-### 5. Persistent minimized banner (after accept)
-- Thin banner below the top bar: black background, white text: "⚫ BLACK FLAG ACTIVE — PIT IN IMMEDIATELY"
-- Stays until the organizer deactivates the flag (flag disappears from `activeFlags`)
-- When flag is deactivated, clear the accepted state automatically
-
-### 6. Priority adjustment
-- When a targeted black flag is accepted, remove it from the full-screen priority system so green/other flags show normally
-- Global black flags always take priority and cannot be bypassed
-
-## Files to Edit
-- **`src/pages/RacerLiveView.tsx`** — All changes are here: new state, accept logic, timer tracking, conditional rendering for full-screen vs banner mode
+### No Database Changes Required
+The `event_registrations` table already has an RLS policy allowing users to delete their own registrations (`user_id = auth.uid()`).
 
