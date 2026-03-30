@@ -33,6 +33,7 @@ interface Track {
   address: string;
   city: string;
   state: string;
+  isPreset?: boolean;
 }
 
 const EventForm = ({ open, onOpenChange, onSave, editingEvent }: EventFormProps) => {
@@ -47,7 +48,9 @@ const EventForm = ({ open, onOpenChange, onSave, editingEvent }: EventFormProps)
   });
   
   const [tracks, setTracks] = useState<Track[]>([]);
+  const [presetTracks, setPresetTracks] = useState<Track[]>([]);
   const [isLoadingTracks, setIsLoadingTracks] = useState(false);
+  const [trackSearch, setTrackSearch] = useState("");
   const [selectedTrackId, setSelectedTrackId] = useState<string>("");
   const [selectedCarId, setSelectedCarId] = useState<string>("");
   const [comboboxOpen, setComboboxOpen] = useState(false);
@@ -214,16 +217,13 @@ const EventForm = ({ open, onOpenChange, onSave, editingEvent }: EventFormProps)
     const fetchTracks = async () => {
       setIsLoadingTracks(true);
       try {
-        const { data, error } = await (supabase as any)
-          .from('tracks')
-          .select('id, name, address, city, state')
-          .order('name');
+        const [userRes, presetRes] = await Promise.all([
+          supabase.from('tracks').select('id, name, address, city, state').order('name'),
+          supabase.from('preset_tracks').select('id, name, address, city, state').order('name'),
+        ]);
         
-        if (error) {
-          console.error('Error fetching tracks:', error);
-        } else {
-          setTracks(data || []);
-        }
+        if (!userRes.error) setTracks(userRes.data || []);
+        if (!presetRes.error) setPresetTracks((presetRes.data || []).map(t => ({ ...t, isPreset: true })));
       } catch (error) {
         console.error('Error fetching tracks:', error);
       } finally {
@@ -233,8 +233,17 @@ const EventForm = ({ open, onOpenChange, onSave, editingEvent }: EventFormProps)
 
     if (open) {
       fetchTracks();
+      setTrackSearch("");
     }
   }, [open]);
+
+  const filteredPresetTracks = trackSearch.length >= 2
+    ? presetTracks.filter(t => 
+        t.name.toLowerCase().includes(trackSearch.toLowerCase()) ||
+        (t.city && t.city.toLowerCase().includes(trackSearch.toLowerCase())) ||
+        (t.state && t.state.toLowerCase().includes(trackSearch.toLowerCase()))
+      ).slice(0, 20)
+    : [];
 
   return (
     <>
