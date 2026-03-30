@@ -490,6 +490,9 @@ const EventOrganizer = () => {
   const [loadingParticipants, setLoadingParticipants] = useState(false);
 
 
+  const [presetTracks, setPresetTracks] = useState<PresetTrack[]>([]);
+  const [presetSearch, setPresetSearch] = useState("");
+  const [presetTypeFilter, setPresetTypeFilter] = useState("all");
 
   const [newEvent, setNewEvent] = useState({
     name: '', date: '', time: '', description: '', track_name: '',
