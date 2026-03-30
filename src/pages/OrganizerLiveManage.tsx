@@ -300,6 +300,7 @@ const OrganizerLiveManage = () => {
       flag_type: "yellow_turn",
       message: fullMessage,
       is_active: true,
+      session_id: activeSessionIdRef.current,
     });
     if (error) {
       toast({ title: "Failed to send yellow flag", variant: "destructive" });
