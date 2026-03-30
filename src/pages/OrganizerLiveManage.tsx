@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { addMinutes, parseISO, differenceInMilliseconds, isAfter, isBefore } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -48,6 +49,13 @@ interface EventFlag {
   created_at: string;
 }
 
+interface EventRegistrationWithCar {
+  user_id: string;
+  user_name: string;
+  car_number: number | null;
+  registration_type_id: string;
+}
+
 const OrganizerLiveManage = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
@@ -68,6 +76,11 @@ const OrganizerLiveManage = () => {
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
   const [activeFlags, setActiveFlags] = useState<EventFlag[]>([]);
   const [flagMessage, setFlagMessage] = useState("");
+  const [showBlackFlagDialog, setShowBlackFlagDialog] = useState(false);
+  const [blackFlagTarget, setBlackFlagTarget] = useState<string>("all");
+  const [blackFlagMessage, setBlackFlagMessage] = useState("");
+  const [registrations, setRegistrations] = useState<EventRegistrationWithCar[]>([]);
+  const [blackFlagSearch, setBlackFlagSearch] = useState("");
 
   // Live clock
   useEffect(() => {
