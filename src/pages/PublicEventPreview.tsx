@@ -652,7 +652,7 @@ const PublicEventPreview = () => {
                         <SelectItem
                           key={rt.id}
                           value={rt.id}
-                          disabled={isFull || isRegistered}
+                          disabled={isFull}
                         >
                           {rt.name}{rt.price ? ` — ${rt.price}` : ""}
                           {rt.max_spots ? ` (${count}/${rt.max_spots})` : ""}
