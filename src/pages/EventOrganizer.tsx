@@ -376,6 +376,7 @@ const EventOrganizer = () => {
   const [totalRegistrations, setTotalRegistrations] = useState(0);
   const [defaultSessionDuration, setDefaultSessionDuration] = useState<number>(20);
   const [defaultRegTypeNames, setDefaultRegTypeNames] = useState<string[]>([]);
+  const [defaultSessionTemplates, setDefaultSessionTemplates] = useState<EventSession[]>([]);
 
   // Participant list state
   const [participantEvent, setParticipantEvent] = useState<PublicEvent | null>(null);
@@ -404,16 +405,24 @@ const EventOrganizer = () => {
         // Fetch saved defaults
         const { data: settings } = await supabase
           .from('organizer_settings' as any)
-          .select('default_session_duration, default_reg_types')
+          .select('default_session_duration, default_reg_types, default_sessions')
           .eq('organizer_profile_id', data.id)
           .maybeSingle();
         if (settings) {
           const s = settings as any;
           setDefaultSessionDuration(s.default_session_duration || 20);
-          // Pre-parse default reg types into RegistrationType objects
           if (s.default_reg_types) {
             const names = (s.default_reg_types as string).split('\n').filter((n: string) => n.trim());
             setDefaultRegTypeNames(names);
+          }
+          if (Array.isArray(s.default_sessions) && s.default_sessions.length > 0) {
+            setDefaultSessionTemplates(s.default_sessions.map((ds: any, i: number) => ({
+              name: ds.name || '',
+              start_time: ds.start_time || '',
+              duration_minutes: ds.duration_minutes ?? (s.default_session_duration || 20),
+              registration_type_id: null,
+              sort_order: i,
+            })));
           }
         }
       } else {
@@ -718,6 +727,9 @@ const EventOrganizer = () => {
                 // Pre-populate with saved defaults
                 if (defaultRegTypeNames.length > 0) {
                   setNewRegTypes(defaultRegTypeNames.map(name => ({ name, description: '', price: '', max_spots: null })));
+                }
+                if (defaultSessionTemplates.length > 0) {
+                  setNewSessions([...defaultSessionTemplates]);
                 }
               }
               setShowCreateDialog(open);

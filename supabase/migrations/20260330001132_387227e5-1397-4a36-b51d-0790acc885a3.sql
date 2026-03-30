@@ -1,0 +1,1 @@
+ALTER TABLE public.organizer_settings ADD COLUMN default_sessions jsonb NOT NULL DEFAULT '[]'::jsonb;

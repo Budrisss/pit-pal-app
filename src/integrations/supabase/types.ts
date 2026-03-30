@@ -268,6 +268,7 @@ export type Database = {
           created_at: string
           default_reg_types: string
           default_session_duration: number
+          default_sessions: Json
           id: string
           notif_announcement_confirm: boolean
           notif_cancel_registration: boolean
@@ -280,6 +281,7 @@ export type Database = {
           created_at?: string
           default_reg_types?: string
           default_session_duration?: number
+          default_sessions?: Json
           id?: string
           notif_announcement_confirm?: boolean
           notif_cancel_registration?: boolean
@@ -292,6 +294,7 @@ export type Database = {
           created_at?: string
           default_reg_types?: string
           default_session_duration?: number
+          default_sessions?: Json
           id?: string
           notif_announcement_confirm?: boolean
           notif_cancel_registration?: boolean
