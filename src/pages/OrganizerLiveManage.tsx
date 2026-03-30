@@ -718,7 +718,7 @@ const OrganizerLiveManage = () => {
                     {activeFlags.filter(f => f.flag_type === "blue" && !isBlueExpired(f)).length > 0 && (
                       <div className="bg-blue-500/10 border border-blue-500/30 rounded-md px-3 py-2 space-y-1.5">
                         <p className="text-[10px] text-blue-600 dark:text-blue-400 uppercase tracking-wider font-bold">🔵 Blue Flags</p>
-                        {activeFlags.filter(f => f.flag_type === "blue").map(f => (
+                        {activeFlags.filter(f => f.flag_type === "blue" && !isBlueExpired(f)).map(f => (
                           <div key={f.id} className="flex items-center justify-between">
                             <span className="text-xs font-medium">{f.message}</span>
                             <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-destructive" onClick={() => handleClearSingleFlag(f.id)}>
