@@ -275,6 +275,32 @@ const OrganizerLiveManage = () => {
     }
   };
 
+  const handleSendBlackFlag = async () => {
+    if (!eventId || !organizerProfileId) return;
+    await supabase.from("event_flags").update({ is_active: false }).eq("event_id", eventId).eq("is_active", true);
+    const targetUserId = blackFlagTarget === "all" ? null : blackFlagTarget;
+    const targetReg = registrations.find(r => r.user_id === targetUserId);
+    const messagePrefix = targetReg?.car_number ? `Car #${targetReg.car_number}` : null;
+    const fullMessage = [messagePrefix, blackFlagMessage.trim()].filter(Boolean).join(" — ") || null;
+    const { error } = await supabase.from("event_flags").insert({
+      event_id: eventId,
+      organizer_id: organizerProfileId,
+      flag_type: "black",
+      message: fullMessage,
+      target_user_id: targetUserId,
+      is_active: true,
+    });
+    if (error) {
+      toast({ title: "Failed to send black flag", variant: "destructive" });
+    } else {
+      toast({ title: targetReg?.car_number ? `🏴 Black flag sent to Car #${targetReg.car_number}` : "🏴 Black flag sent to all drivers" });
+      setShowBlackFlagDialog(false);
+      setBlackFlagTarget("all");
+      setBlackFlagMessage("");
+      setBlackFlagSearch("");
+    }
+  };
+
   const handleClearFlags = async () => {
     if (!eventId) return;
     await supabase.from("event_flags").update({ is_active: false }).eq("event_id", eventId).eq("is_active", true);
