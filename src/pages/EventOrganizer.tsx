@@ -711,7 +711,15 @@ const EventOrganizer = () => {
               {organizerProfile?.org_name} — Manage your events and registrations
             </p>
           </div>
-          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+          <Dialog open={showCreateDialog} onOpenChange={(open) => {
+              if (open) {
+                // Pre-populate with saved defaults
+                if (defaultRegTypeNames.length > 0) {
+                  setNewRegTypes(defaultRegTypeNames.map(name => ({ name, description: '', price: '', max_spots: null })));
+                }
+              }
+              setShowCreateDialog(open);
+            }}>
             <DialogTrigger asChild>
               <Button>
                 <Plus size={16} className="mr-1" /> Create Event
