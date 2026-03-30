@@ -11,7 +11,25 @@ import {
   Clock,
   Plus,
   X,
+  GripVertical,
 } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrganizerMode } from "@/contexts/OrganizerModeContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,11 +60,99 @@ interface OrganizerProfile {
 }
 
 interface DefaultSession {
+  id: string;
   name: string;
   start_time: string;
   duration_minutes: number | null;
   run_group: string | null;
 }
+
+let sessionIdCounter = 0;
+const genSessionId = () => `ds-${Date.now()}-${++sessionIdCounter}`;
+
+interface SortableSessionCardProps {
+  session: DefaultSession;
+  index: number;
+  defaultDuration: string;
+  runGroupNames: string[];
+  onUpdate: (index: number, session: DefaultSession) => void;
+  onRemove: (index: number) => void;
+}
+
+const SortableSessionCard = ({ session, index, defaultDuration, runGroupNames, onUpdate, onRemove }: SortableSessionCardProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: session.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="border border-border rounded-lg p-3 space-y-2 bg-muted/30 relative">
+      <div className="absolute top-2 left-2 cursor-grab active:cursor-grabbing text-muted-foreground" {...attributes} {...listeners}>
+        <GripVertical size={16} />
+      </div>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="absolute top-1 right-1 h-6 w-6 text-muted-foreground hover:text-destructive"
+        onClick={() => onRemove(index)}
+      >
+        <X size={14} />
+      </Button>
+      <div className="pl-6 pr-6">
+        <div className="space-y-1">
+          <Label className="text-xs">Session Name</Label>
+          <Input
+            value={session.name}
+            onChange={(e) => onUpdate(index, { ...session, name: e.target.value })}
+            placeholder="e.g. Group 1 - Morning Run"
+            className="h-8 text-sm"
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-2 pl-6">
+        <div className="space-y-1">
+          <Label className="text-xs">Start Time</Label>
+          <Input
+            type="time"
+            value={session.start_time || ''}
+            onChange={(e) => onUpdate(index, { ...session, start_time: e.target.value })}
+            className="h-8 text-sm"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Duration (min)</Label>
+          <Input
+            type="number"
+            value={session.duration_minutes ?? ''}
+            onChange={(e) => onUpdate(index, { ...session, duration_minutes: e.target.value ? parseInt(e.target.value) : null })}
+            placeholder={defaultDuration}
+            className="h-8 text-sm"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Run Group</Label>
+          <Select
+            value={session.run_group || "all"}
+            onValueChange={(val) => onUpdate(index, { ...session, run_group: val === "all" ? null : val })}
+          >
+            <SelectTrigger className="h-8 text-sm">
+              <SelectValue placeholder="All Groups" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Groups</SelectItem>
+              {runGroupNames.map((name) => (
+                <SelectItem key={name} value={name}>{name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const OrganizerSettings = () => {
   const { signOut, user } = useAuth();
@@ -76,6 +182,20 @@ const OrganizerSettings = () => {
   const [notifCancelReg, setNotifCancelReg] = useState(true);
   const [notifSessionReminder, setNotifSessionReminder] = useState(true);
   const [notifAnnouncement, setNotifAnnouncement] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = defaultSessions.findIndex(s => s.id === active.id);
+      const newIndex = defaultSessions.findIndex(s => s.id === over.id);
+      setDefaultSessions(arrayMove(defaultSessions, oldIndex, newIndex));
+    }
+  };
 
   const [savingSettings, setSavingSettings] = useState(false);
 
@@ -108,7 +228,7 @@ const OrganizerSettings = () => {
         const s = settingsRes.data as any;
         setDefaultDuration(String(s.default_session_duration));
         setDefaultRegTypes(s.default_reg_types);
-        setDefaultSessions(Array.isArray(s.default_sessions) ? s.default_sessions : []);
+        setDefaultSessions(Array.isArray(s.default_sessions) ? s.default_sessions.map((sess: any, idx: number) => ({ ...sess, id: sess.id || genSessionId() })) : []);
         setNotifNewReg(s.notif_new_registration);
         setNotifCancelReg(s.notif_cancel_registration);
         setNotifSessionReminder(s.notif_session_reminder);
@@ -302,7 +422,7 @@ const OrganizerSettings = () => {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => setDefaultSessions([...defaultSessions, { name: '', start_time: '', duration_minutes: parseInt(defaultDuration) || 20, run_group: null }])}
+                  onClick={() => setDefaultSessions([...defaultSessions, { id: genSessionId(), name: '', start_time: '', duration_minutes: parseInt(defaultDuration) || 20, run_group: null }])}
                 >
                   <Plus size={14} className="mr-1" /> Add Session
                 </Button>
@@ -310,84 +430,29 @@ const OrganizerSettings = () => {
               {defaultSessions.length === 0 && (
                 <p className="text-xs text-muted-foreground italic">No default sessions. Add sessions to pre-populate new events.</p>
               )}
-              {defaultSessions.map((session, i) => (
-                <div key={i} className="border border-border rounded-lg p-3 space-y-2 bg-muted/30 relative">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-1 right-1 h-6 w-6 text-muted-foreground hover:text-destructive"
-                    onClick={() => setDefaultSessions(defaultSessions.filter((_, idx) => idx !== i))}
-                  >
-                    <X size={14} />
-                  </Button>
-                  <div className="pr-6">
-                    <div className="space-y-1">
-                      <Label className="text-xs">Session Name</Label>
-                      <Input
-                        value={session.name}
-                        onChange={(e) => {
-                          const updated = [...defaultSessions];
-                          updated[i] = { ...updated[i], name: e.target.value };
-                          setDefaultSessions(updated);
-                        }}
-                        placeholder="e.g. Group 1 - Morning Run"
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="space-y-1">
-                      <Label className="text-xs">Start Time</Label>
-                      <Input
-                        type="time"
-                        value={session.start_time || ''}
-                        onChange={(e) => {
-                          const updated = [...defaultSessions];
-                          updated[i] = { ...updated[i], start_time: e.target.value };
-                          setDefaultSessions(updated);
-                        }}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Duration (min)</Label>
-                      <Input
-                        type="number"
-                        value={session.duration_minutes ?? ''}
-                        onChange={(e) => {
-                          const updated = [...defaultSessions];
-                          updated[i] = { ...updated[i], duration_minutes: e.target.value ? parseInt(e.target.value) : null };
-                          setDefaultSessions(updated);
-                        }}
-                        placeholder={defaultDuration}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Run Group</Label>
-                      <Select
-                        value={session.run_group || "all"}
-                        onValueChange={(val) => {
-                          const updated = [...defaultSessions];
-                          updated[i] = { ...updated[i], run_group: val === "all" ? null : val };
-                          setDefaultSessions(updated);
-                        }}
-                      >
-                        <SelectTrigger className="h-8 text-sm">
-                          <SelectValue placeholder="All Groups" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Groups</SelectItem>
-                          {runGroupNames.map((name) => (
-                            <SelectItem key={name} value={name}>{name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-              ))}
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext items={defaultSessions.map(s => s.id)} strategy={verticalListSortingStrategy}>
+                  {defaultSessions.map((session, i) => (
+                    <SortableSessionCard
+                      key={session.id}
+                      session={session}
+                      index={i}
+                      defaultDuration={defaultDuration}
+                      runGroupNames={runGroupNames}
+                      onUpdate={(idx, updated) => {
+                        const arr = [...defaultSessions];
+                        arr[idx] = updated;
+                        setDefaultSessions(arr);
+                      }}
+                      onRemove={(idx) => setDefaultSessions(defaultSessions.filter((_, j) => j !== idx))}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
             </div>
 
             <Button onClick={handleSaveDefaults} variant="outline" className="w-full" disabled={savingSettings}>
