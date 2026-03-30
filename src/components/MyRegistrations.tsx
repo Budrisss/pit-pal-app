@@ -12,6 +12,8 @@ interface Registration {
   event_id: string;
   registration_type_id: string;
   user_name: string;
+  car_number: number | null;
+  car_id: string | null;
   created_at: string;
   event?: {
     id: string;
@@ -24,6 +26,12 @@ interface Registration {
   };
   reg_type?: {
     name: string;
+  };
+  car?: {
+    name: string;
+    year: string;
+    make: string;
+    model: string;
   };
 }
 
