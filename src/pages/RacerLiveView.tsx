@@ -198,16 +198,46 @@ const RacerLiveView = () => {
     })[0];
   }, [sessionStates]);
 
+  // Your session - based on user's run group registration
+  const myActiveSession = useMemo(() => {
+    if (!userRegTypeId) return null;
+    return sessionStates.find(s => s.state === "active" && s.registration_type_id === userRegTypeId) || null;
+  }, [sessionStates, userRegTypeId]);
+
+  const myActiveRemaining = useMemo(() => {
+    if (!myActiveSession?.start_time || !myActiveSession?.duration_minutes || !eventDate) return null;
+    const evDate = parseISO(eventDate);
+    const [h, m] = myActiveSession.start_time.split(":").map(Number);
+    const start = new Date(evDate); start.setHours(h, m, 0, 0);
+    const end = addMinutes(start, myActiveSession.duration_minutes);
+    const diffMs = differenceInMilliseconds(end, currentTime);
+    if (diffMs <= 0) return null;
+    return { minutes: Math.floor(diffMs / 60000), seconds: Math.floor((diffMs % 60000) / 1000) };
+  }, [myActiveSession, eventDate, currentTime]);
+
+  const myNextSession = useMemo(() => {
+    if (!userRegTypeId) return null;
+    const upcoming = sessionStates.filter(s => s.state === "upcoming" && s.start_time && s.registration_type_id === userRegTypeId);
+    if (upcoming.length === 0) return null;
+    return upcoming.sort((a, b) => {
+      const [ah, am] = a.start_time!.split(":").map(Number);
+      const [bh, bm] = b.start_time!.split(":").map(Number);
+      return ah * 60 + am - (bh * 60 + bm);
+    })[0];
+  }, [sessionStates, userRegTypeId]);
+
+  const myNextCountdown = useMemo(() => {
+    if (!myNextSession?.start_time || !eventDate) return null;
+    const evDate = parseISO(eventDate);
+    const [h, m] = myNextSession.start_time.split(":").map(Number);
+    const start = new Date(evDate); start.setHours(h, m, 0, 0);
+    const diffMs = differenceInMilliseconds(start, currentTime);
+    if (diffMs <= 0) return null;
+    return { minutes: Math.floor(diffMs / 60000), seconds: Math.floor((diffMs % 60000) / 1000) };
+  }, [myNextSession, eventDate, currentTime]);
+
   const flagConfig = primaryFlag ? FLAG_CONFIG[primaryFlag.flag_type] || FLAG_CONFIG.green : null;
   const isCheckered = primaryFlag?.flag_type === "checkered";
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col select-none">
