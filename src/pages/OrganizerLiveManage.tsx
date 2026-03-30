@@ -513,7 +513,6 @@ const OrganizerLiveManage = () => {
           is_active: true,
           session_id: prevId,
         });
-        });
         toast({ title: "🏁 Checkered flag auto-sent — session ended" });
       };
       autoCheckered();
