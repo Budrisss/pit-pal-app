@@ -343,6 +343,12 @@ const LocalEvents = () => {
       }
 
       if (!regTypeId) throw new Error('Please select a registration group');
+
+      // Prevent duplicate registration for the same group
+      if (userRegistrations.has(regTypeId)) {
+        throw new Error('You are already registered for this group. Please select a different group or cancel your existing registration first.');
+      }
+
       if (!regForm.carNumber.trim()) throw new Error('Car number is required');
       const carNum = parseInt(regForm.carNumber);
       if (isNaN(carNum) || carNum <= 0) throw new Error('Car number must be a positive number');
