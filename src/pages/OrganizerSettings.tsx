@@ -183,6 +183,20 @@ const OrganizerSettings = () => {
   const [notifSessionReminder, setNotifSessionReminder] = useState(true);
   const [notifAnnouncement, setNotifAnnouncement] = useState(false);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = defaultSessions.findIndex(s => s.id === active.id);
+      const newIndex = defaultSessions.findIndex(s => s.id === over.id);
+      setDefaultSessions(arrayMove(defaultSessions, oldIndex, newIndex));
+    }
+  };
+
   const [savingSettings, setSavingSettings] = useState(false);
 
   useEffect(() => {
