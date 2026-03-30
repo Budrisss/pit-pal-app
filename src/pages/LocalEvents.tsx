@@ -18,6 +18,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
 import Navigation from '@/components/Navigation';
 import DesktopNavigation from '@/components/DesktopNavigation';
+import { useCars } from '@/contexts/CarsContext';
 
 import dashboardHero from '@/assets/dashboard-hero.jpg';
 import tracksideLogo from '@/assets/trackside-logo-v2.png';
