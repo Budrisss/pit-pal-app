@@ -8,6 +8,7 @@ import { Calendar, Clock, MapPin, Car, Building } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCars } from "@/contexts/CarsContext";
 import { Event } from "@/contexts/EventsContext";
+import AddressAutocomplete, { PlaceDetails } from "@/components/AddressAutocomplete";
 
 interface EventFormProps {
   open: boolean;
@@ -294,11 +295,17 @@ const EventForm = ({ open, onOpenChange, onSave, editingEvent }: EventFormProps)
                 Address (for weather)
               </Label>
               {selectedTrackId === "manual" ? (
-                <Input
+                <AddressAutocomplete
                   id="address"
                   value={formData.address}
-                  onChange={(e) => handleChange("address", e.target.value)}
-                  placeholder="e.g., 5250 Hwy 162, Willows, CA 95988"
+                  onChange={(val) => handleChange("address", val)}
+                  onPlaceSelect={(details: PlaceDetails) => {
+                    handleChange("address", details.formatted_address);
+                    if (!formData.track && details.name) {
+                      handleChange("track", details.name);
+                    }
+                  }}
+                  placeholder="Search for an address..."
                   required
                 />
               ) : (
