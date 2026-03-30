@@ -169,6 +169,7 @@ const LocalEvents = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { isOrganizerMode } = useOrganizerMode();
+  const { cars } = useCars();
 
   const [events, setEvents] = useState<PublicEvent[]>([]);
   const [loading, setLoading] = useState(true);
