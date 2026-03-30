@@ -55,6 +55,8 @@ const RacerLiveView = () => {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [loading, setLoading] = useState(true);
+  const [userRegTypeId, setUserRegTypeId] = useState<string | null>(null);
+  const [regTypeName, setRegTypeName] = useState<string | null>(null);
 
   // Wake lock
   useEffect(() => {
