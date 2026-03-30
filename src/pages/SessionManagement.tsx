@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Clock, Calendar, Settings, Plus, Trash2, GripVertical, StickyNote, Timer, AlertCircle, Cloud, Thermometer, Eye, Wind, Play, CheckCircle2, MoreVertical, Megaphone, FileText } from "lucide-react";
+import { ArrowLeft, Clock, Calendar, Settings, Plus, Trash2, GripVertical, StickyNote, Timer, AlertCircle, Cloud, Thermometer, Eye, Wind, Play, CheckCircle2, MoreVertical, Megaphone, FileText, Radio } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -814,6 +814,11 @@ const SessionManagement = () => {
             <DialogTrigger asChild>
               <Button variant="ghost" size="icon"><Settings size={18} /></Button>
             </DialogTrigger>
+          {publicEventId && (
+            <Button variant="outline" size="sm" onClick={() => navigate(`/race-live/${publicEventId}`)} className="gap-1.5">
+              <Radio size={14} /> Live View
+            </Button>
+          )}
             <DialogContent>
               <DialogHeader><DialogTitle>Settings</DialogTitle></DialogHeader>
               <div className="space-y-4">
