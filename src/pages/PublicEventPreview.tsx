@@ -647,7 +647,7 @@ const PublicEventPreview = () => {
                     {regTypes.map(rt => {
                       const count = regCounts[rt.id] || 0;
                       const isFull = rt.max_spots ? count >= rt.max_spots : false;
-                      const isRegistered = userRegistrations.has(rt.id);
+                      const isRegistered = [...userRegistrations].some(k => k.startsWith(rt.id + '_'));
                       return (
                         <SelectItem
                           key={rt.id}
