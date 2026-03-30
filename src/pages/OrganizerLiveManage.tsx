@@ -421,7 +421,11 @@ const OrganizerLiveManage = () => {
         });
         toast({ title: "🟢 Green flag auto-sent — session started" });
       };
-...
+      autoGreen();
+    }
+
+    // Session just ended (had prev active → now none): auto-send checkered flag
+    if (prevId && !currentActiveId && eventId && organizerProfileId) {
       const autoCheckered = async () => {
         const hasCheckered = activeFlags.some(f => f.flag_type === "checkered" && f.is_active);
         if (hasCheckered) return;
