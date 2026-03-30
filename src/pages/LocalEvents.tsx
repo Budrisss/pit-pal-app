@@ -414,7 +414,7 @@ const LocalEvents = () => {
       toast({ title: "Registered!", description: "Event added to your schedule." });
       setRegisteringEvent(null);
       setSelectedRegTypeId('');
-      setRegForm({ name: '', email: '', phone: '', notes: '', carNumber: '' });
+      setRegForm({ name: '', email: '', phone: '', notes: '', carNumber: '', carId: '' });
 
       // Navigate to the user's events page
       navigate('/events');
