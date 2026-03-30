@@ -127,14 +127,30 @@ const OrganizerSettings = () => {
     }
   };
 
-  const handleSaveDefaults = () => {
-    localStorage.setItem("org_default_duration", defaultDuration);
-    localStorage.setItem("org_default_reg_types", defaultRegTypes);
-    toast({ title: "Event defaults saved!" });
+  const handleSaveDefaults = async () => {
+    if (!organizerProfileId) return;
+    setSavingSettings(true);
+    const payload = {
+      organizer_profile_id: organizerProfileId,
+      default_session_duration: parseInt(defaultDuration),
+      default_reg_types: defaultRegTypes,
+      notif_new_registration: notifNewReg,
+      notif_cancel_registration: notifCancelReg,
+      notif_session_reminder: notifSessionReminder,
+      notif_announcement_confirm: notifAnnouncement,
+    };
+    const { error } = await supabase
+      .from("organizer_settings" as any)
+      .upsert(payload as any, { onConflict: "organizer_profile_id" });
+    setSavingSettings(false);
+    if (error) {
+      toast({ title: "Failed to save", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Settings saved!" });
+    }
   };
 
-  const handleToggleNotif = (key: string, value: boolean, setter: (v: boolean) => void) => {
-    localStorage.setItem(key, String(value));
+  const handleToggleNotif = (value: boolean, setter: (v: boolean) => void) => {
     setter(value);
   };
 
