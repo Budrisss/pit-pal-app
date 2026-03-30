@@ -275,9 +275,9 @@ const OrganizerSettings = () => {
               />
               <p className="text-xs text-muted-foreground">One type per line</p>
             </div>
-            <Button onClick={handleSaveDefaults} variant="outline" className="w-full">
+            <Button onClick={handleSaveDefaults} variant="outline" className="w-full" disabled={savingSettings}>
               <Save size={16} className="mr-2" />
-              Save Defaults
+              {savingSettings ? "Saving..." : "Save Defaults & Notifications"}
             </Button>
           </CardContent>
         </Card>
