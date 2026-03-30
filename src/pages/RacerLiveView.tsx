@@ -216,11 +216,17 @@ const RacerLiveView = () => {
       });
       if (flag) return flag;
     }
-    return activeFlags.find(f => {
+    const fallback = activeFlags.find(f => {
       if (f.flag_type === "black" && f.target_user_id === user?.id && blackFlagAccepted === f.id) return false;
       return true;
-    }) || null;
-  }, [activeFlags, blackFlagAccepted, user?.id]);
+    });
+    if (fallback) return fallback;
+    // If no flags remain (e.g. only an accepted targeted black flag) and a session is active, show green
+    if (isTargetedBlackFlagAccepted && activeSession) {
+      return { id: "synthetic-green", flag_type: "green", message: null, target_user_id: null, is_active: true, created_at: "" } as EventFlag;
+    }
+    return null;
+  }, [activeFlags, blackFlagAccepted, user?.id, isTargetedBlackFlagAccepted, activeSession]);
 
   // Is the current primary flag a targeted black flag that needs the accept UI?
   const isTargetedBlackFlagFullScreen = primaryFlag?.flag_type === "black" && primaryFlag?.target_user_id === user?.id;
