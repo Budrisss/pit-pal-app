@@ -1026,7 +1026,7 @@ const OrganizerLiveManage = () => {
         </motion.div>
 
         {/* Flag History Review */}
-        {sessionStates.filter(s => s.state === "completed").length > 0 && (
+        {sessionStates.length > 0 && (
           <>
             <Separator className="mb-6" />
             <motion.div
