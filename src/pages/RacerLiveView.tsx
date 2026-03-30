@@ -155,8 +155,18 @@ const RacerLiveView = () => {
 
   // Active flags for this user
   const activeFlags = useMemo(() => {
-    return flags.filter(f => f.is_active && (!f.target_user_id || f.target_user_id === user?.id));
-  }, [flags, user?.id]);
+    const acceptedExpired =
+      blackFlagAccepted &&
+      blackFlagAcceptedAt &&
+      currentTime.getTime() - blackFlagAcceptedAt >= 60000;
+
+    return flags.filter(f => {
+      if (!f.is_active) return false;
+      if (f.target_user_id && f.target_user_id !== user?.id) return false;
+      if (acceptedExpired && f.id === blackFlagAccepted) return false;
+      return true;
+    });
+  }, [flags, user?.id, blackFlagAccepted, blackFlagAcceptedAt, currentTime]);
 
   // Track when targeted black flags first appear + vibrate
   useEffect(() => {
