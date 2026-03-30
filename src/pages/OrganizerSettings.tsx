@@ -67,6 +67,9 @@ const OrganizerSettings = () => {
   const [defaultRegTypes, setDefaultRegTypes] = useState("Beginner\nIntermediate\nAdvanced");
   const [defaultSessions, setDefaultSessions] = useState<DefaultSession[]>([]);
 
+  // Parsed run group names for session assignment
+  const runGroupNames = defaultRegTypes.split("\n").map(s => s.trim()).filter(Boolean);
+
   // Notification Preferences
   const [notifNewReg, setNotifNewReg] = useState(true);
   const [notifCancelReg, setNotifCancelReg] = useState(true);
