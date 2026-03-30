@@ -486,6 +486,7 @@ const OrganizerLiveManage = () => {
           flag_type: "green",
           message: null,
           is_active: true,
+          session_id: currentActiveId,
         });
         toast({ title: "🟢 Green flag auto-sent — session started" });
       };
