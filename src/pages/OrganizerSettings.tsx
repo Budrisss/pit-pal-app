@@ -130,7 +130,7 @@ const OrganizerSettings = () => {
         const s = settingsRes.data as any;
         setDefaultDuration(String(s.default_session_duration));
         setDefaultRegTypes(s.default_reg_types);
-        setDefaultSessions(Array.isArray(s.default_sessions) ? s.default_sessions : []);
+        setDefaultSessions(Array.isArray(s.default_sessions) ? s.default_sessions.map((sess: any, idx: number) => ({ ...sess, id: sess.id || genSessionId() })) : []);
         setNotifNewReg(s.notif_new_registration);
         setNotifCancelReg(s.notif_cancel_registration);
         setNotifSessionReminder(s.notif_session_reminder);
