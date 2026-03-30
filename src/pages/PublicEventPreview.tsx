@@ -220,7 +220,7 @@ const PublicEventPreview = () => {
       const carNum = parseInt(regForm.carNumber);
       if (isNaN(carNum) || carNum <= 0) throw new Error("Car number must be a positive number");
 
-      const { error } = await supabase.from("event_registrations").insert({
+      const { error } = await (supabase as any).from("event_registrations").insert({
         event_id: event.id,
         registration_type_id: regTypeId,
         user_id: user.id,
@@ -229,6 +229,7 @@ const PublicEventPreview = () => {
         user_phone: regForm.phone || null,
         notes: regForm.notes || null,
         car_number: carNum,
+        car_id: regForm.carId || null,
       });
       if (error) {
         if (error.message?.includes("idx_unique_car_number_per_event")) {
