@@ -1096,6 +1096,11 @@ const LocalEvents = () => {
                       })}
                     </SelectContent>
                   </Select>
+                  {selectedRegTypeId && userRegistrations.has(selectedRegTypeId) && (
+                    <p className="text-xs text-destructive mt-1">
+                      ⚠️ You're already registered for this group. Select a different group or cancel your existing registration first.
+                    </p>
+                  )}
                 </div>
               )}
 
