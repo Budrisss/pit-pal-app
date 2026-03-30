@@ -146,7 +146,10 @@ const Settings = () => {
           </CardContent>
         </Card>
 
-        {/* Notifications */}
+        {/* Saved Tracks */}
+        <SavedTracksManager />
+
+
         <Card className="bg-gradient-dark border-border/50">
           <CardHeader>
             <CardTitle className="text-lg text-foreground flex items-center gap-2">
