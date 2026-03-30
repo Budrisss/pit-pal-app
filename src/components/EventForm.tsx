@@ -33,6 +33,7 @@ interface Track {
   address: string;
   city: string;
   state: string;
+  isPreset?: boolean;
 }
 
 const EventForm = ({ open, onOpenChange, onSave, editingEvent }: EventFormProps) => {
@@ -47,7 +48,9 @@ const EventForm = ({ open, onOpenChange, onSave, editingEvent }: EventFormProps)
   });
   
   const [tracks, setTracks] = useState<Track[]>([]);
+  const [presetTracks, setPresetTracks] = useState<Track[]>([]);
   const [isLoadingTracks, setIsLoadingTracks] = useState(false);
+  const [trackSearch, setTrackSearch] = useState("");
   const [selectedTrackId, setSelectedTrackId] = useState<string>("");
   const [selectedCarId, setSelectedCarId] = useState<string>("");
   const [comboboxOpen, setComboboxOpen] = useState(false);
@@ -214,16 +217,13 @@ const EventForm = ({ open, onOpenChange, onSave, editingEvent }: EventFormProps)
     const fetchTracks = async () => {
       setIsLoadingTracks(true);
       try {
-        const { data, error } = await (supabase as any)
-          .from('tracks')
-          .select('id, name, address, city, state')
-          .order('name');
+        const [userRes, presetRes] = await Promise.all([
+          supabase.from('tracks').select('id, name, address, city, state').order('name'),
+          supabase.from('preset_tracks').select('id, name, address, city, state').order('name'),
+        ]);
         
-        if (error) {
-          console.error('Error fetching tracks:', error);
-        } else {
-          setTracks(data || []);
-        }
+        if (!userRes.error) setTracks(userRes.data || []);
+        if (!presetRes.error) setPresetTracks((presetRes.data || []).map(t => ({ ...t, isPreset: true })));
       } catch (error) {
         console.error('Error fetching tracks:', error);
       } finally {
@@ -233,8 +233,17 @@ const EventForm = ({ open, onOpenChange, onSave, editingEvent }: EventFormProps)
 
     if (open) {
       fetchTracks();
+      setTrackSearch("");
     }
   }, [open]);
+
+  const filteredPresetTracks = trackSearch.length >= 2
+    ? presetTracks.filter(t => 
+        t.name.toLowerCase().includes(trackSearch.toLowerCase()) ||
+        (t.city && t.city.toLowerCase().includes(trackSearch.toLowerCase())) ||
+        (t.state && t.state.toLowerCase().includes(trackSearch.toLowerCase()))
+      ).slice(0, 20)
+    : [];
 
   return (
     <>
@@ -267,14 +276,49 @@ const EventForm = ({ open, onOpenChange, onSave, editingEvent }: EventFormProps)
                 <Building size={16} />
                 Track/Venue
               </Label>
-              <Select value={selectedTrackId} onValueChange={handleTrackSelect}>
+              <Select value={selectedTrackId} onValueChange={(val) => {
+                if (val.startsWith('preset-')) {
+                  const presetId = val.replace('preset-', '');
+                  const preset = presetTracks.find(t => t.id === presetId);
+                  if (preset) {
+                    const fullAddress = `${preset.address || ''}${preset.city ? `, ${preset.city}` : ''}${preset.state ? `, ${preset.state}` : ''}`;
+                    setFormData(prev => ({ ...prev, track: preset.name, address: fullAddress }));
+                    setSelectedTrackId(val);
+                  }
+                } else {
+                  handleTrackSelect(val);
+                }
+              }}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder={isLoadingTracks ? "Loading tracks..." : "Select a track..."} />
                 </SelectTrigger>
-                <SelectContent className="max-h-[200px] overflow-y-auto">
+                <SelectContent className="max-h-[300px] overflow-y-auto">
                   <SelectItem value="manual">Enter track manually</SelectItem>
-                  {tracks.map((track) => (
-                    <SelectItem key={track.id} value={track.id}>
+                  {tracks.length > 0 && (
+                    <>
+                      <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">Your Saved Tracks</div>
+                      {tracks.map((track) => (
+                        <SelectItem key={track.id} value={track.id}>
+                          {track.name} - {track.city}, {track.state}
+                        </SelectItem>
+                      ))}
+                    </>
+                  )}
+                  <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                    Preset Tracks {trackSearch.length < 2 ? "(type to search)" : `(${filteredPresetTracks.length} results)`}
+                  </div>
+                  <div className="px-2 pb-1">
+                    <Input
+                      value={trackSearch}
+                      onChange={(e) => setTrackSearch(e.target.value)}
+                      placeholder="Search 390+ tracks..."
+                      className="h-8 text-xs"
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                  {filteredPresetTracks.map((track) => (
+                    <SelectItem key={`preset-${track.id}`} value={`preset-${track.id}`}>
                       {track.name} - {track.city}, {track.state}
                     </SelectItem>
                   ))}
