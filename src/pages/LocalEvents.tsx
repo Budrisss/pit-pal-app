@@ -193,7 +193,7 @@ const LocalEvents = () => {
   // Registration state
   const [registeringEvent, setRegisteringEvent] = useState<PublicEvent | null>(null);
   const [selectedRegTypeId, setSelectedRegTypeId] = useState<string>('');
-  const [regForm, setRegForm] = useState({ name: '', email: '', phone: '', notes: '' });
+  const [regForm, setRegForm] = useState({ name: '', email: '', phone: '', notes: '', carNumber: '' });
   const [registering, setRegistering] = useState(false);
   const [userRegistrations, setUserRegistrations] = useState<Set<string>>(new Set());
   
@@ -343,6 +343,9 @@ const LocalEvents = () => {
       }
 
       if (!regTypeId) throw new Error('Please select a registration group');
+      if (!regForm.carNumber.trim()) throw new Error('Car number is required');
+      const carNum = parseInt(regForm.carNumber);
+      if (isNaN(carNum) || carNum <= 0) throw new Error('Car number must be a positive number');
 
       const { error } = await supabase.from('event_registrations').insert({
         event_id: registeringEvent.id,
@@ -352,8 +355,14 @@ const LocalEvents = () => {
         user_email: regForm.email,
         user_phone: regForm.phone || null,
         notes: regForm.notes || null,
+        car_number: carNum,
       });
-      if (error) throw error;
+      if (error) {
+        if (error.message?.includes('idx_unique_car_number_per_event')) {
+          throw new Error(`Car #${carNum} is already taken for this event`);
+        }
+        throw error;
+      }
 
       // Create a personal event in the user's events table
       const { data: newEvent, error: eventError } = await supabase.from('events').insert({
@@ -395,7 +404,7 @@ const LocalEvents = () => {
       toast({ title: "Registered!", description: "Event added to your schedule." });
       setRegisteringEvent(null);
       setSelectedRegTypeId('');
-      setRegForm({ name: '', email: '', phone: '', notes: '' });
+      setRegForm({ name: '', email: '', phone: '', notes: '', carNumber: '' });
 
       // Navigate to the user's events page
       navigate('/events');
@@ -928,7 +937,7 @@ const LocalEvents = () => {
                           className="flex-1"
                           onClick={() => {
                             setRegisteringEvent(event);
-                            setRegForm({ name: '', email: user?.email || '', phone: '', notes: '' });
+                            setRegForm({ name: '', email: user?.email || '', phone: '', notes: '', carNumber: '' });
                             // Auto-select if only one reg type
                             if (event.registration_types?.length === 1 && event.registration_types[0].id) {
                               setSelectedRegTypeId(event.registration_types[0].id);
@@ -1115,6 +1124,11 @@ const LocalEvents = () => {
               <div className="space-y-2">
                 <Label>Your Name *</Label>
                 <Input value={regForm.name} onChange={e => setRegForm(p => ({ ...p, name: e.target.value }))} required placeholder="John Doe" />
+              </div>
+              <div className="space-y-2">
+                <Label>Car Number *</Label>
+                <Input type="number" min="1" value={regForm.carNumber} onChange={e => setRegForm(p => ({ ...p, carNumber: e.target.value }))} required placeholder="42" />
+                <p className="text-[10px] text-muted-foreground">Must be unique for this event</p>
               </div>
               <div className="space-y-2">
                 <Label>Email *</Label>
