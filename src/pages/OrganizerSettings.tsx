@@ -8,6 +8,9 @@ import {
   Users,
   LogOut,
   Save,
+  Clock,
+  Plus,
+  X,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrganizerMode } from "@/contexts/OrganizerModeContext";
