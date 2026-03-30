@@ -63,6 +63,7 @@ const RacerLiveView = () => {
 
   // Black flag accept state
   const [blackFlagAccepted, setBlackFlagAccepted] = useState<string | null>(null);
+  const [blackFlagAcceptedAt, setBlackFlagAcceptedAt] = useState<number | null>(null);
   const [blackFlagReceivedAt, setBlackFlagReceivedAt] = useState<Record<string, number>>({});
   const prevFlagIdsRef = useRef<Set<string>>(new Set());
 
