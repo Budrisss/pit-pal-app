@@ -252,14 +252,14 @@ const RacerLiveView = () => {
   const priorityOrder = ["red", "black", "checkered", "yellow", "white", "green"];
   const primaryFlag = useMemo(() => {
     for (const type of priorityOrder) {
-      const flag = activeFlags.find(f => {
+      const flag = priorityFlags.find(f => {
         if (f.flag_type !== type) return false;
         if (f.flag_type === "black" && f.target_user_id === user?.id && blackFlagAccepted === f.id) return false;
         return true;
       });
       if (flag) return flag;
     }
-    const fallback = activeFlags.find(f => {
+    const fallback = priorityFlags.find(f => {
       if (f.flag_type === "black" && f.target_user_id === user?.id && blackFlagAccepted === f.id) return false;
       return true;
     });
@@ -269,7 +269,7 @@ const RacerLiveView = () => {
       return { id: "synthetic-green", flag_type: "green", message: null, target_user_id: null, is_active: true, created_at: "" } as EventFlag;
     }
     return null;
-  }, [activeFlags, blackFlagAccepted, user?.id, activeSession]);
+  }, [priorityFlags, blackFlagAccepted, user?.id, activeSession]);
 
   // Is the current primary flag a targeted black flag that needs the accept UI?
   const isTargetedBlackFlagFullScreen = primaryFlag?.flag_type === "black" && primaryFlag?.target_user_id === user?.id;
