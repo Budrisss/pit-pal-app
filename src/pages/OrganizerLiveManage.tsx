@@ -295,10 +295,28 @@ const OrganizerLiveManage = () => {
   useEffect(() => {
     const currentActiveId = activeSession?.id || null;
     const prevId = prevActiveSessionId.current;
-    // If we had an active session and now it's gone (completed), auto-send checkered
+
+    // Session just started (no prev active → now active): auto-send green flag
+    if (!prevId && currentActiveId && eventId && organizerProfileId) {
+      const autoGreen = async () => {
+        const hasGreen = activeFlags.some(f => f.flag_type === "green" && f.is_active);
+        if (hasGreen) return;
+        await supabase.from("event_flags").update({ is_active: false }).eq("event_id", eventId).eq("is_active", true);
+        await supabase.from("event_flags").insert({
+          event_id: eventId,
+          organizer_id: organizerProfileId,
+          flag_type: "green",
+          message: null,
+          is_active: true,
+        });
+        toast({ title: "🟢 Green flag auto-sent — session started" });
+      };
+      autoGreen();
+    }
+
+    // Session just ended (had prev active → now none): auto-send checkered flag
     if (prevId && !currentActiveId && eventId && organizerProfileId) {
       const autoCheckered = async () => {
-        // Only send if there isn't already an active checkered flag
         const hasCheckered = activeFlags.some(f => f.flag_type === "checkered" && f.is_active);
         if (hasCheckered) return;
         await supabase.from("event_flags").update({ is_active: false }).eq("event_id", eventId).eq("is_active", true);
@@ -313,6 +331,7 @@ const OrganizerLiveManage = () => {
       };
       autoCheckered();
     }
+
     prevActiveSessionId.current = currentActiveId;
   }, [activeSession?.id, eventId, organizerProfileId]);
   const activeRemaining = useMemo(() => {
