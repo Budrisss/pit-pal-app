@@ -241,6 +241,32 @@ const OrganizerLiveManage = () => {
     await supabase.from("event_announcements").delete().eq("id", id);
   };
 
+  const handleSendFlag = async (flagType: string) => {
+    if (!eventId || !organizerProfileId) return;
+    // Deactivate existing flags of same type
+    await supabase.from("event_flags").update({ is_active: false }).eq("event_id", eventId).eq("is_active", true);
+    // Insert new flag
+    const { error } = await supabase.from("event_flags").insert({
+      event_id: eventId,
+      organizer_id: organizerProfileId,
+      flag_type: flagType,
+      message: flagMessage.trim() || null,
+      is_active: true,
+    });
+    if (error) {
+      toast({ title: "Failed to send flag", variant: "destructive" });
+    } else {
+      setFlagMessage("");
+      toast({ title: `${flagType.toUpperCase()} flag sent!` });
+    }
+  };
+
+  const handleClearFlags = async () => {
+    if (!eventId) return;
+    await supabase.from("event_flags").update({ is_active: false }).eq("event_id", eventId).eq("is_active", true);
+    toast({ title: "All flags cleared" });
+  };
+
   const getRunGroupName = (regTypeId: string | null) => {
     if (!regTypeId) return "All groups";
     return registrationTypes.find((rt) => rt.id === regTypeId)?.name || "Unknown";
