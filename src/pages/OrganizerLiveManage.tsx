@@ -335,14 +335,17 @@ const OrganizerLiveManage = () => {
 
   const handleSendBlackFlag = async () => {
     if (!eventId || !organizerProfileId) return;
-    await supabase
-      .from("event_flags")
-      .update({ is_active: false })
-      .eq("event_id", eventId)
-      .eq("is_active", true)
-      .neq("flag_type", "yellow_turn")
-      .neq("flag_type", "blue");
     const targetUserId = blackFlagTarget === "all" ? null : blackFlagTarget;
+    // Only deactivate global flags if this is a global (all drivers) black flag
+    if (!targetUserId) {
+      await supabase
+        .from("event_flags")
+        .update({ is_active: false })
+        .eq("event_id", eventId)
+        .eq("is_active", true)
+        .neq("flag_type", "yellow_turn")
+        .neq("flag_type", "blue");
+    }
     const targetReg = registrations.find(r => r.user_id === targetUserId);
     const messagePrefix = targetReg?.car_number ? `Car #${targetReg.car_number}` : null;
     const fullMessage = [messagePrefix, blackFlagMessage.trim()].filter(Boolean).join(" — ") || null;
