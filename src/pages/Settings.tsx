@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
 import RacingGallery from "@/components/RacingGallery";
+import SavedTracksManager from "@/components/SavedTracksManager";
 
 const Settings = () => {
   const { isOrganizerMode } = useOrganizerMode();
