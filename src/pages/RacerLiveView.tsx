@@ -440,6 +440,41 @@ const RacerLiveView = () => {
         </motion.div>
       )}
 
+      {/* Yellow by Turn banners - shown alongside current flag */}
+      {yellowTurnFlags.length > 0 && (
+        <div className="shrink-0">
+          {yellowTurnFlags.map(f => (
+            <motion.div
+              key={f.id}
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              className="bg-yellow-400 border-b border-yellow-600 px-4 py-2 flex items-center justify-between"
+            >
+              <div className="flex items-center gap-2">
+                <motion.span
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ repeat: Infinity, duration: 1.5 }}
+                  className="text-lg"
+                >
+                  ⚠️
+                </motion.span>
+                <div>
+                  <p className="text-sm font-black text-black uppercase tracking-wider">
+                    LOCAL YELLOW
+                  </p>
+                  {f.message && (
+                    <p className="text-xs text-black/70 font-semibold">{f.message}</p>
+                  )}
+                </div>
+              </div>
+              <Badge className="bg-black/20 text-black font-bold text-xs border-0">
+                CAUTION
+              </Badge>
+            </motion.div>
+          ))}
+        </div>
+      )}
+
       {/* Flag Zone - dominant area */}
       <div className="flex-1 flex flex-col">
         <AnimatePresence mode="wait">
