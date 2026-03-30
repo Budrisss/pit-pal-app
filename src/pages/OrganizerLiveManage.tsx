@@ -688,10 +688,10 @@ const OrganizerLiveManage = () => {
                     <span className="text-xs font-semibold">⚠️ Local Cautions</span>
                     <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-warning/50 text-warning">Stacks</Badge>
                   </div>
-                  {activeFlags.filter(f => f.flag_type === "yellow_turn" || f.flag_type === "blue" || (f.flag_type === "black" && f.target_user_id)).length > 0 && (
+                  {activeFlags.filter(isLocalCaution).length > 0 && (
                     <Button variant="ghost" size="sm" className="text-xs h-6 text-muted-foreground hover:text-destructive" onClick={async () => {
                       if (!eventId) return;
-                      const localFlags = activeFlags.filter(f => f.flag_type === "yellow_turn" || f.flag_type === "blue" || (f.flag_type === "black" && f.target_user_id));
+                      const localFlags = activeFlags.filter(isLocalCaution);
                       for (const f of localFlags) {
                         await supabase.from("event_flags").update({ is_active: false }).eq("id", f.id);
                       }
