@@ -701,8 +701,25 @@ const PublicEventPreview = () => {
             <div className="space-y-2">
               <Label>Car Number *</Label>
               <Input type="number" min="1" value={regForm.carNumber} onChange={e => setRegForm(p => ({ ...p, carNumber: e.target.value }))} required placeholder="42" />
-              <p className="text-[10px] text-muted-foreground">Must be unique for this event</p>
+              <p className="text-[10px] text-muted-foreground">Must be unique for this event. Use a different number to register with another car.</p>
             </div>
+            {cars.length > 0 && (
+              <div className="space-y-2">
+                <Label>Select Car from Garage</Label>
+                <Select value={regForm.carId} onValueChange={v => setRegForm(p => ({ ...p, carId: v }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Optional — link a car from your garage" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cars.map(car => (
+                      <SelectItem key={car.id} value={car.id}>
+                        {car.year} {car.make} {car.model} — {car.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Email *</Label>
               <Input type="email" value={regForm.email} onChange={e => setRegForm(p => ({ ...p, email: e.target.value }))} required placeholder="john@email.com" />
