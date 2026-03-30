@@ -313,6 +313,42 @@ export type Database = {
           },
         ]
       }
+      preset_tracks: {
+        Row: {
+          address: string | null
+          city: string | null
+          created_at: string
+          id: string
+          latitude: number | null
+          longitude: number | null
+          name: string
+          state: string | null
+          track_type: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          name: string
+          state?: string | null
+          track_type?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          name?: string
+          state?: string | null
+          track_type?: string | null
+        }
+        Relationships: []
+      }
       public_event_sessions: {
         Row: {
           created_at: string
