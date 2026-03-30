@@ -1026,7 +1026,7 @@ const OrganizerLiveManage = () => {
         </motion.div>
 
         {/* Flag History Review */}
-        {sessionStates.filter(s => s.state === "completed").length > 0 && (
+        {sessionStates.length > 0 && (
           <>
             <Separator className="mb-6" />
             <motion.div
@@ -1039,11 +1039,10 @@ const OrganizerLiveManage = () => {
                 <History size={16} className="text-primary" /> Flag Review by Session
               </h2>
               <p className="text-xs text-muted-foreground mb-3">
-                Review all flags sent during completed sessions — including stats and details.
+                Review all flags sent during each session — including stats and details.
               </p>
               <div className="space-y-2">
                 {sessionStates
-                  .filter(s => s.state === "completed")
                   .map(session => {
                     const sessionFlags = flagHistory.filter(f => f.session_id === session.id);
                     const activeSessionFlags = activeFlags.filter(f => f.session_id === session.id);
@@ -1068,6 +1067,9 @@ const OrganizerLiveManage = () => {
                               <span className="text-sm font-medium">{session.name}</span>
                               <Badge variant="outline" className="text-[10px]">
                                 {getRunGroupName(session.registration_type_id)}
+                              </Badge>
+                              <Badge variant={session.state === "active" ? "default" : "secondary"} className="text-[10px]">
+                                {session.state === "active" ? "Active" : session.state === "completed" ? "Completed" : "Upcoming"}
                               </Badge>
                             </div>
                             <div className="flex items-center gap-2">
