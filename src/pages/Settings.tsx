@@ -74,6 +74,10 @@ const Settings = () => {
     navigate('/');
   };
 
+  if (isOrganizerMode) {
+    return <OrganizerSettings />;
+  }
+
   if (showGallery) {
     return <RacingGallery onClose={() => setShowGallery(false)} />;
   }
