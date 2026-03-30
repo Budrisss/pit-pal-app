@@ -947,7 +947,7 @@ const LocalEvents = () => {
                           className="flex-1"
                           onClick={() => {
                             setRegisteringEvent(event);
-                            setRegForm({ name: '', email: user?.email || '', phone: '', notes: '', carNumber: '' });
+                            setRegForm({ name: '', email: user?.email || '', phone: '', notes: '', carNumber: '', carId: '' });
                             // Auto-select if only one reg type
                             if (event.registration_types?.length === 1 && event.registration_types[0].id) {
                               setSelectedRegTypeId(event.registration_types[0].id);
