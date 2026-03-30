@@ -728,6 +728,9 @@ const EventOrganizer = () => {
                 if (defaultRegTypeNames.length > 0) {
                   setNewRegTypes(defaultRegTypeNames.map(name => ({ name, description: '', price: '', max_spots: null })));
                 }
+                if (defaultSessionTemplates.length > 0) {
+                  setNewSessions([...defaultSessionTemplates]);
+                }
               }
               setShowCreateDialog(open);
             }}>
