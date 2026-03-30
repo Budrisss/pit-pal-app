@@ -405,7 +405,13 @@ const OrganizerLiveManage = () => {
       const autoGreen = async () => {
         const hasGreen = activeFlags.some(f => f.flag_type === "green" && f.is_active);
         if (hasGreen) return;
-        await supabase.from("event_flags").update({ is_active: false }).eq("event_id", eventId).eq("is_active", true);
+        await supabase
+          .from("event_flags")
+          .update({ is_active: false })
+          .eq("event_id", eventId)
+          .eq("is_active", true)
+          .neq("flag_type", "yellow_turn")
+          .neq("flag_type", "blue");
         await supabase.from("event_flags").insert({
           event_id: eventId,
           organizer_id: organizerProfileId,
@@ -415,15 +421,17 @@ const OrganizerLiveManage = () => {
         });
         toast({ title: "🟢 Green flag auto-sent — session started" });
       };
-      autoGreen();
-    }
-
-    // Session just ended (had prev active → now none): auto-send checkered flag
-    if (prevId && !currentActiveId && eventId && organizerProfileId) {
+...
       const autoCheckered = async () => {
         const hasCheckered = activeFlags.some(f => f.flag_type === "checkered" && f.is_active);
         if (hasCheckered) return;
-        await supabase.from("event_flags").update({ is_active: false }).eq("event_id", eventId).eq("is_active", true);
+        await supabase
+          .from("event_flags")
+          .update({ is_active: false })
+          .eq("event_id", eventId)
+          .eq("is_active", true)
+          .neq("flag_type", "yellow_turn")
+          .neq("flag_type", "blue");
         await supabase.from("event_flags").insert({
           event_id: eventId,
           organizer_id: organizerProfileId,
