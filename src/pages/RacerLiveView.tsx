@@ -35,7 +35,8 @@ interface EventSession {
 
 const FLAG_CONFIG: Record<string, { bg: string; text: string; label: string; textColor: string }> = {
   green: { bg: "bg-green-500", text: "GREEN", label: "Track Clear", textColor: "text-white" },
-  yellow: { bg: "bg-yellow-400", text: "YELLOW", label: "CAUTION", textColor: "text-black" },
+  yellow: { bg: "bg-yellow-400", text: "YELLOW", label: "FULL COURSE CAUTION", textColor: "text-black" },
+  yellow_turn: { bg: "bg-yellow-400", text: "YELLOW", label: "LOCAL CAUTION", textColor: "text-black" },
   red: { bg: "bg-red-600", text: "RED", label: "STOP — SESSION HALTED", textColor: "text-white" },
   black: { bg: "bg-black", text: "BLACK FLAG", label: "PIT IN IMMEDIATELY", textColor: "text-white" },
   white: { bg: "bg-white border-2 border-gray-300", text: "WHITE", label: "Slow Vehicle Ahead", textColor: "text-black" },
