@@ -628,7 +628,7 @@ const OrganizerLiveManage = () => {
               </div>
 
               {/* Track Status — Global flags */}
-              {activeFlags.filter(f => f.flag_type !== "yellow_turn" && f.flag_type !== "blue").length > 0 && (
+              {activeFlags.filter(f => f.flag_type !== "yellow_turn" && f.flag_type !== "blue" && !(f.flag_type === "black" && f.target_user_id)).length > 0 && (
                 <div className="rounded-lg border border-border bg-muted/40 p-3 space-y-2">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold">🏁 Track Status</span>
@@ -636,7 +636,7 @@ const OrganizerLiveManage = () => {
                   </div>
                   <p className="text-[10px] text-muted-foreground">Only one global flag active at a time</p>
                   <div className="space-y-1.5">
-                    {activeFlags.filter(f => f.flag_type !== "yellow_turn" && f.flag_type !== "blue").map(f => (
+                    {activeFlags.filter(f => f.flag_type !== "yellow_turn" && f.flag_type !== "blue" && !(f.flag_type === "black" && f.target_user_id)).map(f => (
                       <div key={f.id} className="flex items-center justify-between bg-background/60 rounded-md px-3 py-2">
                         <div className="flex items-center gap-2">
                           <span className="text-sm">
@@ -658,7 +658,7 @@ const OrganizerLiveManage = () => {
               )}
 
               {/* Local Cautions — Stackable flags */}
-              {activeFlags.filter(f => f.flag_type === "yellow_turn" || f.flag_type === "blue").length > 0 && (
+              {activeFlags.filter(f => f.flag_type === "yellow_turn" || f.flag_type === "blue" || (f.flag_type === "black" && f.target_user_id)).length > 0 && (
                 <div className="rounded-lg border border-warning/40 bg-warning/5 p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -667,7 +667,10 @@ const OrganizerLiveManage = () => {
                     </div>
                     <Button variant="ghost" size="sm" className="text-xs h-6 text-muted-foreground hover:text-destructive" onClick={async () => {
                       if (!eventId) return;
-                      await supabase.from("event_flags").update({ is_active: false }).eq("event_id", eventId).eq("is_active", true).in("flag_type", ["yellow_turn", "blue"]);
+                      const localFlags = activeFlags.filter(f => f.flag_type === "yellow_turn" || f.flag_type === "blue" || (f.flag_type === "black" && f.target_user_id));
+                      for (const f of localFlags) {
+                        await supabase.from("event_flags").update({ is_active: false }).eq("id", f.id);
+                      }
                     }}>
                       Clear Local
                     </Button>
@@ -693,6 +696,19 @@ const OrganizerLiveManage = () => {
                         {activeFlags.filter(f => f.flag_type === "blue").map(f => (
                           <div key={f.id} className="flex items-center justify-between">
                             <span className="text-xs font-medium">{f.message}</span>
+                            <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-destructive" onClick={() => handleClearSingleFlag(f.id)}>
+                              <X size={10} />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {activeFlags.filter(f => f.flag_type === "black" && f.target_user_id).length > 0 && (
+                      <div className="bg-gray-900/10 border border-gray-500/30 rounded-md px-3 py-2 space-y-1.5">
+                        <p className="text-[10px] text-gray-600 dark:text-gray-400 uppercase tracking-wider font-bold">🏴 Targeted Black Flags</p>
+                        {activeFlags.filter(f => f.flag_type === "black" && f.target_user_id).map(f => (
+                          <div key={f.id} className="flex items-center justify-between">
+                            <span className="text-xs font-medium">{f.message || "Black flag"}</span>
                             <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-destructive" onClick={() => handleClearSingleFlag(f.id)}>
                               <X size={10} />
                             </Button>
@@ -861,8 +877,7 @@ const OrganizerLiveManage = () => {
                                   s.id!,
                                   "duration_minutes",
                                   e.target.value ? parseInt(e.target.value) : null
-                                )
-                              }
+                    )}
                               className="h-8 text-sm"
                             />
                           </div>
