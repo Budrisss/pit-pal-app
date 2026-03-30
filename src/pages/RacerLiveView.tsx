@@ -165,6 +165,16 @@ const RacerLiveView = () => {
     });
   }, [flags, user?.id, blackFlagDismissed]);
 
+  // Yellow-by-turn flags are shown as banners, not in the priority system
+  const yellowTurnFlags = useMemo(() => {
+    return activeFlags.filter(f => f.flag_type === "yellow_turn");
+  }, [activeFlags]);
+
+  // Non-yellow-turn flags for priority display
+  const priorityFlags = useMemo(() => {
+    return activeFlags.filter(f => f.flag_type !== "yellow_turn");
+  }, [activeFlags]);
+
   // Track when targeted black flags first appear + vibrate
   useEffect(() => {
     const currentIds = new Set(activeFlags.map(f => f.id));
