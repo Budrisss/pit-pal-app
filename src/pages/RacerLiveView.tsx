@@ -115,13 +115,30 @@ const RacerLiveView = () => {
     setSessions((sessRes.data as EventSession[]) || []);
     setFlags((flagRes.data as EventFlag[]) || []);
     setAnnouncements((annRes.data as Announcement[]) || []);
-    if (regRes.data && regRes.data.length > 0) {
-      const reg = regRes.data[0] as any;
-      const rtId = reg.registration_type_id;
-      setUserRegTypeId(rtId);
-      setUserCarNumber(reg.car_number || null);
-      const { data: rtData } = await supabase.from("registration_types").select("name").eq("id", rtId).single();
+    // Determine the effective run group: prefer localStorage override, fall back to registration
+    const registeredTypeId = regRes.data && regRes.data.length > 0 ? (regRes.data[0] as any).registration_type_id : null;
+    const registeredCarNumber = regRes.data && regRes.data.length > 0 ? (regRes.data[0] as any).car_number : null;
+    
+    // Check if the user manually selected a different group in session management
+    // We need to find the personal event ID to look up localStorage
+    const { data: personalEvent } = await (supabase as any)
+      .from("events")
+      .select("id")
+      .eq("public_event_id", eventId)
+      .eq("user_id", user?.id)
+      .maybeSingle();
+    
+    const localStorageKey = personalEvent?.id ? `my-run-group-${personalEvent.id}` : null;
+    const savedRunGroup = localStorageKey ? localStorage.getItem(localStorageKey) : null;
+    const effectiveGroupId = savedRunGroup || registeredTypeId;
+    
+    if (effectiveGroupId) {
+      setUserRegTypeId(effectiveGroupId);
+      setUserCarNumber(registeredCarNumber || null);
+      const { data: rtData } = await supabase.from("registration_types").select("name").eq("id", effectiveGroupId).single();
       if (rtData) setRegTypeName(rtData.name);
+    } else if (registeredCarNumber) {
+      setUserCarNumber(registeredCarNumber);
     }
     setLoading(false);
   }, [eventId]);
