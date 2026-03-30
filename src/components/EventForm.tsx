@@ -250,7 +250,7 @@ const EventForm = ({ open, onOpenChange, onSave, editingEvent }: EventFormProps)
     }
   }, [open]);
 
-  const filteredPresetTracks = (trackSearch.length >= 2 || trackTypeFilter !== "all")
+  const allFilteredPresets = (trackSearch.length >= 2 || trackTypeFilter !== "all")
     ? presetTracks.filter(t => {
         const matchesType = trackTypeFilter === "all" || t.track_type === trackTypeFilter;
         const matchesSearch = trackSearch.length < 2 || 
@@ -258,8 +258,9 @@ const EventForm = ({ open, onOpenChange, onSave, editingEvent }: EventFormProps)
           (t.city && t.city.toLowerCase().includes(trackSearch.toLowerCase())) ||
           (t.state && t.state.toLowerCase().includes(trackSearch.toLowerCase()));
         return matchesType && matchesSearch;
-      }).slice(0, 20)
+      })
     : [];
+  const filteredPresetTracks = allFilteredPresets.slice(0, 50);
 
   return (
     <>
@@ -320,14 +321,16 @@ const EventForm = ({ open, onOpenChange, onSave, editingEvent }: EventFormProps)
                       ))}
                     </>
                   )}
-                  <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                    Preset Tracks {trackSearch.length < 2 ? "(type to search)" : `(${filteredPresetTracks.length} results)`}
+                   <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                    Preset Tracks ({presetTracks.length} total)
+                    {(trackSearch.length >= 2 || trackTypeFilter !== "all") && ` — ${allFilteredPresets.length} match${allFilteredPresets.length !== 1 ? 'es' : ''}`}
+                    {allFilteredPresets.length > 50 && ` (showing 50)`}
                   </div>
                   <div className="px-2 pb-1 space-y-1">
                     <Input
                       value={trackSearch}
                       onChange={(e) => setTrackSearch(e.target.value)}
-                      placeholder="Search 390+ tracks..."
+                      placeholder={`Search ${presetTracks.length} tracks...`}
                       className="h-8 text-xs"
                       onClick={(e) => e.stopPropagation()}
                       onKeyDown={(e) => e.stopPropagation()}
