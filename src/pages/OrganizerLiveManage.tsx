@@ -91,6 +91,8 @@ const OrganizerLiveManage = () => {
   const [blueFlagSearch, setBlueFlagSearch] = useState("");
   const [editingFlagId, setEditingFlagId] = useState<string | null>(null);
   const [editingFlagMessage, setEditingFlagMessage] = useState("");
+  const [flagHistory, setFlagHistory] = useState<EventFlag[]>([]);
+  const [expandedHistorySession, setExpandedHistorySession] = useState<string | null>(null);
 
   // Live clock
   useEffect(() => {
