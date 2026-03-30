@@ -63,6 +63,7 @@ const RacerLiveView = () => {
 
   // Black flag accept state
   const [blackFlagAccepted, setBlackFlagAccepted] = useState<string | null>(null);
+  const [blackFlagAcceptedAt, setBlackFlagAcceptedAt] = useState<number | null>(null);
   const [blackFlagReceivedAt, setBlackFlagReceivedAt] = useState<Record<string, number>>({});
   const prevFlagIdsRef = useRef<Set<string>>(new Set());
 
@@ -265,9 +266,27 @@ const RacerLiveView = () => {
   const handleAcceptBlackFlag = () => {
     if (primaryFlag && canAcceptBlackFlag) {
       setBlackFlagAccepted(primaryFlag.id);
+      setBlackFlagAcceptedAt(Date.now());
       if (navigator.vibrate) navigator.vibrate(200);
     }
   };
+
+  // Auto-dismiss accepted black flag banner after 60 seconds
+  const bannerTimeRemaining = useMemo(() => {
+    if (!isTargetedBlackFlagAccepted || !blackFlagAcceptedAt) return null;
+    const elapsed = currentTime.getTime() - blackFlagAcceptedAt;
+    const remaining = 60000 - elapsed;
+    if (remaining <= 0) return 0;
+    return Math.ceil(remaining / 1000);
+  }, [isTargetedBlackFlagAccepted, blackFlagAcceptedAt, currentTime]);
+
+  // Clear accepted state when banner timer expires
+  useEffect(() => {
+    if (bannerTimeRemaining === 0) {
+      setBlackFlagAccepted(null);
+      setBlackFlagAcceptedAt(null);
+    }
+  }, [bannerTimeRemaining]);
 
   const activeRemaining = useMemo(() => {
     if (!activeSession?.start_time || !activeSession?.duration_minutes || !eventDate) return null;
@@ -352,10 +371,11 @@ const RacerLiveView = () => {
       </div>
 
       {/* Accepted targeted black flag banner */}
-      {isTargetedBlackFlagAccepted && targetedBlackFlag && (
+      {isTargetedBlackFlagAccepted && targetedBlackFlag && bannerTimeRemaining != null && bannerTimeRemaining > 0 && (
         <motion.div
           initial={{ height: 0, opacity: 0 }}
           animate={{ height: "auto", opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
           className="bg-black border-b-2 border-red-600 px-4 py-2.5 shrink-0 flex items-center justify-between"
         >
           <div className="flex items-center gap-2">
@@ -369,11 +389,14 @@ const RacerLiveView = () => {
               )}
             </div>
           </div>
-          {userCarNumber && (
-            <Badge className="bg-red-600 text-white font-mono font-bold text-sm">
-              #{userCarNumber}
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono text-white/40">{bannerTimeRemaining}s</span>
+            {userCarNumber && (
+              <Badge className="bg-red-600 text-white font-mono font-bold text-sm">
+                #{userCarNumber}
+              </Badge>
+            )}
+          </div>
         </motion.div>
       )}
 
