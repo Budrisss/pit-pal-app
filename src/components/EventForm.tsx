@@ -246,6 +246,7 @@ const EventForm = ({ open, onOpenChange, onSave, editingEvent }: EventFormProps)
     if (open) {
       fetchTracks();
       setTrackSearch("");
+      setTrackTypeFilter("all");
     }
   }, [open]);
 
