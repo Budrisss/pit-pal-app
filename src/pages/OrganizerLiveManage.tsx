@@ -47,6 +47,7 @@ interface EventFlag {
   target_user_id: string | null;
   is_active: boolean;
   created_at: string;
+  session_id: string | null;
 }
 
 interface EventRegistrationWithCar {
