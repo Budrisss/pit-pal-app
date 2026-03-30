@@ -53,45 +53,53 @@ const OrganizerSettings = () => {
   const [website, setWebsite] = useState("");
   const [description, setDescription] = useState("");
 
-  // Event Defaults (localStorage)
-  const [defaultDuration, setDefaultDuration] = useState(() =>
-    localStorage.getItem("org_default_duration") || "20"
-  );
-  const [defaultRegTypes, setDefaultRegTypes] = useState(() =>
-    localStorage.getItem("org_default_reg_types") || "Beginner\nIntermediate\nAdvanced"
-  );
+  // Event Defaults
+  const [defaultDuration, setDefaultDuration] = useState("20");
+  const [defaultRegTypes, setDefaultRegTypes] = useState("Beginner\nIntermediate\nAdvanced");
 
-  // Notification Preferences (localStorage)
-  const [notifNewReg, setNotifNewReg] = useState(() =>
-    localStorage.getItem("org_notif_new_reg") !== "false"
-  );
-  const [notifCancelReg, setNotifCancelReg] = useState(() =>
-    localStorage.getItem("org_notif_cancel_reg") !== "false"
-  );
-  const [notifSessionReminder, setNotifSessionReminder] = useState(() =>
-    localStorage.getItem("org_notif_session_reminder") !== "false"
-  );
-  const [notifAnnouncement, setNotifAnnouncement] = useState(() =>
-    localStorage.getItem("org_notif_announcement") === "true"
-  );
+  // Notification Preferences
+  const [notifNewReg, setNotifNewReg] = useState(true);
+  const [notifCancelReg, setNotifCancelReg] = useState(true);
+  const [notifSessionReminder, setNotifSessionReminder] = useState(true);
+  const [notifAnnouncement, setNotifAnnouncement] = useState(false);
+
+  const [savingSettings, setSavingSettings] = useState(false);
 
   useEffect(() => {
     if (!organizerProfileId) return;
-    supabase
+
+    // Fetch profile and settings in parallel
+    const fetchProfile = supabase
       .from("organizer_profiles")
       .select("id, org_name, contact_email, phone, website, description")
       .eq("id", organizerProfileId)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) {
-          setProfile(data);
-          setOrgName(data.org_name);
-          setContactEmail(data.contact_email);
-          setPhone(data.phone || "");
-          setWebsite(data.website || "");
-          setDescription(data.description || "");
-        }
-      });
+      .maybeSingle();
+
+    const fetchSettings = supabase
+      .from("organizer_settings" as any)
+      .select("*")
+      .eq("organizer_profile_id", organizerProfileId)
+      .maybeSingle();
+
+    Promise.all([fetchProfile, fetchSettings]).then(([profileRes, settingsRes]) => {
+      if (profileRes.data) {
+        setProfile(profileRes.data);
+        setOrgName(profileRes.data.org_name);
+        setContactEmail(profileRes.data.contact_email);
+        setPhone(profileRes.data.phone || "");
+        setWebsite(profileRes.data.website || "");
+        setDescription(profileRes.data.description || "");
+      }
+      if (settingsRes.data) {
+        const s = settingsRes.data as any;
+        setDefaultDuration(String(s.default_session_duration));
+        setDefaultRegTypes(s.default_reg_types);
+        setNotifNewReg(s.notif_new_registration);
+        setNotifCancelReg(s.notif_cancel_registration);
+        setNotifSessionReminder(s.notif_session_reminder);
+        setNotifAnnouncement(s.notif_announcement_confirm);
+      }
+    });
   }, [organizerProfileId]);
 
   const handleSaveProfile = async () => {
