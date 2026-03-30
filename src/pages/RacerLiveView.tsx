@@ -248,10 +248,17 @@ const RacerLiveView = () => {
         <Button variant="ghost" size="icon" className="text-white/60 hover:text-white h-8 w-8" onClick={() => navigate(-1)}>
           <ArrowLeft size={18} />
         </Button>
-        <span className="text-sm font-semibold truncate max-w-[60%]">{eventName}</span>
-        <span className="text-sm font-mono text-white/60">
-          {currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-        </span>
+        <span className="text-sm font-semibold truncate max-w-[40%]">{eventName}</span>
+        <div className="flex items-center gap-2">
+          {userCarNumber && (
+            <Badge className="bg-primary text-primary-foreground font-mono font-bold text-sm px-2 py-0.5">
+              #{userCarNumber}
+            </Badge>
+          )}
+          <span className="text-sm font-mono text-white/60">
+            {currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+          </span>
+        </div>
       </div>
 
       {/* Flag Zone - dominant area */}
