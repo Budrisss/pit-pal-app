@@ -34,7 +34,18 @@ interface Track {
   city: string;
   state: string;
   isPreset?: boolean;
+  track_type?: string;
 }
+
+const TRACK_TYPE_LABELS: Record<string, string> = {
+  road: "Road Course",
+  oval: "Oval",
+  drag: "Drag Strip",
+  dirt: "Dirt Track",
+  kart: "Karting",
+  street: "Street Circuit",
+  rally: "Rally",
+};
 
 const EventForm = ({ open, onOpenChange, onSave, editingEvent }: EventFormProps) => {
   const { cars, getCarDisplayName } = useCars();
@@ -51,6 +62,7 @@ const EventForm = ({ open, onOpenChange, onSave, editingEvent }: EventFormProps)
   const [presetTracks, setPresetTracks] = useState<Track[]>([]);
   const [isLoadingTracks, setIsLoadingTracks] = useState(false);
   const [trackSearch, setTrackSearch] = useState("");
+  const [trackTypeFilter, setTrackTypeFilter] = useState<string>("all");
   const [selectedTrackId, setSelectedTrackId] = useState<string>("");
   const [selectedCarId, setSelectedCarId] = useState<string>("");
   const [comboboxOpen, setComboboxOpen] = useState(false);
@@ -219,11 +231,11 @@ const EventForm = ({ open, onOpenChange, onSave, editingEvent }: EventFormProps)
       try {
         const [userRes, presetRes] = await Promise.all([
           supabase.from('tracks').select('id, name, address, city, state').order('name'),
-          supabase.from('preset_tracks').select('id, name, address, city, state').order('name'),
+          supabase.from('preset_tracks').select('id, name, address, city, state, track_type').order('name'),
         ]);
         
         if (!userRes.error) setTracks(userRes.data || []);
-        if (!presetRes.error) setPresetTracks((presetRes.data || []).map(t => ({ ...t, isPreset: true })));
+        if (!presetRes.error) setPresetTracks((presetRes.data || []).map((t: any) => ({ ...t, isPreset: true })));
       } catch (error) {
         console.error('Error fetching tracks:', error);
       } finally {
@@ -237,12 +249,15 @@ const EventForm = ({ open, onOpenChange, onSave, editingEvent }: EventFormProps)
     }
   }, [open]);
 
-  const filteredPresetTracks = trackSearch.length >= 2
-    ? presetTracks.filter(t => 
-        t.name.toLowerCase().includes(trackSearch.toLowerCase()) ||
-        (t.city && t.city.toLowerCase().includes(trackSearch.toLowerCase())) ||
-        (t.state && t.state.toLowerCase().includes(trackSearch.toLowerCase()))
-      ).slice(0, 20)
+  const filteredPresetTracks = (trackSearch.length >= 2 || trackTypeFilter !== "all")
+    ? presetTracks.filter(t => {
+        const matchesType = trackTypeFilter === "all" || t.track_type === trackTypeFilter;
+        const matchesSearch = trackSearch.length < 2 || 
+          t.name.toLowerCase().includes(trackSearch.toLowerCase()) ||
+          (t.city && t.city.toLowerCase().includes(trackSearch.toLowerCase())) ||
+          (t.state && t.state.toLowerCase().includes(trackSearch.toLowerCase()));
+        return matchesType && matchesSearch;
+      }).slice(0, 20)
     : [];
 
   return (
@@ -307,7 +322,7 @@ const EventForm = ({ open, onOpenChange, onSave, editingEvent }: EventFormProps)
                   <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
                     Preset Tracks {trackSearch.length < 2 ? "(type to search)" : `(${filteredPresetTracks.length} results)`}
                   </div>
-                  <div className="px-2 pb-1">
+                  <div className="px-2 pb-1 space-y-1">
                     <Input
                       value={trackSearch}
                       onChange={(e) => setTrackSearch(e.target.value)}
@@ -316,10 +331,29 @@ const EventForm = ({ open, onOpenChange, onSave, editingEvent }: EventFormProps)
                       onClick={(e) => e.stopPropagation()}
                       onKeyDown={(e) => e.stopPropagation()}
                     />
+                    <div className="flex flex-wrap gap-1">
+                      {[{ value: "all", label: "All" }, ...Object.entries(TRACK_TYPE_LABELS).map(([value, label]) => ({ value, label }))].map(({ value, label }) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setTrackTypeFilter(value); }}
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-medium border transition-colors ${
+                            trackTypeFilter === value
+                              ? 'bg-primary text-primary-foreground border-primary'
+                              : 'bg-background text-muted-foreground border-border hover:border-primary/50'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                   {filteredPresetTracks.map((track) => (
                     <SelectItem key={`preset-${track.id}`} value={`preset-${track.id}`}>
-                      {track.name} - {track.city}, {track.state}
+                      <span>{track.name} - {track.city}, {track.state}</span>
+                      {track.track_type && (
+                        <span className="ml-1 text-[10px] text-muted-foreground">({TRACK_TYPE_LABELS[track.track_type] || track.track_type})</span>
+                      )}
                     </SelectItem>
                   ))}
                 </SelectContent>
