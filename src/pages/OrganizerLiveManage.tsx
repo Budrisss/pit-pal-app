@@ -998,6 +998,67 @@ const OrganizerLiveManage = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Blue Flag Dialog */}
+      <Dialog open={showBlueFlagDialog} onOpenChange={setShowBlueFlagDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">🔵 Blue Flag — Faster Traffic</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Target Driver (optional)</Label>
+              <Input
+                value={blueFlagSearch}
+                onChange={e => setBlueFlagSearch(e.target.value)}
+                placeholder="Search by name or car #"
+                className="text-sm mb-2"
+              />
+              <div className="max-h-40 overflow-y-auto space-y-1 border rounded-lg p-2">
+                <div
+                  className={`flex items-center gap-2 p-2 rounded cursor-pointer text-sm ${blueFlagTarget === "all" ? "bg-blue-500/20 border border-blue-500/40" : "hover:bg-muted/50"}`}
+                  onClick={() => setBlueFlagTarget("all")}
+                >
+                  <span className="font-medium">All Drivers</span>
+                </div>
+                {registrations
+                  .filter(r => {
+                    if (!blueFlagSearch) return true;
+                    const s = blueFlagSearch.toLowerCase();
+                    return r.user_name.toLowerCase().includes(s) || (r.car_number?.toString() || "").includes(s);
+                  })
+                  .map(r => (
+                    <div
+                      key={r.user_id}
+                      className={`flex items-center gap-2 p-2 rounded cursor-pointer text-sm ${blueFlagTarget === r.user_id ? "bg-blue-500/20 border border-blue-500/40" : "hover:bg-muted/50"}`}
+                      onClick={() => setBlueFlagTarget(r.user_id)}
+                    >
+                      {r.car_number && <Badge variant="outline" className="font-mono text-[10px]">#{r.car_number}</Badge>}
+                      <span>{r.user_name}</span>
+                    </div>
+                  ))
+                }
+              </div>
+              <p className="text-[10px] text-muted-foreground">Blue flag indicates faster traffic approaching. Shown as a banner alongside the current track flag.</p>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm">Message (optional)</Label>
+              <Input
+                value={blueFlagMessage}
+                onChange={e => setBlueFlagMessage(e.target.value)}
+                placeholder="e.g. Faster car approaching, yield on straight"
+                className="text-sm"
+              />
+            </div>
+            <Button
+              onClick={handleSendBlueFlag}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold"
+            >
+              🔵 Send Blue Flag
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Navigation />
     </div>
   );
