@@ -1,30 +1,30 @@
 
 
-## Plan: Cancel Registration When Deleting a Registered Event
+## Plan: Distinguish Global vs Local Flags in Active Flags List
 
-When a user deletes a personal event that was created from a public event registration, prompt them to also cancel their registration. If confirmed, delete their `event_registrations` record so they are removed from the participant list and run groups.
+### What Changes
 
-### Changes
+Restructure the Active Flags section into two clearly labeled groups with visual distinction:
 
-**1. `src/contexts/EventsContext.tsx`**
-- Update `deleteEvent` to accept an optional `cancelRegistration: boolean` parameter
-- Before deleting the event, look up the event's `public_event_id`
-- If `cancelRegistration` is true and `public_event_id` exists, delete the matching row from `event_registrations` (matching `event_id = public_event_id` and `user_id`)
-- Then proceed with the normal event deletion
+1. **"Track Status" section** — for global flags (green, yellow, red, black, white, checkered)
+   - Header: "🏁 Track Status" with a subtle label like "Replaces previous"
+   - Keep existing styling but add a section header with a muted description explaining these override each other
 
-**2. `src/components/EventCard.tsx`**
-- In the delete flow, check if the event `isRegistered` (or has a `publicEventId`)
-- If it's a registered event, show a modified confirmation dialog that asks "This event is linked to a registration. Do you also want to cancel your registration?" with options: "Delete & Cancel Registration", "Delete Only", "Cancel"
-- Pass the appropriate flag to `deleteEvent`
+2. **"Local Cautions" section** — for stackable flags (yellow_turn, blue)
+   - Header: "⚠️ Local Cautions" with label "These stack — won't be cleared by track status changes"
+   - Group the existing yellow_turn and blue flag blocks under this header
+   - Add a "Clear All Local" button specific to this section
 
-**3. `src/pages/EventDetails.tsx`**
-- Apply the same registration-cancellation prompt in the delete handler if the event has a `public_event_id`
+### File: `src/pages/OrganizerLiveManage.tsx` (lines ~622-674)
 
-### Data Flow
-- `EventCard` already receives `isRegistered` prop and the event `id`
-- Need to also pass `publicEventId` to `EventCard` so it can be forwarded to the context
-- The context's `deleteEvent` will query the event record to get `public_event_id`, then conditionally delete from `event_registrations`
+- Replace the single "Active Flags" header with two sub-sections
+- **Track Status** block: wraps the global flags list (lines 630-646) with its own header, bordered container, and a subtle "only one active at a time" note
+- **Local Cautions** block: wraps yellow_turn + blue sections (lines 647-672) with its own header, bordered container, and a "stacks with track status" note
+- Keep "Clear All" at top level; optionally add per-section clear buttons
+- Add `Badge` labels: `<Badge variant="outline">Replaces</Badge>` on global flags, `<Badge variant="outline">Stacks</Badge>` on local cautions
 
-### No Database Changes Required
-The `event_registrations` table already has an RLS policy allowing users to delete their own registrations (`user_id = auth.uid()`).
+### Visual Design
+- Global section: darker muted background, single-flag emphasis
+- Local section: slightly highlighted border (amber/blue gradient border), shows stacking nature
+- Small descriptive text under each section header explaining behavior
 
