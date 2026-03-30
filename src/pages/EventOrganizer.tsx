@@ -175,13 +175,15 @@ const SessionsEditor = ({
   sessions,
   onChange,
   registrationTypes,
+  defaultDuration = null,
 }: {
   sessions: EventSession[];
   onChange: (sessions: EventSession[]) => void;
   registrationTypes: RegistrationType[];
+  defaultDuration?: number | null;
 }) => {
   const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
-  const addSession = () => onChange([...sessions, { ...emptySession(), sort_order: sessions.length }]);
+  const addSession = () => onChange([...sessions, { ...emptySession(), duration_minutes: defaultDuration, sort_order: sessions.length }]);
   const removeSession = (i: number) => onChange(sessions.filter((_, idx) => idx !== i));
   const updateSession = (i: number, field: keyof EventSession, value: any) => {
     const updated = [...sessions];
