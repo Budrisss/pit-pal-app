@@ -1,24 +1,45 @@
 
 
-## Fix: Show Next Session Countdown Alongside Active Session
+## Organizer Settings Page
 
-### Problem
-The next session countdown banner (orange/red) is conditionally rendered with `!activeSession &&`, so it only appears when no session is active. During an active session, the organizer cannot see when the next session starts.
+### Overview
+When in organizer mode, the `/settings` route will show an organizer-specific settings page instead of the user settings. The existing user settings remain untouched for non-organizer mode.
 
-### Change
+### Architecture
+Modify `Settings.tsx` to check `isOrganizerMode` from `OrganizerModeContext`. If true, render an `OrganizerSettings` component; if false, render the current user settings as-is.
 
-**`src/pages/OrganizerLiveManage.tsx`**
+### New Component: `src/pages/OrganizerSettings.tsx`
 
-Remove the `!activeSession &&` guard from the next countdown block (line 363), so both the active session remaining time (green) and the next session countdown (orange/red) display simultaneously.
+**1. Organization Profile Card**
+- Editable fields: org name, contact email, phone, website, description
+- Pre-populated from `organizer_profiles` table
+- Save button updates the row in `organizer_profiles`
 
-Change:
-```tsx
-{!activeSession && nextCountdown && (
-```
-To:
-```tsx
-{nextCountdown && (
-```
+**2. Event Defaults Card**
+- Default session duration (dropdown: 15/20/25/30 min)
+- Default registration types template (text list)
+- These will be stored in `localStorage` for now (no new table needed), with a note that they can be persisted later
 
-Also update the "no more sessions" fallback (line 392) from `!activeSession && !nextCountdown` to just `!nextCountdown` so it still shows when everything is done.
+**3. Notification Preferences Card**
+- Toggle switches for: New registrations, Registration cancellations, Session reminders, Announcement delivery confirmations
+- Stored in `localStorage` for now
+
+**4. Staff / Co-organizers Card**
+- Display placeholder UI showing "Coming Soon" badge
+- Shows concept of invite-by-email and role assignment (read-only, full access)
+- No database changes needed yet
+
+**5. Account Card**
+- Shows signed-in email
+- Log Out button
+
+### Changes
+
+| File | Change |
+|---|---|
+| `src/pages/OrganizerSettings.tsx` | New file with all 5 cards above |
+| `src/pages/Settings.tsx` | Import `useOrganizerMode`, conditionally render `OrganizerSettings` when `isOrganizerMode` is true |
+
+### No database changes required
+All organizer profile fields already exist in `organizer_profiles`. Event defaults and notification prefs use localStorage for now.
 
