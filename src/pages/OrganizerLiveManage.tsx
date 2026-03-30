@@ -565,7 +565,7 @@ const OrganizerLiveManage = () => {
             <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white text-xs h-10" onClick={() => handleSendFlag("red")}>
               🔴 Red
             </Button>
-            <Button size="sm" className="bg-gray-900 hover:bg-black text-white text-xs h-10 border border-white/20" onClick={() => handleSendFlag("black")}>
+            <Button size="sm" className="bg-gray-900 hover:bg-black text-white text-xs h-10 border border-white/20" onClick={() => setShowBlackFlagDialog(true)}>
               🏴 Black
             </Button>
             <Button size="sm" className="bg-white hover:bg-gray-100 text-black text-xs h-10 border" onClick={() => handleSendFlag("white")}>
