@@ -296,28 +296,28 @@ const OrganizerSettings = () => {
                 <p className="text-foreground">New Registrations</p>
                 <p className="text-xs text-muted-foreground">Alert when a driver registers</p>
               </div>
-              <Switch checked={notifNewReg} onCheckedChange={(v) => handleToggleNotif("org_notif_new_reg", v, setNotifNewReg)} />
+              <Switch checked={notifNewReg} onCheckedChange={(v) => handleToggleNotif(v, setNotifNewReg)} />
             </div>
             <div className="flex justify-between items-center">
               <div>
                 <p className="text-foreground">Registration Cancellations</p>
                 <p className="text-xs text-muted-foreground">Alert when a driver cancels</p>
               </div>
-              <Switch checked={notifCancelReg} onCheckedChange={(v) => handleToggleNotif("org_notif_cancel_reg", v, setNotifCancelReg)} />
+              <Switch checked={notifCancelReg} onCheckedChange={(v) => handleToggleNotif(v, setNotifCancelReg)} />
             </div>
             <div className="flex justify-between items-center">
               <div>
                 <p className="text-foreground">Session Reminders</p>
                 <p className="text-xs text-muted-foreground">Remind before sessions start</p>
               </div>
-              <Switch checked={notifSessionReminder} onCheckedChange={(v) => handleToggleNotif("org_notif_session_reminder", v, setNotifSessionReminder)} />
+              <Switch checked={notifSessionReminder} onCheckedChange={(v) => handleToggleNotif(v, setNotifSessionReminder)} />
             </div>
             <div className="flex justify-between items-center">
               <div>
                 <p className="text-foreground">Announcement Confirmations</p>
                 <p className="text-xs text-muted-foreground">Confirm when announcements are delivered</p>
               </div>
-              <Switch checked={notifAnnouncement} onCheckedChange={(v) => handleToggleNotif("org_notif_announcement", v, setNotifAnnouncement)} />
+              <Switch checked={notifAnnouncement} onCheckedChange={(v) => handleToggleNotif(v, setNotifAnnouncement)} />
             </div>
           </CardContent>
         </Card>
