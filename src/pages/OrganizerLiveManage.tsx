@@ -80,12 +80,13 @@ const OrganizerLiveManage = () => {
     if (!eventId) return;
     setLoading(true);
     try {
-      const [eventRes, sessRes, regTypesRes, annRes, regsRes] = await Promise.all([
+      const [eventRes, sessRes, regTypesRes, annRes, regsRes, flagsRes] = await Promise.all([
         supabase.from("public_events").select("name, organizer_id, date").eq("id", eventId).single(),
         supabase.from("public_event_sessions").select("*").eq("event_id", eventId).order("sort_order"),
         supabase.from("registration_types").select("id, name").eq("event_id", eventId),
         supabase.from("event_announcements").select("id, message, created_at").eq("event_id", eventId).order("created_at", { ascending: false }),
         supabase.from("event_registrations").select("id").eq("event_id", eventId),
+        supabase.from("event_flags").select("*").eq("event_id", eventId).eq("is_active", true),
       ]);
 
       if (eventRes.data) {
@@ -105,6 +106,7 @@ const OrganizerLiveManage = () => {
       setRegistrationTypes((regTypesRes.data as RegistrationType[]) || []);
       setAnnouncements((annRes.data as Announcement[]) || []);
       setTotalRegistrations(regsRes.data?.length || 0);
+      setActiveFlags((flagsRes.data as EventFlag[]) || []);
     } catch (err) {
       console.error(err);
     } finally {
