@@ -84,6 +84,10 @@ const OrganizerLiveManage = () => {
   const [showYellowFlagDialog, setShowYellowFlagDialog] = useState(false);
   const [yellowFlagTurns, setYellowFlagTurns] = useState("");
   const [yellowFlagMessage, setYellowFlagMessage] = useState("");
+  const [showBlueFlagDialog, setShowBlueFlagDialog] = useState(false);
+  const [blueFlagTarget, setBlueFlagTarget] = useState<string>("all");
+  const [blueFlagMessage, setBlueFlagMessage] = useState("");
+  const [blueFlagSearch, setBlueFlagSearch] = useState("");
 
   // Live clock
   useEffect(() => {
