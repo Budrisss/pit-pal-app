@@ -447,7 +447,59 @@ const OrganizerLiveManage = () => {
           </div>
         )}
 
-        {/* Announcements */}
+        {/* Flag Control Panel */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="mb-6"
+        >
+          <h2 className="font-semibold flex items-center gap-2 mb-3">
+            <Flag size={16} className="text-primary" /> Flag Control
+          </h2>
+          {activeFlags.length > 0 && (
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
+              <span className="text-xs text-muted-foreground">Active:</span>
+              {activeFlags.map(f => (
+                <Badge key={f.id} variant="outline" className="text-xs">
+                  {f.flag_type.toUpperCase()} {f.message && `— ${f.message}`}
+                </Badge>
+              ))}
+              <Button variant="ghost" size="sm" className="text-xs h-6" onClick={handleClearFlags}>
+                Clear All
+              </Button>
+            </div>
+          )}
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-3">
+            <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white text-xs h-10" onClick={() => handleSendFlag("green")}>
+              🟢 Green
+            </Button>
+            <Button size="sm" className="bg-yellow-500 hover:bg-yellow-600 text-black text-xs h-10" onClick={() => handleSendFlag("yellow")}>
+              ⚠️ Yellow
+            </Button>
+            <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white text-xs h-10" onClick={() => handleSendFlag("red")}>
+              🔴 Red
+            </Button>
+            <Button size="sm" className="bg-gray-900 hover:bg-black text-white text-xs h-10 border border-white/20" onClick={() => handleSendFlag("black")}>
+              🏴 Black
+            </Button>
+            <Button size="sm" className="bg-white hover:bg-gray-100 text-black text-xs h-10 border" onClick={() => handleSendFlag("white")}>
+              🏳️ White
+            </Button>
+            <Button size="sm" className="bg-gray-800 hover:bg-gray-900 text-white text-xs h-10 border border-white/20" onClick={() => handleSendFlag("checkered")}>
+              🏁 Finish
+            </Button>
+          </div>
+          <Input
+            value={flagMessage}
+            onChange={(e) => setFlagMessage(e.target.value)}
+            placeholder="Optional message (e.g. 'Turn 5', 'Car #42')"
+            className="text-sm"
+          />
+        </motion.div>
+
+        <Separator className="mb-6" />
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
