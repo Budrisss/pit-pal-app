@@ -1100,9 +1100,9 @@ const LocalEvents = () => {
                       })}
                     </SelectContent>
                   </Select>
-                  {selectedRegTypeId && userRegistrations.has(selectedRegTypeId) && (
-                    <p className="text-xs text-destructive mt-1">
-                      ⚠️ You're already registered for this group. Select a different group or cancel your existing registration first.
+                  {selectedRegTypeId && [...userRegistrations].some(k => k.startsWith(selectedRegTypeId + '_')) && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      ℹ️ You have an existing registration for this group. You can register again with a different car number.
                     </p>
                   )}
                 </div>
