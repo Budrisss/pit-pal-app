@@ -47,7 +47,7 @@ const MyRegistrations = () => {
       setLoading(true);
       const { data: regs } = await supabase
         .from("event_registrations")
-        .select("id, event_id, registration_type_id, user_name, created_at")
+        .select("id, event_id, registration_type_id, user_name, car_number, car_id, created_at")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
