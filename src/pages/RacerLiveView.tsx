@@ -204,13 +204,30 @@ const RacerLiveView = () => {
 
   const isTargetedBlackFlagAccepted = targetedBlackFlag && blackFlagAccepted === targetedBlackFlag.id;
 
+  // Session timing (moved before primaryFlag so activeSession is available)
+  const sessionStates = useMemo(() => {
+    if (!eventDate) return [];
+    const now = currentTime;
+    const evDate = parseISO(eventDate);
+    return sessions.map(s => {
+      if (!s.start_time || !s.duration_minutes) return { ...s, state: "upcoming" as const };
+      const [h, m] = s.start_time.split(":").map(Number);
+      const start = new Date(evDate); start.setHours(h, m, 0, 0);
+      const end = addMinutes(start, s.duration_minutes);
+      if (isAfter(now, end)) return { ...s, state: "completed" as const };
+      if (isAfter(now, start) && isBefore(now, end)) return { ...s, state: "active" as const };
+      return { ...s, state: "upcoming" as const };
+    });
+  }, [sessions, eventDate, currentTime]);
+
+  const activeSession = sessionStates.find(s => s.state === "active");
+
   // Determine the highest-priority flag to display (excluding accepted targeted black flags)
   const priorityOrder = ["red", "black", "checkered", "yellow", "white", "green"];
   const primaryFlag = useMemo(() => {
     for (const type of priorityOrder) {
       const flag = activeFlags.find(f => {
         if (f.flag_type !== type) return false;
-        // Skip accepted targeted black flags from full-screen display
         if (f.flag_type === "black" && f.target_user_id === user?.id && blackFlagAccepted === f.id) return false;
         return true;
       });
@@ -252,23 +269,6 @@ const RacerLiveView = () => {
     }
   };
 
-  // Session timing
-  const sessionStates = useMemo(() => {
-    if (!eventDate) return [];
-    const now = currentTime;
-    const evDate = parseISO(eventDate);
-    return sessions.map(s => {
-      if (!s.start_time || !s.duration_minutes) return { ...s, state: "upcoming" as const };
-      const [h, m] = s.start_time.split(":").map(Number);
-      const start = new Date(evDate); start.setHours(h, m, 0, 0);
-      const end = addMinutes(start, s.duration_minutes);
-      if (isAfter(now, end)) return { ...s, state: "completed" as const };
-      if (isAfter(now, start) && isBefore(now, end)) return { ...s, state: "active" as const };
-      return { ...s, state: "upcoming" as const };
-    });
-  }, [sessions, eventDate, currentTime]);
-
-  const activeSession = sessionStates.find(s => s.state === "active");
   const activeRemaining = useMemo(() => {
     if (!activeSession?.start_time || !activeSession?.duration_minutes || !eventDate) return null;
     const evDate = parseISO(eventDate);
