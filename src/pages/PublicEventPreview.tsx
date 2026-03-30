@@ -134,17 +134,17 @@ const PublicEventPreview = () => {
     fetchAll();
   }, [id]);
 
-  // Fetch user's registrations for this event
+  // Fetch user's registrations for this event (track regTypeId + carNumber combos)
   useEffect(() => {
     if (!user || !id) return;
     const fetchUserRegs = async () => {
       const { data } = await supabase
         .from("event_registrations")
-        .select("registration_type_id")
+        .select("registration_type_id, car_number")
         .eq("event_id", id)
         .eq("user_id", user.id);
       if (data) {
-        setUserRegistrations(new Set(data.map((r: any) => r.registration_type_id)));
+        setUserRegistrations(new Set(data.map((r: any) => `${r.registration_type_id}_${r.car_number}`)));
       }
     };
     fetchUserRegs();
