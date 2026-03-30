@@ -84,7 +84,7 @@ const PublicEventPreview = () => {
   // Registration state
   const [showRegDialog, setShowRegDialog] = useState(false);
   const [selectedRegTypeId, setSelectedRegTypeId] = useState<string>("");
-  const [regForm, setRegForm] = useState({ name: "", email: "", phone: "", notes: "", carNumber: "" });
+  const [regForm, setRegForm] = useState({ name: "", email: "", phone: "", notes: "", carNumber: "", carId: "" });
   const [registering, setRegistering] = useState(false);
   const [userRegistrations, setUserRegistrations] = useState<Set<string>>(new Set());
 
