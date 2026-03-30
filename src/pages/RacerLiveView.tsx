@@ -35,7 +35,8 @@ interface EventSession {
 
 const FLAG_CONFIG: Record<string, { bg: string; text: string; label: string; textColor: string }> = {
   green: { bg: "bg-green-500", text: "GREEN", label: "Track Clear", textColor: "text-white" },
-  yellow: { bg: "bg-yellow-400", text: "YELLOW", label: "CAUTION", textColor: "text-black" },
+  yellow: { bg: "bg-yellow-400", text: "YELLOW", label: "FULL COURSE CAUTION", textColor: "text-black" },
+  yellow_turn: { bg: "bg-yellow-400", text: "YELLOW", label: "LOCAL CAUTION", textColor: "text-black" },
   red: { bg: "bg-red-600", text: "RED", label: "STOP — SESSION HALTED", textColor: "text-white" },
   black: { bg: "bg-black", text: "BLACK FLAG", label: "PIT IN IMMEDIATELY", textColor: "text-white" },
   white: { bg: "bg-white border-2 border-gray-300", text: "WHITE", label: "Slow Vehicle Ahead", textColor: "text-black" },
@@ -164,6 +165,16 @@ const RacerLiveView = () => {
     });
   }, [flags, user?.id, blackFlagDismissed]);
 
+  // Yellow-by-turn flags are shown as banners, not in the priority system
+  const yellowTurnFlags = useMemo(() => {
+    return activeFlags.filter(f => f.flag_type === "yellow_turn");
+  }, [activeFlags]);
+
+  // Non-yellow-turn flags for priority display
+  const priorityFlags = useMemo(() => {
+    return activeFlags.filter(f => f.flag_type !== "yellow_turn");
+  }, [activeFlags]);
+
   // Track when targeted black flags first appear + vibrate
   useEffect(() => {
     const currentIds = new Set(activeFlags.map(f => f.id));
@@ -241,14 +252,14 @@ const RacerLiveView = () => {
   const priorityOrder = ["red", "black", "checkered", "yellow", "white", "green"];
   const primaryFlag = useMemo(() => {
     for (const type of priorityOrder) {
-      const flag = activeFlags.find(f => {
+      const flag = priorityFlags.find(f => {
         if (f.flag_type !== type) return false;
         if (f.flag_type === "black" && f.target_user_id === user?.id && blackFlagAccepted === f.id) return false;
         return true;
       });
       if (flag) return flag;
     }
-    const fallback = activeFlags.find(f => {
+    const fallback = priorityFlags.find(f => {
       if (f.flag_type === "black" && f.target_user_id === user?.id && blackFlagAccepted === f.id) return false;
       return true;
     });
@@ -258,7 +269,7 @@ const RacerLiveView = () => {
       return { id: "synthetic-green", flag_type: "green", message: null, target_user_id: null, is_active: true, created_at: "" } as EventFlag;
     }
     return null;
-  }, [activeFlags, blackFlagAccepted, user?.id, activeSession]);
+  }, [priorityFlags, blackFlagAccepted, user?.id, activeSession]);
 
   // Is the current primary flag a targeted black flag that needs the accept UI?
   const isTargetedBlackFlagFullScreen = primaryFlag?.flag_type === "black" && primaryFlag?.target_user_id === user?.id;
@@ -427,6 +438,41 @@ const RacerLiveView = () => {
             )}
           </div>
         </motion.div>
+      )}
+
+      {/* Yellow by Turn banners - shown alongside current flag */}
+      {yellowTurnFlags.length > 0 && (
+        <div className="shrink-0">
+          {yellowTurnFlags.map(f => (
+            <motion.div
+              key={f.id}
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              className="bg-yellow-400 border-b border-yellow-600 px-4 py-2 flex items-center justify-between"
+            >
+              <div className="flex items-center gap-2">
+                <motion.span
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ repeat: Infinity, duration: 1.5 }}
+                  className="text-lg"
+                >
+                  ⚠️
+                </motion.span>
+                <div>
+                  <p className="text-sm font-black text-black uppercase tracking-wider">
+                    LOCAL YELLOW
+                  </p>
+                  {f.message && (
+                    <p className="text-xs text-black/70 font-semibold">{f.message}</p>
+                  )}
+                </div>
+              </div>
+              <Badge className="bg-black/20 text-black font-bold text-xs border-0">
+                CAUTION
+              </Badge>
+            </motion.div>
+          ))}
+        </div>
       )}
 
       {/* Flag Zone - dominant area */}

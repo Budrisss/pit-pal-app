@@ -81,6 +81,9 @@ const OrganizerLiveManage = () => {
   const [blackFlagMessage, setBlackFlagMessage] = useState("");
   const [registrations, setRegistrations] = useState<EventRegistrationWithCar[]>([]);
   const [blackFlagSearch, setBlackFlagSearch] = useState("");
+  const [showYellowFlagDialog, setShowYellowFlagDialog] = useState(false);
+  const [yellowFlagTurns, setYellowFlagTurns] = useState("");
+  const [yellowFlagMessage, setYellowFlagMessage] = useState("");
 
   // Live clock
   useEffect(() => {
@@ -257,8 +260,8 @@ const OrganizerLiveManage = () => {
 
   const handleSendFlag = async (flagType: string) => {
     if (!eventId || !organizerProfileId) return;
-    // Deactivate existing flags of same type
-    await supabase.from("event_flags").update({ is_active: false }).eq("event_id", eventId).eq("is_active", true);
+    // Deactivate all existing flags (except local yellows which are managed separately)
+    await supabase.from("event_flags").update({ is_active: false }).eq("event_id", eventId).eq("is_active", true).neq("flag_type", "yellow_turn");
     // Insert new flag
     const { error } = await supabase.from("event_flags").insert({
       event_id: eventId,
@@ -273,6 +276,32 @@ const OrganizerLiveManage = () => {
       setFlagMessage("");
       toast({ title: `${flagType.toUpperCase()} flag sent!` });
     }
+  };
+
+  const handleSendYellowByTurn = async () => {
+    if (!eventId || !organizerProfileId || !yellowFlagTurns.trim()) return;
+    const turnMsg = `Turn ${yellowFlagTurns.trim()}`;
+    const fullMessage = [turnMsg, yellowFlagMessage.trim()].filter(Boolean).join(" — ");
+    const { error } = await supabase.from("event_flags").insert({
+      event_id: eventId,
+      organizer_id: organizerProfileId,
+      flag_type: "yellow_turn",
+      message: fullMessage,
+      is_active: true,
+    });
+    if (error) {
+      toast({ title: "Failed to send yellow flag", variant: "destructive" });
+    } else {
+      toast({ title: `⚠️ Yellow flag sent for Turn ${yellowFlagTurns.trim()}` });
+      setShowYellowFlagDialog(false);
+      setYellowFlagTurns("");
+      setYellowFlagMessage("");
+    }
+  };
+
+  const handleClearSingleFlag = async (flagId: string) => {
+    await supabase.from("event_flags").update({ is_active: false }).eq("id", flagId);
+    toast({ title: "Flag cleared" });
   };
 
   const handleSendBlackFlag = async () => {
@@ -543,23 +572,52 @@ const OrganizerLiveManage = () => {
             <Flag size={16} className="text-primary" /> Flag Control
           </h2>
           {activeFlags.length > 0 && (
-            <div className="flex items-center gap-2 mb-3 flex-wrap">
-              <span className="text-xs text-muted-foreground">Active:</span>
-              {activeFlags.map(f => (
-                <Badge key={f.id} variant="outline" className="text-xs">
-                  {f.flag_type.toUpperCase()} {f.message && `— ${f.message}`}
-                </Badge>
-              ))}
-              <Button variant="ghost" size="sm" className="text-xs h-6" onClick={handleClearFlags}>
-                Clear All
-              </Button>
+            <div className="space-y-2 mb-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground font-medium">Active Flags</span>
+                <Button variant="ghost" size="sm" className="text-xs h-6" onClick={handleClearFlags}>
+                  Clear All
+                </Button>
+              </div>
+              <div className="space-y-1.5">
+                {activeFlags.filter(f => f.flag_type !== "yellow_turn").map(f => (
+                  <div key={f.id} className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">
+                        {f.flag_type === "green" ? "🟢" : f.flag_type === "yellow" ? "⚠️" : f.flag_type === "red" ? "🔴" : f.flag_type === "black" ? "🏴" : f.flag_type === "white" ? "🏳️" : "🏁"}
+                      </span>
+                      <span className="text-xs font-medium">{f.flag_type.toUpperCase()}</span>
+                      {f.message && <span className="text-xs text-muted-foreground">— {f.message}</span>}
+                      {f.flag_type === "black" && f.target_user_id && (
+                        <Badge variant="outline" className="text-[10px]">Targeted</Badge>
+                      )}
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => handleClearSingleFlag(f.id)}>
+                      <X size={12} />
+                    </Button>
+                  </div>
+                ))}
+                {activeFlags.filter(f => f.flag_type === "yellow_turn").length > 0 && (
+                  <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg px-3 py-2 space-y-1.5">
+                    <p className="text-[10px] text-yellow-600 dark:text-yellow-400 uppercase tracking-wider font-bold">⚠️ Local Yellow Flags</p>
+                    {activeFlags.filter(f => f.flag_type === "yellow_turn").map(f => (
+                      <div key={f.id} className="flex items-center justify-between">
+                        <span className="text-xs font-medium">{f.message}</span>
+                        <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-destructive" onClick={() => handleClearSingleFlag(f.id)}>
+                          <X size={10} />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-3">
             <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white text-xs h-10" onClick={() => handleSendFlag("green")}>
               🟢 Green
             </Button>
-            <Button size="sm" className="bg-yellow-500 hover:bg-yellow-600 text-black text-xs h-10" onClick={() => handleSendFlag("yellow")}>
+            <Button size="sm" className="bg-yellow-500 hover:bg-yellow-600 text-black text-xs h-10" onClick={() => setShowYellowFlagDialog(true)}>
               ⚠️ Yellow
             </Button>
             <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white text-xs h-10" onClick={() => handleSendFlag("red")}>
@@ -578,7 +636,7 @@ const OrganizerLiveManage = () => {
           <Input
             value={flagMessage}
             onChange={(e) => setFlagMessage(e.target.value)}
-            placeholder="Optional message (e.g. 'Turn 5', 'Car #42')"
+            placeholder="Optional message for global flags"
             className="text-sm"
           />
         </motion.div>
@@ -845,6 +903,52 @@ const OrganizerLiveManage = () => {
             >
               🏴 Send Black Flag
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Yellow Flag by Turn Dialog */}
+      <Dialog open={showYellowFlagDialog} onOpenChange={setShowYellowFlagDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">⚠️ Yellow Flag by Turn</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Turn Number(s)</Label>
+              <Input
+                value={yellowFlagTurns}
+                onChange={e => setYellowFlagTurns(e.target.value)}
+                placeholder="e.g. 3, 5-6, 12"
+                className="text-sm"
+              />
+              <p className="text-[10px] text-muted-foreground">This flag will show alongside the current track flag (e.g. green stays visible).</p>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm">Message (optional)</Label>
+              <Input
+                value={yellowFlagMessage}
+                onChange={e => setYellowFlagMessage(e.target.value)}
+                placeholder="e.g. Debris on track, Car off in gravel"
+                className="text-sm"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleSendYellowByTurn}
+                disabled={!yellowFlagTurns.trim()}
+                className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-black font-bold"
+              >
+                ⚠️ Send Yellow Flag
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => handleSendFlag("yellow")}
+                className="flex-1"
+              >
+                Full Course Yellow
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
