@@ -65,6 +65,7 @@ const OrganizerSettings = () => {
   // Event Defaults
   const [defaultDuration, setDefaultDuration] = useState("20");
   const [defaultRegTypes, setDefaultRegTypes] = useState("Beginner\nIntermediate\nAdvanced");
+  const [defaultSessions, setDefaultSessions] = useState<DefaultSession[]>([]);
 
   // Notification Preferences
   const [notifNewReg, setNotifNewReg] = useState(true);
