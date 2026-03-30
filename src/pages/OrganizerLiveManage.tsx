@@ -392,6 +392,31 @@ const OrganizerLiveManage = () => {
     });
   }, [sessions, eventDate, currentTime]);
 
+  // Auto-expire blue flags after 10 seconds
+  const BLUE_FLAG_TTL_MS = 10_000;
+  const [, setBlueFlagTick] = useState(0);
+  useEffect(() => {
+    const blueFlags = activeFlags.filter(f => f.flag_type === "blue");
+    if (blueFlags.length === 0) return;
+    const timers: NodeJS.Timeout[] = [];
+    for (const f of blueFlags) {
+      const age = Date.now() - new Date(f.created_at).getTime();
+      const remaining = BLUE_FLAG_TTL_MS - age;
+      if (remaining <= 0) {
+        supabase.from("event_flags").update({ is_active: false }).eq("id", f.id).then(() => {});
+      } else {
+        timers.push(setTimeout(() => {
+          supabase.from("event_flags").update({ is_active: false }).eq("id", f.id).then(() => {});
+          setBlueFlagTick(t => t + 1);
+        }, remaining));
+      }
+    }
+    return () => timers.forEach(t => clearTimeout(t));
+  }, [activeFlags]);
+
+  const isBlueExpired = (f: EventFlag) => f.flag_type === "blue" && (Date.now() - new Date(f.created_at).getTime()) >= BLUE_FLAG_TTL_MS;
+  const isLocalCaution = (f: EventFlag) => f.flag_type === "yellow_turn" || (f.flag_type === "blue" && !isBlueExpired(f)) || (f.flag_type === "black" && f.target_user_id);
+
   const activeSession = sessionStates.find((s) => s.state === "active");
 
   // Auto-send checkered flag when a session ends
