@@ -907,6 +907,52 @@ const OrganizerLiveManage = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Yellow Flag by Turn Dialog */}
+      <Dialog open={showYellowFlagDialog} onOpenChange={setShowYellowFlagDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">⚠️ Yellow Flag by Turn</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Turn Number(s)</Label>
+              <Input
+                value={yellowFlagTurns}
+                onChange={e => setYellowFlagTurns(e.target.value)}
+                placeholder="e.g. 3, 5-6, 12"
+                className="text-sm"
+              />
+              <p className="text-[10px] text-muted-foreground">This flag will show alongside the current track flag (e.g. green stays visible).</p>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm">Message (optional)</Label>
+              <Input
+                value={yellowFlagMessage}
+                onChange={e => setYellowFlagMessage(e.target.value)}
+                placeholder="e.g. Debris on track, Car off in gravel"
+                className="text-sm"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleSendYellowByTurn}
+                disabled={!yellowFlagTurns.trim()}
+                className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-black font-bold"
+              >
+                ⚠️ Send Yellow Flag
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => handleSendFlag("yellow")}
+                className="flex-1"
+              >
+                Full Course Yellow
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Navigation />
     </div>
   );
