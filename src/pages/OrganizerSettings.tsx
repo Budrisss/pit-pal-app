@@ -282,14 +282,14 @@ const OrganizerSettings = () => {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Default Registration Types</Label>
+              <Label>Default Run Groups</Label>
               <Textarea
                 value={defaultRegTypes}
                 onChange={(e) => setDefaultRegTypes(e.target.value)}
                 placeholder="One per line"
                 rows={3}
               />
-              <p className="text-xs text-muted-foreground">One type per line</p>
+              <p className="text-xs text-muted-foreground">One run group per line</p>
             </div>
 
             {/* Default Session Schedule */}
