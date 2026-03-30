@@ -19,6 +19,26 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import Navigation from "@/components/Navigation";
 import DesktopNavigation from "@/components/DesktopNavigation";
+import AddressAutocomplete, { PlaceDetails } from "@/components/AddressAutocomplete";
+
+interface PresetTrack {
+  id: string;
+  name: string;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  track_type: string | null;
+}
+
+const TRACK_TYPE_LABELS: Record<string, string> = {
+  road: "Road Course",
+  oval: "Oval",
+  drag: "Drag Strip",
+  dirt: "Dirt Track",
+  kart: "Karting",
+  street: "Street Circuit",
+  rally: "Rally",
+};
 
 const US_STATES = [
   'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA',
@@ -287,11 +307,31 @@ const SessionsEditor = ({
     </div>
   );
 };
-const EventFormFields = ({ values, onChange, isEdit = false }: {
+const EventFormFields = ({ values, onChange, isEdit = false, presetTracks = [], presetSearch, setPresetSearch, presetTypeFilter, setPresetTypeFilter }: {
   values: any;
   onChange: (field: string, value: string) => void;
   isEdit?: boolean;
-}) => (
+  presetTracks?: PresetTrack[];
+  presetSearch?: string;
+  setPresetSearch?: (v: string) => void;
+  presetTypeFilter?: string;
+  setPresetTypeFilter?: (v: string) => void;
+}) => {
+  const search = presetSearch || "";
+  const typeFilter = presetTypeFilter || "all";
+
+  const filteredPresets = (search.length >= 2 || typeFilter !== "all")
+    ? presetTracks.filter(t => {
+        const matchesType = typeFilter === "all" || t.track_type === typeFilter;
+        const matchesSearch = search.length < 2 ||
+          t.name.toLowerCase().includes(search.toLowerCase()) ||
+          (t.city && t.city.toLowerCase().includes(search.toLowerCase())) ||
+          (t.state && t.state.toLowerCase().includes(search.toLowerCase()));
+        return matchesType && matchesSearch;
+      }).slice(0, 20)
+    : [];
+
+  return (
   <>
     <div className="space-y-2">
       <Label>Event Name *</Label>
@@ -309,11 +349,76 @@ const EventFormFields = ({ values, onChange, isEdit = false }: {
     </div>
     <div className="space-y-2">
       <Label>Track Name</Label>
-      <Input value={values.track_name || ''} onChange={e => onChange('track_name', e.target.value)} placeholder="Thunderhill Raceway" />
+      <Select onValueChange={(val) => {
+        if (val === "manual") return;
+        const preset = presetTracks.find(t => t.id === val);
+        if (preset) {
+          onChange('track_name', preset.name);
+          if (preset.address) onChange('address', preset.address);
+          if (preset.city) onChange('city', preset.city);
+          if (preset.state) onChange('state', preset.state);
+        }
+      }}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder={values.track_name || "Select or type a track..."} />
+        </SelectTrigger>
+        <SelectContent className="max-h-[300px] overflow-y-auto">
+          <SelectItem value="manual">Enter manually</SelectItem>
+          <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+            Preset Tracks {search.length < 2 && typeFilter === "all" ? "(type to search)" : `(${filteredPresets.length} results)`}
+          </div>
+          <div className="px-2 pb-1 space-y-1">
+            <Input
+              value={search}
+              onChange={(e) => setPresetSearch?.(e.target.value)}
+              placeholder="Search 390+ tracks..."
+              className="h-8 text-xs"
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+            />
+            <div className="flex flex-wrap gap-1">
+              {[{ value: "all", label: "All" }, ...Object.entries(TRACK_TYPE_LABELS).map(([value, label]) => ({ value, label }))].map(({ value, label }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setPresetTypeFilter?.(value); }}
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-medium border transition-colors ${
+                    typeFilter === value
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-background text-muted-foreground border-border hover:border-primary/50'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          {filteredPresets.map((track) => (
+            <SelectItem key={track.id} value={track.id}>
+              <span>{track.name} - {track.city}, {track.state}</span>
+              {track.track_type && (
+                <span className="ml-1 text-[10px] text-muted-foreground">({TRACK_TYPE_LABELS[track.track_type] || track.track_type})</span>
+              )}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Input value={values.track_name || ''} onChange={e => onChange('track_name', e.target.value)} placeholder="Or type track name manually" />
     </div>
     <div className="space-y-2">
       <Label>Address</Label>
-      <Input value={values.address || ''} onChange={e => onChange('address', e.target.value)} placeholder="5250 Hwy 162" />
+      <AddressAutocomplete
+        value={values.address || ''}
+        onChange={(val) => onChange('address', val)}
+        onPlaceSelect={(details: PlaceDetails) => {
+          onChange('address', details.formatted_address);
+          if (details.city) onChange('city', details.city);
+          if (details.state) onChange('state', details.state);
+          if (details.zip_code) onChange('zip_code', details.zip_code);
+          if (details.name && !values.track_name) onChange('track_name', details.name);
+        }}
+        placeholder="Search for an address..."
+      />
     </div>
     <div className="grid grid-cols-3 gap-3">
       <div className="space-y-2">
