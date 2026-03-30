@@ -183,10 +183,18 @@ const RacerLiveView = () => {
       if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]);
     }
 
-    // Clear accepted state if the accepted flag is no longer active
+    // Clear accepted/dismissed state if the accepted flag is no longer in the raw flags list
     if (blackFlagAccepted && !currentIds.has(blackFlagAccepted)) {
       setBlackFlagAccepted(null);
     }
+    // Clean up dismissed flags that are no longer present
+    setBlackFlagDismissed(prev => {
+      const cleaned = new Set<string>();
+      for (const id of prev) {
+        if (currentIds.has(id)) cleaned.add(id);
+      }
+      return cleaned.size !== prev.size ? cleaned : prev;
+    });
 
     // Clean up old receivedAt entries
     setBlackFlagReceivedAt(prev => {
