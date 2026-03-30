@@ -861,6 +861,11 @@ const EventOrganizer = () => {
                 <EventFormFields
                   values={newEvent}
                   onChange={(field, value) => setNewEvent(p => ({ ...p, [field]: value }))}
+                  presetTracks={presetTracks}
+                  presetSearch={presetSearch}
+                  setPresetSearch={setPresetSearch}
+                  presetTypeFilter={presetTypeFilter}
+                  setPresetTypeFilter={setPresetTypeFilter}
                 />
                 <RegistrationTypesEditor types={newRegTypes} onChange={setNewRegTypes} />
                 <SessionsEditor sessions={newSessions} onChange={setNewSessions} registrationTypes={newRegTypes} defaultDuration={defaultSessionDuration} />
@@ -1033,6 +1038,11 @@ const EventOrganizer = () => {
                 values={editingEvent}
                 onChange={(field, value) => setEditingEvent(p => p ? { ...p, [field]: value } : p)}
                 isEdit
+                presetTracks={presetTracks}
+                presetSearch={presetSearch}
+                setPresetSearch={setPresetSearch}
+                presetTypeFilter={presetTypeFilter}
+                setPresetTypeFilter={setPresetTypeFilter}
               />
               <RegistrationTypesEditor types={editRegTypes} onChange={setEditRegTypes} />
               <SessionsEditor sessions={editSessions} onChange={setEditSessions} registrationTypes={editRegTypes} />
