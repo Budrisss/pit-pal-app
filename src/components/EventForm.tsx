@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Clock, MapPin, Car, Building } from "lucide-react";
+import { Calendar, Clock, MapPin, Car, Building, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCars } from "@/contexts/CarsContext";
 import { Event } from "@/contexts/EventsContext";
@@ -53,6 +53,8 @@ const EventForm = ({ open, onOpenChange, onSave, editingEvent }: EventFormProps)
   const [comboboxOpen, setComboboxOpen] = useState(false);
   const [carComboboxOpen, setCarComboboxOpen] = useState(false);
   const [showSameDayConfirm, setShowSameDayConfirm] = useState(false);
+  const [lastPlaceDetails, setLastPlaceDetails] = useState<PlaceDetails | null>(null);
+  const [savingTrack, setSavingTrack] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -295,19 +297,74 @@ const EventForm = ({ open, onOpenChange, onSave, editingEvent }: EventFormProps)
                 Address (for weather)
               </Label>
               {selectedTrackId === "manual" ? (
-                <AddressAutocomplete
-                  id="address"
-                  value={formData.address}
-                  onChange={(val) => handleChange("address", val)}
-                  onPlaceSelect={(details: PlaceDetails) => {
-                    handleChange("address", details.formatted_address);
-                    if (!formData.track && details.name) {
-                      handleChange("track", details.name);
-                    }
-                  }}
-                  placeholder="Search for an address..."
-                  required
-                />
+                <>
+                  <AddressAutocomplete
+                    id="address"
+                    value={formData.address}
+                    onChange={(val) => handleChange("address", val)}
+                    onPlaceSelect={(details: PlaceDetails) => {
+                      handleChange("address", details.formatted_address);
+                      if (!formData.track && details.name) {
+                        handleChange("track", details.name);
+                      }
+                      setLastPlaceDetails(details);
+                    }}
+                    placeholder="Search for an address..."
+                    required
+                  />
+                  {lastPlaceDetails && formData.address && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-xs"
+                      disabled={savingTrack}
+                      onClick={async () => {
+                        if (!lastPlaceDetails) return;
+                        setSavingTrack(true);
+                        try {
+                          const { data: { user } } = await supabase.auth.getUser();
+                          if (!user) throw new Error("Not authenticated");
+                          const trackName = formData.track || lastPlaceDetails.name;
+                          const { error } = await supabase.from('tracks').insert({
+                            user_id: user.id,
+                            name: trackName,
+                            address: lastPlaceDetails.formatted_address,
+                            city: lastPlaceDetails.city,
+                            state: lastPlaceDetails.state,
+                          });
+                          if (error) throw error;
+                          // Refresh tracks list
+                          const { data: updatedTracks } = await (supabase as any)
+                            .from('tracks')
+                            .select('id, name, address, city, state')
+                            .order('name');
+                          setTracks(updatedTracks || []);
+                          setLastPlaceDetails(null);
+                          // Find the newly saved track and select it
+                          const newTrack = (updatedTracks || []).find(
+                            (t: Track) => t.name === trackName && t.address === lastPlaceDetails.formatted_address
+                          );
+                          if (newTrack) {
+                            setSelectedTrackId(newTrack.id);
+                            setFormData(prev => ({
+                              ...prev,
+                              track: newTrack.name,
+                              address: `${newTrack.address}${newTrack.city ? `, ${newTrack.city}` : ''}${newTrack.state ? `, ${newTrack.state}` : ''}`,
+                            }));
+                          }
+                        } catch (err: any) {
+                          console.error("Failed to save track:", err);
+                        } finally {
+                          setSavingTrack(false);
+                        }
+                      }}
+                    >
+                      <Star size={14} className="mr-1" />
+                      {savingTrack ? "Saving..." : "Save as Track for future use"}
+                    </Button>
+                  )}
+                </>
               ) : (
                 <Input
                   id="address"
