@@ -260,8 +260,8 @@ const OrganizerLiveManage = () => {
 
   const handleSendFlag = async (flagType: string) => {
     if (!eventId || !organizerProfileId) return;
-    // Deactivate existing flags of same type
-    await supabase.from("event_flags").update({ is_active: false }).eq("event_id", eventId).eq("is_active", true);
+    // Deactivate all existing flags (except local yellows which are managed separately)
+    await supabase.from("event_flags").update({ is_active: false }).eq("event_id", eventId).eq("is_active", true).neq("flag_type", "yellow_turn");
     // Insert new flag
     const { error } = await supabase.from("event_flags").insert({
       event_id: eventId,
@@ -276,6 +276,32 @@ const OrganizerLiveManage = () => {
       setFlagMessage("");
       toast({ title: `${flagType.toUpperCase()} flag sent!` });
     }
+  };
+
+  const handleSendYellowByTurn = async () => {
+    if (!eventId || !organizerProfileId || !yellowFlagTurns.trim()) return;
+    const turnMsg = `Turn ${yellowFlagTurns.trim()}`;
+    const fullMessage = [turnMsg, yellowFlagMessage.trim()].filter(Boolean).join(" — ");
+    const { error } = await supabase.from("event_flags").insert({
+      event_id: eventId,
+      organizer_id: organizerProfileId,
+      flag_type: "yellow_turn",
+      message: fullMessage,
+      is_active: true,
+    });
+    if (error) {
+      toast({ title: "Failed to send yellow flag", variant: "destructive" });
+    } else {
+      toast({ title: `⚠️ Yellow flag sent for Turn ${yellowFlagTurns.trim()}` });
+      setShowYellowFlagDialog(false);
+      setYellowFlagTurns("");
+      setYellowFlagMessage("");
+    }
+  };
+
+  const handleClearSingleFlag = async (flagId: string) => {
+    await supabase.from("event_flags").update({ is_active: false }).eq("id", flagId);
+    toast({ title: "Flag cleared" });
   };
 
   const handleSendBlackFlag = async () => {
