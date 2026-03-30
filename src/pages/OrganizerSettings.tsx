@@ -70,6 +70,90 @@ interface DefaultSession {
 let sessionIdCounter = 0;
 const genSessionId = () => `ds-${Date.now()}-${++sessionIdCounter}`;
 
+interface SortableSessionCardProps {
+  session: DefaultSession;
+  index: number;
+  defaultDuration: string;
+  runGroupNames: string[];
+  onUpdate: (index: number, session: DefaultSession) => void;
+  onRemove: (index: number) => void;
+}
+
+const SortableSessionCard = ({ session, index, defaultDuration, runGroupNames, onUpdate, onRemove }: SortableSessionCardProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: session.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="border border-border rounded-lg p-3 space-y-2 bg-muted/30 relative">
+      <div className="absolute top-2 left-2 cursor-grab active:cursor-grabbing text-muted-foreground" {...attributes} {...listeners}>
+        <GripVertical size={16} />
+      </div>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="absolute top-1 right-1 h-6 w-6 text-muted-foreground hover:text-destructive"
+        onClick={() => onRemove(index)}
+      >
+        <X size={14} />
+      </Button>
+      <div className="pl-6 pr-6">
+        <div className="space-y-1">
+          <Label className="text-xs">Session Name</Label>
+          <Input
+            value={session.name}
+            onChange={(e) => onUpdate(index, { ...session, name: e.target.value })}
+            placeholder="e.g. Group 1 - Morning Run"
+            className="h-8 text-sm"
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-2 pl-6">
+        <div className="space-y-1">
+          <Label className="text-xs">Start Time</Label>
+          <Input
+            type="time"
+            value={session.start_time || ''}
+            onChange={(e) => onUpdate(index, { ...session, start_time: e.target.value })}
+            className="h-8 text-sm"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Duration (min)</Label>
+          <Input
+            type="number"
+            value={session.duration_minutes ?? ''}
+            onChange={(e) => onUpdate(index, { ...session, duration_minutes: e.target.value ? parseInt(e.target.value) : null })}
+            placeholder={defaultDuration}
+            className="h-8 text-sm"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Run Group</Label>
+          <Select
+            value={session.run_group || "all"}
+            onValueChange={(val) => onUpdate(index, { ...session, run_group: val === "all" ? null : val })}
+          >
+            <SelectTrigger className="h-8 text-sm">
+              <SelectValue placeholder="All Groups" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Groups</SelectItem>
+              {runGroupNames.map((name) => (
+                <SelectItem key={name} value={name}>{name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const OrganizerSettings = () => {
   const { signOut, user } = useAuth();
   const { organizerProfileId } = useOrganizerMode();
