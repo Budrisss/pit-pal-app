@@ -163,6 +163,14 @@ const OrganizerLiveManage = () => {
             });
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "event_flags", filter: `event_id=eq.${eventId}` },
+        () => {
+          supabase.from("event_flags").select("*").eq("event_id", eventId).eq("is_active", true)
+            .then(({ data }) => { if (data) setActiveFlags(data as EventFlag[]); });
+        }
+      )
       .subscribe();
 
     return () => {
