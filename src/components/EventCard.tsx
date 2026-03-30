@@ -20,10 +20,11 @@ interface EventCardProps {
   car?: string;
   address?: string;
   isRegistered?: boolean;
+  publicEventId?: string | null;
   onEdit?: () => void;
 }
 
-const EventCard = ({ id, name, track, date, time, countdown, status, car, address, isRegistered, onEdit }: EventCardProps) => {
+const EventCard = ({ id, name, track, date, time, countdown, status, car, address, isRegistered, publicEventId, onEdit }: EventCardProps) => {
   const navigate = useNavigate();
   const { deleteEvent } = useEvents();
   const [isChecklistDialogOpen, setIsChecklistDialogOpen] = useState(false);
@@ -48,8 +49,8 @@ const EventCard = ({ id, name, track, date, time, countdown, status, car, addres
     }
   };
 
-  const handleDelete = () => {
-    deleteEvent(id);
+  const handleDelete = (cancelRegistration: boolean = false) => {
+    deleteEvent(id, cancelRegistration);
     setIsDeleteDialogOpen(false);
   };
 
