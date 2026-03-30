@@ -1101,7 +1101,7 @@ const OrganizerLiveManage = () => {
               </Button>
               <Button
                 variant="outline"
-                onClick={() => handleSendFlag("yellow")}
+                onClick={() => { handleSendFlag("yellow"); setShowYellowFlagDialog(false); }}
                 className="flex-1"
               >
                 Full Course Yellow
