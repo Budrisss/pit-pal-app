@@ -628,7 +628,7 @@ const OrganizerLiveManage = () => {
               </div>
 
               {/* Track Status — Global flags */}
-              {activeFlags.filter(f => f.flag_type !== "yellow_turn" && f.flag_type !== "blue").length > 0 && (
+              {activeFlags.filter(f => f.flag_type !== "yellow_turn" && f.flag_type !== "blue" && !(f.flag_type === "black" && f.target_user_id)).length > 0 && (
                 <div className="rounded-lg border border-border bg-muted/40 p-3 space-y-2">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold">🏁 Track Status</span>
