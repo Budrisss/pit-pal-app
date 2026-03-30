@@ -45,6 +45,7 @@ interface DefaultSession {
   name: string;
   start_time: string;
   duration_minutes: number | null;
+  run_group: string | null;
 }
 
 const OrganizerSettings = () => {
@@ -66,6 +67,9 @@ const OrganizerSettings = () => {
   const [defaultDuration, setDefaultDuration] = useState("20");
   const [defaultRegTypes, setDefaultRegTypes] = useState("Beginner\nIntermediate\nAdvanced");
   const [defaultSessions, setDefaultSessions] = useState<DefaultSession[]>([]);
+
+  // Parsed run group names for session assignment
+  const runGroupNames = defaultRegTypes.split("\n").map(s => s.trim()).filter(Boolean);
 
   // Notification Preferences
   const [notifNewReg, setNotifNewReg] = useState(true);
@@ -278,14 +282,14 @@ const OrganizerSettings = () => {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Default Registration Types</Label>
+              <Label>Default Run Groups</Label>
               <Textarea
                 value={defaultRegTypes}
                 onChange={(e) => setDefaultRegTypes(e.target.value)}
                 placeholder="One per line"
                 rows={3}
               />
-              <p className="text-xs text-muted-foreground">One type per line</p>
+              <p className="text-xs text-muted-foreground">One run group per line</p>
             </div>
 
             {/* Default Session Schedule */}
@@ -298,7 +302,7 @@ const OrganizerSettings = () => {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => setDefaultSessions([...defaultSessions, { name: '', start_time: '', duration_minutes: parseInt(defaultDuration) || 20 }])}
+                  onClick={() => setDefaultSessions([...defaultSessions, { name: '', start_time: '', duration_minutes: parseInt(defaultDuration) || 20, run_group: null }])}
                 >
                   <Plus size={14} className="mr-1" /> Add Session
                 </Button>
@@ -332,7 +336,7 @@ const OrganizerSettings = () => {
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     <div className="space-y-1">
                       <Label className="text-xs">Start Time</Label>
                       <Input
@@ -359,6 +363,27 @@ const OrganizerSettings = () => {
                         placeholder={defaultDuration}
                         className="h-8 text-sm"
                       />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Run Group</Label>
+                      <Select
+                        value={session.run_group || "all"}
+                        onValueChange={(val) => {
+                          const updated = [...defaultSessions];
+                          updated[i] = { ...updated[i], run_group: val === "all" ? null : val };
+                          setDefaultSessions(updated);
+                        }}
+                      >
+                        <SelectTrigger className="h-8 text-sm">
+                          <SelectValue placeholder="All Groups" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Groups</SelectItem>
+                          {runGroupNames.map((name) => (
+                            <SelectItem key={name} value={name}>{name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 </div>
