@@ -289,6 +289,32 @@ const OrganizerLiveManage = () => {
   }, [sessions, eventDate, currentTime]);
 
   const activeSession = sessionStates.find((s) => s.state === "active");
+
+  // Auto-send checkered flag when a session ends
+  const prevActiveSessionId = useRef<string | null>(null);
+  useEffect(() => {
+    const currentActiveId = activeSession?.id || null;
+    const prevId = prevActiveSessionId.current;
+    // If we had an active session and now it's gone (completed), auto-send checkered
+    if (prevId && !currentActiveId && eventId && organizerProfileId) {
+      const autoCheckered = async () => {
+        // Only send if there isn't already an active checkered flag
+        const hasCheckered = activeFlags.some(f => f.flag_type === "checkered" && f.is_active);
+        if (hasCheckered) return;
+        await supabase.from("event_flags").update({ is_active: false }).eq("event_id", eventId).eq("is_active", true);
+        await supabase.from("event_flags").insert({
+          event_id: eventId,
+          organizer_id: organizerProfileId,
+          flag_type: "checkered",
+          message: "Session complete",
+          is_active: true,
+        });
+        toast({ title: "🏁 Checkered flag auto-sent — session ended" });
+      };
+      autoCheckered();
+    }
+    prevActiveSessionId.current = currentActiveId;
+  }, [activeSession?.id, eventId, organizerProfileId]);
   const activeRemaining = useMemo(() => {
     if (!activeSession?.start_time || !activeSession?.duration_minutes || !eventDate) return null;
     const evDate = parseISO(eventDate);
