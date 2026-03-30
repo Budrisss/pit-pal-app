@@ -659,9 +659,9 @@ const OrganizerLiveManage = () => {
                   <span className="text-xs font-semibold">🏁 Track Status</span>
                   <Badge variant="outline" className="text-[10px] px-1.5 py-0">Replaces previous</Badge>
                 </div>
-                {activeFlags.filter(f => f.flag_type !== "yellow_turn" && f.flag_type !== "blue" && !(f.flag_type === "black" && f.target_user_id)).length > 0 ? (
+                {activeFlags.filter(f => !isLocalCaution(f) && !isBlueExpired(f)).length > 0 ? (
                   <div className="space-y-1.5">
-                    {activeFlags.filter(f => f.flag_type !== "yellow_turn" && f.flag_type !== "blue" && !(f.flag_type === "black" && f.target_user_id)).map(f => (
+                    {activeFlags.filter(f => !isLocalCaution(f) && !isBlueExpired(f)).map(f => (
                       <div key={f.id} className="flex items-center justify-between bg-background/60 rounded-md px-3 py-2">
                         <div className="flex items-center gap-2">
                           <span className="text-sm">
