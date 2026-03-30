@@ -454,6 +454,8 @@ const OrganizerLiveManage = () => {
   const isLocalCaution = (f: EventFlag) => f.flag_type === "yellow_turn" || (f.flag_type === "blue" && !isBlueExpired(f)) || (f.flag_type === "black" && f.target_user_id);
 
   const activeSession = sessionStates.find((s) => s.state === "active");
+  const activeSessionIdRef = useRef<string | null>(null);
+  activeSessionIdRef.current = activeSession?.id || null;
 
   // Auto-send checkered flag when a session ends
   const prevActiveSessionId = useRef<string | null>(null);
