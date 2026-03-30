@@ -15,6 +15,7 @@ import Navigation from "@/components/Navigation";
 import RacingGallery from "@/components/RacingGallery";
 
 const Settings = () => {
+  const { isOrganizerMode } = useOrganizerMode();
   const [showGallery, setShowGallery] = useState(false);
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
