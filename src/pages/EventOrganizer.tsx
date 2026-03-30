@@ -73,6 +73,7 @@ interface EventRegistration {
   user_phone: string | null;
   notes: string | null;
   created_at: string;
+  car_number: number | null;
 }
 
 interface PublicEvent {
@@ -1107,13 +1108,20 @@ const EventOrganizer = () => {
                     <div className="border border-border rounded-lg divide-y divide-border">
                       {groupParticipants.map(p => (
                         <div key={p.id} className="p-3 flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="font-medium text-sm truncate">{p.user_name}</p>
+                          <div className="flex items-center gap-3 min-w-0">
+                            {p.car_number != null && (
+                              <Badge variant="outline" className="font-mono font-bold text-sm shrink-0">
+                                #{p.car_number}
+                              </Badge>
+                            )}
+                            <div className="min-w-0">
+                              <p className="font-medium text-sm truncate">{p.user_name}</p>
                             <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
                               <span className="flex items-center gap-1"><Mail size={10} /> {p.user_email}</span>
                               {p.user_phone && <span className="flex items-center gap-1"><Phone size={10} /> {p.user_phone}</span>}
                             </div>
-                            {p.notes && <p className="text-xs text-muted-foreground mt-1 italic">{p.notes}</p>}
+                              {p.notes && <p className="text-xs text-muted-foreground mt-1 italic">{p.notes}</p>}
+                            </div>
                           </div>
                           <span className="text-xs text-muted-foreground shrink-0">
                             {new Date(p.created_at).toLocaleDateString()}
