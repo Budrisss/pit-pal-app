@@ -481,6 +481,41 @@ const RacerLiveView = () => {
         </div>
       )}
 
+      {/* Blue flag banners - shown alongside current flag */}
+      {blueFlags.length > 0 && (
+        <div className="shrink-0">
+          {blueFlags.map(f => (
+            <motion.div
+              key={f.id}
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              className="bg-blue-600 border-b border-blue-800 px-4 py-2 flex items-center justify-between"
+            >
+              <div className="flex items-center gap-2">
+                <motion.span
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ repeat: Infinity, duration: 1.5 }}
+                  className="text-lg"
+                >
+                  🔵
+                </motion.span>
+                <div>
+                  <p className="text-sm font-black text-white uppercase tracking-wider">
+                    BLUE FLAG
+                  </p>
+                  {f.message && (
+                    <p className="text-xs text-white/80 font-semibold">{f.message}</p>
+                  )}
+                </div>
+              </div>
+              <Badge className="bg-white/20 text-white font-bold text-xs border-0">
+                YIELD
+              </Badge>
+            </motion.div>
+          ))}
+        </div>
+      )}
+
       {/* Flag Zone - dominant area */}
       <div className="flex-1 flex flex-col">
         <AnimatePresence mode="wait">
