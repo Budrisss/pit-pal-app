@@ -60,11 +60,15 @@ interface OrganizerProfile {
 }
 
 interface DefaultSession {
+  id: string;
   name: string;
   start_time: string;
   duration_minutes: number | null;
   run_group: string | null;
 }
+
+let sessionIdCounter = 0;
+const genSessionId = () => `ds-${Date.now()}-${++sessionIdCounter}`;
 
 const OrganizerSettings = () => {
   const { signOut, user } = useAuth();
