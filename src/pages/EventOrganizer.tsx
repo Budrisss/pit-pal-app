@@ -456,7 +456,8 @@ const EventFormFields = ({ values, onChange, isEdit = false, presetTracks = [], 
       <Textarea value={values.description || ''} onChange={e => onChange('description', e.target.value)} placeholder="Details about the event..." rows={3} />
     </div>
   </>
-);
+  );
+};
 
 const EventOrganizer = () => {
   const navigate = useNavigate();
