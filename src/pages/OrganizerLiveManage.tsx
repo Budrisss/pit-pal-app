@@ -1068,6 +1068,9 @@ const OrganizerLiveManage = () => {
                               <Badge variant="outline" className="text-[10px]">
                                 {getRunGroupName(session.registration_type_id)}
                               </Badge>
+                              <Badge variant={session.state === "active" ? "default" : "secondary"} className="text-[10px]">
+                                {session.state === "active" ? "Active" : session.state === "completed" ? "Completed" : "Upcoming"}
+                              </Badge>
                             </div>
                             <div className="flex items-center gap-2">
                               {allSessionFlags.length === 0 ? (
