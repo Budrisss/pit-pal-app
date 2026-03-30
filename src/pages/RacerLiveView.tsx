@@ -371,10 +371,11 @@ const RacerLiveView = () => {
       </div>
 
       {/* Accepted targeted black flag banner */}
-      {isTargetedBlackFlagAccepted && targetedBlackFlag && (
+      {isTargetedBlackFlagAccepted && targetedBlackFlag && bannerTimeRemaining != null && bannerTimeRemaining > 0 && (
         <motion.div
           initial={{ height: 0, opacity: 0 }}
           animate={{ height: "auto", opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
           className="bg-black border-b-2 border-red-600 px-4 py-2.5 shrink-0 flex items-center justify-between"
         >
           <div className="flex items-center gap-2">
@@ -388,11 +389,14 @@ const RacerLiveView = () => {
               )}
             </div>
           </div>
-          {userCarNumber && (
-            <Badge className="bg-red-600 text-white font-mono font-bold text-sm">
-              #{userCarNumber}
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono text-white/40">{bannerTimeRemaining}s</span>
+            {userCarNumber && (
+              <Badge className="bg-red-600 text-white font-mono font-bold text-sm">
+                #{userCarNumber}
+              </Badge>
+            )}
+          </div>
         </motion.div>
       )}
 
