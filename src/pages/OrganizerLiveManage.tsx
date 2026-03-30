@@ -700,7 +700,7 @@ const OrganizerLiveManage = () => {
                     </Button>
                   )}
                 </div>
-                {activeFlags.filter(f => f.flag_type === "yellow_turn" || f.flag_type === "blue" || (f.flag_type === "black" && f.target_user_id)).length > 0 ? (
+                {activeFlags.filter(isLocalCaution).length > 0 ? (
                   <div className="space-y-1.5">
                     {activeFlags.filter(f => f.flag_type === "yellow_turn").length > 0 && (
                       <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-md px-3 py-2 space-y-1.5">
