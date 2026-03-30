@@ -150,14 +150,27 @@ const EventCard = ({ id, name, track, date, time, countdown, status, car, addres
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Event</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{name}"? This action cannot be undone.
+              {publicEventId
+                ? `Are you sure you want to delete "${name}"? This event is linked to a registration.`
+                : `Are you sure you want to delete "${name}"? This action cannot be undone.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className={publicEventId ? "flex-col sm:flex-row gap-2" : ""}>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
-            </AlertDialogAction>
+            {publicEventId ? (
+              <>
+                <AlertDialogAction onClick={() => handleDelete(false)} className="bg-muted text-foreground hover:bg-muted/80">
+                  Delete Only
+                </AlertDialogAction>
+                <AlertDialogAction onClick={() => handleDelete(true)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  Delete & Cancel Registration
+                </AlertDialogAction>
+              </>
+            ) : (
+              <AlertDialogAction onClick={() => handleDelete(false)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
