@@ -197,6 +197,8 @@ const OrganizerLiveManage = () => {
         () => {
           supabase.from("event_flags").select("*").eq("event_id", eventId).eq("is_active", true)
             .then(({ data }) => { if (data) setActiveFlags(data as EventFlag[]); });
+          supabase.from("event_flags").select("*").eq("event_id", eventId).eq("is_active", false).not("session_id", "is", null).order("created_at", { ascending: true })
+            .then(({ data }) => { if (data) setFlagHistory(data as EventFlag[]); });
         }
       )
       .subscribe();
