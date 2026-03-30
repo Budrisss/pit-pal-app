@@ -618,9 +618,16 @@ const OrganizerLiveManage = () => {
           <h2 className="font-semibold flex items-center gap-2 mb-3">
             <Flag size={16} className="text-primary" /> Flag Control
           </h2>
-          {activeFlags.length > 0 && (
+          {/* Always show flag sections */}
             <div className="space-y-3 mb-3">
+              {activeFlags.length > 0 && (
               <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground font-medium">Active Flags</span>
+                <Button variant="ghost" size="sm" className="text-xs h-6" onClick={handleClearFlags}>
+                  Clear All
+                </Button>
+              </div>
+              )}
                 <span className="text-xs text-muted-foreground font-medium">Active Flags</span>
                 <Button variant="ghost" size="sm" className="text-xs h-6" onClick={handleClearFlags}>
                   Clear All
