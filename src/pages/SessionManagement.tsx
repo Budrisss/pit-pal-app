@@ -607,7 +607,22 @@ const SessionManagement = () => {
         try { setSettings(JSON.parse(savedSettings)); } catch {}
       }
       const savedRunGroup = localStorage.getItem(`my-run-group-${eventId}`);
-      if (savedRunGroup) setMyRunGroup(savedRunGroup);
+      if (savedRunGroup) {
+        setMyRunGroup(savedRunGroup);
+      } else if (eventRow?.public_event_id) {
+        // Auto-default to the user's registered group if no manual override exists
+        const { data: regData } = await (supabase as any)
+          .from("event_registrations")
+          .select("registration_type_id")
+          .eq("event_id", eventRow.public_event_id)
+          .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
+          .limit(1);
+        if (regData && regData.length > 0) {
+          const regGroupId = regData[0].registration_type_id;
+          setMyRunGroup(regGroupId);
+          localStorage.setItem(`my-run-group-${eventId}`, regGroupId);
+        }
+      }
       setSessionsLoaded(true);
     };
 
