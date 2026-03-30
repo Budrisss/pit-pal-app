@@ -45,6 +45,7 @@ interface DefaultSession {
   name: string;
   start_time: string;
   duration_minutes: number | null;
+  run_group: string | null;
 }
 
 const OrganizerSettings = () => {
