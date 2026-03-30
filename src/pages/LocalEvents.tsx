@@ -1056,7 +1056,7 @@ const LocalEvents = () => {
 
       {/* Registration Dialog */}
       <Dialog open={!!registeringEvent} onOpenChange={(open) => { if (!open) { setRegisteringEvent(null); setSelectedRegTypeId(''); } }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[calc(100vh-2rem)] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Register for {registeringEvent?.name}</DialogTitle>
           </DialogHeader>
