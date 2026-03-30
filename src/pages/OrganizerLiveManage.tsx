@@ -354,6 +354,7 @@ const OrganizerLiveManage = () => {
           flag_type: "green",
           message: null,
           is_active: true,
+          session_id: activeSessionIdRef.current,
         });
         toast({ title: "🟢 Green flag restored — caution cleared" });
         return;
