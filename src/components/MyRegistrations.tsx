@@ -61,7 +61,7 @@ const MyRegistrations = () => {
       const regTypeIds = [...new Set(regs.map((r) => r.registration_type_id))];
       const carIds = [...new Set(regs.map((r) => r.car_id).filter(Boolean))] as string[];
 
-      const promises: Promise<any>[] = [
+      const promises: any[] = [
         supabase.from("public_events").select("id, name, date, time, track_name, city, state").in("id", eventIds),
         supabase.from("registration_types").select("id, name").in("id", regTypeIds),
       ];
