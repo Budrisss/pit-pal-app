@@ -346,16 +346,17 @@ const LocalEvents = () => {
 
       if (!regTypeId) throw new Error('Please select a registration group');
 
-      // Prevent duplicate registration for the same group
-      if (userRegistrations.has(regTypeId)) {
-        throw new Error('You are already registered for this group. Please select a different group or cancel your existing registration first.');
-      }
-
       if (!regForm.carNumber.trim()) throw new Error('Car number is required');
       const carNum = parseInt(regForm.carNumber);
       if (isNaN(carNum) || carNum <= 0) throw new Error('Car number must be a positive number');
 
-      const { error } = await supabase.from('event_registrations').insert({
+      // Prevent duplicate registration for the same group + car number
+      const comboKey = `${regTypeId}_${carNum}`;
+      if (userRegistrations.has(comboKey)) {
+        throw new Error('You are already registered for this group with this car number. Use a different car number to register again.');
+      }
+
+      const { error } = await (supabase as any).from('event_registrations').insert({
         event_id: registeringEvent.id,
         registration_type_id: regTypeId,
         user_id: user.id,
@@ -364,6 +365,7 @@ const LocalEvents = () => {
         user_phone: regForm.phone || null,
         notes: regForm.notes || null,
         car_number: carNum,
+        car_id: regForm.carId || null,
       });
       if (error) {
         if (error.message?.includes('idx_unique_car_number_per_event')) {
