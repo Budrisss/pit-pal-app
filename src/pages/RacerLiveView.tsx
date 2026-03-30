@@ -42,7 +42,7 @@ const FLAG_CONFIG: Record<string, { bg: string; text: string; label: string; tex
   checkered: { bg: "bg-black", text: "🏁", label: "SESSION OVER", textColor: "text-white" },
 };
 
-const BLACK_FLAG_LOCKOUT_MS = 60000; // 60 seconds
+const BLACK_FLAG_LOCKOUT_MS = 0; // Immediate accept
 
 const RacerLiveView = () => {
   const { eventId } = useParams<{ eventId: string }>();
