@@ -609,7 +609,7 @@ const OrganizerLiveManage = () => {
                 </Button>
               </div>
               <div className="space-y-1.5">
-                {activeFlags.filter(f => f.flag_type !== "yellow_turn").map(f => (
+                {activeFlags.filter(f => f.flag_type !== "yellow_turn" && f.flag_type !== "blue").map(f => (
                   <div key={f.id} className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-2">
                     <div className="flex items-center gap-2">
                       <span className="text-sm">
