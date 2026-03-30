@@ -387,7 +387,7 @@ const EventOrganizer = () => {
     car_classes: '', registration_link: '',
   });
 
-  // Fetch organizer profile
+  // Fetch organizer profile and settings
   useEffect(() => {
     if (!user) return;
     const fetchOrganizer = async () => {
@@ -398,6 +398,21 @@ const EventOrganizer = () => {
         .maybeSingle();
       if (data) {
         setOrganizerProfile(data);
+        // Fetch saved defaults
+        const { data: settings } = await supabase
+          .from('organizer_settings' as any)
+          .select('default_session_duration, default_reg_types')
+          .eq('organizer_profile_id', data.id)
+          .maybeSingle();
+        if (settings) {
+          const s = settings as any;
+          setDefaultSessionDuration(s.default_session_duration || 20);
+          // Pre-parse default reg types into RegistrationType objects
+          if (s.default_reg_types) {
+            const names = (s.default_reg_types as string).split('\n').filter((n: string) => n.trim());
+            setDefaultRegTypeNames(names);
+          }
+        }
       } else {
         setLoading(false);
       }
