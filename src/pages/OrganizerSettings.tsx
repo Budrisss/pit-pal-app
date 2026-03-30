@@ -336,7 +336,7 @@ const OrganizerSettings = () => {
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     <div className="space-y-1">
                       <Label className="text-xs">Start Time</Label>
                       <Input
@@ -363,6 +363,27 @@ const OrganizerSettings = () => {
                         placeholder={defaultDuration}
                         className="h-8 text-sm"
                       />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Run Group</Label>
+                      <Select
+                        value={session.run_group || "all"}
+                        onValueChange={(val) => {
+                          const updated = [...defaultSessions];
+                          updated[i] = { ...updated[i], run_group: val === "all" ? null : val };
+                          setDefaultSessions(updated);
+                        }}
+                      >
+                        <SelectTrigger className="h-8 text-sm">
+                          <SelectValue placeholder="All Groups" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Groups</SelectItem>
+                          {runGroupNames.map((name) => (
+                            <SelectItem key={name} value={name}>{name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 </div>
