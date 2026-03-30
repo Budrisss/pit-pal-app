@@ -84,6 +84,10 @@ const OrganizerLiveManage = () => {
   const [showYellowFlagDialog, setShowYellowFlagDialog] = useState(false);
   const [yellowFlagTurns, setYellowFlagTurns] = useState("");
   const [yellowFlagMessage, setYellowFlagMessage] = useState("");
+  const [showBlueFlagDialog, setShowBlueFlagDialog] = useState(false);
+  const [blueFlagTarget, setBlueFlagTarget] = useState<string>("all");
+  const [blueFlagMessage, setBlueFlagMessage] = useState("");
+  const [blueFlagSearch, setBlueFlagSearch] = useState("");
 
   // Live clock
   useEffect(() => {
@@ -260,8 +264,8 @@ const OrganizerLiveManage = () => {
 
   const handleSendFlag = async (flagType: string) => {
     if (!eventId || !organizerProfileId) return;
-    // Deactivate all existing flags (except local yellows which are managed separately)
-    await supabase.from("event_flags").update({ is_active: false }).eq("event_id", eventId).eq("is_active", true).neq("flag_type", "yellow_turn");
+    // Deactivate all existing flags (except local yellows and blue flags which are managed separately)
+    await supabase.from("event_flags").update({ is_active: false }).eq("event_id", eventId).eq("is_active", true).neq("flag_type", "yellow_turn").neq("flag_type", "blue");
     // Insert new flag
     const { error } = await supabase.from("event_flags").insert({
       event_id: eventId,
@@ -296,6 +300,31 @@ const OrganizerLiveManage = () => {
       setShowYellowFlagDialog(false);
       setYellowFlagTurns("");
       setYellowFlagMessage("");
+    }
+  };
+
+  const handleSendBlueFlag = async () => {
+    if (!eventId || !organizerProfileId) return;
+    const targetUserId = blueFlagTarget === "all" ? null : blueFlagTarget;
+    const reg = registrations.find(r => r.user_id === blueFlagTarget);
+    const carLabel = reg?.car_number ? `Car #${reg.car_number}` : "";
+    const fullMessage = [carLabel, blueFlagMessage.trim()].filter(Boolean).join(" — ") || "Faster traffic approaching";
+    const { error } = await supabase.from("event_flags").insert({
+      event_id: eventId,
+      organizer_id: organizerProfileId,
+      flag_type: "blue",
+      message: fullMessage,
+      target_user_id: targetUserId,
+      is_active: true,
+    });
+    if (error) {
+      toast({ title: "Failed to send blue flag", variant: "destructive" });
+    } else {
+      toast({ title: `🔵 Blue flag sent!` });
+      setShowBlueFlagDialog(false);
+      setBlueFlagTarget("all");
+      setBlueFlagMessage("");
+      setBlueFlagSearch("");
     }
   };
 
@@ -580,7 +609,7 @@ const OrganizerLiveManage = () => {
                 </Button>
               </div>
               <div className="space-y-1.5">
-                {activeFlags.filter(f => f.flag_type !== "yellow_turn").map(f => (
+                {activeFlags.filter(f => f.flag_type !== "yellow_turn" && f.flag_type !== "blue").map(f => (
                   <div key={f.id} className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-2">
                     <div className="flex items-center gap-2">
                       <span className="text-sm">
@@ -610,15 +639,31 @@ const OrganizerLiveManage = () => {
                     ))}
                   </div>
                 )}
+                {activeFlags.filter(f => f.flag_type === "blue").length > 0 && (
+                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg px-3 py-2 space-y-1.5">
+                    <p className="text-[10px] text-blue-600 dark:text-blue-400 uppercase tracking-wider font-bold">🔵 Blue Flags</p>
+                    {activeFlags.filter(f => f.flag_type === "blue").map(f => (
+                      <div key={f.id} className="flex items-center justify-between">
+                        <span className="text-xs font-medium">{f.message}</span>
+                        <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-destructive" onClick={() => handleClearSingleFlag(f.id)}>
+                          <X size={10} />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-3">
+          <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 mb-3">
             <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white text-xs h-10" onClick={() => handleSendFlag("green")}>
               🟢 Green
             </Button>
             <Button size="sm" className="bg-yellow-500 hover:bg-yellow-600 text-black text-xs h-10" onClick={() => setShowYellowFlagDialog(true)}>
               ⚠️ Yellow
+            </Button>
+            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-10" onClick={() => setShowBlueFlagDialog(true)}>
+              🔵 Blue
             </Button>
             <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white text-xs h-10" onClick={() => handleSendFlag("red")}>
               🔴 Red
@@ -949,6 +994,67 @@ const OrganizerLiveManage = () => {
                 Full Course Yellow
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Blue Flag Dialog */}
+      <Dialog open={showBlueFlagDialog} onOpenChange={setShowBlueFlagDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">🔵 Blue Flag — Faster Traffic</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Target Driver (optional)</Label>
+              <Input
+                value={blueFlagSearch}
+                onChange={e => setBlueFlagSearch(e.target.value)}
+                placeholder="Search by name or car #"
+                className="text-sm mb-2"
+              />
+              <div className="max-h-40 overflow-y-auto space-y-1 border rounded-lg p-2">
+                <div
+                  className={`flex items-center gap-2 p-2 rounded cursor-pointer text-sm ${blueFlagTarget === "all" ? "bg-blue-500/20 border border-blue-500/40" : "hover:bg-muted/50"}`}
+                  onClick={() => setBlueFlagTarget("all")}
+                >
+                  <span className="font-medium">All Drivers</span>
+                </div>
+                {registrations
+                  .filter(r => {
+                    if (!blueFlagSearch) return true;
+                    const s = blueFlagSearch.toLowerCase();
+                    return r.user_name.toLowerCase().includes(s) || (r.car_number?.toString() || "").includes(s);
+                  })
+                  .map(r => (
+                    <div
+                      key={r.user_id}
+                      className={`flex items-center gap-2 p-2 rounded cursor-pointer text-sm ${blueFlagTarget === r.user_id ? "bg-blue-500/20 border border-blue-500/40" : "hover:bg-muted/50"}`}
+                      onClick={() => setBlueFlagTarget(r.user_id)}
+                    >
+                      {r.car_number && <Badge variant="outline" className="font-mono text-[10px]">#{r.car_number}</Badge>}
+                      <span>{r.user_name}</span>
+                    </div>
+                  ))
+                }
+              </div>
+              <p className="text-[10px] text-muted-foreground">Blue flag indicates faster traffic approaching. Shown as a banner alongside the current track flag.</p>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm">Message (optional)</Label>
+              <Input
+                value={blueFlagMessage}
+                onChange={e => setBlueFlagMessage(e.target.value)}
+                placeholder="e.g. Faster car approaching, yield on straight"
+                className="text-sm"
+              />
+            </div>
+            <Button
+              onClick={handleSendBlueFlag}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold"
+            >
+              🔵 Send Blue Flag
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

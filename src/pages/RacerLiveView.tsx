@@ -37,6 +37,7 @@ const FLAG_CONFIG: Record<string, { bg: string; text: string; label: string; tex
   green: { bg: "bg-green-500", text: "GREEN", label: "Track Clear", textColor: "text-white" },
   yellow: { bg: "bg-yellow-400", text: "YELLOW", label: "FULL COURSE CAUTION", textColor: "text-black" },
   yellow_turn: { bg: "bg-yellow-400", text: "YELLOW", label: "LOCAL CAUTION", textColor: "text-black" },
+  blue: { bg: "bg-blue-600", text: "BLUE FLAG", label: "FASTER TRAFFIC — YIELD", textColor: "text-white" },
   red: { bg: "bg-red-600", text: "RED", label: "STOP — SESSION HALTED", textColor: "text-white" },
   black: { bg: "bg-black", text: "BLACK FLAG", label: "PIT IN IMMEDIATELY", textColor: "text-white" },
   white: { bg: "bg-white border-2 border-gray-300", text: "WHITE", label: "Slow Vehicle Ahead", textColor: "text-black" },
@@ -170,9 +171,14 @@ const RacerLiveView = () => {
     return activeFlags.filter(f => f.flag_type === "yellow_turn");
   }, [activeFlags]);
 
-  // Non-yellow-turn flags for priority display
+  // Blue flags shown as banners too
+  const blueFlags = useMemo(() => {
+    return activeFlags.filter(f => f.flag_type === "blue" && (f.target_user_id === null || f.target_user_id === user?.id));
+  }, [activeFlags, user?.id]);
+
+  // Non-yellow-turn, non-blue flags for priority display
   const priorityFlags = useMemo(() => {
-    return activeFlags.filter(f => f.flag_type !== "yellow_turn");
+    return activeFlags.filter(f => f.flag_type !== "yellow_turn" && f.flag_type !== "blue");
   }, [activeFlags]);
 
   // Track when targeted black flags first appear + vibrate
@@ -469,6 +475,41 @@ const RacerLiveView = () => {
               </div>
               <Badge className="bg-black/20 text-black font-bold text-xs border-0">
                 CAUTION
+              </Badge>
+            </motion.div>
+          ))}
+        </div>
+      )}
+
+      {/* Blue flag banners - shown alongside current flag */}
+      {blueFlags.length > 0 && (
+        <div className="shrink-0">
+          {blueFlags.map(f => (
+            <motion.div
+              key={f.id}
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              className="bg-blue-600 border-b border-blue-800 px-4 py-2 flex items-center justify-between"
+            >
+              <div className="flex items-center gap-2">
+                <motion.span
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ repeat: Infinity, duration: 1.5 }}
+                  className="text-lg"
+                >
+                  🔵
+                </motion.span>
+                <div>
+                  <p className="text-sm font-black text-white uppercase tracking-wider">
+                    BLUE FLAG
+                  </p>
+                  {f.message && (
+                    <p className="text-xs text-white/80 font-semibold">{f.message}</p>
+                  )}
+                </div>
+              </div>
+              <Badge className="bg-white/20 text-white font-bold text-xs border-0">
+                YIELD
               </Badge>
             </motion.div>
           ))}
