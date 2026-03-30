@@ -329,7 +329,26 @@ const OrganizerLiveManage = () => {
   };
 
   const handleClearSingleFlag = async (flagId: string) => {
+    const flag = activeFlags.find(f => f.id === flagId);
     await supabase.from("event_flags").update({ is_active: false }).eq("id", flagId);
+    
+    // If clearing a global caution flag (yellow, red) during an active session, auto-restore green
+    const globalCautionTypes = ["yellow", "red"];
+    const hasActiveSession = sessionStates.some(s => s.state === "active");
+    if (flag && globalCautionTypes.includes(flag.flag_type) && hasActiveSession && eventId && organizerProfileId) {
+      const remainingGlobal = activeFlags.filter(f => f.id !== flagId && !["yellow_turn", "blue"].includes(f.flag_type) && !(f.flag_type === "black" && f.target_user_id));
+      if (remainingGlobal.length === 0) {
+        await supabase.from("event_flags").insert({
+          event_id: eventId,
+          organizer_id: organizerProfileId,
+          flag_type: "green",
+          message: null,
+          is_active: true,
+        });
+        toast({ title: "🟢 Green flag restored — caution cleared" });
+        return;
+      }
+    }
     toast({ title: "Flag cleared" });
   };
 
