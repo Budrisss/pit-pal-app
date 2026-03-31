@@ -46,6 +46,7 @@ interface EventData {
 
 interface WeatherData {
   temperature: number;
+  feelsLike: number;
   condition: string;
   precipitation: number;
   windSpeed: number;
