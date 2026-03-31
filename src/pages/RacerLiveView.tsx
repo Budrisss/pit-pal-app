@@ -697,13 +697,13 @@ const RacerLiveView = () => {
                 <p className="text-xl sm:text-3xl font-bold uppercase tracking-wide">
                   {flagConfig.label}
                 </p>
-                {primaryFlag.message && (
+                {effectivePrimaryFlag.message && (
                   <motion.p
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="text-lg sm:text-2xl mt-4 font-medium bg-black/30 rounded-lg px-4 py-2 inline-block"
                   >
-                    {primaryFlag.message}
+                    {effectivePrimaryFlag.message}
                   </motion.p>
                 )}
 
