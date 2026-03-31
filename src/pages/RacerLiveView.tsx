@@ -675,7 +675,7 @@ const RacerLiveView = () => {
         </AnimatePresence>
 
         {/* Your Session Banner - personalized to racer's run group */}
-        {userRegTypeId && (myActiveSession || myNextSession) && (
+        {userRegTypeIds.size > 0 && (myActiveSession || myNextSession) && (
           <div className={`border-t border-white/10 px-4 py-3 shrink-0 ${myActiveSession ? 'bg-green-900/60' : 'bg-blue-900/40'}`}>
             {myActiveSession && myActiveRemaining ? (
               <div className="flex items-center justify-between">
