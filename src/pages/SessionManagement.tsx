@@ -947,91 +947,85 @@ const SessionManagement = () => {
         <div className="lg:grid lg:grid-cols-3 lg:gap-5 space-y-5 lg:space-y-0">
           {/* Left Column — Event Info + Weather */}
           <div className="space-y-5">
-            {/* Event Details + Track Conditions Combined */}
-            <Card className="bg-card/60 backdrop-blur-sm border-border/50">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                  <Calendar size={14} className="text-primary" />
-                  Event Info
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Track</span>
-                  <span className="font-medium text-foreground">{eventData.track}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Date</span>
-                  <span className="font-medium text-foreground">{format(parseISO(eventData.date), "MMM d, yyyy")}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Vehicle</span>
-                  <span className="font-medium text-foreground truncate ml-4">{eventData.car}</span>
-                </div>
+            {/* Event Info + Weather — two side-by-side cards */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* Left: Track Info */}
+              <Card className="bg-card/60 backdrop-blur-sm border-border/50">
+                <CardHeader className="pb-2 px-3 pt-3">
+                  <CardTitle className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <Calendar size={12} className="text-primary" />
+                    Event Info
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-xs px-3 pb-3">
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Track</p>
+                    <p className="font-medium text-foreground leading-tight">{eventData.track}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Date</p>
+                    <p className="font-medium text-foreground">{format(parseISO(eventData.date), "MMM d, yyyy")}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Vehicle</p>
+                    <p className="font-medium text-foreground truncate">{eventData.car}</p>
+                  </div>
+                </CardContent>
+              </Card>
 
-                {/* Weather / Track Conditions */}
-                {eventData.address && (
-                  <>
-                    <div className="border-t border-border/50 pt-3 mt-3">
-                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 mb-2">
-                        <Cloud size={12} className="text-primary" />
-                        Track Conditions
-                      </p>
+              {/* Right: Weather */}
+              <Card className="bg-card/60 backdrop-blur-sm border-border/50">
+                <CardHeader className="pb-2 px-3 pt-3">
+                  <CardTitle className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <Cloud size={12} className="text-primary" />
+                    Weather
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-xs px-3 pb-3">
+                  {!eventData.address && (
+                    <p className="text-muted-foreground text-[10px]">No address set</p>
+                  )}
+                  {eventData.address && weatherLoading && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary" />
+                      <span className="text-[10px]">Loading...</span>
                     </div>
-                    {weatherLoading && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
-                        Loading weather...
-                      </div>
-                    )}
-                    {weatherError && (
-                      <p className="text-sm text-muted-foreground">{weatherError}</p>
-                    )}
-                    {weatherData && (
-                      <>
-                        {weatherData.warnings.length > 0 && (
-                          <div className="space-y-1">
-                            {weatherData.warnings.map((w, i) => (
-                              <div key={i} className="p-2 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive">{w}</div>
-                            ))}
-                          </div>
-                        )}
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="flex items-center gap-2">
-                            <Thermometer size={14} className="text-primary" />
-                            <div>
-                              <p className="text-[10px] text-muted-foreground">Temp</p>
-                              <p className="font-medium">{weatherData.temperature}°F</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Cloud size={14} className="text-primary" />
-                            <div>
-                              <p className="text-[10px] text-muted-foreground">Condition</p>
-                              <p className="font-medium">{weatherData.condition}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Wind size={14} className="text-primary" />
-                            <div>
-                              <p className="text-[10px] text-muted-foreground">Wind</p>
-                              <p className="font-medium">{weatherData.windSpeed} mph</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Eye size={14} className="text-primary" />
-                            <div>
-                              <p className="text-[10px] text-muted-foreground">Visibility</p>
-                              <p className="font-medium">{weatherData.visibility} mi</p>
-                            </div>
-                          </div>
+                  )}
+                  {eventData.address && weatherError && (
+                    <p className="text-[10px] text-muted-foreground">{weatherError}</p>
+                  )}
+                  {eventData.address && weatherData && (
+                    <>
+                      {weatherData.warnings.length > 0 && (
+                        <div className="space-y-1">
+                          {weatherData.warnings.map((w, i) => (
+                            <div key={i} className="p-1.5 bg-destructive/10 border border-destructive/20 rounded text-[10px] text-destructive">{w}</div>
+                          ))}
                         </div>
-                      </>
-                    )}
-                  </>
-                )}
-              </CardContent>
-            </Card>
+                      )}
+                      <div className="grid grid-cols-1 gap-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <Thermometer size={12} className="text-primary flex-shrink-0" />
+                          <span className="font-medium">{weatherData.temperature}°F</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Cloud size={12} className="text-primary flex-shrink-0" />
+                          <span className="font-medium truncate">{weatherData.condition}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Wind size={12} className="text-primary flex-shrink-0" />
+                          <span className="font-medium">{weatherData.windSpeed} mph</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Eye size={12} className="text-primary flex-shrink-0" />
+                          <span className="font-medium">{weatherData.visibility} mi</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
 
         {/* My Run Group Selector */}
             {sessions.length > 0 && (
