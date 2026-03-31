@@ -51,6 +51,7 @@ interface EventFlag {
 }
 
 interface EventRegistrationWithCar {
+  id: string;
   user_id: string;
   user_name: string;
   car_number: number | null;
