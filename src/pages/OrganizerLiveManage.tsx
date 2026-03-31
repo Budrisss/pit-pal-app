@@ -379,7 +379,8 @@ const OrganizerLiveManage = () => {
 
   const handleSendBlackFlag = async () => {
     if (!eventId || !organizerProfileId) return;
-    const targetUserId = blackFlagTarget === "all" ? null : blackFlagTarget;
+    const reg = blackFlagTarget === "all" ? null : registrations.find(r => r.id === blackFlagTarget);
+    const targetUserId = reg?.user_id || null;
     // Only deactivate global flags if this is a global (all drivers) black flag
     if (!targetUserId) {
       await supabase
@@ -390,9 +391,9 @@ const OrganizerLiveManage = () => {
         .neq("flag_type", "yellow_turn")
         .neq("flag_type", "blue");
     }
-    const targetReg = registrations.find(r => r.user_id === targetUserId);
-    const messagePrefix = targetReg?.car_number ? `Car #${targetReg.car_number}` : null;
-    const fullMessage = [messagePrefix, blackFlagMessage.trim()].filter(Boolean).join(" — ") || null;
+    const groupName = reg ? (registrationTypes.find(rt => rt.id === reg.registration_type_id)?.name || "") : "";
+    const messagePrefix = reg?.car_number ? `Car #${reg.car_number}` : null;
+    const fullMessage = [messagePrefix, groupName, blackFlagMessage.trim()].filter(Boolean).join(" — ") || null;
     const { error } = await supabase.from("event_flags").insert({
       event_id: eventId,
       organizer_id: organizerProfileId,
@@ -405,11 +406,12 @@ const OrganizerLiveManage = () => {
     if (error) {
       toast({ title: "Failed to send black flag", variant: "destructive" });
     } else {
-      toast({ title: targetReg?.car_number ? `🏴 Black flag sent to Car #${targetReg.car_number}` : "🏴 Black flag sent to all drivers" });
+      toast({ title: reg?.car_number ? `🏴 Black flag sent to Car #${reg.car_number}` : "🏴 Black flag sent to all drivers" });
       setShowBlackFlagDialog(false);
       setBlackFlagTarget("all");
       setBlackFlagMessage("");
       setBlackFlagSearch("");
+      setBlackFlagGroupFilter("active");
     }
   };
 
