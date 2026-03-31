@@ -438,15 +438,15 @@ const RacerLiveView = () => {
   }, [myActiveSession, eventDate, currentTime]);
 
   const myNextSession = useMemo(() => {
-    if (!userRegTypeId) return null;
-    const upcoming = sessionStates.filter(s => s.state === "upcoming" && s.start_time && s.registration_type_id === userRegTypeId);
+    if (userRegTypeIds.size === 0) return null;
+    const upcoming = sessionStates.filter(s => s.state === "upcoming" && s.start_time && s.registration_type_id && userRegTypeIds.has(s.registration_type_id));
     if (upcoming.length === 0) return null;
     return upcoming.sort((a, b) => {
       const [ah, am] = a.start_time!.split(":").map(Number);
       const [bh, bm] = b.start_time!.split(":").map(Number);
       return ah * 60 + am - (bh * 60 + bm);
     })[0];
-  }, [sessionStates, userRegTypeId]);
+  }, [sessionStates, userRegTypeIds]);
 
   const myNextCountdown = useMemo(() => {
     if (!myNextSession?.start_time || !eventDate) return null;
