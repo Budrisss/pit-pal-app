@@ -48,10 +48,16 @@ serve(async (req) => {
     );
 
     if (!weatherResponse.ok) {
-      console.error('Weather API error:', weatherResponse.status, await weatherResponse.text());
+      const errorText = await weatherResponse.text();
+      console.error('Weather API error:', weatherResponse.status, errorText);
+      // Return a user-friendly error with the actual status
+      const statusCode = weatherResponse.status === 400 ? 400 : 500;
+      const message = weatherResponse.status === 400 
+        ? 'Location not found. Please update your event address.' 
+        : 'Failed to fetch weather data';
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch weather data' }), 
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: message }), 
+        { status: statusCode, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
