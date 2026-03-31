@@ -426,12 +426,19 @@ const OrganizerLiveManage = () => {
     return registrationTypes.find((rt) => rt.id === regTypeId)?.name || "Unknown";
   };
 
+  const orderedSessions = useMemo(
+    () => [...sessions].sort((a, b) => (a.sort_order ?? Number.MAX_SAFE_INTEGER) - (b.sort_order ?? Number.MAX_SAFE_INTEGER) || a.id.localeCompare(b.id)),
+    [sessions]
+  );
+
   const sessionStates = useMemo(() => {
     if (!eventDate) return [];
     const now = currentTime;
     const evDate = parseISO(eventDate);
-    return sessions.map((s) => {
-      if (!s.start_time || !s.duration_minutes) return { ...s, state: "upcoming" as const };
+
+    // First pass: compute time-based states for sessions with times
+    const withStates = orderedSessions.map((s) => {
+      if (!s.start_time || !s.duration_minutes) return { ...s, state: null as "completed" | "active" | "upcoming" | null };
       const [h, m] = s.start_time.split(":").map(Number);
       const start = new Date(evDate);
       start.setHours(h, m, 0, 0);
@@ -440,7 +447,17 @@ const OrganizerLiveManage = () => {
       if (isAfter(now, start) && isBefore(now, end)) return { ...s, state: "active" as const };
       return { ...s, state: "upcoming" as const };
     });
-  }, [sessions, eventDate, currentTime]);
+
+    // Second pass: for sessions without times (state === null), derive from position
+    const activeIdx = withStates.findIndex(s => s.state === "active");
+    return withStates.map((s, i) => {
+      if (s.state !== null) return { ...s, state: s.state };
+      // If there's an active session and this session is before it in sort order, it's completed
+      if (activeIdx >= 0 && i < activeIdx) return { ...s, state: "completed" as const };
+      // If all timed sessions before this one are completed, treat as upcoming
+      return { ...s, state: "upcoming" as const };
+    });
+  }, [orderedSessions, eventDate, currentTime]);
 
   // Auto-expire blue flags after 10 seconds
   const BLUE_FLAG_TTL_MS = 10_000;
@@ -569,25 +586,24 @@ const OrganizerLiveManage = () => {
   const nextCountdown = useMemo(() => {
     if (!eventDate) return null;
     const evDate = parseISO(eventDate);
-    const upcoming = sessionStates
-      .filter((s) => s.state === "upcoming" && s.start_time)
-      .sort((a, b) => {
-        const [ah, am] = a.start_time.split(":").map(Number);
-        const [bh, bm] = b.start_time.split(":").map(Number);
-        return ah * 60 + am - (bh * 60 + bm);
-      });
-    if (upcoming.length === 0) return null;
-    const next = upcoming[0];
-    const [h, m] = next.start_time.split(":").map(Number);
-    const start = new Date(evDate);
-    start.setHours(h, m, 0, 0);
-    const diffMs = differenceInMilliseconds(start, currentTime);
-    if (diffMs <= 0) return null;
-    const hrs = Math.floor(diffMs / 3600000);
-    const mins = Math.floor((diffMs % 3600000) / 60000);
-    const secs = Math.floor((diffMs % 60000) / 1000);
-    const isBufferZone = diffMs <= 5 * 60 * 1000;
-    return { hours: hrs, minutes: mins, seconds: secs, isBufferZone, sessionName: next.name, runGroup: getRunGroupName(next.registration_type_id) };
+    // Find the first upcoming session by sort_order (sessionStates is already sorted by sort_order)
+    const next = sessionStates.find((s) => s.state === "upcoming");
+    if (!next) return null;
+    // If the next session has a start_time, show countdown
+    if (next.start_time) {
+      const [h, m] = next.start_time.split(":").map(Number);
+      const start = new Date(evDate);
+      start.setHours(h, m, 0, 0);
+      const diffMs = differenceInMilliseconds(start, currentTime);
+      if (diffMs <= 0) return { hours: 0, minutes: 0, seconds: 0, isBufferZone: true, sessionName: next.name, runGroup: getRunGroupName(next.registration_type_id) };
+      const hrs = Math.floor(diffMs / 3600000);
+      const mins = Math.floor((diffMs % 3600000) / 60000);
+      const secs = Math.floor((diffMs % 60000) / 1000);
+      const isBufferZone = diffMs <= 5 * 60 * 1000;
+      return { hours: hrs, minutes: mins, seconds: secs, isBufferZone, sessionName: next.name, runGroup: getRunGroupName(next.registration_type_id) };
+    }
+    // No start_time — just show the session name without countdown
+    return { hours: 0, minutes: 0, seconds: 0, isBufferZone: false, sessionName: next.name, runGroup: getRunGroupName(next.registration_type_id) };
   }, [sessionStates, eventDate, currentTime]);
 
   if (loading) {
