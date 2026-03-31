@@ -614,21 +614,45 @@ const SessionManagement = () => {
       if (savedSettings) {
         try { setSettings(JSON.parse(savedSettings)); } catch {}
       }
-      const savedRunGroup = localStorage.getItem(`my-run-group-${eventId}`);
-      if (savedRunGroup) {
-        setMyRunGroup(savedRunGroup);
+      const savedRunGroups = localStorage.getItem(`my-run-groups-${eventId}`);
+      if (savedRunGroups) {
+        try {
+          const parsed = JSON.parse(savedRunGroups);
+          if (Array.isArray(parsed)) setMyRunGroups(new Set(parsed));
+        } catch {}
       } else if (eventRow?.public_event_id) {
-        // Auto-default to the user's registered group if no manual override exists
+        // Auto-default to ALL of the user's registered groups
+        const userId = (await supabase.auth.getUser()).data.user?.id;
         const { data: regData } = await (supabase as any)
           .from("event_registrations")
-          .select("registration_type_id")
+          .select("registration_type_id, car_number, car_id")
           .eq("event_id", eventRow.public_event_id)
-          .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
-          .limit(1);
+          .eq("user_id", userId);
         if (regData && regData.length > 0) {
-          const regGroupId = regData[0].registration_type_id;
-          setMyRunGroup(regGroupId);
-          localStorage.setItem(`my-run-group-${eventId}`, regGroupId);
+          const groupIds = [...new Set(regData.map((r: any) => r.registration_type_id))] as string[];
+          setMyRunGroups(new Set(groupIds));
+          localStorage.setItem(`my-run-groups-${eventId}`, JSON.stringify(groupIds));
+
+          // Fetch car details for each registration
+          const carIds = [...new Set(regData.map((r: any) => r.car_id).filter(Boolean))] as string[];
+          let carMap: Record<string, string> = {};
+          if (carIds.length > 0) {
+            const { data: carsData } = await (supabase as any)
+              .from("cars")
+              .select("id, year, make, model")
+              .in("id", carIds);
+            if (carsData) {
+              carMap = Object.fromEntries(carsData.map((c: any) => [c.id, `${c.year || ''} ${c.make || ''} ${c.model || ''}`.trim()]));
+            }
+          }
+          const regMap: Record<string, { carNumber: number | null; carName: string | null }> = {};
+          for (const r of regData as any[]) {
+            regMap[r.registration_type_id] = {
+              carNumber: r.car_number,
+              carName: r.car_id ? carMap[r.car_id] || null : null,
+            };
+          }
+          setUserRegMap(regMap);
         }
       }
       setSessionsLoaded(true);
