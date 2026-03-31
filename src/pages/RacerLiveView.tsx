@@ -332,14 +332,37 @@ const RacerLiveView = () => {
     if (!eventDate) return [];
     const now = currentTime;
     const evDate = parseISO(eventDate);
-    return sessions.map(s => {
-      if (!s.start_time || !s.duration_minutes) return { ...s, state: "upcoming" as const };
-      const [h, m] = s.start_time.split(":").map(Number);
-      const start = new Date(evDate); start.setHours(h, m, 0, 0);
-      const end = addMinutes(start, s.duration_minutes);
-      if (isAfter(now, end)) return { ...s, state: "completed" as const };
-      if (isAfter(now, start) && isBefore(now, end)) return { ...s, state: "active" as const };
-      return { ...s, state: "upcoming" as const };
+
+    // Sort by sort_order to ensure correct sequence
+    const orderedSessions = [...sessions].sort((a, b) => a.sort_order - b.sort_order);
+
+    // Find the time-based active session
+    let activeIdx = -1;
+    let firstUpcomingIdx = -1;
+    for (let i = 0; i < orderedSessions.length; i++) {
+      const s = orderedSessions[i];
+      if (s.start_time && s.duration_minutes) {
+        const [h, m] = s.start_time.split(":").map(Number);
+        const start = new Date(evDate); start.setHours(h, m, 0, 0);
+        const end = addMinutes(start, s.duration_minutes);
+        if (isAfter(now, start) && isBefore(now, end)) {
+          activeIdx = i;
+          break;
+        }
+        if (firstUpcomingIdx < 0 && isAfter(end, now)) {
+          firstUpcomingIdx = i;
+        }
+      }
+    }
+
+    // Derive states from position relative to the active/first-upcoming session
+    const pivotIdx = activeIdx >= 0 ? activeIdx : firstUpcomingIdx;
+    return orderedSessions.map((s, i) => {
+      if (activeIdx >= 0 && i === activeIdx) return { ...s, state: "active" as const };
+      if (pivotIdx >= 0) {
+        return { ...s, state: i < pivotIdx ? "completed" as const : "upcoming" as const };
+      }
+      return { ...s, state: "completed" as const };
     });
   }, [sessions, eventDate, currentTime]);
 
