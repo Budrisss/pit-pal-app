@@ -447,11 +447,10 @@ const SessionManagement = () => {
       const { data, error } = await supabase.functions.invoke('get-weather', {
         body: { address: eventData.address }
       });
-      if (error) {
-        // Graceful fallback — don't crash
-        const msg = typeof error === 'object' && error.message ? error.message : String(error);
-        if (msg.includes('not configured') || msg.includes('API key')) {
-          setWeatherError("Weather unavailable");
+      if (error || (data && data.error)) {
+        const msg = data?.error || (typeof error === 'object' && error.message ? error.message : String(error));
+        if (msg.includes('Location not found')) {
+          setWeatherError("Location not found");
         } else {
           setWeatherError("Weather unavailable");
         }
