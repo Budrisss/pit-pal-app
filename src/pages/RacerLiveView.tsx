@@ -502,8 +502,46 @@ const RacerLiveView = () => {
     return { minutes: Math.floor(diffMs / 60000), seconds: Math.floor((diffMs % 60000) / 1000) };
   }, [myNextSession, eventDate, currentTime]);
 
-  const flagConfig = primaryFlag ? FLAG_CONFIG[primaryFlag.flag_type] || FLAG_CONFIG.green : null;
-  const isCheckered = primaryFlag?.flag_type === "checkered";
+  // --- Checkered flag auto-dismiss after 3 minutes ---
+  const checkeredShownAtRef = useRef<number | null>(null);
+  const [checkeredExpired, setCheckeredExpired] = useState(false);
+
+  // Track when checkered first appears
+  useEffect(() => {
+    const rawFlag = priorityFlags.find(f => f.flag_type === "checkered");
+    if (rawFlag) {
+      if (checkeredShownAtRef.current === null) {
+        checkeredShownAtRef.current = Date.now();
+        setCheckeredExpired(false);
+      }
+    } else {
+      checkeredShownAtRef.current = null;
+      setCheckeredExpired(false);
+    }
+  }, [priorityFlags]);
+
+  // Check expiry each tick
+  useEffect(() => {
+    if (checkeredShownAtRef.current && !checkeredExpired) {
+      const elapsed = currentTime.getTime() - checkeredShownAtRef.current;
+      if (elapsed >= 180000) {
+        setCheckeredExpired(true);
+      }
+    }
+  }, [currentTime, checkeredExpired]);
+
+  // Effective primary flag: suppress checkered if expired
+  const effectivePrimaryFlag = useMemo(() => {
+    if (primaryFlag?.flag_type === "checkered" && checkeredExpired) {
+      // Fall through to null (standby) — the synthetic green logic already returned null
+      // if user's group isn't active, so we just suppress the checkered
+      return null;
+    }
+    return primaryFlag;
+  }, [primaryFlag, checkeredExpired]);
+
+  const flagConfig = effectivePrimaryFlag ? FLAG_CONFIG[effectivePrimaryFlag.flag_type] || FLAG_CONFIG.green : null;
+  const isCheckered = effectivePrimaryFlag?.flag_type === "checkered";
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col select-none">
@@ -628,9 +666,9 @@ const RacerLiveView = () => {
       {/* Flag Zone - dominant area */}
       <div className="flex-1 flex flex-col">
         <AnimatePresence mode="wait">
-          {primaryFlag && flagConfig ? (
+          {effectivePrimaryFlag && flagConfig ? (
             <motion.div
-              key={primaryFlag.id + primaryFlag.flag_type}
+              key={effectivePrimaryFlag.id + effectivePrimaryFlag.flag_type}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
@@ -642,7 +680,7 @@ const RacerLiveView = () => {
             >
               {isCheckered && <div className="absolute inset-0 bg-black/40" />}
               <div className="relative z-10 text-center">
-                {primaryFlag.flag_type === "red" || primaryFlag.flag_type === "black" ? (
+                {effectivePrimaryFlag.flag_type === "red" || effectivePrimaryFlag.flag_type === "black" ? (
                   <motion.div
                     animate={{ scale: [1, 1.05, 1] }}
                     transition={{ repeat: Infinity, duration: 1.2 }}
@@ -659,13 +697,13 @@ const RacerLiveView = () => {
                 <p className="text-xl sm:text-3xl font-bold uppercase tracking-wide">
                   {flagConfig.label}
                 </p>
-                {primaryFlag.message && (
+                {effectivePrimaryFlag.message && (
                   <motion.p
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="text-lg sm:text-2xl mt-4 font-medium bg-black/30 rounded-lg px-4 py-2 inline-block"
                   >
-                    {primaryFlag.message}
+                    {effectivePrimaryFlag.message}
                   </motion.p>
                 )}
 
@@ -710,10 +748,37 @@ const RacerLiveView = () => {
               animate={{ opacity: 1 }}
               className="flex-1 flex flex-col items-center justify-center bg-gray-900 p-6"
             >
-              <p className="text-2xl sm:text-4xl font-bold text-white/30 uppercase tracking-widest">
-                Standby
-              </p>
-              <p className="text-sm text-white/20 mt-2">Waiting for flag updates...</p>
+              {myNextSession ? (
+                <>
+                  <p className="text-sm text-white/40 uppercase tracking-widest mb-2">Your Next Session</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-white/80">{myNextSession.name}</p>
+                  {regTypeName && <p className="text-xs text-white/40 mt-1">{regTypeName}</p>}
+                  {myNextCountdown ? (
+                    <div className="mt-4 text-center">
+                      <p className="text-4xl sm:text-5xl font-mono font-black text-blue-400">
+                        {myNextCountdown.minutes}:{myNextCountdown.seconds.toString().padStart(2, "0")}
+                      </p>
+                      <p className="text-xs text-blue-300/60 uppercase tracking-wider mt-1">until start</p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-white/30 mt-3">Starting soon...</p>
+                  )}
+                </>
+              ) : userRegTypeIds.size > 0 && sessionStates.every(s => s.state === "completed") ? (
+                <>
+                  <p className="text-2xl sm:text-4xl font-bold text-white/30 uppercase tracking-widest">
+                    🏁 All Sessions Complete
+                  </p>
+                  <p className="text-sm text-white/20 mt-2">Great day on track!</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-2xl sm:text-4xl font-bold text-white/30 uppercase tracking-widest">
+                    Standby
+                  </p>
+                  <p className="text-sm text-white/20 mt-2">Waiting for flag updates...</p>
+                </>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
