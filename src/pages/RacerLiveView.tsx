@@ -761,32 +761,34 @@ const RacerLiveView = () => {
           </div>
         )}
 
-        {/* Global Session Info Bar */}
-        <div className="bg-gray-900 border-t border-white/10 px-4 py-2.5 shrink-0">
-          {activeSession ? (
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[10px] text-white/40 uppercase tracking-wider">Current Track Session</p>
-                <p className="text-sm font-bold">{activeSession.name}</p>
+        {/* Global Session Info Bar - hidden when user has a run group selected */}
+        {userRegTypeIds.size === 0 && (
+          <div className="bg-gray-900 border-t border-white/10 px-4 py-2.5 shrink-0">
+            {activeSession ? (
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] text-white/40 uppercase tracking-wider">Current Track Session</p>
+                  <p className="text-sm font-bold">{activeSession.name}</p>
+                </div>
+                {activeRemaining && (
+                  <p className="text-xl font-mono font-bold text-green-400">
+                    {activeRemaining.minutes}:{activeRemaining.seconds.toString().padStart(2, "0")}
+                  </p>
+                )}
               </div>
-              {activeRemaining && (
-                <p className="text-xl font-mono font-bold text-green-400">
-                  {activeRemaining.minutes}:{activeRemaining.seconds.toString().padStart(2, "0")}
-                </p>
-              )}
-            </div>
-          ) : nextSession ? (
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[10px] text-white/40 uppercase tracking-wider">Up Next</p>
-                <p className="text-sm font-bold">{nextSession.name}</p>
+            ) : nextSession ? (
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] text-white/40 uppercase tracking-wider">Up Next</p>
+                  <p className="text-sm font-bold">{nextSession.name}</p>
+                </div>
+                <p className="text-sm text-white/40">Starts at {nextSession.start_time}</p>
               </div>
-              <p className="text-sm text-white/40">Starts at {nextSession.start_time}</p>
-            </div>
-          ) : (
-            <p className="text-sm text-white/40 text-center">No active sessions</p>
-          )}
-        </div>
+            ) : (
+              <p className="text-sm text-white/40 text-center">No active sessions</p>
+            )}
+          </div>
+        )}
 
         {/* Announcements */}
         {announcements.length > 0 && (
