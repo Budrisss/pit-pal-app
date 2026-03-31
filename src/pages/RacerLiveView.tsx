@@ -420,11 +420,11 @@ const RacerLiveView = () => {
     })[0];
   }, [sessionStates]);
 
-  // Your session - based on user's run group registration
+  // Your session - based on user's run group registrations (supports multiple groups)
   const myActiveSession = useMemo(() => {
-    if (!userRegTypeId) return null;
-    return sessionStates.find(s => s.state === "active" && s.registration_type_id === userRegTypeId) || null;
-  }, [sessionStates, userRegTypeId]);
+    if (userRegTypeIds.size === 0) return null;
+    return sessionStates.find(s => s.state === "active" && s.registration_type_id && userRegTypeIds.has(s.registration_type_id)) || null;
+  }, [sessionStates, userRegTypeIds]);
 
   const myActiveRemaining = useMemo(() => {
     if (!myActiveSession?.start_time || !myActiveSession?.duration_minutes || !eventDate) return null;
