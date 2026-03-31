@@ -319,6 +319,13 @@ const RacerLiveView = () => {
 
   const activeSession = sessionStates.find(s => s.state === "active");
 
+  // Your session - based on user's run group registrations (supports multiple groups)
+  // Placed before primaryFlag so synthetic green can use it
+  const myActiveSession = useMemo(() => {
+    if (userRegTypeIds.size === 0) return null;
+    return sessionStates.find(s => s.state === "active" && s.registration_type_id && userRegTypeIds.has(s.registration_type_id)) || null;
+  }, [sessionStates, userRegTypeIds]);
+
   // Determine the highest-priority flag to display (excluding accepted targeted black flags)
   const priorityOrder = ["red", "black", "checkered", "yellow", "white", "green"];
   const primaryFlag = useMemo(() => {
@@ -335,12 +342,14 @@ const RacerLiveView = () => {
       return true;
     });
     if (fallback) return fallback;
-    // If no flags remain and a session is active, show green
-    if (activeSession) {
+    // If no flags remain and the user's selected group has an active session, show green
+    // If user has no group selected, fall back to any active session
+    const relevantActiveSession = userRegTypeIds.size > 0 ? myActiveSession : activeSession;
+    if (relevantActiveSession) {
       return { id: "synthetic-green", flag_type: "green", message: null, target_user_id: null, is_active: true, created_at: "" } as EventFlag;
     }
     return null;
-  }, [priorityFlags, blackFlagAccepted, user?.id, activeSession]);
+  }, [priorityFlags, blackFlagAccepted, user?.id, activeSession, myActiveSession, userRegTypeIds]);
 
   // Is the current primary flag a targeted black flag that needs the accept UI?
   const isTargetedBlackFlagFullScreen = primaryFlag?.flag_type === "black" && primaryFlag?.target_user_id === user?.id;
@@ -420,11 +429,7 @@ const RacerLiveView = () => {
     })[0];
   }, [sessionStates]);
 
-  // Your session - based on user's run group registrations (supports multiple groups)
-  const myActiveSession = useMemo(() => {
-    if (userRegTypeIds.size === 0) return null;
-    return sessionStates.find(s => s.state === "active" && s.registration_type_id && userRegTypeIds.has(s.registration_type_id)) || null;
-  }, [sessionStates, userRegTypeIds]);
+  // myActiveSession is defined above (before primaryFlag)
 
   const myActiveRemaining = useMemo(() => {
     if (!myActiveSession?.start_time || !myActiveSession?.duration_minutes || !eventDate) return null;
