@@ -832,12 +832,12 @@ const SessionManagement = () => {
   const allStatedSessions = calculateSessionStates();
   const currentActiveSession = allStatedSessions.find(s => s.state === "active");
   const activeSessionRemainingTime = getActiveSessionRemainingTime();
-  // Check if the active session belongs to the user's selected run group
-  const activeIsMyGroup = myRunGroup && currentActiveSession
-    ? (currentActiveSession.registrationTypeId ? currentActiveSession.registrationTypeId === myRunGroup : currentActiveSession.referenceName === runGroups.find(rg => rg.id === myRunGroup)?.name)
-    : !myRunGroup;
+  // Check if the active session belongs to any of the user's selected run groups
+  const activeIsMyGroup = myRunGroups.size > 0 && currentActiveSession
+    ? (currentActiveSession.registrationTypeId ? myRunGroups.has(currentActiveSession.registrationTypeId) : Array.from(myRunGroups).some(gId => currentActiveSession.referenceName === runGroups.find(rg => rg.id === gId)?.name))
+    : myRunGroups.size === 0;
   // Show "my next" countdown even when another group is active
-  const showMyNextCountdown = myRunGroup && currentActiveSession && !activeIsMyGroup && countdown;
+  const showMyNextCountdown = myRunGroups.size > 0 && currentActiveSession && !activeIsMyGroup && countdown;
   const eventDate = parseISO(eventData.date);
   const today = new Date();
   const isSameDayEvent = today.toDateString() === eventDate.toDateString();
