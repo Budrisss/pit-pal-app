@@ -429,11 +429,7 @@ const RacerLiveView = () => {
     })[0];
   }, [sessionStates]);
 
-  // Your session - based on user's run group registrations (supports multiple groups)
-  const myActiveSession = useMemo(() => {
-    if (userRegTypeIds.size === 0) return null;
-    return sessionStates.find(s => s.state === "active" && s.registration_type_id && userRegTypeIds.has(s.registration_type_id)) || null;
-  }, [sessionStates, userRegTypeIds]);
+  // myActiveSession is defined above (before primaryFlag)
 
   const myActiveRemaining = useMemo(() => {
     if (!myActiveSession?.start_time || !myActiveSession?.duration_minutes || !eventDate) return null;
