@@ -464,8 +464,33 @@ const OrganizerLiveManage = () => {
   const isLocalCaution = (f: EventFlag) => f.flag_type === "yellow_turn" || (f.flag_type === "blue" && !isBlueExpired(f)) || (f.flag_type === "black" && f.target_user_id);
 
   const activeSession = sessionStates.find((s) => s.state === "active");
+  const activeSessionRegTypeId = activeSession?.registration_type_id || null;
   const activeSessionIdRef = useRef<string | null>(null);
   activeSessionIdRef.current = activeSession?.id || null;
+
+  // Helper: filter registrations by group
+  const getFilteredRegistrations = (filter: "active" | "all", search: string) => {
+    let filtered = registrations;
+    if (filter === "active" && activeSessionRegTypeId) {
+      filtered = filtered.filter(r => r.registration_type_id === activeSessionRegTypeId);
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      filtered = filtered.filter(r => r.car_number?.toString().includes(q) || r.user_name.toLowerCase().includes(q));
+    }
+    return filtered;
+  };
+
+  // Group registrations by registration type
+  const groupRegistrationsByType = (regs: EventRegistrationWithCar[]) => {
+    const groups: Record<string, EventRegistrationWithCar[]> = {};
+    for (const r of regs) {
+      const groupName = registrationTypes.find(rt => rt.id === r.registration_type_id)?.name || "Unknown";
+      if (!groups[groupName]) groups[groupName] = [];
+      groups[groupName].push(r);
+    }
+    return groups;
+  };
 
   // Auto-send checkered flag when a session ends
   const prevActiveSessionId = useRef<string | null>(null);
