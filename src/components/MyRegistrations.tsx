@@ -1,11 +1,23 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Ticket, ChevronRight, CalendarDays } from "lucide-react";
+import { Ticket, ChevronRight, CalendarDays, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface Registration {
   id: string;
@@ -38,58 +50,87 @@ interface Registration {
 const MyRegistrations = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cancelling, setCancelling] = useState<string | null>(null);
+
+  const fetchRegistrations = async () => {
+    if (!user) return;
+    setLoading(true);
+    const { data: regs } = await supabase
+      .from("event_registrations")
+      .select("id, event_id, registration_type_id, user_name, car_number, car_id, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (!regs || regs.length === 0) {
+      setRegistrations([]);
+      setLoading(false);
+      return;
+    }
+
+    const eventIds = [...new Set(regs.map((r) => r.event_id))];
+    const regTypeIds = [...new Set(regs.map((r) => r.registration_type_id))];
+    const carIds = [...new Set(regs.map((r) => r.car_id).filter(Boolean))] as string[];
+
+    const promises: any[] = [
+      supabase.from("public_events").select("id, name, date, time, track_name, city, state").in("id", eventIds),
+      supabase.from("registration_types").select("id, name").in("id", regTypeIds),
+    ];
+    if (carIds.length > 0) {
+      promises.push((supabase as any).from("cars").select("id, name, year, make, model").in("id", carIds));
+    }
+
+    const results = await Promise.all(promises);
+    const events = results[0].data;
+    const regTypes = results[1].data;
+    const carsData = carIds.length > 0 ? results[2]?.data : [];
+
+    const eventMap = Object.fromEntries((events || []).map((e: any) => [e.id, e]));
+    const regTypeMap = Object.fromEntries((regTypes || []).map((r: any) => [r.id, r]));
+    const carMap = Object.fromEntries((carsData || []).map((c: any) => [c.id, c]));
+
+    setRegistrations(
+      regs.map((r) => ({
+        ...r,
+        event: eventMap[r.event_id],
+        reg_type: regTypeMap[r.registration_type_id],
+        car: r.car_id ? carMap[r.car_id] : undefined,
+      }))
+    );
+    setLoading(false);
+  };
 
   useEffect(() => {
     if (!user) return;
-    const fetch = async () => {
-      setLoading(true);
-      const { data: regs } = await supabase
-        .from("event_registrations")
-        .select("id, event_id, registration_type_id, user_name, car_number, car_id, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (!regs || regs.length === 0) {
-        setRegistrations([]);
-        setLoading(false);
-        return;
-      }
-
-      const eventIds = [...new Set(regs.map((r) => r.event_id))];
-      const regTypeIds = [...new Set(regs.map((r) => r.registration_type_id))];
-      const carIds = [...new Set(regs.map((r) => r.car_id).filter(Boolean))] as string[];
-
-      const promises: any[] = [
-        supabase.from("public_events").select("id, name, date, time, track_name, city, state").in("id", eventIds),
-        supabase.from("registration_types").select("id, name").in("id", regTypeIds),
-      ];
-      if (carIds.length > 0) {
-        promises.push((supabase as any).from("cars").select("id, name, year, make, model").in("id", carIds));
-      }
-
-      const results = await Promise.all(promises);
-      const events = results[0].data;
-      const regTypes = results[1].data;
-      const carsData = carIds.length > 0 ? results[2]?.data : [];
-
-      const eventMap = Object.fromEntries((events || []).map((e: any) => [e.id, e]));
-      const regTypeMap = Object.fromEntries((regTypes || []).map((r: any) => [r.id, r]));
-      const carMap = Object.fromEntries((carsData || []).map((c: any) => [c.id, c]));
-
-      setRegistrations(
-        regs.map((r) => ({
-          ...r,
-          event: eventMap[r.event_id],
-          reg_type: regTypeMap[r.registration_type_id],
-          car: r.car_id ? carMap[r.car_id] : undefined,
-        }))
-      );
-      setLoading(false);
-    };
-    fetch();
+    fetchRegistrations();
   }, [user]);
+
+  const handleCancel = async (reg: Registration) => {
+    if (!user) return;
+    setCancelling(reg.id);
+    try {
+      const { error: regError } = await supabase
+        .from("event_registrations")
+        .delete()
+        .eq("id", reg.id);
+      if (regError) throw regError;
+
+      await supabase
+        .from("events")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("public_event_id", reg.event_id);
+
+      toast({ title: "Registration cancelled", description: `Removed from ${reg.event?.name || "event"}` });
+      await fetchRegistrations();
+    } catch (err: any) {
+      toast({ title: "Failed to cancel", description: err.message, variant: "destructive" });
+    } finally {
+      setCancelling(null);
+    }
+  };
 
   const formatDate = (dateStr: string) =>
     new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -109,14 +150,16 @@ const MyRegistrations = () => {
           <p className="text-sm text-muted-foreground text-center py-4">Loading...</p>
         ) : registrations.length > 0 ? (
           <div className="space-y-3">
-            {registrations.slice(0, 4).map((reg) => (
+            {registrations.map((reg) => (
               <div
                 key={reg.id}
-                className="border border-border rounded-lg p-3 hover:border-primary/30 transition-colors cursor-pointer"
-                onClick={() => navigate(`/public-event/${reg.event_id}`)}
+                className="border border-border rounded-lg p-3 hover:border-primary/30 transition-colors"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
+                  <div
+                    className="min-w-0 flex-1 cursor-pointer"
+                    onClick={() => navigate(`/public-event/${reg.event_id}`)}
+                  >
                     <h4 className="font-semibold text-sm truncate">{reg.event?.name || "Event"}</h4>
                     <p className="text-xs text-muted-foreground">
                       {reg.event?.track_name && `${reg.event.track_name} • `}
@@ -144,13 +187,46 @@ const MyRegistrations = () => {
                       </p>
                     )}
                   </div>
-                  <ChevronRight size={16} className="text-muted-foreground shrink-0 mt-1" />
+                  <div className="flex items-center gap-1 shrink-0">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          disabled={cancelling === reg.id}
+                        >
+                          <Trash2 size={14} />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Cancel Registration?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will remove you from <strong>{reg.event?.name || "this event"}</strong>
+                            {reg.car_number ? ` (car #${reg.car_number})` : ""}. This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Keep Registration</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleCancel(reg)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Cancel Registration
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                    <ChevronRight
+                      size={16}
+                      className="text-muted-foreground cursor-pointer"
+                      onClick={() => navigate(`/public-event/${reg.event_id}`)}
+                    />
+                  </div>
                 </div>
               </div>
             ))}
-            {registrations.length > 4 && (
-              <p className="text-xs text-muted-foreground text-center">+{registrations.length - 4} more</p>
-            )}
           </div>
         ) : (
           <div className="text-center py-4">
