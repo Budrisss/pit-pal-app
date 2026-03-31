@@ -319,10 +319,11 @@ const OrganizerLiveManage = () => {
 
   const handleSendBlueFlag = async () => {
     if (!eventId || !organizerProfileId) return;
-    const targetUserId = blueFlagTarget === "all" ? null : blueFlagTarget;
-    const reg = registrations.find(r => r.user_id === blueFlagTarget);
+    const reg = blueFlagTarget === "all" ? null : registrations.find(r => r.id === blueFlagTarget);
+    const targetUserId = reg?.user_id || null;
     const carLabel = reg?.car_number ? `Car #${reg.car_number}` : "";
-    const fullMessage = [carLabel, blueFlagMessage.trim()].filter(Boolean).join(" — ") || "Faster traffic approaching";
+    const groupName = reg ? (registrationTypes.find(rt => rt.id === reg.registration_type_id)?.name || "") : "";
+    const fullMessage = [carLabel, groupName, blueFlagMessage.trim()].filter(Boolean).join(" — ") || "Faster traffic approaching";
     const { error } = await supabase.from("event_flags").insert({
       event_id: eventId,
       organizer_id: organizerProfileId,
@@ -335,11 +336,12 @@ const OrganizerLiveManage = () => {
     if (error) {
       toast({ title: "Failed to send blue flag", variant: "destructive" });
     } else {
-      toast({ title: `🔵 Blue flag sent!` });
+      toast({ title: reg?.car_number ? `🔵 Blue flag sent to Car #${reg.car_number}` : `🔵 Blue flag sent!` });
       setShowBlueFlagDialog(false);
       setBlueFlagTarget("all");
       setBlueFlagMessage("");
       setBlueFlagSearch("");
+      setBlueFlagGroupFilter("active");
     }
   };
 
