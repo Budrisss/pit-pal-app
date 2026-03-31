@@ -640,7 +640,8 @@ const SessionManagement = () => {
       if (savedSettings) {
         try { setSettings(JSON.parse(savedSettings)); } catch {}
       }
-      const savedRunGroups = localStorage.getItem(`my-run-groups-${eventId}`);
+      const runGroupKey = eventRow?.public_event_id ? `my-run-groups-${eventRow.public_event_id}` : `my-run-groups-${eventId}`;
+      const savedRunGroups = localStorage.getItem(runGroupKey);
       if (savedRunGroups) {
         try {
           const parsed = JSON.parse(savedRunGroups);
