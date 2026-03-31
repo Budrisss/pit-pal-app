@@ -59,7 +59,7 @@ const RacerLiveView = () => {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [loading, setLoading] = useState(true);
-  const [userRegTypeId, setUserRegTypeId] = useState<string | null>(null);
+  const [userRegTypeIds, setUserRegTypeIds] = useState<Set<string>>(new Set());
   const [regTypeName, setRegTypeName] = useState<string | null>(null);
   const [userCarNumber, setUserCarNumber] = useState<number | null>(null);
 
