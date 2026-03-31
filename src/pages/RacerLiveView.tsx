@@ -59,7 +59,14 @@ const RacerLiveView = () => {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [loading, setLoading] = useState(true);
-  const [userRegTypeIds, setUserRegTypeIds] = useState<Set<string>>(new Set());
+  const [userRegTypeIds, setUserRegTypeIds] = useState<Set<string>>(() => {
+    if (!eventId) return new Set<string>();
+    const stored = localStorage.getItem(`my-run-groups-${eventId}`);
+    if (stored) {
+      try { return new Set(JSON.parse(stored).map(String)); } catch { return new Set<string>(); }
+    }
+    return new Set<string>();
+  });
   const [regTypeName, setRegTypeName] = useState<string | null>(null);
   const [userCarNumber, setUserCarNumber] = useState<number | null>(null);
 
@@ -325,14 +332,37 @@ const RacerLiveView = () => {
     if (!eventDate) return [];
     const now = currentTime;
     const evDate = parseISO(eventDate);
-    return sessions.map(s => {
-      if (!s.start_time || !s.duration_minutes) return { ...s, state: "upcoming" as const };
-      const [h, m] = s.start_time.split(":").map(Number);
-      const start = new Date(evDate); start.setHours(h, m, 0, 0);
-      const end = addMinutes(start, s.duration_minutes);
-      if (isAfter(now, end)) return { ...s, state: "completed" as const };
-      if (isAfter(now, start) && isBefore(now, end)) return { ...s, state: "active" as const };
-      return { ...s, state: "upcoming" as const };
+
+    // Sort by sort_order to ensure correct sequence
+    const orderedSessions = [...sessions].sort((a, b) => a.sort_order - b.sort_order);
+
+    // Find the time-based active session
+    let activeIdx = -1;
+    let firstUpcomingIdx = -1;
+    for (let i = 0; i < orderedSessions.length; i++) {
+      const s = orderedSessions[i];
+      if (s.start_time && s.duration_minutes) {
+        const [h, m] = s.start_time.split(":").map(Number);
+        const start = new Date(evDate); start.setHours(h, m, 0, 0);
+        const end = addMinutes(start, s.duration_minutes);
+        if (isAfter(now, start) && isBefore(now, end)) {
+          activeIdx = i;
+          break;
+        }
+        if (firstUpcomingIdx < 0 && isAfter(end, now)) {
+          firstUpcomingIdx = i;
+        }
+      }
+    }
+
+    // Derive states from position relative to the active/first-upcoming session
+    const pivotIdx = activeIdx >= 0 ? activeIdx : firstUpcomingIdx;
+    return orderedSessions.map((s, i) => {
+      if (activeIdx >= 0 && i === activeIdx) return { ...s, state: "active" as const };
+      if (pivotIdx >= 0) {
+        return { ...s, state: i < pivotIdx ? "completed" as const : "upcoming" as const };
+      }
+      return { ...s, state: "completed" as const };
     });
   }, [sessions, eventDate, currentTime]);
 
@@ -439,13 +469,8 @@ const RacerLiveView = () => {
   }, [activeSession, eventDate, currentTime]);
 
   const nextSession = useMemo(() => {
-    const upcoming = sessionStates.filter(s => s.state === "upcoming" && s.start_time);
-    if (upcoming.length === 0) return null;
-    return upcoming.sort((a, b) => {
-      const [ah, am] = a.start_time!.split(":").map(Number);
-      const [bh, bm] = b.start_time!.split(":").map(Number);
-      return ah * 60 + am - (bh * 60 + bm);
-    })[0];
+    // First upcoming session by sort_order (sessionStates is already sorted by sort_order)
+    return sessionStates.find(s => s.state === "upcoming") || null;
   }, [sessionStates]);
 
   // myActiveSession is defined above (before primaryFlag)
@@ -463,13 +488,8 @@ const RacerLiveView = () => {
 
   const myNextSession = useMemo(() => {
     if (userRegTypeIds.size === 0) return null;
-    const upcoming = sessionStates.filter(s => s.state === "upcoming" && s.start_time && s.registration_type_id && userRegTypeIds.has(s.registration_type_id));
-    if (upcoming.length === 0) return null;
-    return upcoming.sort((a, b) => {
-      const [ah, am] = a.start_time!.split(":").map(Number);
-      const [bh, bm] = b.start_time!.split(":").map(Number);
-      return ah * 60 + am - (bh * 60 + bm);
-    })[0];
+    // First upcoming session by sort_order that matches the user's run group
+    return sessionStates.find(s => s.state === "upcoming" && s.registration_type_id && userRegTypeIds.has(s.registration_type_id)) || null;
   }, [sessionStates, userRegTypeIds]);
 
   const myNextCountdown = useMemo(() => {
@@ -741,32 +761,34 @@ const RacerLiveView = () => {
           </div>
         )}
 
-        {/* Global Session Info Bar */}
-        <div className="bg-gray-900 border-t border-white/10 px-4 py-2.5 shrink-0">
-          {activeSession ? (
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[10px] text-white/40 uppercase tracking-wider">Current Track Session</p>
-                <p className="text-sm font-bold">{activeSession.name}</p>
+        {/* Global Session Info Bar - hidden when user has a run group selected */}
+        {userRegTypeIds.size === 0 && (
+          <div className="bg-gray-900 border-t border-white/10 px-4 py-2.5 shrink-0">
+            {activeSession ? (
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] text-white/40 uppercase tracking-wider">Current Track Session</p>
+                  <p className="text-sm font-bold">{activeSession.name}</p>
+                </div>
+                {activeRemaining && (
+                  <p className="text-xl font-mono font-bold text-green-400">
+                    {activeRemaining.minutes}:{activeRemaining.seconds.toString().padStart(2, "0")}
+                  </p>
+                )}
               </div>
-              {activeRemaining && (
-                <p className="text-xl font-mono font-bold text-green-400">
-                  {activeRemaining.minutes}:{activeRemaining.seconds.toString().padStart(2, "0")}
-                </p>
-              )}
-            </div>
-          ) : nextSession ? (
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[10px] text-white/40 uppercase tracking-wider">Up Next</p>
-                <p className="text-sm font-bold">{nextSession.name}</p>
+            ) : nextSession ? (
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] text-white/40 uppercase tracking-wider">Up Next</p>
+                  <p className="text-sm font-bold">{nextSession.name}</p>
+                </div>
+                <p className="text-sm text-white/40">Starts at {nextSession.start_time}</p>
               </div>
-              <p className="text-sm text-white/40">Starts at {nextSession.start_time}</p>
-            </div>
-          ) : (
-            <p className="text-sm text-white/40 text-center">No active sessions</p>
-          )}
-        </div>
+            ) : (
+              <p className="text-sm text-white/40 text-center">No active sessions</p>
+            )}
+          </div>
+        )}
 
         {/* Announcements */}
         {announcements.length > 0 && (
