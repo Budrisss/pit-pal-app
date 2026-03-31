@@ -1198,14 +1198,36 @@ const OrganizerLiveManage = () => {
       </AlertDialog>
 
       {/* Black Flag Dialog */}
-      <Dialog open={showBlackFlagDialog} onOpenChange={setShowBlackFlagDialog}>
+      <Dialog open={showBlackFlagDialog} onOpenChange={(open) => {
+        setShowBlackFlagDialog(open);
+        if (open) { setBlackFlagGroupFilter("active"); setBlackFlagTarget("all"); setBlackFlagSearch(""); }
+      }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">🏴 Send Black Flag</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <div className="space-y-2">
-              <Label className="text-sm font-medium">Target Driver</Label>
+              <div className="flex items-center gap-2">
+                <Label className="text-sm font-medium flex-1">Target Driver</Label>
+                <div className="flex rounded-lg border border-border overflow-hidden">
+                  <button
+                    className={`px-3 py-1 text-xs font-medium transition-colors ${blackFlagGroupFilter === "active" ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground hover:bg-muted"}`}
+                    onClick={() => { setBlackFlagGroupFilter("active"); setBlackFlagTarget("all"); }}
+                  >
+                    Current Group
+                  </button>
+                  <button
+                    className={`px-3 py-1 text-xs font-medium transition-colors ${blackFlagGroupFilter === "all" ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground hover:bg-muted"}`}
+                    onClick={() => { setBlackFlagGroupFilter("all"); setBlackFlagTarget("all"); }}
+                  >
+                    All Groups
+                  </button>
+                </div>
+              </div>
+              {blackFlagGroupFilter === "active" && !activeSessionRegTypeId && (
+                <p className="text-[10px] text-muted-foreground italic">No active session — showing all drivers</p>
+              )}
               <Input
                 value={blackFlagSearch}
                 onChange={e => setBlackFlagSearch(e.target.value)}
@@ -1220,19 +1242,44 @@ const OrganizerLiveManage = () => {
                   <p className="text-sm font-medium">All Drivers</p>
                   <p className="text-[10px] text-muted-foreground">Global black flag</p>
                 </div>
-                {registrations
-                  .filter(r => r.car_number != null)
-                  .filter(r => {
-                    if (!blackFlagSearch.trim()) return true;
-                    const q = blackFlagSearch.toLowerCase();
-                    return r.car_number?.toString().includes(q) || r.user_name.toLowerCase().includes(q);
-                  })
-                  .sort((a, b) => (a.car_number || 0) - (b.car_number || 0))
-                  .map(r => (
+                {(() => {
+                  const filtered = getFilteredRegistrations(blackFlagGroupFilter, blackFlagSearch)
+                    .filter(r => r.car_number != null)
+                    .sort((a, b) => (a.car_number || 0) - (b.car_number || 0));
+
+                  if (blackFlagGroupFilter === "all" && !blackFlagSearch.trim()) {
+                    const grouped = groupRegistrationsByType(filtered);
+                    return Object.entries(grouped).map(([groupName, regs]) => (
+                      <div key={groupName}>
+                        <div className="px-3 py-1.5 bg-muted/60 sticky top-0">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                            {groupName}
+                            {activeSessionRegTypeId && regs[0]?.registration_type_id === activeSessionRegTypeId && (
+                              <Badge variant="default" className="ml-2 text-[8px] px-1 py-0">Active</Badge>
+                            )}
+                          </span>
+                        </div>
+                        {regs.map(r => (
+                          <div
+                            key={r.id}
+                            className={`p-3 cursor-pointer hover:bg-muted/50 transition-colors ${blackFlagTarget === r.id ? "bg-primary/10 border-l-2 border-l-primary" : ""}`}
+                            onClick={() => setBlackFlagTarget(r.id)}
+                          >
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm font-medium">#{r.car_number} — {r.user_name}</p>
+                              <Badge variant="outline" className="text-[10px]">{groupName}</Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ));
+                  }
+
+                  return filtered.map(r => (
                     <div
-                      key={r.user_id}
-                      className={`p-3 cursor-pointer hover:bg-muted/50 transition-colors ${blackFlagTarget === r.user_id ? "bg-primary/10 border-l-2 border-l-primary" : ""}`}
-                      onClick={() => setBlackFlagTarget(r.user_id)}
+                      key={r.id}
+                      className={`p-3 cursor-pointer hover:bg-muted/50 transition-colors ${blackFlagTarget === r.id ? "bg-primary/10 border-l-2 border-l-primary" : ""}`}
+                      onClick={() => setBlackFlagTarget(r.id)}
                     >
                       <div className="flex items-center justify-between">
                         <p className="text-sm font-medium">#{r.car_number} — {r.user_name}</p>
@@ -1241,7 +1288,8 @@ const OrganizerLiveManage = () => {
                         </Badge>
                       </div>
                     </div>
-                  ))}
+                  ));
+                })()}
               </div>
             </div>
             <div className="space-y-2">
