@@ -77,7 +77,7 @@ export const EventsProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     const { data, error } = await (supabase as any)
       .from("events")
-      .select("*, track_name:tracks(name), car_name:cars(name)")
+      .select("*, track_name:tracks(name), car_name:cars(name), public_event:public_events(track_name)")
       .eq("user_id", user.id)
       .order("date", { ascending: false });
 
@@ -86,7 +86,7 @@ export const EventsProvider = ({ children }: { children: ReactNode }) => {
       const mapped = (data as any[]).map((row) => {
         const flat = {
           ...row,
-          track_name: row.track_name?.name || row.address || "",
+          track_name: row.track_name?.name || row.public_event?.track_name || row.address || "",
           car_name: row.car_name?.name || "",
         };
         return mapDbRowToEvent(flat);
