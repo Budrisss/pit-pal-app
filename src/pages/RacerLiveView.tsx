@@ -469,13 +469,8 @@ const RacerLiveView = () => {
   }, [activeSession, eventDate, currentTime]);
 
   const nextSession = useMemo(() => {
-    const upcoming = sessionStates.filter(s => s.state === "upcoming" && s.start_time);
-    if (upcoming.length === 0) return null;
-    return upcoming.sort((a, b) => {
-      const [ah, am] = a.start_time!.split(":").map(Number);
-      const [bh, bm] = b.start_time!.split(":").map(Number);
-      return ah * 60 + am - (bh * 60 + bm);
-    })[0];
+    // First upcoming session by sort_order (sessionStates is already sorted by sort_order)
+    return sessionStates.find(s => s.state === "upcoming") || null;
   }, [sessionStates]);
 
   // myActiveSession is defined above (before primaryFlag)
