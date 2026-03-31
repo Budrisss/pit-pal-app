@@ -426,12 +426,19 @@ const OrganizerLiveManage = () => {
     return registrationTypes.find((rt) => rt.id === regTypeId)?.name || "Unknown";
   };
 
+  const orderedSessions = useMemo(
+    () => [...sessions].sort((a, b) => (a.sort_order ?? Number.MAX_SAFE_INTEGER) - (b.sort_order ?? Number.MAX_SAFE_INTEGER) || a.id.localeCompare(b.id)),
+    [sessions]
+  );
+
   const sessionStates = useMemo(() => {
     if (!eventDate) return [];
     const now = currentTime;
     const evDate = parseISO(eventDate);
-    return sessions.map((s) => {
-      if (!s.start_time || !s.duration_minutes) return { ...s, state: "upcoming" as const };
+
+    // First pass: compute time-based states for sessions with times
+    const withStates = orderedSessions.map((s) => {
+      if (!s.start_time || !s.duration_minutes) return { ...s, state: null as "completed" | "active" | "upcoming" | null };
       const [h, m] = s.start_time.split(":").map(Number);
       const start = new Date(evDate);
       start.setHours(h, m, 0, 0);
@@ -440,7 +447,17 @@ const OrganizerLiveManage = () => {
       if (isAfter(now, start) && isBefore(now, end)) return { ...s, state: "active" as const };
       return { ...s, state: "upcoming" as const };
     });
-  }, [sessions, eventDate, currentTime]);
+
+    // Second pass: for sessions without times (state === null), derive from position
+    const activeIdx = withStates.findIndex(s => s.state === "active");
+    return withStates.map((s, i) => {
+      if (s.state !== null) return { ...s, state: s.state };
+      // If there's an active session and this session is before it in sort order, it's completed
+      if (activeIdx >= 0 && i < activeIdx) return { ...s, state: "completed" as const };
+      // If all timed sessions before this one are completed, treat as upcoming
+      return { ...s, state: "upcoming" as const };
+    });
+  }, [orderedSessions, eventDate, currentTime]);
 
   // Auto-expire blue flags after 10 seconds
   const BLUE_FLAG_TTL_MS = 10_000;
