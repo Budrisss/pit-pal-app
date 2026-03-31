@@ -83,6 +83,7 @@ const OrganizerLiveManage = () => {
   const [blackFlagMessage, setBlackFlagMessage] = useState("");
   const [registrations, setRegistrations] = useState<EventRegistrationWithCar[]>([]);
   const [blackFlagSearch, setBlackFlagSearch] = useState("");
+  const [blackFlagGroupFilter, setBlackFlagGroupFilter] = useState<"active" | "all">("active");
   const [showYellowFlagDialog, setShowYellowFlagDialog] = useState(false);
   const [yellowFlagTurns, setYellowFlagTurns] = useState("");
   const [yellowFlagMessage, setYellowFlagMessage] = useState("");
@@ -90,6 +91,7 @@ const OrganizerLiveManage = () => {
   const [blueFlagTarget, setBlueFlagTarget] = useState<string>("all");
   const [blueFlagMessage, setBlueFlagMessage] = useState("");
   const [blueFlagSearch, setBlueFlagSearch] = useState("");
+  const [blueFlagGroupFilter, setBlueFlagGroupFilter] = useState<"active" | "all">("active");
   const [editingFlagId, setEditingFlagId] = useState<string | null>(null);
   const [editingFlagMessage, setEditingFlagMessage] = useState("");
   const [flagHistory, setFlagHistory] = useState<EventFlag[]>([]);
