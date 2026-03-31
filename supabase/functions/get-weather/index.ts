@@ -8,6 +8,7 @@ const corsHeaders = {
 
 interface WeatherData {
   temperature: number;
+  feelsLike: number;
   condition: string;
   precipitation: number;
   windSpeed: number;
