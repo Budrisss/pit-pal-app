@@ -156,6 +156,27 @@ const RacerLiveView = () => {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Listen for storage changes (cross-tab) and visibility changes (same-tab navigation)
+  useEffect(() => {
+    if (!eventId) return;
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === `my-run-groups-${eventId}`) {
+        readRunGroupsFromStorage();
+      }
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        readRunGroupsFromStorage();
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [eventId, readRunGroupsFromStorage]);
+
   // Realtime
   useEffect(() => {
     if (!eventId) return;
