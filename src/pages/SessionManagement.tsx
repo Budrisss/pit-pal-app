@@ -658,7 +658,7 @@ const SessionManagement = () => {
         if (regData && regData.length > 0) {
           const groupIds = [...new Set(regData.map((r: any) => r.registration_type_id))] as string[];
           setMyRunGroups(new Set(groupIds));
-          localStorage.setItem(`my-run-groups-${eventId}`, JSON.stringify(groupIds));
+          localStorage.setItem(runGroupKey, JSON.stringify(groupIds));
 
           // Fetch car details for each registration
           const carIds = [...new Set(regData.map((r: any) => r.car_id).filter(Boolean))] as string[];
