@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Clock, Calendar, Settings, Plus, Trash2, GripVertical, StickyNote, Timer, AlertCircle, Cloud, Thermometer, Eye, Wind, Play, CheckCircle2, MoreVertical, Megaphone, FileText, Radio, Car } from "lucide-react";
+import { ArrowLeft, Clock, Calendar, Settings, Plus, Trash2, GripVertical, StickyNote, Timer, AlertCircle, Cloud, Thermometer, Eye, Wind, Play, CheckCircle2, MoreVertical, Megaphone, FileText, Radio, Car, Droplets } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -46,6 +46,7 @@ interface EventData {
 
 interface WeatherData {
   temperature: number;
+  feelsLike: number;
   condition: string;
   precipitation: number;
   windSpeed: number;
@@ -1007,6 +1008,9 @@ const SessionManagement = () => {
                         <div className="flex items-center gap-1.5">
                           <Thermometer size={12} className="text-primary flex-shrink-0" />
                           <span className="font-medium">{weatherData.temperature}°F</span>
+                          {weatherData.feelsLike != null && weatherData.feelsLike !== weatherData.temperature && (
+                            <span className="text-muted-foreground text-[9px]">feels {weatherData.feelsLike}°</span>
+                          )}
                         </div>
                         <div className="flex items-center gap-1.5">
                           <Cloud size={12} className="text-primary flex-shrink-0" />
@@ -1019,6 +1023,10 @@ const SessionManagement = () => {
                         <div className="flex items-center gap-1.5">
                           <Eye size={12} className="text-primary flex-shrink-0" />
                           <span className="font-medium">{weatherData.visibility} mi</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Droplets size={12} className="text-primary flex-shrink-0" />
+                          <span className="font-medium">{weatherData.humidity}%</span>
                         </div>
                       </div>
                     </>

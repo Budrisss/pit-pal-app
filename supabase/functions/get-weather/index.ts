@@ -8,6 +8,7 @@ const corsHeaders = {
 
 interface WeatherData {
   temperature: number;
+  feelsLike: number;
   condition: string;
   precipitation: number;
   windSpeed: number;
@@ -74,6 +75,7 @@ serve(async (req) => {
 
     const weatherData: WeatherData = {
       temperature: Math.round(temp),
+      feelsLike: Math.round(weatherJson.current.feelslike_f),
       condition: weatherJson.current.condition.text,
       precipitation: precipitation,
       windSpeed: Math.round(windSpeed),
