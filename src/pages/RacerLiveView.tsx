@@ -666,9 +666,9 @@ const RacerLiveView = () => {
       {/* Flag Zone - dominant area */}
       <div className="flex-1 flex flex-col">
         <AnimatePresence mode="wait">
-          {primaryFlag && flagConfig ? (
+          {effectivePrimaryFlag && flagConfig ? (
             <motion.div
-              key={primaryFlag.id + primaryFlag.flag_type}
+              key={effectivePrimaryFlag.id + effectivePrimaryFlag.flag_type}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
