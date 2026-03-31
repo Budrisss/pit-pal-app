@@ -975,61 +975,60 @@ const SessionManagement = () => {
               </Card>
 
               {/* Right: Weather */}
-              <Card className="bg-card/60 backdrop-blur-sm border-border/50">
-                <CardHeader className="pb-2 px-3 pt-3">
-                  <CardTitle className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                    <Cloud size={12} className="text-primary" />
-                    Weather
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 text-xs px-3 pb-3">
+              <Card className="bg-card/60 backdrop-blur-sm border-border/50 flex flex-col">
+                <CardContent className="px-3 py-3 flex-1 flex flex-col justify-between">
                   {!eventData.address && (
-                    <p className="text-muted-foreground text-[10px]">No address set</p>
+                    <p className="text-muted-foreground text-[10px] text-center my-auto">No address set</p>
                   )}
                   {eventData.address && weatherLoading && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary" />
-                      <span className="text-[10px]">Loading...</span>
+                    <div className="flex items-center justify-center gap-2 text-muted-foreground my-auto">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
+                      <span className="text-xs">Loading...</span>
                     </div>
                   )}
                   {eventData.address && weatherError && (
-                    <p className="text-[10px] text-muted-foreground">{weatherError}</p>
+                    <p className="text-[10px] text-muted-foreground text-center my-auto">{weatherError}</p>
                   )}
                   {eventData.address && weatherData && (
-                    <>
+                    <div className="flex flex-col h-full gap-2">
+                      {/* Hero temp */}
+                      <div className="text-center">
+                        <div className="text-2xl font-bold leading-none">{weatherData.temperature}°F</div>
+                        {weatherData.feelsLike != null && weatherData.feelsLike !== weatherData.temperature && (
+                          <div className="text-[10px] text-muted-foreground">Feels like {weatherData.feelsLike}°</div>
+                        )}
+                        <div className="text-[11px] text-muted-foreground mt-0.5">{weatherData.condition}</div>
+                      </div>
+
+                      {/* Stats grid */}
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-auto">
+                        <div className="flex items-center gap-1.5">
+                          <Wind size={11} className="text-primary flex-shrink-0" />
+                          <span className="text-[11px]">{weatherData.windSpeed} mph</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Droplets size={11} className="text-primary flex-shrink-0" />
+                          <span className="text-[11px]">{weatherData.humidity}%</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Eye size={11} className="text-primary flex-shrink-0" />
+                          <span className="text-[11px]">{weatherData.visibility} mi</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Cloud size={11} className="text-primary flex-shrink-0" />
+                          <span className="text-[11px]">{weatherData.precipitation}" rain</span>
+                        </div>
+                      </div>
+
+                      {/* Warnings */}
                       {weatherData.warnings.length > 0 && (
-                        <div className="space-y-1">
+                        <div className="space-y-1 mt-1">
                           {weatherData.warnings.map((w, i) => (
-                            <div key={i} className="p-1.5 bg-destructive/10 border border-destructive/20 rounded text-[10px] text-destructive">{w}</div>
+                            <div key={i} className="p-1 bg-destructive/10 border border-destructive/20 rounded text-[9px] text-destructive leading-tight">{w}</div>
                           ))}
                         </div>
                       )}
-                      <div className="grid grid-cols-1 gap-1.5">
-                        <div className="flex items-center gap-1.5">
-                          <Thermometer size={12} className="text-primary flex-shrink-0" />
-                          <span className="font-medium">{weatherData.temperature}°F</span>
-                          {weatherData.feelsLike != null && weatherData.feelsLike !== weatherData.temperature && (
-                            <span className="text-muted-foreground text-[9px]">feels {weatherData.feelsLike}°</span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <Cloud size={12} className="text-primary flex-shrink-0" />
-                          <span className="font-medium truncate">{weatherData.condition}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <Wind size={12} className="text-primary flex-shrink-0" />
-                          <span className="font-medium">{weatherData.windSpeed} mph</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <Eye size={12} className="text-primary flex-shrink-0" />
-                          <span className="font-medium">{weatherData.visibility} mi</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <Droplets size={12} className="text-primary flex-shrink-0" />
-                          <span className="font-medium">{weatherData.humidity}%</span>
-                        </div>
-                      </div>
-                    </>
+                    </div>
                   )}
                 </CardContent>
               </Card>
