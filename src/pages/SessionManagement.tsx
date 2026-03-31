@@ -1039,40 +1039,49 @@ const SessionManagement = () => {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                     <Timer size={14} className="text-primary" />
-                    My Run Group
+                    My Run Groups
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <Select
-                    value={myRunGroup || "all"}
-                    onValueChange={(v) => {
-                      const val = v === "all" ? null : v;
-                      setMyRunGroup(val);
-                      if (val) {
-                        localStorage.setItem(`my-run-group-${eventId}`, val);
-                      } else {
-                        localStorage.removeItem(`my-run-group-${eventId}`);
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue placeholder="Select your run group" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Sessions (next up)</SelectItem>
-                      {(runGroups.length > 0
-                        ? runGroups.map((rg) => (
-                            <SelectItem key={rg.id} value={rg.id}>{rg.name}</SelectItem>
-                          ))
-                        : [...new Set(sessions.map((s) => s.referenceName))].map((name) => (
-                            <SelectItem key={name} value={name}>{name}</SelectItem>
-                          ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                  {myRunGroup && (
+                <CardContent className="space-y-2">
+                  {(runGroups.length > 0
+                    ? runGroups
+                    : [...new Set(sessions.map((s) => s.referenceName))].map((name) => ({ id: name, name }))
+                  ).map((rg) => {
+                    const regInfo = userRegMap[rg.id];
+                    const isChecked = myRunGroups.has(rg.id);
+                    return (
+                      <label
+                        key={rg.id}
+                        className={`flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-colors ${isChecked ? "border-primary/40 bg-primary/5" : "border-border/50 hover:border-border"}`}
+                      >
+                        <Checkbox
+                          checked={isChecked}
+                          onCheckedChange={(checked) => {
+                            setMyRunGroups(prev => {
+                              const next = new Set(prev);
+                              if (checked) next.add(rg.id);
+                              else next.delete(rg.id);
+                              localStorage.setItem(`my-run-groups-${eventId}`, JSON.stringify(Array.from(next)));
+                              return next;
+                            });
+                          }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm font-medium text-foreground">{rg.name}</span>
+                          {regInfo && (
+                            <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                              {regInfo.carNumber && <span>#{regInfo.carNumber}</span>}
+                              {regInfo.carNumber && regInfo.carName && <span>·</span>}
+                              {regInfo.carName && <span>{regInfo.carName}</span>}
+                            </p>
+                          )}
+                        </div>
+                      </label>
+                    );
+                  })}
+                  {myRunGroups.size > 0 && (
                     <p className="text-xs text-muted-foreground mt-1.5">
-                      Countdown tracks <span className="text-primary font-medium">{runGroups.find(rg => rg.id === myRunGroup)?.name || myRunGroup}</span>
+                      Countdown tracks: {Array.from(myRunGroups).map(gId => runGroups.find(rg => rg.id === gId)?.name || gId).join(", ")}
                     </p>
                   )}
                 </CardContent>
