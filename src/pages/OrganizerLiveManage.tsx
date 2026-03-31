@@ -436,26 +436,49 @@ const OrganizerLiveManage = () => {
     const now = currentTime;
     const evDate = parseISO(eventDate);
 
-    // First pass: compute time-based states for sessions with times
-    const withStates = orderedSessions.map((s) => {
-      if (!s.start_time || !s.duration_minutes) return { ...s, state: null as "completed" | "active" | "upcoming" | null };
+    // First pass: find the active session (currently running by time)
+    let activeId: string | null = null;
+    let activeIdx = -1;
+    orderedSessions.forEach((s, i) => {
+      if (!s.start_time || !s.duration_minutes) return;
       const [h, m] = s.start_time.split(":").map(Number);
       const start = new Date(evDate);
       start.setHours(h, m, 0, 0);
       const end = addMinutes(start, s.duration_minutes);
-      if (isAfter(now, end)) return { ...s, state: "completed" as const };
-      if (isAfter(now, start) && isBefore(now, end)) return { ...s, state: "active" as const };
-      return { ...s, state: "upcoming" as const };
+      if (isAfter(now, start) && isBefore(now, end)) {
+        activeId = s.id;
+        activeIdx = i;
+      }
     });
 
-    // Second pass: for sessions without times (state === null), derive from position
-    const activeIdx = withStates.findIndex(s => s.state === "active");
-    return withStates.map((s, i) => {
-      if (s.state !== null) return { ...s, state: s.state };
-      // If there's an active session and this session is before it in sort order, it's completed
-      if (activeIdx >= 0 && i < activeIdx) return { ...s, state: "completed" as const };
-      // If all timed sessions before this one are completed, treat as upcoming
-      return { ...s, state: "upcoming" as const };
+    // Second pass: assign states based on sort_order position relative to active session
+    // If there's an active session, everything before it is completed, everything after is upcoming
+    // If there's no active session, find the first session whose start_time hasn't ended yet
+    let firstUpcomingIdx = -1;
+    if (activeIdx === -1) {
+      // No active session — find the first session that hasn't ended yet (or has no time)
+      firstUpcomingIdx = orderedSessions.findIndex((s) => {
+        if (!s.start_time || !s.duration_minutes) return true; // no time = upcoming candidate
+        const [h, m] = s.start_time.split(":").map(Number);
+        const start = new Date(evDate);
+        start.setHours(h, m, 0, 0);
+        const end = addMinutes(start, s.duration_minutes);
+        return !isAfter(now, end); // hasn't ended yet
+      });
+      // If all timed sessions have ended, treat them all as completed (firstUpcomingIdx stays -1 means all done)
+    }
+
+    return orderedSessions.map((s, i) => {
+      if (s.id === activeId) return { ...s, state: "active" as const };
+      if (activeIdx >= 0) {
+        return { ...s, state: i < activeIdx ? "completed" as const : "upcoming" as const };
+      }
+      // No active session
+      if (firstUpcomingIdx >= 0) {
+        return { ...s, state: i < firstUpcomingIdx ? "completed" as const : "upcoming" as const };
+      }
+      // All sessions have ended
+      return { ...s, state: "completed" as const };
     });
   }, [orderedSessions, eventDate, currentTime]);
 
