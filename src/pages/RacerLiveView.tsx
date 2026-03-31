@@ -59,7 +59,7 @@ const RacerLiveView = () => {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [loading, setLoading] = useState(true);
-  const [userRegTypeId, setUserRegTypeId] = useState<string | null>(null);
+  const [userRegTypeIds, setUserRegTypeIds] = useState<Set<string>>(new Set());
   const [regTypeName, setRegTypeName] = useState<string | null>(null);
   const [userCarNumber, setUserCarNumber] = useState<number | null>(null);
 
@@ -97,6 +97,20 @@ const RacerLiveView = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Read run group selections from localStorage
+  const readRunGroupsFromStorage = useCallback(() => {
+    if (!eventId) return;
+    const stored = localStorage.getItem(`my-run-groups-${eventId}`);
+    if (stored) {
+      try {
+        const ids: string[] = JSON.parse(stored);
+        setUserRegTypeIds(new Set(ids));
+      } catch {
+        setUserRegTypeIds(new Set());
+      }
+    }
+  }, [eventId]);
+
   // Fetch data
   const fetchData = useCallback(async () => {
     if (!eventId) return;
@@ -106,7 +120,7 @@ const RacerLiveView = () => {
       supabase.from("public_event_sessions").select("*").eq("event_id", eventId).order("sort_order"),
       supabase.from("event_flags").select("*").eq("event_id", eventId).eq("is_active", true),
       supabase.from("event_announcements").select("id, message, created_at").eq("event_id", eventId).order("created_at", { ascending: false }).limit(10),
-      user ? supabase.from("event_registrations").select("registration_type_id, car_number").eq("event_id", eventId).eq("user_id", user.id).limit(1) : Promise.resolve({ data: null }),
+      user ? supabase.from("event_registrations").select("registration_type_id, car_number").eq("event_id", eventId).eq("user_id", user.id) : Promise.resolve({ data: null }),
     ]);
     if (eventRes.data) {
       setEventName(eventRes.data.name);
@@ -115,35 +129,53 @@ const RacerLiveView = () => {
     setSessions((sessRes.data as EventSession[]) || []);
     setFlags((flagRes.data as EventFlag[]) || []);
     setAnnouncements((annRes.data as Announcement[]) || []);
-    // Determine the effective run group: prefer localStorage override, fall back to registration
-    const registeredTypeId = regRes.data && regRes.data.length > 0 ? (regRes.data[0] as any).registration_type_id : null;
-    const registeredCarNumber = regRes.data && regRes.data.length > 0 ? (regRes.data[0] as any).car_number : null;
-    
-    // Check if the user manually selected a different group in session management
-    // We need to find the personal event ID to look up localStorage
-    const { data: personalEvent } = await (supabase as any)
-      .from("events")
-      .select("id")
-      .eq("public_event_id", eventId)
-      .eq("user_id", user?.id)
-      .maybeSingle();
-    
-    const localStorageKey = personalEvent?.id ? `my-run-group-${personalEvent.id}` : null;
-    const savedRunGroup = localStorageKey ? localStorage.getItem(localStorageKey) : null;
-    const effectiveGroupId = savedRunGroup || registeredTypeId;
-    
-    if (effectiveGroupId) {
-      setUserRegTypeId(effectiveGroupId);
-      setUserCarNumber(registeredCarNumber || null);
-      const { data: rtData } = await supabase.from("registration_types").select("name").eq("id", effectiveGroupId).single();
-      if (rtData) setRegTypeName(rtData.name);
-    } else if (registeredCarNumber) {
-      setUserCarNumber(registeredCarNumber);
+
+    const registrations = regRes.data as any[] | null;
+    const registeredCarNumber = registrations && registrations.length > 0 ? registrations[0].car_number : null;
+    if (registeredCarNumber) setUserCarNumber(registeredCarNumber);
+
+    // Read localStorage for selected run groups
+    readRunGroupsFromStorage();
+
+    // If no localStorage selection exists, fall back to all registered group IDs
+    const stored = localStorage.getItem(`my-run-groups-${eventId}`);
+    if (!stored && registrations && registrations.length > 0) {
+      const regTypeIds = new Set(registrations.map((r: any) => r.registration_type_id).filter(Boolean) as string[]);
+      setUserRegTypeIds(regTypeIds);
     }
+
+    // Set display name from first group
+    const effectiveIds = stored ? JSON.parse(stored) : registrations?.map((r: any) => r.registration_type_id).filter(Boolean) || [];
+    if (effectiveIds.length > 0) {
+      const { data: rtData } = await supabase.from("registration_types").select("name").eq("id", effectiveIds[0]).single();
+      if (rtData) setRegTypeName(rtData.name);
+    }
+
     setLoading(false);
-  }, [eventId]);
+  }, [eventId, readRunGroupsFromStorage]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Listen for storage changes (cross-tab) and visibility changes (same-tab navigation)
+  useEffect(() => {
+    if (!eventId) return;
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === `my-run-groups-${eventId}`) {
+        readRunGroupsFromStorage();
+      }
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        readRunGroupsFromStorage();
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [eventId, readRunGroupsFromStorage]);
 
   // Realtime
   useEffect(() => {
@@ -388,11 +420,11 @@ const RacerLiveView = () => {
     })[0];
   }, [sessionStates]);
 
-  // Your session - based on user's run group registration
+  // Your session - based on user's run group registrations (supports multiple groups)
   const myActiveSession = useMemo(() => {
-    if (!userRegTypeId) return null;
-    return sessionStates.find(s => s.state === "active" && s.registration_type_id === userRegTypeId) || null;
-  }, [sessionStates, userRegTypeId]);
+    if (userRegTypeIds.size === 0) return null;
+    return sessionStates.find(s => s.state === "active" && s.registration_type_id && userRegTypeIds.has(s.registration_type_id)) || null;
+  }, [sessionStates, userRegTypeIds]);
 
   const myActiveRemaining = useMemo(() => {
     if (!myActiveSession?.start_time || !myActiveSession?.duration_minutes || !eventDate) return null;
@@ -406,15 +438,15 @@ const RacerLiveView = () => {
   }, [myActiveSession, eventDate, currentTime]);
 
   const myNextSession = useMemo(() => {
-    if (!userRegTypeId) return null;
-    const upcoming = sessionStates.filter(s => s.state === "upcoming" && s.start_time && s.registration_type_id === userRegTypeId);
+    if (userRegTypeIds.size === 0) return null;
+    const upcoming = sessionStates.filter(s => s.state === "upcoming" && s.start_time && s.registration_type_id && userRegTypeIds.has(s.registration_type_id));
     if (upcoming.length === 0) return null;
     return upcoming.sort((a, b) => {
       const [ah, am] = a.start_time!.split(":").map(Number);
       const [bh, bm] = b.start_time!.split(":").map(Number);
       return ah * 60 + am - (bh * 60 + bm);
     })[0];
-  }, [sessionStates, userRegTypeId]);
+  }, [sessionStates, userRegTypeIds]);
 
   const myNextCountdown = useMemo(() => {
     if (!myNextSession?.start_time || !eventDate) return null;
@@ -643,7 +675,7 @@ const RacerLiveView = () => {
         </AnimatePresence>
 
         {/* Your Session Banner - personalized to racer's run group */}
-        {userRegTypeId && (myActiveSession || myNextSession) && (
+        {userRegTypeIds.size > 0 && (myActiveSession || myNextSession) && (
           <div className={`border-t border-white/10 px-4 py-3 shrink-0 ${myActiveSession ? 'bg-green-900/60' : 'bg-blue-900/40'}`}>
             {myActiveSession && myActiveRemaining ? (
               <div className="flex items-center justify-between">
