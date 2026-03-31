@@ -59,7 +59,14 @@ const RacerLiveView = () => {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [loading, setLoading] = useState(true);
-  const [userRegTypeIds, setUserRegTypeIds] = useState<Set<string>>(new Set());
+  const [userRegTypeIds, setUserRegTypeIds] = useState<Set<string>>(() => {
+    if (!eventId) return new Set<string>();
+    const stored = localStorage.getItem(`my-run-groups-${eventId}`);
+    if (stored) {
+      try { return new Set(JSON.parse(stored).map(String)); } catch { return new Set<string>(); }
+    }
+    return new Set<string>();
+  });
   const [regTypeName, setRegTypeName] = useState<string | null>(null);
   const [userCarNumber, setUserCarNumber] = useState<number | null>(null);
 
