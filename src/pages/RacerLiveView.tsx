@@ -502,8 +502,46 @@ const RacerLiveView = () => {
     return { minutes: Math.floor(diffMs / 60000), seconds: Math.floor((diffMs % 60000) / 1000) };
   }, [myNextSession, eventDate, currentTime]);
 
-  const flagConfig = primaryFlag ? FLAG_CONFIG[primaryFlag.flag_type] || FLAG_CONFIG.green : null;
-  const isCheckered = primaryFlag?.flag_type === "checkered";
+  // --- Checkered flag auto-dismiss after 3 minutes ---
+  const checkeredShownAtRef = useRef<number | null>(null);
+  const [checkeredExpired, setCheckeredExpired] = useState(false);
+
+  // Track when checkered first appears
+  useEffect(() => {
+    const rawFlag = priorityFlags.find(f => f.flag_type === "checkered");
+    if (rawFlag) {
+      if (checkeredShownAtRef.current === null) {
+        checkeredShownAtRef.current = Date.now();
+        setCheckeredExpired(false);
+      }
+    } else {
+      checkeredShownAtRef.current = null;
+      setCheckeredExpired(false);
+    }
+  }, [priorityFlags]);
+
+  // Check expiry each tick
+  useEffect(() => {
+    if (checkeredShownAtRef.current && !checkeredExpired) {
+      const elapsed = currentTime.getTime() - checkeredShownAtRef.current;
+      if (elapsed >= 180000) {
+        setCheckeredExpired(true);
+      }
+    }
+  }, [currentTime, checkeredExpired]);
+
+  // Effective primary flag: suppress checkered if expired
+  const effectivePrimaryFlag = useMemo(() => {
+    if (primaryFlag?.flag_type === "checkered" && checkeredExpired) {
+      // Fall through to null (standby) — the synthetic green logic already returned null
+      // if user's group isn't active, so we just suppress the checkered
+      return null;
+    }
+    return primaryFlag;
+  }, [primaryFlag, checkeredExpired]);
+
+  const flagConfig = effectivePrimaryFlag ? FLAG_CONFIG[effectivePrimaryFlag.flag_type] || FLAG_CONFIG.green : null;
+  const isCheckered = effectivePrimaryFlag?.flag_type === "checkered";
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col select-none">
