@@ -1,41 +1,50 @@
 
 
-## Plan: Fix Racer Live View to Follow Selected Run Group
+## Plan: Checkered Flag Auto-Dismiss + Enhanced Standby
 
-### Problem
-The Racer Live View doesn't properly filter by the user's selected run group. It shows green flags and session info for other groups' sessions, instead of showing a standby screen when the user's group isn't active.
+### What Changes
 
-### Current Issues
-1. **Green flag shows for any group's session** — The `primaryFlag` logic falls back to `activeSession` (any session on track) when no flags are active, even if it's not the racer's group.
-2. **"Next session" shows global sessions** — `nextSession` picks the soonest upcoming session regardless of group, and the global session bar always shows.
-3. **`sessionStates` uses time-based logic** — Same issue as the organizer view; sessions without times default to "upcoming" instead of using `sort_order`.
+**`src/pages/RacerLiveView.tsx` only** — no organizer impact.
 
-### Changes
+### 1. Track when checkered flag appeared (client-side)
 
-**`src/pages/RacerLiveView.tsx`**
+Add a `checkeredShownAt` ref that records when a checkered flag first becomes the primary flag. Reset it when the flag changes to something else.
 
-1. **Synthetic green flag only for user's group** — In the `primaryFlag` memo, remove the fallback to `activeSession` when `userRegTypeIds` is populated. Only show synthetic green when `myActiveSession` exists (the user's group is on track). When no flags are active and the user's group isn't running, `primaryFlag` will be `null`, triggering the existing "Standby" screen.
+```typescript
+const checkeredShownAtRef = useRef<number | null>(null);
+```
 
-2. **`myNextSession` uses `sort_order` instead of `start_time`** — Change from sorting upcoming sessions by time to using `sort_order` position. Find the first upcoming session in sort order that matches the user's run group.
+In a `useEffect` watching `primaryFlag`:
+- If `primaryFlag?.flag_type === "checkered"` and ref is null → set to `Date.now()`
+- If flag changes away from checkered → reset to null
 
-3. **`nextSession` (global) also uses `sort_order`** — Same fix as above for the global next session indicator.
+### 2. Auto-dismiss checkered after ~3 minutes
 
-4. **Synchronous initialization of `userRegTypeIds`** — Initialize state from `localStorage` synchronously in `useState` to prevent first-render flash showing wrong data:
-   ```typescript
-   const [userRegTypeIds, setUserRegTypeIds] = useState<Set<string>>(() => {
-     const stored = localStorage.getItem(`my-run-groups-${eventId}`);
-     return new Set(stored ? JSON.parse(stored) : []);
-   });
-   ```
+Add a `checkeredExpired` state (boolean). A `useEffect` checks if `checkeredShownAtRef` is set and 180 seconds have elapsed (using `currentTime` which already ticks every second). When expired, set `checkeredExpired = true`.
 
-5. **Hide global session bar when user has a group selected** — When `userRegTypeIds.size > 0`, don't show the "Current Track Session" / "Up Next" global bar (lines 744-769), since the user's personalized session banner already covers their group. This prevents confusion from showing another group's session info.
+In the `primaryFlag` memo, if the real flag is checkered but `checkeredExpired` is true, skip it and fall through to the green/standby logic (returning `null` → standby screen).
 
-### What Won't Change
-- Organizer Live Manage (`OrganizerLiveManage.tsx`) is completely separate and unaffected
-- Flag display (red, yellow, black, etc.) still works the same — real flags from the organizer always show regardless of group
-- Announcements still show for all users
-- Black flag accept/dismiss logic unchanged
+Reset `checkeredExpired` to `false` whenever a new non-checkered flag becomes active.
+
+### 3. Enhanced standby screen with next-session info
+
+Update the standby block (lines 707-717) to show the racer's next session info when available:
+
+- If `myNextSession` exists: show "Your Next Session" with session name and countdown (reusing `myNextCountdown`)
+- If no next session: show "All sessions complete" or the current "Standby" text
+
+The bottom session banner (lines 722-761) continues to work as-is — the standby area just gets a richer display so the racer has context during long gaps.
+
+### Summary of Logic Flow (gap between sessions)
+
+```text
+Session ends → Organizer throws checkered
+  → Racer sees checkered flag full-screen (up to 3 min)
+  → After 3 min: auto-transitions to standby
+  → Standby shows "Your Next Session: [name] — in XX:XX"
+  → When organizer starts next session → green flag appears
+```
 
 ### Files Modified
-- `src/pages/RacerLiveView.tsx` only
+- `src/pages/RacerLiveView.tsx`
 
