@@ -1007,6 +1007,9 @@ const SessionManagement = () => {
                         <div className="flex items-center gap-1.5">
                           <Thermometer size={12} className="text-primary flex-shrink-0" />
                           <span className="font-medium">{weatherData.temperature}°F</span>
+                          {weatherData.feelsLike != null && weatherData.feelsLike !== weatherData.temperature && (
+                            <span className="text-muted-foreground text-[9px]">feels {weatherData.feelsLike}°</span>
+                          )}
                         </div>
                         <div className="flex items-center gap-1.5">
                           <Cloud size={12} className="text-primary flex-shrink-0" />
@@ -1019,6 +1022,10 @@ const SessionManagement = () => {
                         <div className="flex items-center gap-1.5">
                           <Eye size={12} className="text-primary flex-shrink-0" />
                           <span className="font-medium">{weatherData.visibility} mi</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Droplets size={12} className="text-primary flex-shrink-0" />
+                          <span className="font-medium">{weatherData.humidity}%</span>
                         </div>
                       </div>
                     </>

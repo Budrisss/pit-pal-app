@@ -75,6 +75,7 @@ serve(async (req) => {
 
     const weatherData: WeatherData = {
       temperature: Math.round(temp),
+      feelsLike: Math.round(weatherJson.current.feelslike_f),
       condition: weatherJson.current.condition.text,
       precipitation: precipitation,
       windSpeed: Math.round(windSpeed),
