@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
 import RacingGallery from "@/components/RacingGallery";
 import SavedTracksManager from "@/components/SavedTracksManager";
+import MyRegistrations from "@/components/MyRegistrations";
 
 const Settings = () => {
   const { isOrganizerMode } = useOrganizerMode();
@@ -115,6 +116,9 @@ const Settings = () => {
             <Button variant="outline" size="sm">Edit Profile</Button>
           </CardContent>
         </Card>
+
+        {/* My Registrations */}
+        <MyRegistrations />
 
         {/* Location */}
         <Card className="bg-gradient-dark border-border/50">
