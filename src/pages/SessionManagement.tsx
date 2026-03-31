@@ -375,11 +375,15 @@ const SessionManagement = () => {
   const getActiveSessionRemainingTime = () => {
     const statedSessions = calculateSessionStates();
     let activeSession: typeof statedSessions[number] | undefined = statedSessions.find(s => s.state === "active");
-    // If user selected a run group, prioritize showing that group's active state
-    if (myRunGroup) {
-      const selectedGroup = runGroups.find(rg => rg.id === myRunGroup);
-      const matchesFn = (s: typeof statedSessions[number]) =>
-        s.registrationTypeId ? s.registrationTypeId === myRunGroup : s.referenceName === selectedGroup?.name;
+    // If user selected run groups, prioritize showing a matching group's active state
+    if (myRunGroups.size > 0) {
+      const matchesFn = (s: typeof statedSessions[number]) => {
+        if (s.registrationTypeId) return myRunGroups.has(s.registrationTypeId);
+        return Array.from(myRunGroups).some(gId => {
+          const grp = runGroups.find(rg => rg.id === gId);
+          return grp && s.referenceName === grp.name;
+        });
+      };
       const myActive = statedSessions.find(s => matchesFn(s) && s.state === "active");
       if (myActive) activeSession = myActive;
       else if (activeSession && !matchesFn(activeSession)) activeSession = undefined;
