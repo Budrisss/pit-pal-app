@@ -680,7 +680,7 @@ const RacerLiveView = () => {
             >
               {isCheckered && <div className="absolute inset-0 bg-black/40" />}
               <div className="relative z-10 text-center">
-                {primaryFlag.flag_type === "red" || primaryFlag.flag_type === "black" ? (
+                {effectivePrimaryFlag.flag_type === "red" || effectivePrimaryFlag.flag_type === "black" ? (
                   <motion.div
                     animate={{ scale: [1, 1.05, 1] }}
                     transition={{ repeat: Infinity, duration: 1.2 }}
