@@ -1,51 +1,28 @@
 
 
-## Plan: Context-Aware Flag Targeting by Run Group
+## Plan: Sync Run Group Selection to Live View
 
 ### Problem
-When a user has multiple cars registered in different run groups, the black/blue flag dialogs show a flat list of ALL participants. This makes it hard to find the right driver and doesn't distinguish which car/group entry to target.
+Two issues prevent run group changes from reflecting in the Racer Live View:
+
+1. **Key mismatch**: SessionManagement saves to `my-run-groups-${eventId}` (plural, array), but RacerLiveView reads from `my-run-group-${personalEventId}` (singular, single value). They never connect.
+2. **No reactivity**: RacerLiveView only reads localStorage once during initial fetch. It never re-reads when the value changes.
 
 ### Approach
-- Auto-filter the participant list to the **currently active session's run group**
-- Add a toggle to switch between "Current Group" and "All Groups"
-- Group participants by run group with section headers
-- Target the **specific registration entry** (car + group combo), not just the user
-- Update `EventRegistrationWithCar` to include `id` (registration ID) so flags can reference a specific car entry
+Unify the localStorage key and add a `storage` event listener so the live view reacts to changes made in SessionManagement (which may be open in another tab or was visited earlier).
 
 ### Changes
 
-**`src/pages/OrganizerLiveManage.tsx`**
+**`src/pages/RacerLiveView.tsx`**
 
-1. **Update `EventRegistrationWithCar` interface** — add `id` field. Update the fetch query to include `id`.
+1. **Read the correct key** — Change from `my-run-group-${personalEvent.id}` to `my-run-groups-${publicEventId}`. Parse as JSON array and use the first group ID as `userRegTypeId` (the live view shows one active session at a time, so first selected group is sufficient).
 
-2. **Determine active session's run group** — derive `activeSessionRegTypeId` from `sessionStates` (the currently active session's `registration_type_id`). This drives the default filter.
+2. **Support multiple groups** — Store all selected group IDs in a new `userRegTypeIds` state (Set). Update `myActiveSession` and `myNextSession` to match against any of the selected groups (not just one).
 
-3. **Add filter state to both dialogs** — new state `blackFlagGroupFilter` and `blueFlagGroupFilter` defaulting to `"active"`. When dialog opens, auto-set to `"active"`. A small toggle at the top switches between "Current Group" (filtered to active session's run group) and "All Groups" (grouped by section).
+3. **Listen for storage changes** — Add a `window.addEventListener("storage", ...)` listener that watches for changes to the `my-run-groups-${eventId}` key. When detected, update the group state and re-derive session filtering. This handles the case where the user switches tabs between Session Management and Live View.
 
-4. **Group-sectioned participant list** — when showing "All Groups", render participants under collapsible run group headers (e.g., "Beginner", "Advanced"). When showing "Current Group", only show participants in the active session's run group.
-
-5. **Target by registration entry, not user** — change `blackFlagTarget` and `blueFlagTarget` to store `registration.id` instead of `user_id`. When sending the flag, look up the registration to get `user_id`, `car_number`, and group name for the flag message. The `target_user_id` on `event_flags` still stores the `user_id` (so the racer receives it), but the message includes the specific car number and group for clarity.
-
-6. **Display car details per entry** — each row shows: `#42 — John Doe (2018 MX-5)` with a group badge. Since the registration query doesn't join car details, we show car number and user name (car name can be added later if `car_id` is joined).
-
-### UI Mockup
-```text
-┌─ 🏴 Send Black Flag ─────────────────┐
-│                                        │
-│ [Current Group ▼] [All Groups]         │
-│                                        │
-│ 🔍 Search by car # or name...         │
-│                                        │
-│ ┌─ Beginner (active) ──────────────┐  │
-│ │  #42 — John Doe          [Beginner]│  │
-│ │  #17 — Jane Smith        [Beginner]│  │
-│ └──────────────────────────────────┘  │
-│                                        │
-│ Message: [                          ]  │
-│ [ 🏴 Send Black Flag              ]   │
-└────────────────────────────────────────┘
-```
+4. **Also handle same-tab navigation** — Since the user may navigate from Session Management to Live View within the same tab (no `storage` event fires for same-tab writes), re-read localStorage on each `fetchData` call and on component mount/focus via a `visibilitychange` listener.
 
 ### Files Modified
-- `src/pages/OrganizerLiveManage.tsx` — all changes in this single file
+- `src/pages/RacerLiveView.tsx` — fix localStorage key, support multiple groups, add reactivity
 
