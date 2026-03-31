@@ -1094,7 +1094,9 @@ const SessionManagement = () => {
                               const next = new Set(prev);
                               if (checked) next.add(rg.id);
                               else next.delete(rg.id);
-                              localStorage.setItem(`my-run-groups-${publicEventId || eventId}`, JSON.stringify(Array.from(next)));
+                              const nextIds = Array.from(next).map(String);
+                              if (publicEventId) localStorage.setItem(`my-run-groups-${publicEventId}`, JSON.stringify(nextIds));
+                              localStorage.setItem(`my-run-groups-${eventId}`, JSON.stringify(nextIds));
                               return next;
                             });
                           }}

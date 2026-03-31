@@ -153,18 +153,18 @@ const RacerLiveView = () => {
     const registeredCarNumber = registrations && registrations.length > 0 ? registrations[0].car_number : null;
     if (registeredCarNumber) setUserCarNumber(registeredCarNumber);
 
-    // Read localStorage for selected run groups
-    readRunGroupsFromStorage();
+    // Read localStorage for selected run groups (including legacy per-personal-event key)
+    const storedIds = await readRunGroupsFromStorage();
 
-    // If no localStorage selection exists, fall back to all registered group IDs
-    const stored = localStorage.getItem(`my-run-groups-${eventId}`);
-    if (!stored && registrations && registrations.length > 0) {
-      const regTypeIds = new Set(registrations.map((r: any) => r.registration_type_id).filter(Boolean) as string[]);
-      setUserRegTypeIds(regTypeIds);
+    // If no saved selection exists, fall back to all registered group IDs
+    const fallbackIds = registrations?.map((r: any) => String(r.registration_type_id)).filter(Boolean) || [];
+    const effectiveIds = storedIds.length > 0 ? storedIds : fallbackIds;
+
+    if (storedIds.length === 0 && fallbackIds.length > 0) {
+      setUserRegTypeIds(new Set(fallbackIds));
     }
 
-    // Set display name from first group
-    const effectiveIds = stored ? JSON.parse(stored) : registrations?.map((r: any) => r.registration_type_id).filter(Boolean) || [];
+    // Set display name from first selected group
     if (effectiveIds.length > 0) {
       const { data: rtData } = await supabase.from("registration_types").select("name").eq("id", effectiveIds[0]).single();
       if (rtData) setRegTypeName(rtData.name);
