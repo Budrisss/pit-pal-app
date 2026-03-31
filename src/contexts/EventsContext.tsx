@@ -77,7 +77,7 @@ export const EventsProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     const { data, error } = await (supabase as any)
       .from("events")
-      .select("*, track_name:tracks(name), car_name:cars(name), public_event:public_events(track_name)")
+      .select("*, track_name:tracks(name), car_name:cars(name), public_event:public_events!public_event_id(track_name)")
       .eq("user_id", user.id)
       .order("date", { ascending: false });
 
