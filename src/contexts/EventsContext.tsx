@@ -77,16 +77,34 @@ export const EventsProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     const { data, error } = await (supabase as any)
       .from("events")
-      .select("*, track_name:tracks(name), car_name:cars(name), public_event:public_events!public_event_id(track_name)")
+      .select("*, track_name:tracks(name), car_name:cars(name)")
       .eq("user_id", user.id)
       .order("date", { ascending: false });
 
     if (!error && data) {
+      // For events linked to public events, fetch track names
+      const publicEventIds = (data as any[])
+        .map((r: any) => r.public_event_id)
+        .filter(Boolean);
+      
+      let peTrackNames: Record<string, string> = {};
+      if (publicEventIds.length > 0) {
+        const { data: peData } = await (supabase as any)
+          .from("public_events")
+          .select("id, track_name")
+          .in("id", publicEventIds);
+        if (peData) {
+          peTrackNames = Object.fromEntries(
+            (peData as any[]).map((pe: any) => [pe.id, pe.track_name || ""])
+          );
+        }
+      }
+
       // Flatten joined names
       const mapped = (data as any[]).map((row) => {
         const flat = {
           ...row,
-          track_name: row.track_name?.name || row.public_event?.track_name || row.address || "",
+          track_name: row.track_name?.name || peTrackNames[row.public_event_id] || row.address || "",
           car_name: row.car_name?.name || "",
         };
         return mapDbRowToEvent(flat);
