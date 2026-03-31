@@ -436,16 +436,41 @@ const SessionManagement = () => {
     return `${minutes}m ${seconds}s`;
   };
 
+  const buildWeatherQuery = async (): Promise<string | null> => {
+    // If event is linked to a public event, fetch structured location data
+    const currentEvent = getEventById(eventId || "");
+    if (currentEvent?.publicEventId) {
+      const { data: pe } = await supabase
+        .from('public_events')
+        .select('city, state, zip_code, address, track_name')
+        .eq('id', currentEvent.publicEventId)
+        .maybeSingle();
+      if (pe) {
+        if (pe.city && pe.state) return `${pe.city}, ${pe.state}`;
+        if (pe.zip_code && pe.zip_code.length === 5) return pe.zip_code;
+        if (pe.address) return pe.address;
+        if (pe.track_name) return pe.track_name;
+      }
+    }
+    // Fallback: use event address if it looks like a real location
+    const addr = eventData.address || '';
+    if (addr && addr.length > 5 && /[a-zA-Z]/.test(addr)) return addr;
+    // Try track name as last resort
+    if (eventData.track && eventData.track.length > 2) return eventData.track;
+    return null;
+  };
+
   const fetchWeatherData = async () => {
-    if (!eventData.address) {
-      setWeatherError("No address provided");
+    const weatherQuery = await buildWeatherQuery();
+    if (!weatherQuery) {
+      setWeatherError("No valid location");
       return;
     }
     setWeatherLoading(true);
     setWeatherError(null);
     try {
       const { data, error } = await supabase.functions.invoke('get-weather', {
-        body: { address: eventData.address }
+        body: { address: weatherQuery }
       });
       if (error || (data && data.error)) {
         const msg = data?.error || (typeof error === 'object' && error.message ? error.message : String(error));
