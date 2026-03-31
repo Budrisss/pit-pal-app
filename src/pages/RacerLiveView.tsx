@@ -748,10 +748,37 @@ const RacerLiveView = () => {
               animate={{ opacity: 1 }}
               className="flex-1 flex flex-col items-center justify-center bg-gray-900 p-6"
             >
-              <p className="text-2xl sm:text-4xl font-bold text-white/30 uppercase tracking-widest">
-                Standby
-              </p>
-              <p className="text-sm text-white/20 mt-2">Waiting for flag updates...</p>
+              {myNextSession ? (
+                <>
+                  <p className="text-sm text-white/40 uppercase tracking-widest mb-2">Your Next Session</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-white/80">{myNextSession.name}</p>
+                  {regTypeName && <p className="text-xs text-white/40 mt-1">{regTypeName}</p>}
+                  {myNextCountdown ? (
+                    <div className="mt-4 text-center">
+                      <p className="text-4xl sm:text-5xl font-mono font-black text-blue-400">
+                        {myNextCountdown.minutes}:{myNextCountdown.seconds.toString().padStart(2, "0")}
+                      </p>
+                      <p className="text-xs text-blue-300/60 uppercase tracking-wider mt-1">until start</p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-white/30 mt-3">Starting soon...</p>
+                  )}
+                </>
+              ) : userRegTypeIds.size > 0 && sessionStates.every(s => s.state === "completed") ? (
+                <>
+                  <p className="text-2xl sm:text-4xl font-bold text-white/30 uppercase tracking-widest">
+                    🏁 All Sessions Complete
+                  </p>
+                  <p className="text-sm text-white/20 mt-2">Great day on track!</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-2xl sm:text-4xl font-bold text-white/30 uppercase tracking-widest">
+                    Standby
+                  </p>
+                  <p className="text-sm text-white/20 mt-2">Waiting for flag updates...</p>
+                </>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
