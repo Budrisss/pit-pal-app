@@ -98,18 +98,37 @@ const RacerLiveView = () => {
   }, []);
 
   // Read run group selections from localStorage
-  const readRunGroupsFromStorage = useCallback(() => {
-    if (!eventId) return;
-    const stored = localStorage.getItem(`my-run-groups-${eventId}`);
+  const readRunGroupsFromStorage = useCallback(async () => {
+    if (!eventId || !user?.id) return [] as string[];
+
+    const publicKey = `my-run-groups-${eventId}`;
+    const { data: personalEvent } = await (supabase as any)
+      .from("events")
+      .select("id")
+      .eq("public_event_id", eventId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const legacyKey = personalEvent?.id ? `my-run-groups-${personalEvent.id}` : null;
+    const stored = localStorage.getItem(publicKey) ?? (legacyKey ? localStorage.getItem(legacyKey) : null);
+
     if (stored) {
       try {
-        const ids: string[] = JSON.parse(stored);
+        const ids = JSON.parse(stored).map(String) as string[];
         setUserRegTypeIds(new Set(ids));
+        if (legacyKey && !localStorage.getItem(publicKey)) {
+          localStorage.setItem(publicKey, JSON.stringify(ids));
+        }
+        return ids;
       } catch {
         setUserRegTypeIds(new Set());
       }
+    } else {
+      setUserRegTypeIds(new Set());
     }
-  }, [eventId]);
+
+    return [] as string[];
+  }, [eventId, user?.id]);
 
   // Fetch data
   const fetchData = useCallback(async () => {
@@ -134,18 +153,18 @@ const RacerLiveView = () => {
     const registeredCarNumber = registrations && registrations.length > 0 ? registrations[0].car_number : null;
     if (registeredCarNumber) setUserCarNumber(registeredCarNumber);
 
-    // Read localStorage for selected run groups
-    readRunGroupsFromStorage();
+    // Read localStorage for selected run groups (including legacy per-personal-event key)
+    const storedIds = await readRunGroupsFromStorage();
 
-    // If no localStorage selection exists, fall back to all registered group IDs
-    const stored = localStorage.getItem(`my-run-groups-${eventId}`);
-    if (!stored && registrations && registrations.length > 0) {
-      const regTypeIds = new Set(registrations.map((r: any) => r.registration_type_id).filter(Boolean) as string[]);
-      setUserRegTypeIds(regTypeIds);
+    // If no saved selection exists, fall back to all registered group IDs
+    const fallbackIds = registrations?.map((r: any) => String(r.registration_type_id)).filter(Boolean) || [];
+    const effectiveIds = storedIds.length > 0 ? storedIds : fallbackIds;
+
+    if (storedIds.length === 0 && fallbackIds.length > 0) {
+      setUserRegTypeIds(new Set(fallbackIds));
     }
 
-    // Set display name from first group
-    const effectiveIds = stored ? JSON.parse(stored) : registrations?.map((r: any) => r.registration_type_id).filter(Boolean) || [];
+    // Set display name from first selected group
     if (effectiveIds.length > 0) {
       const { data: rtData } = await supabase.from("registration_types").select("name").eq("id", effectiveIds[0]).single();
       if (rtData) setRegTypeName(rtData.name);
