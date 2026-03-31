@@ -640,7 +640,8 @@ const SessionManagement = () => {
       if (savedSettings) {
         try { setSettings(JSON.parse(savedSettings)); } catch {}
       }
-      const savedRunGroups = localStorage.getItem(`my-run-groups-${eventId}`);
+      const runGroupKey = eventRow?.public_event_id ? `my-run-groups-${eventRow.public_event_id}` : `my-run-groups-${eventId}`;
+      const savedRunGroups = localStorage.getItem(runGroupKey);
       if (savedRunGroups) {
         try {
           const parsed = JSON.parse(savedRunGroups);
@@ -657,7 +658,7 @@ const SessionManagement = () => {
         if (regData && regData.length > 0) {
           const groupIds = [...new Set(regData.map((r: any) => r.registration_type_id))] as string[];
           setMyRunGroups(new Set(groupIds));
-          localStorage.setItem(`my-run-groups-${eventId}`, JSON.stringify(groupIds));
+          localStorage.setItem(runGroupKey, JSON.stringify(groupIds));
 
           // Fetch car details for each registration
           const carIds = [...new Set(regData.map((r: any) => r.car_id).filter(Boolean))] as string[];
@@ -1086,7 +1087,7 @@ const SessionManagement = () => {
                               const next = new Set(prev);
                               if (checked) next.add(rg.id);
                               else next.delete(rg.id);
-                              localStorage.setItem(`my-run-groups-${eventId}`, JSON.stringify(Array.from(next)));
+                              localStorage.setItem(`my-run-groups-${publicEventId || eventId}`, JSON.stringify(Array.from(next)));
                               return next;
                             });
                           }}
