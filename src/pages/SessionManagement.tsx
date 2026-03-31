@@ -353,12 +353,15 @@ const SessionManagement = () => {
   const getNextUpcomingSession = () => {
     const statedSessions = calculateSessionStates();
     let upcomingSessions = statedSessions.filter(s => s.state === "upcoming");
-    // If user selected a run group, only count sessions matching that group
-    if (myRunGroup) {
-      const selectedGroup = runGroups.find(rg => rg.id === myRunGroup);
-      const filtered = upcomingSessions.filter(s =>
-        s.registrationTypeId ? s.registrationTypeId === myRunGroup : s.referenceName === selectedGroup?.name
-      );
+    // If user selected run groups, only count sessions matching any selected group
+    if (myRunGroups.size > 0) {
+      const filtered = upcomingSessions.filter(s => {
+        if (s.registrationTypeId) return myRunGroups.has(s.registrationTypeId);
+        return Array.from(myRunGroups).some(gId => {
+          const grp = runGroups.find(rg => rg.id === gId);
+          return grp && s.referenceName === grp.name;
+        });
+      });
       upcomingSessions = filtered;
     }
     if (upcomingSessions.length === 0) return null;
