@@ -1,36 +1,41 @@
 
 
-## Plan: Add My Registrations Page to Settings with Cancel Functionality
+## Plan: Multi-Select Run Groups Based on Registrations
 
-### What We're Building
-A dedicated "My Registrations" section accessible from the Settings page where users can view all their registrations, and cancel individual ones. Cancellation will delete the `event_registrations` row AND remove the corresponding personal event from the `events` table, fully removing the user from the event.
+### Problem
+Currently the "My Run Group" selector is a single-select dropdown. If a user is registered in two different groups (e.g., Beginner with Car A, Advanced with Car B), they can only track one group's countdown at a time.
+
+### Approach
+Change the run group selector from single-select to multi-select (checkboxes). Auto-select all groups the user is registered in. Update countdown and session filtering logic to consider all selected groups.
 
 ### Changes
 
-**1. Enhance `src/components/MyRegistrations.tsx`**
-- Remove the 4-item limit — show all registrations
-- Add a "Cancel Registration" button on each registration row with a confirmation dialog
-- On cancel: delete the `event_registrations` row, delete the matching personal `events` row (where `public_event_id` matches), and refresh the list
-- Accept an optional `fullPage` prop to control layout (card wrapper vs standalone list)
+**`src/pages/SessionManagement.tsx`**
 
-**2. Update `src/pages/Settings.tsx`**
-- Add a new "My Registrations" card section (with the Ticket icon) between Profile and Location
-- Import and render `<MyRegistrations />` in full-page mode showing all registrations with cancel buttons
+1. **State change**: `myRunGroup: string | null` → `myRunGroups: Set<string>` (multiple group IDs)
 
-**3. No database changes needed**
-- RLS already allows users to DELETE their own `event_registrations` rows
-- RLS already allows users to DELETE their own `events` rows
-- No migration required
+2. **Auto-default on load**: Fetch ALL user registrations for this event (not just `limit(1)`), extract unique `registration_type_id` values, and pre-select all of them
 
-### Cancel Flow
-When a user cancels a registration:
-1. Delete from `event_registrations` where `id = reg.id`
-2. Delete from `events` where `user_id = user.id` AND `public_event_id = reg.event_id` (removes personal event copy)
-3. Show success toast
-4. Refresh registration list
-5. When user navigates to Local Events or Public Event Preview, the registration state will naturally reflect the deletion (those pages re-fetch `userRegistrations` on load)
+3. **UI**: Replace the `<Select>` dropdown with a list of checkboxes (one per run group) so the user can toggle multiple groups on/off. Show which car/car number is associated with each group from their registrations.
+
+4. **Countdown logic** (`getNextUpcomingSession`, `getActiveSessionRemainingTime`): Filter sessions matching ANY of the selected groups (instead of one). Show the nearest upcoming session across all selected groups.
+
+5. **Active session banner**: If multiple groups are selected and one is active, show it. The "Your Next Session" label works the same way — find the soonest next session across selected groups.
+
+6. **localStorage**: Store selected groups as JSON array instead of single string (`my-run-groups-${eventId}`)
+
+### UI Mockup
+```text
+┌─ My Run Groups ─────────────────┐
+│ ☑ Beginner  (#42 · 2018 MX-5)  │
+│ ☑ Advanced  (#7 · 2020 Supra)  │
+│ ☐ Instructor                    │
+│                                  │
+│ Countdown tracks: Beginner,     │
+│ Advanced                         │
+└──────────────────────────────────┘
+```
 
 ### Files Modified
-- `src/components/MyRegistrations.tsx` — Add cancel button with confirmation, remove item limit, add full-page mode
-- `src/pages/Settings.tsx` — Add My Registrations section with the enhanced component
+- `src/pages/SessionManagement.tsx` — All changes in this single file
 
