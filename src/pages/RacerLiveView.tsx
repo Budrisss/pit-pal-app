@@ -98,18 +98,37 @@ const RacerLiveView = () => {
   }, []);
 
   // Read run group selections from localStorage
-  const readRunGroupsFromStorage = useCallback(() => {
-    if (!eventId) return;
-    const stored = localStorage.getItem(`my-run-groups-${eventId}`);
+  const readRunGroupsFromStorage = useCallback(async () => {
+    if (!eventId || !user?.id) return [] as string[];
+
+    const publicKey = `my-run-groups-${eventId}`;
+    const { data: personalEvent } = await (supabase as any)
+      .from("events")
+      .select("id")
+      .eq("public_event_id", eventId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const legacyKey = personalEvent?.id ? `my-run-groups-${personalEvent.id}` : null;
+    const stored = localStorage.getItem(publicKey) ?? (legacyKey ? localStorage.getItem(legacyKey) : null);
+
     if (stored) {
       try {
-        const ids: string[] = JSON.parse(stored);
+        const ids = JSON.parse(stored).map(String) as string[];
         setUserRegTypeIds(new Set(ids));
+        if (legacyKey && !localStorage.getItem(publicKey)) {
+          localStorage.setItem(publicKey, JSON.stringify(ids));
+        }
+        return ids;
       } catch {
         setUserRegTypeIds(new Set());
       }
+    } else {
+      setUserRegTypeIds(new Set());
     }
-  }, [eventId]);
+
+    return [] as string[];
+  }, [eventId, user?.id]);
 
   // Fetch data
   const fetchData = useCallback(async () => {

@@ -640,12 +640,18 @@ const SessionManagement = () => {
       if (savedSettings) {
         try { setSettings(JSON.parse(savedSettings)); } catch {}
       }
-      const runGroupKey = eventRow?.public_event_id ? `my-run-groups-${eventRow.public_event_id}` : `my-run-groups-${eventId}`;
-      const savedRunGroups = localStorage.getItem(runGroupKey);
+      const publicRunGroupKey = eventRow?.public_event_id ? `my-run-groups-${eventRow.public_event_id}` : null;
+      const legacyRunGroupKey = `my-run-groups-${eventId}`;
+      const savedRunGroups = (publicRunGroupKey ? localStorage.getItem(publicRunGroupKey) : null) ?? localStorage.getItem(legacyRunGroupKey);
       if (savedRunGroups) {
         try {
           const parsed = JSON.parse(savedRunGroups);
-          if (Array.isArray(parsed)) setMyRunGroups(new Set(parsed));
+          if (Array.isArray(parsed)) {
+            setMyRunGroups(new Set(parsed.map(String)));
+            if (publicRunGroupKey) {
+              localStorage.setItem(publicRunGroupKey, JSON.stringify(parsed.map(String)));
+            }
+          }
         } catch {}
       } else if (eventRow?.public_event_id) {
         // Auto-default to ALL of the user's registered groups
@@ -656,9 +662,10 @@ const SessionManagement = () => {
           .eq("event_id", eventRow.public_event_id)
           .eq("user_id", userId);
         if (regData && regData.length > 0) {
-          const groupIds = [...new Set(regData.map((r: any) => r.registration_type_id))] as string[];
+          const groupIds = [...new Set(regData.map((r: any) => String(r.registration_type_id)).filter(Boolean))] as string[];
           setMyRunGroups(new Set(groupIds));
-          localStorage.setItem(runGroupKey, JSON.stringify(groupIds));
+          if (publicRunGroupKey) localStorage.setItem(publicRunGroupKey, JSON.stringify(groupIds));
+          localStorage.setItem(legacyRunGroupKey, JSON.stringify(groupIds));
 
           // Fetch car details for each registration
           const carIds = [...new Set(regData.map((r: any) => r.car_id).filter(Boolean))] as string[];
