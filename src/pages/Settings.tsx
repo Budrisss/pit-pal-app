@@ -117,6 +117,9 @@ const Settings = () => {
           </CardContent>
         </Card>
 
+        {/* My Registrations */}
+        <MyRegistrations />
+
         {/* Location */}
         <Card className="bg-gradient-dark border-border/50">
           <CardHeader>
