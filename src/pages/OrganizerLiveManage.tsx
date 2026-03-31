@@ -586,25 +586,24 @@ const OrganizerLiveManage = () => {
   const nextCountdown = useMemo(() => {
     if (!eventDate) return null;
     const evDate = parseISO(eventDate);
-    const upcoming = sessionStates
-      .filter((s) => s.state === "upcoming" && s.start_time)
-      .sort((a, b) => {
-        const [ah, am] = a.start_time.split(":").map(Number);
-        const [bh, bm] = b.start_time.split(":").map(Number);
-        return ah * 60 + am - (bh * 60 + bm);
-      });
-    if (upcoming.length === 0) return null;
-    const next = upcoming[0];
-    const [h, m] = next.start_time.split(":").map(Number);
-    const start = new Date(evDate);
-    start.setHours(h, m, 0, 0);
-    const diffMs = differenceInMilliseconds(start, currentTime);
-    if (diffMs <= 0) return null;
-    const hrs = Math.floor(diffMs / 3600000);
-    const mins = Math.floor((diffMs % 3600000) / 60000);
-    const secs = Math.floor((diffMs % 60000) / 1000);
-    const isBufferZone = diffMs <= 5 * 60 * 1000;
-    return { hours: hrs, minutes: mins, seconds: secs, isBufferZone, sessionName: next.name, runGroup: getRunGroupName(next.registration_type_id) };
+    // Find the first upcoming session by sort_order (sessionStates is already sorted by sort_order)
+    const next = sessionStates.find((s) => s.state === "upcoming");
+    if (!next) return null;
+    // If the next session has a start_time, show countdown
+    if (next.start_time) {
+      const [h, m] = next.start_time.split(":").map(Number);
+      const start = new Date(evDate);
+      start.setHours(h, m, 0, 0);
+      const diffMs = differenceInMilliseconds(start, currentTime);
+      if (diffMs <= 0) return { hours: 0, minutes: 0, seconds: 0, isBufferZone: true, sessionName: next.name, runGroup: getRunGroupName(next.registration_type_id) };
+      const hrs = Math.floor(diffMs / 3600000);
+      const mins = Math.floor((diffMs % 3600000) / 60000);
+      const secs = Math.floor((diffMs % 60000) / 1000);
+      const isBufferZone = diffMs <= 5 * 60 * 1000;
+      return { hours: hrs, minutes: mins, seconds: secs, isBufferZone, sessionName: next.name, runGroup: getRunGroupName(next.registration_type_id) };
+    }
+    // No start_time — just show the session name without countdown
+    return { hours: 0, minutes: 0, seconds: 0, isBufferZone: false, sessionName: next.name, runGroup: getRunGroupName(next.registration_type_id) };
   }, [sessionStates, eventDate, currentTime]);
 
   if (loading) {
