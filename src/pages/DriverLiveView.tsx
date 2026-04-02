@@ -218,8 +218,8 @@ const DriverLiveView = () => {
       })
     : messages;
 
-  const latestGap = sessionMessages.find((m) => m.gap_ahead)?.gap_ahead || "—";
-  const latestMessage = sessionMessages.find((m) => m.message)?.message || null;
+  const latestGap = [...sessionMessages].reverse().find((m) => m.gap_ahead)?.gap_ahead || "—";
+  const latestMessage = [...sessionMessages].reverse().find((m) => m.message)?.message || null;
 
   // Load + subscribe
   useEffect(() => {
