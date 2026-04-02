@@ -1,50 +1,39 @@
 
 
-## Plan: Checkered Flag Auto-Dismiss + Enhanced Standby
+## Plan: Add Forgot Password Feature
 
-### What Changes
+### What's needed
+There's no password reset flow. We need three things:
 
-**`src/pages/RacerLiveView.tsx` only** — no organizer impact.
+1. **"Forgot password?" link on Login page** — below the password field, links to a dedicated page
+2. **Forgot Password page (`/forgot-password`)** — email input form that sends a reset link via the auth system
+3. **Reset Password page (`/reset-password`)** — where the user lands from the email link, enters a new password
 
-### 1. Track when checkered flag appeared (client-side)
+### Changes
 
-Add a `checkeredShownAt` ref that records when a checkered flag first becomes the primary flag. Reset it when the flag changes to something else.
+**1. `src/pages/Login.tsx`**
+- Add a "Forgot password?" link between the password field and the submit button, linking to `/forgot-password`
 
-```typescript
-const checkeredShownAtRef = useRef<number | null>(null);
-```
+**2. New file: `src/pages/ForgotPassword.tsx`**
+- Matches the Login page design (same hero background, logo nav, card layout)
+- Email input field
+- Calls `supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/reset-password' })`
+- Shows success message telling user to check their email
+- Link back to login
 
-In a `useEffect` watching `primaryFlag`:
-- If `primaryFlag?.flag_type === "checkered"` and ref is null → set to `Date.now()`
-- If flag changes away from checkered → reset to null
+**3. New file: `src/pages/ResetPassword.tsx`**
+- Checks URL hash for `type=recovery` to confirm valid reset link
+- New password + confirm password form
+- Calls `supabase.auth.updateUser({ password })` to save the new password
+- On success, redirects to `/dashboard`
+- Shows error if link is invalid/expired
 
-### 2. Auto-dismiss checkered after ~3 minutes
-
-Add a `checkeredExpired` state (boolean). A `useEffect` checks if `checkeredShownAtRef` is set and 180 seconds have elapsed (using `currentTime` which already ticks every second). When expired, set `checkeredExpired = true`.
-
-In the `primaryFlag` memo, if the real flag is checkered but `checkeredExpired` is true, skip it and fall through to the green/standby logic (returning `null` → standby screen).
-
-Reset `checkeredExpired` to `false` whenever a new non-checkered flag becomes active.
-
-### 3. Enhanced standby screen with next-session info
-
-Update the standby block (lines 707-717) to show the racer's next session info when available:
-
-- If `myNextSession` exists: show "Your Next Session" with session name and countdown (reusing `myNextCountdown`)
-- If no next session: show "All sessions complete" or the current "Standby" text
-
-The bottom session banner (lines 722-761) continues to work as-is — the standby area just gets a richer display so the racer has context during long gaps.
-
-### Summary of Logic Flow (gap between sessions)
-
-```text
-Session ends → Organizer throws checkered
-  → Racer sees checkered flag full-screen (up to 3 min)
-  → After 3 min: auto-transitions to standby
-  → Standby shows "Your Next Session: [name] — in XX:XX"
-  → When organizer starts next session → green flag appears
-```
+**4. `src/App.tsx`**
+- Add two public routes: `/forgot-password` and `/reset-password`
 
 ### Files Modified
-- `src/pages/RacerLiveView.tsx`
+- `src/pages/Login.tsx` — add forgot password link
+- `src/pages/ForgotPassword.tsx` — new
+- `src/pages/ResetPassword.tsx` — new
+- `src/App.tsx` — add routes
 
