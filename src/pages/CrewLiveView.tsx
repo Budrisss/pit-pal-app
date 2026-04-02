@@ -110,7 +110,6 @@ const CrewLiveView = () => {
     const { error } = await supabase.from("crew_messages").insert({
       event_id: eventId,
       user_id: user.id,
-      session_id: selectedSessionId || null,
       message: freeText.trim(),
     });
     if (error) {
