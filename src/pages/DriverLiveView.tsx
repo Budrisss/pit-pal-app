@@ -190,24 +190,6 @@ const DriverLiveView = () => {
             </div>
           </div>
 
-          {/* Crew Link */}
-          <Card className="bg-card/60 backdrop-blur-sm border-border/50 h-fit">
-            <CardContent className="p-5 space-y-3">
-              <p className="text-sm font-medium text-foreground">Share with your crew</p>
-              <p className="text-xs text-muted-foreground">Your crew opens this link on their device to send you live updates.</p>
-              <code className="block text-xs bg-background/50 p-3 rounded-lg border border-border/30 break-all">
-                {window.location.origin}/crew-live/{eventId}
-              </code>
-              <Button
-                variant="outline"
-                className="w-full gap-2"
-                onClick={handleCopy}
-              >
-                {copied ? <CheckCheck size={14} /> : <Copy size={14} />}
-                {copied ? "Copied!" : "Copy Link"}
-              </Button>
-            </CardContent>
-          </Card>
         </div>
       </div>
       <Navigation />
