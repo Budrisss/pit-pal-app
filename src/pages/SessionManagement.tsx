@@ -866,6 +866,18 @@ const SessionManagement = () => {
   const allStatedSessions = calculateSessionStates();
   const currentActiveSession = allStatedSessions.find(s => s.state === "active");
   const activeSessionRemainingTime = getActiveSessionRemainingTime();
+  // Also compute remaining time for the banner's active session (ignoring run group filter)
+  const bannerRemainingTime = (() => {
+    if (!currentActiveSession) return null;
+    const ed = parseISO(eventData.date);
+    const [h, m] = currentActiveSession.startTime.split(':').map(Number);
+    const start = new Date(ed);
+    start.setHours(h, m, 0, 0);
+    const end = addMinutes(start, currentActiveSession.duration);
+    const diff = differenceInMilliseconds(end, currentTime);
+    if (diff <= 0) return null;
+    return { minutes: Math.floor(diff / (1000 * 60)), seconds: Math.floor((diff % (1000 * 60)) / 1000) };
+  })();
   // Check if the active session belongs to any of the user's selected run groups
   const activeIsMyGroup = myRunGroups.size > 0 && currentActiveSession
     ? (currentActiveSession.registrationTypeId ? myRunGroups.has(currentActiveSession.registrationTypeId) : Array.from(myRunGroups).some(gId => currentActiveSession.referenceName === runGroups.find(rg => rg.id === gId)?.name))
@@ -1000,10 +1012,10 @@ const SessionManagement = () => {
                   </p>
                 </div>
               </div>
-              {activeSessionRemainingTime && (
+              {bannerRemainingTime && (
                 <div className="text-right">
                   <p className="text-3xl sm:text-4xl font-bold text-green-400 tabular-nums">
-                    {activeSessionRemainingTime.minutes}:{activeSessionRemainingTime.seconds.toString().padStart(2, '0')}
+                    {bannerRemainingTime.minutes}:{bannerRemainingTime.seconds.toString().padStart(2, '0')}
                   </p>
                   <p className="text-xs uppercase tracking-wider text-muted-foreground">Remaining</p>
                 </div>
