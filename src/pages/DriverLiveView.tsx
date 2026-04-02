@@ -1,12 +1,11 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Clock, TrendingUp, Hash, MessageSquare, Copy, CheckCheck } from "lucide-react";
+import { ArrowLeft, Clock, TrendingUp, Hash, MessageSquare } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEvents } from "@/contexts/EventsContext";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Navigation from "@/components/Navigation";
 import DesktopNavigation from "@/components/DesktopNavigation";
@@ -32,7 +31,6 @@ const DriverLiveView = () => {
   const { toast } = useToast();
 
   const [messages, setMessages] = useState<CrewMessage[]>([]);
-  const [copied, setCopied] = useState(false);
   const feedEndRef = useRef<HTMLDivElement>(null);
 
   const event = getEventById(eventId || "");
@@ -85,12 +83,8 @@ const DriverLiveView = () => {
     try { return format(new Date(ts), "h:mm:ss a"); } catch { return ts; }
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(`${window.location.origin}/crew-live/${eventId}`);
-    setCopied(true);
-    toast({ title: "Link copied!" });
-    setTimeout(() => setCopied(false), 2000);
-  };
+
+
 
   return (
     <div className="min-h-screen bg-gradient-dark pb-20 lg:pb-0 lg:pt-20">
@@ -148,10 +142,9 @@ const DriverLiveView = () => {
           </div>
         )}
 
-        {/* Split: Feed + Crew Link */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Live Feed — takes 2/3 */}
-          <div className="lg:col-span-2 rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm overflow-hidden flex flex-col">
+        {/* Live Feed */}
+        <div>
+          <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm overflow-hidden flex flex-col">
             <div className="px-5 py-4 border-b border-border/30 flex items-center gap-2">
               <MessageSquare size={18} className="text-primary" />
               <h2 className="text-lg font-bold text-foreground">Crew Updates</h2>
@@ -191,24 +184,6 @@ const DriverLiveView = () => {
             </div>
           </div>
 
-          {/* Crew Link */}
-          <Card className="bg-card/60 backdrop-blur-sm border-border/50 h-fit">
-            <CardContent className="p-5 space-y-3">
-              <p className="text-sm font-medium text-foreground">Share with your crew</p>
-              <p className="text-xs text-muted-foreground">Your crew opens this link on their device to send you live updates.</p>
-              <code className="block text-xs bg-background/50 p-3 rounded-lg border border-border/30 break-all">
-                {window.location.origin}/crew-live/{eventId}
-              </code>
-              <Button
-                variant="outline"
-                className="w-full gap-2"
-                onClick={handleCopy}
-              >
-                {copied ? <CheckCheck size={14} /> : <Copy size={14} />}
-                {copied ? "Copied!" : "Copy Link"}
-              </Button>
-            </CardContent>
-          </Card>
         </div>
       </div>
       <Navigation />
