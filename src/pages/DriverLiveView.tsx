@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Clock, TrendingUp, Hash, MessageSquare } from "lucide-react";
+import { ArrowLeft, Clock, TrendingUp, Hash, MessageSquare, Flag } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { addMinutes, differenceInMilliseconds } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
