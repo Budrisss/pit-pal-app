@@ -148,10 +148,9 @@ const DriverLiveView = () => {
           </div>
         )}
 
-        {/* Split: Feed + Crew Link */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Live Feed — takes 2/3 */}
-          <div className="lg:col-span-2 rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm overflow-hidden flex flex-col">
+        {/* Live Feed */}
+        <div>
+          <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm overflow-hidden flex flex-col">
             <div className="px-5 py-4 border-b border-border/30 flex items-center gap-2">
               <MessageSquare size={18} className="text-primary" />
               <h2 className="text-lg font-bold text-foreground">Crew Updates</h2>
