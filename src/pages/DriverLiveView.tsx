@@ -84,12 +84,8 @@ const DriverLiveView = () => {
     try { return format(new Date(ts), "h:mm:ss a"); } catch { return ts; }
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(`${window.location.origin}/crew-live/${eventId}`);
-    setCopied(true);
-    toast({ title: "Link copied!" });
-    setTimeout(() => setCopied(false), 2000);
-  };
+
+
 
   return (
     <div className="min-h-screen bg-gradient-dark pb-20 lg:pb-0 lg:pt-20">
