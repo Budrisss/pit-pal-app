@@ -338,7 +338,7 @@ const SessionManagement = () => {
       sessionStart.setHours(hours, minutes, 0, 0);
       const sessionEnd = addMinutes(sessionStart, session.duration);
 
-      if (isSameDayEvent && session.state === "completed") {
+      if (session.state === "completed") {
         return { ...session, state: "completed" as const };
       }
 
@@ -600,13 +600,22 @@ const SessionManagement = () => {
         ]);
         const orgSessions = sessionsRes.data;
         if (orgSessions && orgSessions.length > 0) {
+          // Restore manually-completed states from localStorage
+          const savedRaw = localStorage.getItem(`sessions-${eventId}`);
+          const savedStates: Record<string, string> = {};
+          if (savedRaw) {
+            try {
+              const parsed = JSON.parse(savedRaw) as Session[];
+              parsed.forEach(s => { if (s.state === "completed") savedStates[s.id] = "completed"; });
+            } catch {}
+          }
           const mapped: Session[] = orgSessions.map((s: any) => ({
             id: s.id,
             type: "practice" as const,
             duration: s.duration_minutes || 20,
             referenceName: s.name,
             startTime: s.start_time || "00:00",
-            state: "upcoming" as const,
+            state: (savedStates[s.id] === "completed" ? "completed" : "upcoming") as "completed" | "upcoming",
             registrationTypeId: s.registration_type_id || null,
           }));
           setSessions(mapped);
