@@ -29,10 +29,6 @@ interface CrewMessage {
   created_at: string;
 }
 
-interface SessionOption {
-  id: string;
-  name: string;
-}
 
 const CrewLiveView = () => {
   const { eventId } = useParams();
