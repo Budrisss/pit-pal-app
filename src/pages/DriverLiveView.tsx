@@ -163,11 +163,15 @@ const DriverLiveView = () => {
         {activeSessionInfo && (
           <div className="rounded-xl border border-primary/40 bg-primary/10 backdrop-blur-sm px-5 py-4 flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-widest text-primary font-semibold">Session Active</p>
-              <p className="text-sm font-medium text-foreground">{activeSessionInfo.name}</p>
+              <p className="text-xs uppercase tracking-widest text-primary font-semibold">
+                {activeSessionInfo.name ? "Session Active" : "Time Remaining"}
+              </p>
+              {activeSessionInfo.name && (
+                <p className="text-sm font-medium text-foreground">{activeSessionInfo.name}</p>
+              )}
             </div>
             <p className="text-3xl sm:text-4xl font-black text-primary tabular-nums">
-              {activeSessionInfo.minutes}:{activeSessionInfo.seconds.toString().padStart(2, '0')}
+              {activeSessionInfo.label}
             </p>
           </div>
         )}
