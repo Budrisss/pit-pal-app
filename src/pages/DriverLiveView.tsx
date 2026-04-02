@@ -152,6 +152,19 @@ const DriverLiveView = () => {
           </Badge>
         </div>
 
+        {/* Active Session Timer */}
+        {activeSessionInfo && (
+          <div className="rounded-xl border border-primary/40 bg-primary/10 backdrop-blur-sm px-5 py-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-widest text-primary font-semibold">Session Active</p>
+              <p className="text-sm font-medium text-foreground">{activeSessionInfo.name}</p>
+            </div>
+            <p className="text-3xl sm:text-4xl font-black text-primary tabular-nums">
+              {activeSessionInfo.minutes}:{activeSessionInfo.seconds.toString().padStart(2, '0')}
+            </p>
+          </div>
+        )}
+
         {/* Hero Status Cards */}
         <div className="grid grid-cols-3 gap-4">
           <div className="relative overflow-hidden rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/15 to-card/80 backdrop-blur-md p-6 sm:p-8 text-center">
