@@ -289,10 +289,11 @@ const LocalEvents = () => {
     if (!user) return;
     const { data } = await supabase
       .from('event_registrations')
-      .select('registration_type_id, car_number')
+      .select('registration_type_id, car_number, event_id')
       .eq('user_id', user.id);
     if (data) {
       setUserRegistrations(new Set(data.map((r: any) => `${r.registration_type_id}_${r.car_number}`)));
+      setUserRegisteredEventIds(new Set(data.map((r: any) => r.event_id)));
     }
   }, [user]);
 
