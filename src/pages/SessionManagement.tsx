@@ -901,6 +901,11 @@ const SessionManagement = () => {
               <Radio size={14} /> Live View
             </Button>
           )}
+          {!publicEventId && eventId && (
+            <Button variant="outline" size="sm" onClick={() => navigate(`/crew-live/${eventId}`)} className="gap-1.5">
+              <Radio size={14} /> Crew View
+            </Button>
+          )}
             <DialogContent>
               <DialogHeader><DialogTitle>Settings</DialogTitle></DialogHeader>
               <div className="space-y-4">

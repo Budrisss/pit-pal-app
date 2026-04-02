@@ -243,9 +243,17 @@ const EventDetails = () => {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          <Button variant="orange" className="flex-1">
-            Start Event
-          </Button>
+          {!event.publicEventId && (
+            <Button variant="orange" className="flex-1" onClick={() => navigate(`/driver-live/${event.id}`)}>
+              <Radio size={16} />
+              Go Live
+            </Button>
+          )}
+          {event.publicEventId && (
+            <Button variant="orange" className="flex-1">
+              Start Event
+            </Button>
+          )}
         </div>
       </div>
       <Navigation />

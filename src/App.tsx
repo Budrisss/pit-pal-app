@@ -63,6 +63,8 @@ const App = () => (
                 <Route path="/organizer-signup" element={<ProtectedRoute><OrganizerSignup /></ProtectedRoute>} />
                 <Route path="/live-manage/:eventId" element={<ProtectedRoute><OrganizerLiveManage /></ProtectedRoute>} />
                 <Route path="/race-live/:eventId" element={<ProtectedRoute><RacerLiveView /></ProtectedRoute>} />
+                <Route path="/driver-live/:eventId" element={<ProtectedRoute><DriverLiveView /></ProtectedRoute>} />
+                <Route path="/crew-live/:eventId" element={<ProtectedRoute><CrewLiveView /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
