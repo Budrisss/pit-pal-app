@@ -130,6 +130,14 @@ const Login = () => {
                     minLength={6}
                   />
                 </div>
+                <div className="text-right">
+                  <Link
+                    to="/forgot-password"
+                    className="text-muted-foreground hover:text-primary text-xs transition-colors"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
               </div>
 
               <Button
