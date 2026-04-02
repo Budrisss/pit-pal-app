@@ -338,7 +338,7 @@ const DriverLiveView = () => {
                 <p className="text-sm font-medium text-foreground">{nextSessionCountdown.name}</p>
               </div>
               <div className="text-right">
-                <p className="text-2xl sm:text-3xl font-black text-primary tabular-nums">
+                <p className="text-2xl sm:text-3xl font-black tabular-nums text-sidebar-ring bg-sidebar-ring">
                   {nextSessionCountdown.label}
                 </p>
                 <p className="text-[10px] uppercase tracking-widest text-muted-foreground">until start</p>
