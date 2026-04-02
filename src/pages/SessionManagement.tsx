@@ -876,7 +876,10 @@ const SessionManagement = () => {
     const end = addMinutes(start, currentActiveSession.duration);
     const diff = differenceInMilliseconds(end, currentTime);
     if (diff <= 0) return null;
-    return { minutes: Math.floor(diff / (1000 * 60)), seconds: Math.floor((diff % (1000 * 60)) / 1000) };
+    const totalMs = currentActiveSession.duration * 60 * 1000;
+    const elapsedMs = totalMs - diff;
+    const progress = Math.min(Math.max(elapsedMs / totalMs, 0), 1);
+    return { minutes: Math.floor(diff / (1000 * 60)), seconds: Math.floor((diff % (1000 * 60)) / 1000), progress };
   })();
   // Check if the active session belongs to any of the user's selected run groups
   const activeIsMyGroup = myRunGroups.size > 0 && currentActiveSession
