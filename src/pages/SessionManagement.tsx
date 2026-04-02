@@ -937,10 +937,30 @@ const SessionManagement = () => {
                 {format(currentTime, "HH:mm:ss")}
               </div>
               <p className="text-sm text-muted-foreground">{format(currentTime, "EEEE, MMMM d, yyyy")}</p>
-              {countdown && (
+              {activeSessionRemainingTime && currentActiveSession && (
+                <div className="mt-3 inline-flex flex-col rounded-lg border border-green-500/40 bg-green-500/10 px-3 py-2">
+                  <p className="text-[10px] uppercase tracking-widest text-green-500 font-semibold">
+                    {currentActiveSession.referenceName} — Time Remaining
+                  </p>
+                  <p className="text-lg sm:text-xl font-bold tabular-nums text-green-400">
+                    {activeSessionRemainingTime.minutes}:{activeSessionRemainingTime.seconds.toString().padStart(2, '0')}
+                  </p>
+                </div>
+              )}
+              {countdown && !currentActiveSession && (
                 <div className="mt-3 inline-flex flex-col rounded-lg border border-border/50 bg-background/40 px-3 py-2">
                   <p className="text-[10px] uppercase tracking-widest text-primary font-semibold">
                     {myRunGroups.size > 0 ? "Your Next Session" : "Next Session"}: {countdown.nextSession.referenceName}
+                  </p>
+                  <p className={`text-lg sm:text-xl font-bold tabular-nums ${countdown.isInBufferZone ? "text-destructive" : "text-foreground"}`}>
+                    {formatCountdown(countdown)}
+                  </p>
+                </div>
+              )}
+              {showMyNextCountdown && countdown && (
+                <div className="mt-2 inline-flex flex-col rounded-lg border border-border/50 bg-background/40 px-3 py-2">
+                  <p className="text-[10px] uppercase tracking-widest text-primary font-semibold">
+                    Your Next: {countdown.nextSession.referenceName}
                   </p>
                   <p className={`text-lg sm:text-xl font-bold tabular-nums ${countdown.isInBufferZone ? "text-destructive" : "text-foreground"}`}>
                     {formatCountdown(countdown)}
