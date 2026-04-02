@@ -72,24 +72,31 @@ const DriverLiveView = () => {
 
   // Compute active session remaining time
   const activeSessionInfo = (() => {
-    if (!event || !sessions.length) return null;
-    for (const s of sessions) {
-      if (!s.start_time || !s.duration) continue;
-      try {
-        const ed = parseISO(event.date);
-        const [h, m] = s.start_time.split(':').map(Number);
-        const start = new Date(ed);
-        start.setHours(h, m, 0, 0);
-        const end = addMinutes(start, s.duration);
-        if (currentTime >= start && currentTime < end) {
-          const diff = differenceInMilliseconds(end, currentTime);
-          return {
-            name: s.name,
-            minutes: Math.floor(diff / (1000 * 60)),
-            seconds: Math.floor((diff % (1000 * 60)) / 1000),
-          };
-        }
-      } catch { /* skip */ }
+    // Try computed countdown from session schedule
+    if (event && sessions.length) {
+      for (const s of sessions) {
+        if (!s.start_time || !s.duration) continue;
+        try {
+          const ed = parseISO(event.date);
+          const [h, m] = s.start_time.split(':').map(Number);
+          const start = new Date(ed);
+          start.setHours(h, m, 0, 0);
+          const end = addMinutes(start, s.duration);
+          if (currentTime >= start && currentTime < end) {
+            const diff = differenceInMilliseconds(end, currentTime);
+            return {
+              name: s.name,
+              minutes: Math.floor(diff / (1000 * 60)),
+              seconds: Math.floor((diff % (1000 * 60)) / 1000),
+              label: `${Math.floor(diff / (1000 * 60))}:${Math.floor((diff % (1000 * 60)) / 1000).toString().padStart(2, '0')}`,
+            };
+          }
+        } catch { /* skip */ }
+      }
+    }
+    // Fallback: use crew-reported time remaining
+    if (latestTimeRemaining && latestTimeRemaining !== "—") {
+      return { name: null, label: latestTimeRemaining, minutes: null, seconds: null };
     }
     return null;
   })();
