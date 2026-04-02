@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, Clock, MapPin, Car, Navigation as NavigationIcon, Thermometer, Wind, Eye, Edit, Trash2 } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, MapPin, Car, Navigation as NavigationIcon, Thermometer, Wind, Eye, Edit, Trash2, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -243,9 +243,17 @@ const EventDetails = () => {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          <Button variant="orange" className="flex-1">
-            Start Event
-          </Button>
+          {!event.publicEventId && (
+            <Button variant="orange" className="flex-1" onClick={() => navigate(`/driver-live/${event.id}`)}>
+              <Radio size={16} />
+              Go Live
+            </Button>
+          )}
+          {event.publicEventId && (
+            <Button variant="orange" className="flex-1">
+              Start Event
+            </Button>
+          )}
         </div>
       </div>
       <Navigation />

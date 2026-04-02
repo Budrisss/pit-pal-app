@@ -71,6 +71,57 @@ export type Database = {
         }
         Relationships: []
       }
+      crew_messages: {
+        Row: {
+          created_at: string
+          event_id: string
+          gap_ahead: string | null
+          id: string
+          message: string | null
+          position: string | null
+          session_id: string | null
+          time_remaining: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          gap_ahead?: string | null
+          id?: string
+          message?: string | null
+          position?: string | null
+          session_id?: string | null
+          time_remaining?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          gap_ahead?: string | null
+          id?: string
+          message?: string | null
+          position?: string | null
+          session_id?: string | null
+          time_remaining?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crew_messages_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crew_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_announcements: {
         Row: {
           created_at: string
