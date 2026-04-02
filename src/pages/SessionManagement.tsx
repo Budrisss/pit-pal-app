@@ -505,6 +505,7 @@ const SessionManagement = () => {
         session_id: sessionId,
         session_name: session.referenceName,
         user_id: userData.user.id,
+        event_id: eventId || null,
         fl_cold_pressure: data.frontLeft.coldPressure ? parseFloat(data.frontLeft.coldPressure) : null,
         fl_hot_pressure: data.frontLeft.pressure ? parseFloat(data.frontLeft.pressure) : null,
         fl_temp_outside: data.frontLeft.tempOutside ? parseFloat(data.frontLeft.tempOutside) : null,
