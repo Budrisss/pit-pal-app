@@ -910,9 +910,14 @@ const SessionManagement = () => {
             </Button>
           )}
           {!publicEventId && eventId && (
-            <Button variant="outline" size="sm" onClick={() => navigate(`/crew-live/${eventId}`)} className="gap-1.5">
-              <Radio size={14} /> Crew View
-            </Button>
+            <>
+              <Button variant="pulse" size="sm" onClick={() => navigate(`/driver-live/${eventId}`)} className="gap-1.5">
+                <Radio size={14} /> Go Live
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => navigate(`/crew-live/${eventId}`)} className="gap-1.5">
+                <Radio size={14} /> Crew View
+              </Button>
+            </>
           )}
           <Dialog open={showSettings} onOpenChange={setShowSettings}>
             <DialogTrigger asChild>
