@@ -41,8 +41,6 @@ const CrewLiveView = () => {
   const [sessions, setSessions] = useState<{ name: string; start_time: string | null; duration: number | null }[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [gapAhead, setGapAhead] = useState("");
-  const [position, setPosition] = useState("");
-  const [timeRemaining, setTimeRemaining] = useState("");
   const [freeText, setFreeText] = useState("");
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
