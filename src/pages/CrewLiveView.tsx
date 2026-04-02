@@ -357,8 +357,8 @@ const CrewLiveView = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="grid grid-cols-3 gap-2">
-              <div>
+            <div className="flex gap-2">
+              <div className="flex-1">
                 <Label className="text-xs">Gap Ahead</Label>
                 <Input
                   placeholder="+1.2s"
@@ -367,31 +367,12 @@ const CrewLiveView = () => {
                   className="h-9 text-sm"
                 />
               </div>
-              <div>
-                <Label className="text-xs">Position</Label>
-                <Input
-                  placeholder="P3"
-                  value={position}
-                  onChange={(e) => setPosition(e.target.value)}
-                  className="h-9 text-sm"
-                />
-              </div>
-              <div>
-                <Label className="text-xs">Time Left</Label>
-                <Input
-                  placeholder="8:30"
-                  value={timeRemaining}
-                  onChange={(e) => setTimeRemaining(e.target.value)}
-                  className="h-9 text-sm"
-                />
-              </div>
-            </div>
-            <Button
-              variant="pulse"
-              className="w-full"
-              onClick={sendStructured}
-              disabled={sending || (!gapAhead && !position && !timeRemaining)}
-            >
+              <Button
+                variant="pulse"
+                className="self-end h-9 px-4"
+                onClick={sendStructured}
+                disabled={sending || !gapAhead}
+              >
               <Send size={14} /> Send Update
             </Button>
           </CardContent>
