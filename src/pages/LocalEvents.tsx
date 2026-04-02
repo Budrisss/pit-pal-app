@@ -1120,7 +1120,20 @@ const LocalEvents = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Registration Dialog */}
+      {/* Unregister Confirmation */}
+      <AlertDialog open={!!unregisteringEventId} onOpenChange={(open) => { if (!open) setUnregisteringEventId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unregister from Event</AlertDialogTitle>
+            <AlertDialogDescription>This will cancel all your registrations for this event and remove it from your schedule.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => unregisteringEventId && handleUnregisterFromEvent(unregisteringEventId)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Unregister</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Dialog open={!!registeringEvent} onOpenChange={(open) => { if (!open) { setRegisteringEvent(null); setSelectedRegTypeId(''); } }}>
         <DialogContent className="max-w-md max-h-[calc(100vh-2rem)] overflow-y-auto">
           <DialogHeader>
