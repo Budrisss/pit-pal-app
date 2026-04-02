@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Clock, TrendingUp, Hash, MessageSquare, Flag } from "lucide-react";
+import { ArrowLeft, Clock, TrendingUp, MessageSquare, Flag, StickyNote, Pencil, Check, X } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { addMinutes, differenceInMilliseconds } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,16 +35,26 @@ const DriverLiveView = () => {
   const [sessions, setSessions] = useState<{ name: string; start_time: string | null; duration: number | null }[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
   const feedEndRef = useRef<HTMLDivElement>(null);
+  const [trackNotes, setTrackNotes] = useState("");
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [notesDraft, setNotesDraft] = useState("");
 
   const event = getEventById(eventId || "");
   const eventBaseDate = event?.eventDate ? new Date(event.eventDate) : null;
 
-  const latestPosition = messages.find((m) => m.position)?.position || "—";
-  const latestGap = messages.find((m) => m.gap_ahead)?.gap_ahead || "—";
-  const latestTimeRemaining = messages.find((m) => m.time_remaining)?.time_remaining || "—";
+  // Load/save track notes from localStorage
+  useEffect(() => {
+    if (!eventId) return;
+    const saved = localStorage.getItem(`track-notes-${eventId}`);
+    if (saved) setTrackNotes(saved);
+  }, [eventId]);
 
-  // Latest free-text message
-  const latestMessage = messages.find((m) => m.message)?.message || null;
+  const saveTrackNotes = () => {
+    if (!eventId) return;
+    localStorage.setItem(`track-notes-${eventId}`, notesDraft);
+    setTrackNotes(notesDraft);
+    setIsEditingNotes(false);
+  };
 
   const scrollToBottom = useCallback(() => {
     feedEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -137,10 +147,11 @@ const DriverLiveView = () => {
   // Compute active session remaining time + just-ended session
   const JUST_ENDED_WINDOW_MS = 60_000; // show checkered flag for 60s after session ends
 
-  const { activeSessionInfo, justEndedSession, nextSessionCountdown } = (() => {
+  const { activeSessionInfo, justEndedSession, nextSessionCountdown, activeSessionWindow } = (() => {
     let active: { name: string | null; minutes: number | null; seconds: number | null; label: string; progress: number | null } | null = null;
     let justEnded: { name: string } | null = null;
     let nextSession: { name: string; label: string } | null = null;
+    let sessionWindow: { start: Date; end: Date } | null = null;
 
     if (eventBaseDate && !Number.isNaN(eventBaseDate.getTime()) && sessions.length) {
       let earliestUpcoming: { name: string; diffMs: number } | null = null;
@@ -165,12 +176,15 @@ const DriverLiveView = () => {
               label: `${Math.floor(diff / (1000 * 60))}:${Math.floor((diff % (1000 * 60)) / 1000).toString().padStart(2, '0')}`,
               progress: Math.min(1, Math.max(0, elapsedMs / totalMs)),
             };
+            sessionWindow = { start, end };
           }
 
           // Just ended (within window)
           const msSinceEnd = currentTime.getTime() - end.getTime();
           if (msSinceEnd >= 0 && msSinceEnd < JUST_ENDED_WINDOW_MS) {
             justEnded = { name: s.name };
+            // Also set session window for just-ended so we keep showing those messages
+            if (!sessionWindow) sessionWindow = { start, end };
           }
 
           // Upcoming session
@@ -193,13 +207,19 @@ const DriverLiveView = () => {
       }
     }
 
-    // Fallback for active
-    if (!active && latestTimeRemaining && latestTimeRemaining !== "—") {
-      active = { name: null, label: latestTimeRemaining, minutes: null, seconds: null, progress: null };
-    }
-
-    return { activeSessionInfo: active, justEndedSession: justEnded, nextSessionCountdown: nextSession };
+    return { activeSessionInfo: active, justEndedSession: justEnded, nextSessionCountdown: nextSession, activeSessionWindow: sessionWindow };
   })();
+
+  // Filter messages to the current/just-ended session window
+  const sessionMessages = activeSessionWindow
+    ? messages.filter(m => {
+        const ts = new Date(m.created_at).getTime();
+        return ts >= activeSessionWindow.start.getTime() && ts <= activeSessionWindow.end.getTime() + JUST_ENDED_WINDOW_MS;
+      })
+    : messages;
+
+  const latestGap = sessionMessages.find((m) => m.gap_ahead)?.gap_ahead || "—";
+  const latestMessage = sessionMessages.find((m) => m.message)?.message || null;
 
   // Load + subscribe
   useEffect(() => {
@@ -327,16 +347,53 @@ const DriverLiveView = () => {
           </div>
         )}
 
+        {/* Track Notes + Gap Ahead */}
         <div className="grid grid-cols-2 gap-4">
-          <div className="relative overflow-hidden rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/15 to-card/80 backdrop-blur-md p-6 sm:p-8 text-center">
-            <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent pointer-events-none" />
-            <Hash size={24} className="mx-auto text-primary mb-2 relative" />
-            <p className="text-5xl sm:text-6xl lg:text-7xl font-black text-foreground tabular-nums relative tracking-tight">
-              {latestPosition}
-            </p>
-            <p className="text-xs sm:text-sm uppercase tracking-widest text-muted-foreground mt-2 font-medium relative">Position</p>
+          {/* Track Notes Card */}
+          <div className="relative overflow-hidden rounded-2xl border-2 border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-card/80 backdrop-blur-md p-4 sm:p-5">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <StickyNote size={16} className="text-amber-500" />
+                <p className="text-xs uppercase tracking-widest text-muted-foreground font-medium">Track Notes</p>
+              </div>
+              {!isEditingNotes && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => { setNotesDraft(trackNotes); setIsEditingNotes(true); }}
+                >
+                  <Pencil size={12} />
+                </Button>
+              )}
+            </div>
+            {isEditingNotes ? (
+              <div className="space-y-2">
+                <textarea
+                  autoFocus
+                  value={notesDraft}
+                  onChange={(e) => setNotesDraft(e.target.value)}
+                  className="w-full bg-background/60 border border-border/50 rounded-lg p-2 text-sm text-foreground resize-none focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+                  rows={4}
+                  placeholder="Braking points, turn notes..."
+                />
+                <div className="flex gap-1.5 justify-end">
+                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setIsEditingNotes(false)}>
+                    <X size={12} />
+                  </Button>
+                  <Button size="icon" variant="ghost" className="h-6 w-6 text-green-500" onClick={saveTrackNotes}>
+                    <Check size={12} />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed min-h-[60px]">
+                {trackNotes || <span className="text-muted-foreground italic">Tap edit to add notes...</span>}
+              </p>
+            )}
           </div>
 
+          {/* Gap Ahead Card */}
           <div className="relative overflow-hidden rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/15 to-card/80 backdrop-blur-md p-6 sm:p-8 text-center">
             <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent pointer-events-none" />
             <TrendingUp size={24} className="mx-auto text-primary mb-2 relative" />
@@ -355,23 +412,26 @@ const DriverLiveView = () => {
           </div>
         )}
 
-        {/* Live Feed */}
+        {/* Live Feed — scoped to current session */}
         <div>
           <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm overflow-hidden flex flex-col">
             <div className="px-5 py-4 border-b border-border/30 flex items-center gap-2">
               <MessageSquare size={18} className="text-primary" />
               <h2 className="text-lg font-bold text-foreground">Crew Updates</h2>
-              <Badge variant="secondary" className="text-xs ml-auto">{messages.length}</Badge>
+              {activeSessionInfo?.name && (
+                <span className="text-xs text-muted-foreground">— {activeSessionInfo.name}</span>
+              )}
+              <Badge variant="secondary" className="text-xs ml-auto">{sessionMessages.length}</Badge>
             </div>
             <div className="flex-1 overflow-y-auto max-h-[400px] lg:max-h-[450px] p-4 space-y-3">
-              {messages.length === 0 ? (
+              {sessionMessages.length === 0 ? (
                 <div className="text-center py-16">
                   <MessageSquare size={40} className="mx-auto text-muted-foreground/30 mb-4" />
                   <p className="text-base text-muted-foreground">Waiting for crew updates...</p>
                   <p className="text-sm text-muted-foreground/60 mt-1">Updates will appear here in real-time</p>
                 </div>
               ) : (
-                messages.map((msg) => (
+                sessionMessages.map((msg) => (
                   <div key={msg.id} className="p-4 rounded-xl bg-background/60 border border-border/30 transition-all animate-in fade-in slide-in-from-bottom-2 duration-300">
                     <div className="flex items-center gap-2 flex-wrap mb-2">
                       <span className="text-xs text-muted-foreground font-medium">{formatTime(msg.created_at)}</span>
