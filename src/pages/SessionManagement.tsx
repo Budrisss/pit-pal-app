@@ -883,6 +883,35 @@ const SessionManagement = () => {
     setEditNoteText("");
   };
 
+  const handleEditSession = (sessionId: string) => {
+    const session = sessions.find(s => s.id === sessionId);
+    if (!session) return;
+    setEditingSessionId(sessionId);
+    setEditSessionName(session.referenceName);
+    setEditSessionTime(session.startTime);
+    setEditSessionDuration(String(session.duration));
+    setEditSessionType(session.type as "practice" | "qualifying" | "race");
+  };
+
+  const handleSaveSessionEdit = (sessionId: string) => {
+    setSessions(prev => {
+      const updated = prev.map(s =>
+        s.id === sessionId
+          ? {
+              ...s,
+              referenceName: editSessionName,
+              startTime: editSessionTime,
+              duration: parseInt(editSessionDuration) || s.duration,
+              type: editSessionType,
+            }
+          : s
+      );
+      saveSessions(updated);
+      return updated;
+    });
+    setEditingSessionId(null);
+  };
+
   const countdown = getCountdownToNext();
   const allStatedSessions = calculateSessionStates();
   const currentActiveSession = allStatedSessions.find(s => s.state === "active");
