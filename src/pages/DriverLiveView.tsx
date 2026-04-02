@@ -137,11 +137,14 @@ const DriverLiveView = () => {
   // Compute active session remaining time + just-ended session
   const JUST_ENDED_WINDOW_MS = 60_000; // show checkered flag for 60s after session ends
 
-  const { activeSessionInfo, justEndedSession } = (() => {
+  const { activeSessionInfo, justEndedSession, nextSessionCountdown } = (() => {
     let active: { name: string | null; minutes: number | null; seconds: number | null; label: string; progress: number | null } | null = null;
     let justEnded: { name: string } | null = null;
+    let nextSession: { name: string; label: string } | null = null;
 
     if (eventBaseDate && !Number.isNaN(eventBaseDate.getTime()) && sessions.length) {
+      let earliestUpcoming: { name: string; diffMs: number } | null = null;
+
       for (const s of sessions) {
         if (!s.start_time || !s.duration) continue;
         try {
@@ -169,7 +172,24 @@ const DriverLiveView = () => {
           if (msSinceEnd >= 0 && msSinceEnd < JUST_ENDED_WINDOW_MS) {
             justEnded = { name: s.name };
           }
+
+          // Upcoming session
+          const diffToStart = start.getTime() - currentTime.getTime();
+          if (diffToStart > 0 && (!earliestUpcoming || diffToStart < earliestUpcoming.diffMs)) {
+            earliestUpcoming = { name: s.name, diffMs: diffToStart };
+          }
         } catch { /* skip */ }
+      }
+
+      if (earliestUpcoming) {
+        const d = earliestUpcoming.diffMs;
+        const hrs = Math.floor(d / (1000 * 60 * 60));
+        const mins = Math.floor((d % (1000 * 60 * 60)) / (1000 * 60));
+        const secs = Math.floor((d % (1000 * 60)) / 1000);
+        const label = hrs > 0
+          ? `${hrs}h ${mins}m ${secs}s`
+          : `${mins}m ${secs}s`;
+        nextSession = { name: earliestUpcoming.name, label };
       }
     }
 
@@ -178,7 +198,7 @@ const DriverLiveView = () => {
       active = { name: null, label: latestTimeRemaining, minutes: null, seconds: null, progress: null };
     }
 
-    return { activeSessionInfo: active, justEndedSession: justEnded };
+    return { activeSessionInfo: active, justEndedSession: justEnded, nextSessionCountdown: nextSession };
   })();
 
   // Load + subscribe
