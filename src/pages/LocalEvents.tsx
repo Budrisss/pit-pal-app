@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { MapPin, Search, Calendar, DollarSign, Car, ExternalLink, Plus, ChevronRight, Filter, Building2, Pencil, Trash2, MoreVertical, X, Users, Tag, UserCheck, ClipboardList, Phone, Mail } from 'lucide-react';
+import { MapPin, Search, Calendar, DollarSign, Car, ExternalLink, Plus, ChevronRight, Filter, Building2, Pencil, Trash2, MoreVertical, X, Users, Tag, UserCheck, ClipboardList, Phone, Mail, Eye } from 'lucide-react';
 import { useOrganizerMode } from '@/contexts/OrganizerModeContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -971,12 +971,14 @@ const LocalEvents = () => {
                       <p className="text-xs text-muted-foreground mb-4 line-clamp-2">{event.description}</p>
                     )}
 
-                    <div className="mt-auto flex gap-2">
+                    <div className="mt-auto flex items-center gap-2">
                       <Button 
                         size="sm" 
-                        variant="outline"
+                        variant="pulse"
+                        className="flex-1"
                         onClick={() => navigate(`/public-event/${event.id}`)}
                       >
+                        <Eye size={14} />
                         View
                       </Button>
                       {!isOrganizerEvent(event) && (
@@ -984,7 +986,7 @@ const LocalEvents = () => {
                           <>
                             <Button 
                               size="sm" 
-                              variant="secondary"
+                              variant="outline"
                               className="flex-1"
                               onClick={() => {
                                 setRegisteringEvent(event);
@@ -994,11 +996,13 @@ const LocalEvents = () => {
                                 }
                               }}
                             >
-                              <Pencil size={14} className="mr-1" /> Edit Reg
+                              <Pencil size={14} />
+                              Edit Reg
                             </Button>
                             <Button 
                               size="sm" 
-                              variant="destructive"
+                              variant="ghost"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
                               onClick={() => setUnregisteringEventId(event.id)}
                             >
                               <X size={14} />
@@ -1007,6 +1011,7 @@ const LocalEvents = () => {
                         ) : (
                           <Button 
                             size="sm" 
+                            variant="orange"
                             className="flex-1"
                             onClick={() => {
                               setRegisteringEvent(event);
@@ -1016,7 +1021,8 @@ const LocalEvents = () => {
                               }
                             }}
                           >
-                            <UserCheck size={14} className="mr-1" /> Register
+                            <UserCheck size={14} />
+                            Register
                           </Button>
                         )
                       )}
