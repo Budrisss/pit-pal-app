@@ -307,6 +307,26 @@ const DriverLiveView = () => {
           </div>
         )}
 
+        {/* Next Session Countdown */}
+        {!activeSessionInfo && nextSessionCountdown && (
+          <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm px-5 py-4 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
+                  Next Session
+                </p>
+                <p className="text-sm font-medium text-foreground">{nextSessionCountdown.name}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl sm:text-3xl font-black text-primary tabular-nums">
+                  {nextSessionCountdown.label}
+                </p>
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground">until start</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-4">
           <div className="relative overflow-hidden rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/15 to-card/80 backdrop-blur-md p-6 sm:p-8 text-center">
             <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent pointer-events-none" />
