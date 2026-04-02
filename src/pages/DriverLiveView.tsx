@@ -84,11 +84,14 @@ const DriverLiveView = () => {
           const end = addMinutes(start, s.duration);
           if (currentTime >= start && currentTime < end) {
             const diff = differenceInMilliseconds(end, currentTime);
+            const totalMs = s.duration * 60 * 1000;
+            const elapsedMs = totalMs - diff;
             return {
               name: s.name,
               minutes: Math.floor(diff / (1000 * 60)),
               seconds: Math.floor((diff % (1000 * 60)) / 1000),
               label: `${Math.floor(diff / (1000 * 60))}:${Math.floor((diff % (1000 * 60)) / 1000).toString().padStart(2, '0')}`,
+              progress: Math.min(1, Math.max(0, elapsedMs / totalMs)),
             };
           }
         } catch { /* skip */ }
