@@ -903,6 +903,7 @@ const SessionManagement = () => {
               startTime: editSessionTime,
               duration: parseInt(editSessionDuration) || s.duration,
               type: editSessionType,
+              state: "upcoming" as const,
             }
           : s
       );
