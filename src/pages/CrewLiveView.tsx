@@ -47,20 +47,6 @@ const CrewLiveView = () => {
 
   const event = getEventById(eventId || "");
 
-  // Load sessions
-  useEffect(() => {
-    if (!eventId || !user) return;
-    const loadSessions = async () => {
-      const { data } = await supabase
-        .from("sessions")
-        .select("id, name")
-        .eq("event_id", eventId)
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: true });
-      if (data) setSessions(data);
-    };
-    loadSessions();
-  }, [eventId, user]);
 
   // Load existing messages + subscribe to realtime
   useEffect(() => {
