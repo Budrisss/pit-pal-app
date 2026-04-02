@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Navigation from "@/components/Navigation";
@@ -29,10 +29,6 @@ interface CrewMessage {
   created_at: string;
 }
 
-interface SessionOption {
-  id: string;
-  name: string;
-}
 
 const CrewLiveView = () => {
   const { eventId } = useParams();
@@ -42,8 +38,6 @@ const CrewLiveView = () => {
   const { toast } = useToast();
 
   const [messages, setMessages] = useState<CrewMessage[]>([]);
-  const [sessions, setSessions] = useState<SessionOption[]>([]);
-  const [selectedSessionId, setSelectedSessionId] = useState<string>("");
   const [gapAhead, setGapAhead] = useState("");
   const [position, setPosition] = useState("");
   const [timeRemaining, setTimeRemaining] = useState("");
@@ -53,20 +47,6 @@ const CrewLiveView = () => {
 
   const event = getEventById(eventId || "");
 
-  // Load sessions
-  useEffect(() => {
-    if (!eventId || !user) return;
-    const loadSessions = async () => {
-      const { data } = await supabase
-        .from("sessions")
-        .select("id, name")
-        .eq("event_id", eventId)
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: true });
-      if (data) setSessions(data);
-    };
-    loadSessions();
-  }, [eventId, user]);
 
   // Load existing messages + subscribe to realtime
   useEffect(() => {
@@ -110,7 +90,6 @@ const CrewLiveView = () => {
     const { error } = await supabase.from("crew_messages").insert({
       event_id: eventId,
       user_id: user.id,
-      session_id: selectedSessionId || null,
       gap_ahead: gapAhead || null,
       position: position || null,
       time_remaining: timeRemaining || null,
@@ -131,7 +110,6 @@ const CrewLiveView = () => {
     const { error } = await supabase.from("crew_messages").insert({
       event_id: eventId,
       user_id: user.id,
-      session_id: selectedSessionId || null,
       message: freeText.trim(),
     });
     if (error) {
@@ -162,20 +140,6 @@ const CrewLiveView = () => {
           <Badge variant="outline" className="text-xs">CREW</Badge>
         </div>
 
-        {/* Session Selector */}
-        {sessions.length > 0 && (
-          <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select session (optional)" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">All Sessions</SelectItem>
-              {sessions.map((s) => (
-                <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
 
         {/* Structured Quick Entry */}
         <Card className="bg-card/60 backdrop-blur-sm border-border/50">
