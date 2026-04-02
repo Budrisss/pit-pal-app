@@ -32,6 +32,8 @@ const DriverLiveView = () => {
   const { toast } = useToast();
 
   const [messages, setMessages] = useState<CrewMessage[]>([]);
+  const [sessions, setSessions] = useState<{ name: string; start_time: string | null; duration: number | null }[]>([]);
+  const [currentTime, setCurrentTime] = useState(new Date());
   const feedEndRef = useRef<HTMLDivElement>(null);
 
   const event = getEventById(eventId || "");
