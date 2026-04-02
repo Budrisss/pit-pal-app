@@ -72,24 +72,31 @@ const DriverLiveView = () => {
 
   // Compute active session remaining time
   const activeSessionInfo = (() => {
-    if (!event || !sessions.length) return null;
-    for (const s of sessions) {
-      if (!s.start_time || !s.duration) continue;
-      try {
-        const ed = parseISO(event.date);
-        const [h, m] = s.start_time.split(':').map(Number);
-        const start = new Date(ed);
-        start.setHours(h, m, 0, 0);
-        const end = addMinutes(start, s.duration);
-        if (currentTime >= start && currentTime < end) {
-          const diff = differenceInMilliseconds(end, currentTime);
-          return {
-            name: s.name,
-            minutes: Math.floor(diff / (1000 * 60)),
-            seconds: Math.floor((diff % (1000 * 60)) / 1000),
-          };
-        }
-      } catch { /* skip */ }
+    // Try computed countdown from session schedule
+    if (event && sessions.length) {
+      for (const s of sessions) {
+        if (!s.start_time || !s.duration) continue;
+        try {
+          const ed = parseISO(event.date);
+          const [h, m] = s.start_time.split(':').map(Number);
+          const start = new Date(ed);
+          start.setHours(h, m, 0, 0);
+          const end = addMinutes(start, s.duration);
+          if (currentTime >= start && currentTime < end) {
+            const diff = differenceInMilliseconds(end, currentTime);
+            return {
+              name: s.name,
+              minutes: Math.floor(diff / (1000 * 60)),
+              seconds: Math.floor((diff % (1000 * 60)) / 1000),
+              label: `${Math.floor(diff / (1000 * 60))}:${Math.floor((diff % (1000 * 60)) / 1000).toString().padStart(2, '0')}`,
+            };
+          }
+        } catch { /* skip */ }
+      }
+    }
+    // Fallback: use crew-reported time remaining
+    if (latestTimeRemaining && latestTimeRemaining !== "—") {
+      return { name: null, label: latestTimeRemaining, minutes: null, seconds: null };
     }
     return null;
   })();
@@ -156,11 +163,15 @@ const DriverLiveView = () => {
         {activeSessionInfo && (
           <div className="rounded-xl border border-primary/40 bg-primary/10 backdrop-blur-sm px-5 py-4 flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-widest text-primary font-semibold">Session Active</p>
-              <p className="text-sm font-medium text-foreground">{activeSessionInfo.name}</p>
+              <p className="text-xs uppercase tracking-widest text-primary font-semibold">
+                {activeSessionInfo.name ? "Session Active" : "Time Remaining"}
+              </p>
+              {activeSessionInfo.name && (
+                <p className="text-sm font-medium text-foreground">{activeSessionInfo.name}</p>
+              )}
             </div>
             <p className="text-3xl sm:text-4xl font-black text-primary tabular-nums">
-              {activeSessionInfo.minutes}:{activeSessionInfo.seconds.toString().padStart(2, '0')}
+              {activeSessionInfo.label}
             </p>
           </div>
         )}
