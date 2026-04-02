@@ -1029,6 +1029,14 @@ const SessionManagement = () => {
                 </div>
               )}
             </div>
+            {bannerRemainingTime && (
+              <div className="mt-3 w-full h-1.5 rounded-full bg-green-500/20 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-green-500 transition-all duration-1000 ease-linear"
+                  style={{ width: `${bannerRemainingTime.progress * 100}%` }}
+                />
+              </div>
+            )}
           </div>
         )}
 
