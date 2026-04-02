@@ -266,7 +266,27 @@ const DriverLiveView = () => {
           </div>
         )}
 
-        {/* Hero Status Cards */}
+        {/* Checkered Flag — Session Just Ended */}
+        {!activeSessionInfo && justEndedSession && (
+          <div className="rounded-xl border-2 border-yellow-500/60 bg-yellow-500/10 backdrop-blur-sm px-5 py-5 animate-fade-in">
+            <div className="flex items-center gap-4">
+              <div className="flex-shrink-0 text-4xl">🏁</div>
+              <div className="flex-1">
+                <p className="text-xs uppercase tracking-widest text-yellow-500 font-bold mb-1">
+                  Session Complete
+                </p>
+                <p className="text-xl sm:text-2xl font-black text-foreground">
+                  Come to Pits
+                </p>
+                {justEndedSession.name && (
+                  <p className="text-sm text-muted-foreground mt-0.5">{justEndedSession.name} has ended</p>
+                )}
+              </div>
+              <Flag size={32} className="text-yellow-500 flex-shrink-0" />
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-4">
           <div className="relative overflow-hidden rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/15 to-card/80 backdrop-blur-md p-6 sm:p-8 text-center">
             <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent pointer-events-none" />
