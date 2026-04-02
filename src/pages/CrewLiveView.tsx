@@ -140,20 +140,6 @@ const CrewLiveView = () => {
           <Badge variant="outline" className="text-xs">CREW</Badge>
         </div>
 
-        {/* Session Selector */}
-        {sessions.length > 0 && (
-          <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select session (optional)" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">All Sessions</SelectItem>
-              {sessions.map((s) => (
-                <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
 
         {/* Structured Quick Entry */}
         <Card className="bg-card/60 backdrop-blur-sm border-border/50">
