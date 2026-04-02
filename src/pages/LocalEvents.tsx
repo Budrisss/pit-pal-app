@@ -198,6 +198,8 @@ const LocalEvents = () => {
   const [regForm, setRegForm] = useState({ name: '', email: '', phone: '', notes: '', carNumber: '', carId: '' });
   const [registering, setRegistering] = useState(false);
   const [userRegistrations, setUserRegistrations] = useState<Set<string>>(new Set());
+  const [userRegisteredEventIds, setUserRegisteredEventIds] = useState<Set<string>>(new Set());
+  const [unregisteringEventId, setUnregisteringEventId] = useState<string | null>(null);
   
   // Participant list state
   const [participantEvent, setParticipantEvent] = useState<PublicEvent | null>(null);
@@ -287,10 +289,11 @@ const LocalEvents = () => {
     if (!user) return;
     const { data } = await supabase
       .from('event_registrations')
-      .select('registration_type_id, car_number')
+      .select('registration_type_id, car_number, event_id')
       .eq('user_id', user.id);
     if (data) {
       setUserRegistrations(new Set(data.map((r: any) => `${r.registration_type_id}_${r.car_number}`)));
+      setUserRegisteredEventIds(new Set(data.map((r: any) => r.event_id)));
     }
   }, [user]);
 
@@ -439,6 +442,34 @@ const LocalEvents = () => {
       fetchRegistrationCounts(events.map(ev => ev.id));
     } catch (err: any) {
       toast({ title: "Failed to cancel", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleUnregisterFromEvent = async (eventId: string) => {
+    if (!user) return;
+    try {
+      // Delete all registrations for this event
+      const { error: regError } = await supabase
+        .from('event_registrations')
+        .delete()
+        .eq('event_id', eventId)
+        .eq('user_id', user.id);
+      if (regError) throw regError;
+
+      // Delete the personal event copy
+      const { error: eventError } = await supabase
+        .from('events')
+        .delete()
+        .eq('public_event_id', eventId)
+        .eq('user_id', user.id);
+      if (eventError) throw eventError;
+
+      toast({ title: "Unregistered", description: "Event removed from your schedule." });
+      setUnregisteringEventId(null);
+      fetchUserRegistrations();
+      fetchRegistrationCounts(events.map(ev => ev.id));
+    } catch (err: any) {
+      toast({ title: "Failed to unregister", description: err.message, variant: "destructive" });
     }
   };
 
@@ -941,28 +972,53 @@ const LocalEvents = () => {
                     )}
 
                     <div className="mt-auto flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => navigate(`/public-event/${event.id}`)}
+                      >
+                        View
+                      </Button>
                       {!isOrganizerEvent(event) && (
-                        <Button 
-                          size="sm" 
-                          className="flex-1"
-                          onClick={() => {
-                            setRegisteringEvent(event);
-                            setRegForm({ name: '', email: user?.email || '', phone: '', notes: '', carNumber: '', carId: '' });
-                            // Auto-select if only one reg type
-                            if (event.registration_types?.length === 1 && event.registration_types[0].id) {
-                              setSelectedRegTypeId(event.registration_types[0].id);
-                            }
-                          }}
-                        >
-                          <UserCheck size={14} className="mr-1" /> Register
-                        </Button>
-                      )}
-                      {event.registration_link && (
-                        <Button size="sm" variant="outline" asChild>
-                          <a href={event.registration_link} target="_blank" rel="noopener noreferrer">
-                            Info <ExternalLink size={14} className="ml-1" />
-                          </a>
-                        </Button>
+                        userRegisteredEventIds.has(event.id) ? (
+                          <>
+                            <Button 
+                              size="sm" 
+                              variant="secondary"
+                              className="flex-1"
+                              onClick={() => {
+                                setRegisteringEvent(event);
+                                setRegForm({ name: '', email: user?.email || '', phone: '', notes: '', carNumber: '', carId: '' });
+                                if (event.registration_types?.length === 1 && event.registration_types[0].id) {
+                                  setSelectedRegTypeId(event.registration_types[0].id);
+                                }
+                              }}
+                            >
+                              <Pencil size={14} className="mr-1" /> Edit Reg
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="destructive"
+                              onClick={() => setUnregisteringEventId(event.id)}
+                            >
+                              <X size={14} />
+                            </Button>
+                          </>
+                        ) : (
+                          <Button 
+                            size="sm" 
+                            className="flex-1"
+                            onClick={() => {
+                              setRegisteringEvent(event);
+                              setRegForm({ name: '', email: user?.email || '', phone: '', notes: '', carNumber: '', carId: '' });
+                              if (event.registration_types?.length === 1 && event.registration_types[0].id) {
+                                setSelectedRegTypeId(event.registration_types[0].id);
+                              }
+                            }}
+                          >
+                            <UserCheck size={14} className="mr-1" /> Register
+                          </Button>
+                        )
                       )}
                     </div>
                   </CardContent>
@@ -1064,7 +1120,20 @@ const LocalEvents = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Registration Dialog */}
+      {/* Unregister Confirmation */}
+      <AlertDialog open={!!unregisteringEventId} onOpenChange={(open) => { if (!open) setUnregisteringEventId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unregister from Event</AlertDialogTitle>
+            <AlertDialogDescription>This will cancel all your registrations for this event and remove it from your schedule.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => unregisteringEventId && handleUnregisterFromEvent(unregisteringEventId)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Unregister</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Dialog open={!!registeringEvent} onOpenChange={(open) => { if (!open) { setRegisteringEvent(null); setSelectedRegTypeId(''); } }}>
         <DialogContent className="max-w-md max-h-[calc(100vh-2rem)] overflow-y-auto">
           <DialogHeader>
