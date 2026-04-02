@@ -445,6 +445,34 @@ const LocalEvents = () => {
     }
   };
 
+  const handleUnregisterFromEvent = async (eventId: string) => {
+    if (!user) return;
+    try {
+      // Delete all registrations for this event
+      const { error: regError } = await supabase
+        .from('event_registrations')
+        .delete()
+        .eq('event_id', eventId)
+        .eq('user_id', user.id);
+      if (regError) throw regError;
+
+      // Delete the personal event copy
+      const { error: eventError } = await supabase
+        .from('events')
+        .delete()
+        .eq('public_event_id', eventId)
+        .eq('user_id', user.id);
+      if (eventError) throw eventError;
+
+      toast({ title: "Unregistered", description: "Event removed from your schedule." });
+      setUnregisteringEventId(null);
+      fetchUserRegistrations();
+      fetchRegistrationCounts(events.map(ev => ev.id));
+    } catch (err: any) {
+      toast({ title: "Failed to unregister", description: err.message, variant: "destructive" });
+    }
+  };
+
   const openParticipantList = async (event: PublicEvent) => {
     setParticipantEvent(event);
     setLoadingParticipants(true);
