@@ -27,6 +27,8 @@ import OrganizerSignup from "./pages/OrganizerSignup";
 import PublicEventPreview from "./pages/PublicEventPreview";
 import OrganizerLiveManage from "./pages/OrganizerLiveManage";
 import RacerLiveView from "./pages/RacerLiveView";
+import DriverLiveView from "./pages/DriverLiveView";
+import CrewLiveView from "./pages/CrewLiveView";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
