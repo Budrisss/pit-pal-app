@@ -49,6 +49,51 @@ const DriverLiveView = () => {
     feedEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
+  // Load sessions for timer
+  useEffect(() => {
+    if (!eventId || !user) return;
+    const loadSessions = async () => {
+      const { data } = await supabase
+        .from("sessions")
+        .select("name, start_time, duration")
+        .eq("event_id", eventId)
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: true });
+      if (data) setSessions(data);
+    };
+    loadSessions();
+  }, [eventId, user]);
+
+  // Tick every second for countdown
+  useEffect(() => {
+    const interval = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Compute active session remaining time
+  const activeSessionInfo = (() => {
+    if (!event || !sessions.length) return null;
+    for (const s of sessions) {
+      if (!s.start_time || !s.duration) continue;
+      try {
+        const ed = parseISO(event.date);
+        const [h, m] = s.start_time.split(':').map(Number);
+        const start = new Date(ed);
+        start.setHours(h, m, 0, 0);
+        const end = addMinutes(start, s.duration);
+        if (currentTime >= start && currentTime < end) {
+          const diff = differenceInMilliseconds(end, currentTime);
+          return {
+            name: s.name,
+            minutes: Math.floor(diff / (1000 * 60)),
+            seconds: Math.floor((diff % (1000 * 60)) / 1000),
+          };
+        }
+      } catch { /* skip */ }
+    }
+    return null;
+  })();
+
   // Load + subscribe
   useEffect(() => {
     if (!eventId || !user) return;
