@@ -165,6 +165,12 @@ const SortableSessionItem = ({ session, onDelete, onMarkComplete, onEditNote, on
                   {isNotesExpanded ? "Hide Notes" : "Show Notes"}
                 </DropdownMenuItem>
               )}
+              {!isRegisteredEvent && onEdit && (
+                <DropdownMenuItem onClick={() => onEdit(session.id)}>
+                  <Settings size={14} className="mr-2" />
+                  Edit Session
+                </DropdownMenuItem>
+              )}
               {!isRegisteredEvent && isSameDayEvent && session.state !== "completed" && (
                 <DropdownMenuItem onClick={() => onMarkComplete(session.id)}>
                   <CheckCircle2 size={14} className="mr-2" />
