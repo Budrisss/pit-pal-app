@@ -134,9 +134,13 @@ const DriverLiveView = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Compute active session remaining time
-  const activeSessionInfo = (() => {
-    // Try computed countdown from session schedule
+  // Compute active session remaining time + just-ended session
+  const JUST_ENDED_WINDOW_MS = 60_000; // show checkered flag for 60s after session ends
+
+  const { activeSessionInfo, justEndedSession } = (() => {
+    let active: { name: string | null; minutes: number | null; seconds: number | null; label: string; progress: number | null } | null = null;
+    let justEnded: { name: string } | null = null;
+
     if (eventBaseDate && !Number.isNaN(eventBaseDate.getTime()) && sessions.length) {
       for (const s of sessions) {
         if (!s.start_time || !s.duration) continue;
@@ -145,11 +149,13 @@ const DriverLiveView = () => {
           const start = new Date(eventBaseDate);
           start.setHours(h, m, 0, 0);
           const end = addMinutes(start, s.duration);
+
+          // Active session
           if (currentTime >= start && currentTime < end) {
             const diff = differenceInMilliseconds(end, currentTime);
             const totalMs = s.duration * 60 * 1000;
             const elapsedMs = totalMs - diff;
-            return {
+            active = {
               name: s.name,
               minutes: Math.floor(diff / (1000 * 60)),
               seconds: Math.floor((diff % (1000 * 60)) / 1000),
@@ -157,14 +163,22 @@ const DriverLiveView = () => {
               progress: Math.min(1, Math.max(0, elapsedMs / totalMs)),
             };
           }
+
+          // Just ended (within window)
+          const msSinceEnd = currentTime.getTime() - end.getTime();
+          if (msSinceEnd >= 0 && msSinceEnd < JUST_ENDED_WINDOW_MS) {
+            justEnded = { name: s.name };
+          }
         } catch { /* skip */ }
       }
     }
-    // Fallback: use crew-reported time remaining
-    if (latestTimeRemaining && latestTimeRemaining !== "—") {
-      return { name: null, label: latestTimeRemaining, minutes: null, seconds: null, progress: null };
+
+    // Fallback for active
+    if (!active && latestTimeRemaining && latestTimeRemaining !== "—") {
+      active = { name: null, label: latestTimeRemaining, minutes: null, seconds: null, progress: null };
     }
-    return null;
+
+    return { activeSessionInfo: active, justEndedSession: justEnded };
   })();
 
   // Load + subscribe
