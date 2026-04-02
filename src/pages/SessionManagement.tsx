@@ -338,7 +338,7 @@ const SessionManagement = () => {
       sessionStart.setHours(hours, minutes, 0, 0);
       const sessionEnd = addMinutes(sessionStart, session.duration);
 
-      if (isSameDayEvent && session.state === "completed") {
+      if (session.state === "completed") {
         return { ...session, state: "completed" as const };
       }
 
