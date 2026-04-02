@@ -373,8 +373,9 @@ const CrewLiveView = () => {
                 onClick={sendStructured}
                 disabled={sending || !gapAhead}
               >
-              <Send size={14} /> Send Update
-            </Button>
+                <Send size={14} /> Send
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
