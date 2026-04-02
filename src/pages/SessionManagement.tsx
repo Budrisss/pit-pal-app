@@ -967,7 +967,7 @@ const SessionManagement = () => {
               {countdown && !currentActiveSession && (
                 <div className="mt-3 inline-flex flex-col rounded-lg border border-border/50 bg-background/40 px-3 py-2">
                   <p className="text-[10px] uppercase tracking-widest text-primary font-semibold">
-                    {myRunGroups.size > 0 ? "Your Next Session" : "Next Session"}: {countdown.nextSession.referenceName}
+                    {myRunGroups.size > 0 && publicEventId ? "Your Next Session" : "Next Session"}: {countdown.nextSession.referenceName}
                   </p>
                   <p className={`text-lg sm:text-xl font-bold tabular-nums ${countdown.isInBufferZone ? "text-destructive" : "text-foreground"}`}>
                     {formatCountdown(countdown)}
