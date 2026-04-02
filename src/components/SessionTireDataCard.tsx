@@ -363,7 +363,7 @@ const SessionTireDataCard = ({ sessions, onSaveData }: SessionTireDataCardProps)
 
               <Button 
                 onClick={handleSave}
-                disabled={!isDataComplete()}
+                disabled={!hasAnyData()}
                 className="w-full"
                 variant="pulse"
               >
