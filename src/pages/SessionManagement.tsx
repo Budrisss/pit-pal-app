@@ -1330,10 +1330,64 @@ const SessionManagement = () => {
                         onMarkComplete={handleMarkSessionComplete}
                         onEditNote={handleEditNote}
                         onToggleNotes={handleToggleNotes}
+                        onEdit={!isRegisteredEvent ? handleEditSession : undefined}
                         isSameDayEvent={isSameDayEvent}
                         isRegisteredEvent={isRegisteredEvent}
                         isNotesExpanded={expandedNotes.has(session.id)}
                       />
+                      {/* Inline session editing */}
+                      {editingSessionId === session.id && (
+                        <div className="ml-6 p-3 bg-card/60 backdrop-blur-sm border border-border/50 rounded-lg space-y-3">
+                          <div className="space-y-2">
+                            <Label className="text-xs">Session Name</Label>
+                            <Input
+                              value={editSessionName}
+                              onChange={(e) => setEditSessionName(e.target.value)}
+                              placeholder="Session name"
+                              className="text-sm"
+                            />
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div className="space-y-2">
+                              <Label className="text-xs">Type</Label>
+                              <Select value={editSessionType} onValueChange={(v) => setEditSessionType(v as any)}>
+                                <SelectTrigger className="text-sm">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="practice">Practice</SelectItem>
+                                  <SelectItem value="qualifying">Qualifying</SelectItem>
+                                  <SelectItem value="race">Race</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-xs">Duration (min)</Label>
+                              <Input
+                                type="number"
+                                value={editSessionDuration}
+                                onChange={(e) => setEditSessionDuration(e.target.value)}
+                                min="1"
+                                max="120"
+                                className="text-sm"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-xs">Start Time</Label>
+                              <Input
+                                type="time"
+                                value={editSessionTime}
+                                onChange={(e) => setEditSessionTime(e.target.value)}
+                                className="text-sm"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={() => handleSaveSessionEdit(session.id)}>Save</Button>
+                            <Button size="sm" variant="outline" onClick={() => setEditingSessionId(null)}>Cancel</Button>
+                          </div>
+                        </div>
+                      )}
                       {/* Inline note editing */}
                       {editingNoteId === session.id && (
                         <div className="ml-6 p-3 bg-card/60 backdrop-blur-sm border border-border/50 rounded-lg">
