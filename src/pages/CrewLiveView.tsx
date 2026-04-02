@@ -41,8 +41,6 @@ const CrewLiveView = () => {
   const [sessions, setSessions] = useState<{ name: string; start_time: string | null; duration: number | null }[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [gapAhead, setGapAhead] = useState("");
-  const [position, setPosition] = useState("");
-  const [timeRemaining, setTimeRemaining] = useState("");
   const [freeText, setFreeText] = useState("");
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -221,8 +219,8 @@ const CrewLiveView = () => {
 
   const sendStructured = async () => {
     if (!eventId || !user) return;
-    if (!gapAhead && !position && !timeRemaining) {
-      toast({ title: "Enter at least one field", variant: "destructive" });
+    if (!gapAhead) {
+      toast({ title: "Enter gap ahead", variant: "destructive" });
       return;
     }
     setSending(true);
@@ -230,15 +228,11 @@ const CrewLiveView = () => {
       event_id: eventId,
       user_id: user.id,
       gap_ahead: gapAhead || null,
-      position: position || null,
-      time_remaining: timeRemaining || null,
     });
     if (error) {
       toast({ title: "Failed to send", description: error.message, variant: "destructive" });
     } else {
       setGapAhead("");
-      setPosition("");
-      setTimeRemaining("");
     }
     setSending(false);
   };
@@ -361,8 +355,8 @@ const CrewLiveView = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="grid grid-cols-3 gap-2">
-              <div>
+            <div className="flex gap-2">
+              <div className="flex-1">
                 <Label className="text-xs">Gap Ahead</Label>
                 <Input
                   placeholder="+1.2s"
@@ -371,33 +365,15 @@ const CrewLiveView = () => {
                   className="h-9 text-sm"
                 />
               </div>
-              <div>
-                <Label className="text-xs">Position</Label>
-                <Input
-                  placeholder="P3"
-                  value={position}
-                  onChange={(e) => setPosition(e.target.value)}
-                  className="h-9 text-sm"
-                />
-              </div>
-              <div>
-                <Label className="text-xs">Time Left</Label>
-                <Input
-                  placeholder="8:30"
-                  value={timeRemaining}
-                  onChange={(e) => setTimeRemaining(e.target.value)}
-                  className="h-9 text-sm"
-                />
-              </div>
+              <Button
+                variant="pulse"
+                className="self-end h-9 px-4"
+                onClick={sendStructured}
+                disabled={sending || !gapAhead}
+              >
+                <Send size={14} /> Send
+              </Button>
             </div>
-            <Button
-              variant="pulse"
-              className="w-full"
-              onClick={sendStructured}
-              disabled={sending || (!gapAhead && !position && !timeRemaining)}
-            >
-              <Send size={14} /> Send Update
-            </Button>
           </CardContent>
         </Card>
 
