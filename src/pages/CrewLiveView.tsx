@@ -90,7 +90,6 @@ const CrewLiveView = () => {
     const { error } = await supabase.from("crew_messages").insert({
       event_id: eventId,
       user_id: user.id,
-      session_id: selectedSessionId || null,
       gap_ahead: gapAhead || null,
       position: position || null,
       time_remaining: timeRemaining || null,
