@@ -38,8 +38,6 @@ const CrewLiveView = () => {
   const { toast } = useToast();
 
   const [messages, setMessages] = useState<CrewMessage[]>([]);
-  const [sessions, setSessions] = useState<SessionOption[]>([]);
-  const [selectedSessionId, setSelectedSessionId] = useState<string>("");
   const [gapAhead, setGapAhead] = useState("");
   const [position, setPosition] = useState("");
   const [timeRemaining, setTimeRemaining] = useState("");
