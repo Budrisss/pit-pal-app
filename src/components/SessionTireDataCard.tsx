@@ -70,12 +70,12 @@ const SessionTireDataCard = ({ sessions, onSaveData }: SessionTireDataCardProps)
     });
   };
 
-  const isDataComplete = () => {
-    return selectedSessionId && Object.values(tireData).every(tire => 
-      tire.coldPressure.trim() !== "" &&
-      tire.pressure.trim() !== "" && 
-      tire.tempOutside.trim() !== "" && 
-      tire.tempCenter.trim() !== "" && 
+  const hasAnyData = () => {
+    return selectedSessionId && Object.values(tireData).some(tire => 
+      tire.coldPressure.trim() !== "" ||
+      tire.pressure.trim() !== "" || 
+      tire.tempOutside.trim() !== "" || 
+      tire.tempCenter.trim() !== "" || 
       tire.tempInside.trim() !== ""
     );
   };
