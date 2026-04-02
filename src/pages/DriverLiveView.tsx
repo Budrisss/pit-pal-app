@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Clock, TrendingUp, Hash, MessageSquare } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { addMinutes, differenceInMilliseconds, parseISO } from "date-fns";
+import { addMinutes, differenceInMilliseconds } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEvents } from "@/contexts/EventsContext";
@@ -37,6 +37,7 @@ const DriverLiveView = () => {
   const feedEndRef = useRef<HTMLDivElement>(null);
 
   const event = getEventById(eventId || "");
+  const eventBaseDate = event?.eventDate ? new Date(event.eventDate) : null;
 
   const latestPosition = messages.find((m) => m.position)?.position || "—";
   const latestGap = messages.find((m) => m.gap_ahead)?.gap_ahead || "—";
@@ -101,13 +102,12 @@ const DriverLiveView = () => {
   // Compute active session remaining time
   const activeSessionInfo = (() => {
     // Try computed countdown from session schedule
-    if (event && sessions.length) {
+    if (eventBaseDate && !Number.isNaN(eventBaseDate.getTime()) && sessions.length) {
       for (const s of sessions) {
         if (!s.start_time || !s.duration) continue;
         try {
-          const ed = parseISO(event.date);
           const [h, m] = s.start_time.split(':').map(Number);
-          const start = new Date(ed);
+          const start = new Date(eventBaseDate);
           start.setHours(h, m, 0, 0);
           const end = addMinutes(start, s.duration);
           if (currentTime >= start && currentTime < end) {
