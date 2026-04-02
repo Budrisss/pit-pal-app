@@ -1012,10 +1012,10 @@ const SessionManagement = () => {
                   </p>
                 </div>
               </div>
-              {activeSessionRemainingTime && (
+              {bannerRemainingTime && (
                 <div className="text-right">
                   <p className="text-3xl sm:text-4xl font-bold text-green-400 tabular-nums">
-                    {activeSessionRemainingTime.minutes}:{activeSessionRemainingTime.seconds.toString().padStart(2, '0')}
+                    {bannerRemainingTime.minutes}:{bannerRemainingTime.seconds.toString().padStart(2, '0')}
                   </p>
                   <p className="text-xs uppercase tracking-wider text-muted-foreground">Remaining</p>
                 </div>
