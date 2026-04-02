@@ -177,6 +177,14 @@ const DriverLiveView = () => {
               {activeSessionInfo.label}
             </p>
           </div>
+          {activeSessionInfo.progress !== null && (
+            <div className="mt-3 h-2 w-full rounded-full bg-primary/20 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-primary transition-all duration-1000 ease-linear"
+                style={{ width: `${(activeSessionInfo.progress) * 100}%` }}
+              />
+            </div>
+          )}
         )}
 
         {/* Hero Status Cards */}
