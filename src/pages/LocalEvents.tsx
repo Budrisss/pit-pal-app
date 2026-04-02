@@ -198,6 +198,8 @@ const LocalEvents = () => {
   const [regForm, setRegForm] = useState({ name: '', email: '', phone: '', notes: '', carNumber: '', carId: '' });
   const [registering, setRegistering] = useState(false);
   const [userRegistrations, setUserRegistrations] = useState<Set<string>>(new Set());
+  const [userRegisteredEventIds, setUserRegisteredEventIds] = useState<Set<string>>(new Set());
+  const [unregisteringEventId, setUnregisteringEventId] = useState<string | null>(null);
   
   // Participant list state
   const [participantEvent, setParticipantEvent] = useState<PublicEvent | null>(null);
