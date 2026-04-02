@@ -1,13 +1,13 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Clock, TrendingUp, Hash, MessageSquare } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { ArrowLeft, Clock, TrendingUp, Hash, MessageSquare, Copy, CheckCheck } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEvents } from "@/contexts/EventsContext";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import Navigation from "@/components/Navigation";
 import DesktopNavigation from "@/components/DesktopNavigation";
 import { format } from "date-fns";
@@ -29,16 +29,24 @@ const DriverLiveView = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { getEventById } = useEvents();
+  const { toast } = useToast();
 
   const [messages, setMessages] = useState<CrewMessage[]>([]);
-  const feedRef = useRef<HTMLDivElement>(null);
+  const [copied, setCopied] = useState(false);
+  const feedEndRef = useRef<HTMLDivElement>(null);
 
   const event = getEventById(eventId || "");
 
-  // Derive latest structured data from most recent message that has it
   const latestPosition = messages.find((m) => m.position)?.position || "—";
   const latestGap = messages.find((m) => m.gap_ahead)?.gap_ahead || "—";
   const latestTimeRemaining = messages.find((m) => m.time_remaining)?.time_remaining || "—";
+
+  // Latest free-text message
+  const latestMessage = messages.find((m) => m.message)?.message || null;
+
+  const scrollToBottom = useCallback(() => {
+    feedEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
 
   // Load + subscribe
   useEffect(() => {
@@ -49,7 +57,7 @@ const DriverLiveView = () => {
         .from("crew_messages")
         .select("*")
         .eq("event_id", eventId)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: true });
       if (data) setMessages(data as CrewMessage[]);
     };
     load();
@@ -60,7 +68,7 @@ const DriverLiveView = () => {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "crew_messages", filter: `event_id=eq.${eventId}` },
         (payload) => {
-          setMessages((prev) => [payload.new as CrewMessage, ...prev]);
+          setMessages((prev) => [...prev, payload.new as CrewMessage]);
         }
       )
       .subscribe();
@@ -68,123 +76,137 @@ const DriverLiveView = () => {
     return () => { supabase.removeChannel(channel); };
   }, [eventId, user]);
 
+  // Auto-scroll on new messages
   useEffect(() => {
-    feedRef.current?.scrollTo({ top: 0, behavior: "smooth" });
-  }, [messages.length]);
+    scrollToBottom();
+  }, [messages.length, scrollToBottom]);
 
   const formatTime = (ts: string) => {
     try { return format(new Date(ts), "h:mm:ss a"); } catch { return ts; }
   };
 
+  const handleCopy = () => {
+    navigator.clipboard.writeText(`${window.location.origin}/crew-live/${eventId}`);
+    setCopied(true);
+    toast({ title: "Link copied!" });
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-dark pb-20 lg:pb-0 lg:pt-20">
       <DesktopNavigation />
-      <div className="p-4 sm:p-6 lg:p-8 space-y-4 max-w-6xl mx-auto">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-5 max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft size={20} />
           </Button>
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold text-foreground truncate">Driver Live View</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground truncate">Driver Live View</h1>
             <p className="text-sm text-muted-foreground truncate">{event?.name || "Event"}</p>
           </div>
-          <Badge variant="outline" className="text-xs animate-pulse border-green-500 text-green-500">LIVE</Badge>
+          <Badge variant="outline" className="text-sm px-3 py-1 animate-pulse border-green-500 text-green-500 font-semibold">
+            ● LIVE
+          </Badge>
         </div>
 
-        {/* Split Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Left: Status Cards */}
-          <div className="space-y-4">
-            {/* Hero Cards */}
-            <div className="grid grid-cols-3 gap-3">
-              <Card className="bg-card/60 backdrop-blur-sm border-border/50">
-                <CardContent className="p-4 text-center">
-                  <Hash size={18} className="mx-auto text-primary mb-1" />
-                  <p className="text-3xl font-bold text-foreground">{latestPosition}</p>
-                  <p className="text-xs text-muted-foreground">Position</p>
-                </CardContent>
-              </Card>
-              <Card className="bg-card/60 backdrop-blur-sm border-border/50">
-                <CardContent className="p-4 text-center">
-                  <TrendingUp size={18} className="mx-auto text-primary mb-1" />
-                  <p className="text-3xl font-bold text-foreground">{latestGap}</p>
-                  <p className="text-xs text-muted-foreground">Gap Ahead</p>
-                </CardContent>
-              </Card>
-              <Card className="bg-card/60 backdrop-blur-sm border-border/50">
-                <CardContent className="p-4 text-center">
-                  <Clock size={18} className="mx-auto text-primary mb-1" />
-                  <p className="text-3xl font-bold text-foreground">{latestTimeRemaining}</p>
-                  <p className="text-xs text-muted-foreground">Time Left</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Crew View Link */}
-            <Card className="bg-card/60 backdrop-blur-sm border-border/50">
-              <CardContent className="p-4">
-                <p className="text-sm text-muted-foreground mb-2">Share this link with your crew:</p>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 text-xs bg-background/50 p-2 rounded border border-border/30 truncate">
-                    {window.location.origin}/crew-live/{eventId}
-                  </code>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      navigator.clipboard.writeText(`${window.location.origin}/crew-live/${eventId}`);
-                    }}
-                  >
-                    Copy
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+        {/* Hero Status Cards */}
+        <div className="grid grid-cols-3 gap-4">
+          <div className="relative overflow-hidden rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/15 to-card/80 backdrop-blur-md p-6 sm:p-8 text-center">
+            <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent pointer-events-none" />
+            <Hash size={24} className="mx-auto text-primary mb-2 relative" />
+            <p className="text-5xl sm:text-6xl lg:text-7xl font-black text-foreground tabular-nums relative tracking-tight">
+              {latestPosition}
+            </p>
+            <p className="text-xs sm:text-sm uppercase tracking-widest text-muted-foreground mt-2 font-medium relative">Position</p>
           </div>
 
-          {/* Right: Live Feed */}
-          <Card className="bg-card/60 backdrop-blur-sm border-border/50">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <MessageSquare size={16} className="text-primary" />
-                Crew Updates
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[400px] lg:h-[500px]" ref={feedRef}>
-                {messages.length === 0 ? (
-                  <div className="text-center py-12">
-                    <MessageSquare size={32} className="mx-auto text-muted-foreground/40 mb-3" />
-                    <p className="text-sm text-muted-foreground">Waiting for crew updates...</p>
-                    <p className="text-xs text-muted-foreground mt-1">Updates will appear here in real-time</p>
+          <div className="relative overflow-hidden rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/15 to-card/80 backdrop-blur-md p-6 sm:p-8 text-center">
+            <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent pointer-events-none" />
+            <TrendingUp size={24} className="mx-auto text-primary mb-2 relative" />
+            <p className="text-5xl sm:text-6xl lg:text-7xl font-black text-foreground tabular-nums relative tracking-tight">
+              {latestGap}
+            </p>
+            <p className="text-xs sm:text-sm uppercase tracking-widest text-muted-foreground mt-2 font-medium relative">Gap Ahead</p>
+          </div>
+
+          <div className="relative overflow-hidden rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/15 to-card/80 backdrop-blur-md p-6 sm:p-8 text-center">
+            <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent pointer-events-none" />
+            <Clock size={24} className="mx-auto text-primary mb-2 relative" />
+            <p className="text-5xl sm:text-6xl lg:text-7xl font-black text-foreground tabular-nums relative tracking-tight">
+              {latestTimeRemaining}
+            </p>
+            <p className="text-xs sm:text-sm uppercase tracking-widest text-muted-foreground mt-2 font-medium relative">Time Left</p>
+          </div>
+        </div>
+
+        {/* Latest Message Banner */}
+        {latestMessage && (
+          <div className="rounded-xl border border-accent/30 bg-accent/10 backdrop-blur-sm px-5 py-4">
+            <p className="text-xs uppercase tracking-widest text-primary font-semibold mb-1">Latest from Crew</p>
+            <p className="text-lg sm:text-xl font-semibold text-foreground">{latestMessage}</p>
+          </div>
+        )}
+
+        {/* Split: Feed + Crew Link */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Live Feed — takes 2/3 */}
+          <div className="lg:col-span-2 rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm overflow-hidden flex flex-col">
+            <div className="px-5 py-4 border-b border-border/30 flex items-center gap-2">
+              <MessageSquare size={18} className="text-primary" />
+              <h2 className="text-lg font-bold text-foreground">Crew Updates</h2>
+              <Badge variant="secondary" className="text-xs ml-auto">{messages.length}</Badge>
+            </div>
+            <div className="flex-1 overflow-y-auto max-h-[400px] lg:max-h-[450px] p-4 space-y-3">
+              {messages.length === 0 ? (
+                <div className="text-center py-16">
+                  <MessageSquare size={40} className="mx-auto text-muted-foreground/30 mb-4" />
+                  <p className="text-base text-muted-foreground">Waiting for crew updates...</p>
+                  <p className="text-sm text-muted-foreground/60 mt-1">Updates will appear here in real-time</p>
+                </div>
+              ) : (
+                messages.map((msg) => (
+                  <div key={msg.id} className="p-4 rounded-xl bg-background/60 border border-border/30 transition-all animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div className="flex items-center gap-2 flex-wrap mb-2">
+                      <span className="text-xs text-muted-foreground font-medium">{formatTime(msg.created_at)}</span>
+                      {msg.position && (
+                        <Badge className="text-xs bg-primary/20 text-primary border-primary/30">{msg.position}</Badge>
+                      )}
+                      {msg.gap_ahead && (
+                        <Badge className="text-xs bg-accent/20 text-accent-foreground border-accent/30">Gap: {msg.gap_ahead}</Badge>
+                      )}
+                      {msg.time_remaining && (
+                        <Badge className="text-xs bg-secondary text-secondary-foreground">
+                          <Clock size={10} className="mr-1" />{msg.time_remaining}
+                        </Badge>
+                      )}
+                    </div>
+                    {msg.message && (
+                      <p className="text-base text-foreground leading-relaxed">{msg.message}</p>
+                    )}
                   </div>
-                ) : (
-                  <div className="space-y-2">
-                    {messages.map((msg) => (
-                      <div key={msg.id} className="p-3 rounded-lg bg-background/50 border border-border/30">
-                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <span className="text-xs text-muted-foreground">{formatTime(msg.created_at)}</span>
-                          {msg.position && (
-                            <Badge variant="secondary" className="text-xs">{msg.position}</Badge>
-                          )}
-                          {msg.gap_ahead && (
-                            <Badge variant="secondary" className="text-xs">Gap: {msg.gap_ahead}</Badge>
-                          )}
-                          {msg.time_remaining && (
-                            <Badge variant="secondary" className="text-xs">
-                              <Clock size={10} className="mr-1" />{msg.time_remaining}
-                            </Badge>
-                          )}
-                        </div>
-                        {msg.message && (
-                          <p className="text-sm text-foreground">{msg.message}</p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </ScrollArea>
+                ))
+              )}
+              <div ref={feedEndRef} />
+            </div>
+          </div>
+
+          {/* Crew Link */}
+          <Card className="bg-card/60 backdrop-blur-sm border-border/50 h-fit">
+            <CardContent className="p-5 space-y-3">
+              <p className="text-sm font-medium text-foreground">Share with your crew</p>
+              <p className="text-xs text-muted-foreground">Your crew opens this link on their device to send you live updates.</p>
+              <code className="block text-xs bg-background/50 p-3 rounded-lg border border-border/30 break-all">
+                {window.location.origin}/crew-live/{eventId}
+              </code>
+              <Button
+                variant="outline"
+                className="w-full gap-2"
+                onClick={handleCopy}
+              >
+                {copied ? <CheckCheck size={14} /> : <Copy size={14} />}
+                {copied ? "Copied!" : "Copy Link"}
+              </Button>
             </CardContent>
           </Card>
         </div>
