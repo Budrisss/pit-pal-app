@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Clock, TrendingUp, Hash, MessageSquare } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { addMinutes, differenceInMilliseconds, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEvents } from "@/contexts/EventsContext";
