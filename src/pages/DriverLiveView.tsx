@@ -49,17 +49,45 @@ const DriverLiveView = () => {
     feedEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
-  // Load sessions for timer
+  // Load sessions for timer (matching SessionManagement logic)
   useEffect(() => {
     if (!eventId || !user) return;
     const loadSessions = async () => {
-      const { data } = await supabase
-        .from("sessions")
-        .select("name, start_time, duration")
-        .eq("event_id", eventId)
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: true });
-      if (data) setSessions(data);
+      // Check if this is a registered event with public_event_id
+      const { data: eventRow } = await supabase
+        .from("events")
+        .select("public_event_id")
+        .eq("id", eventId)
+        .maybeSingle();
+
+      if (eventRow?.public_event_id) {
+        // Registered event — load from public_event_sessions
+        const { data } = await (supabase as any)
+          .from("public_event_sessions")
+          .select("name, start_time, duration_minutes")
+          .eq("event_id", eventRow.public_event_id)
+          .order("sort_order", { ascending: true });
+        if (data) {
+          setSessions(data.map((s: any) => ({
+            name: s.name,
+            start_time: s.start_time || null,
+            duration: s.duration_minutes || null,
+          })));
+        }
+      } else {
+        // Personal event — load from localStorage (same source as SessionManagement)
+        const savedSessions = localStorage.getItem(`sessions-${eventId}`);
+        if (savedSessions) {
+          try {
+            const parsed = JSON.parse(savedSessions);
+            setSessions(parsed.map((s: any) => ({
+              name: s.referenceName || s.name,
+              start_time: s.startTime || s.start_time || null,
+              duration: s.duration || null,
+            })));
+          } catch { /* skip */ }
+        }
+      }
     };
     loadSessions();
   }, [eventId, user]);
