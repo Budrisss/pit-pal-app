@@ -50,11 +50,26 @@ const DriverLiveView = () => {
     feedEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
+  // Parse personal-event sessions from localStorage
+  const parseLocalSessions = useCallback((eventId: string) => {
+    const savedSessions = localStorage.getItem(`sessions-${eventId}`);
+    if (savedSessions) {
+      try {
+        const parsed = JSON.parse(savedSessions);
+        return parsed.map((s: any) => ({
+          name: s.referenceName || s.name,
+          start_time: s.startTime || s.start_time || null,
+          duration: s.duration || null,
+        }));
+      } catch { /* skip */ }
+    }
+    return null;
+  }, []);
+
   // Load sessions for timer (matching SessionManagement logic)
   useEffect(() => {
     if (!eventId || !user) return;
     const loadSessions = async () => {
-      // Check if this is a registered event with public_event_id
       const { data: eventRow } = await supabase
         .from("events")
         .select("public_event_id")
@@ -62,7 +77,6 @@ const DriverLiveView = () => {
         .maybeSingle();
 
       if (eventRow?.public_event_id) {
-        // Registered event — load from public_event_sessions
         const { data } = await (supabase as any)
           .from("public_event_sessions")
           .select("name, start_time, duration_minutes")
@@ -76,22 +90,43 @@ const DriverLiveView = () => {
           })));
         }
       } else {
-        // Personal event — load from localStorage (same source as SessionManagement)
-        const savedSessions = localStorage.getItem(`sessions-${eventId}`);
-        if (savedSessions) {
-          try {
-            const parsed = JSON.parse(savedSessions);
-            setSessions(parsed.map((s: any) => ({
-              name: s.referenceName || s.name,
-              start_time: s.startTime || s.start_time || null,
-              duration: s.duration || null,
-            })));
-          } catch { /* skip */ }
-        }
+        const localSessions = parseLocalSessions(eventId);
+        if (localSessions) setSessions(localSessions);
       }
     };
     loadSessions();
-  }, [eventId, user]);
+  }, [eventId, user, parseLocalSessions]);
+
+  // Listen for localStorage changes from SessionManagement (same-tab + cross-tab)
+  useEffect(() => {
+    if (!eventId) return;
+    const storageKey = `sessions-${eventId}`;
+
+    // Cross-tab: native storage event
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === storageKey) {
+        const updated = parseLocalSessions(eventId);
+        if (updated) setSessions(updated);
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+
+    // Same-tab: poll for changes (storage event doesn't fire in the same tab)
+    let lastValue = localStorage.getItem(storageKey);
+    const poll = setInterval(() => {
+      const current = localStorage.getItem(storageKey);
+      if (current !== lastValue) {
+        lastValue = current;
+        const updated = parseLocalSessions(eventId);
+        if (updated) setSessions(updated);
+      }
+    }, 2000);
+
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      clearInterval(poll);
+    };
+  }, [eventId, parseLocalSessions]);
 
   // Tick every second for countdown
   useEffect(() => {
