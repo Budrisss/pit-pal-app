@@ -1120,7 +1120,7 @@ const SessionManagement = () => {
             </div>
 
         {/* My Run Group Selector */}
-            {sessions.length > 0 && (
+            {sessions.length > 0 && publicEventId && (
               <Card className="bg-card/60 backdrop-blur-sm border-border/50">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
