@@ -99,7 +99,7 @@ const DriverLiveView = () => {
     }
     // Fallback: use crew-reported time remaining
     if (latestTimeRemaining && latestTimeRemaining !== "—") {
-      return { name: null, label: latestTimeRemaining, minutes: null, seconds: null };
+      return { name: null, label: latestTimeRemaining, minutes: null, seconds: null, progress: null };
     }
     return null;
   })();
