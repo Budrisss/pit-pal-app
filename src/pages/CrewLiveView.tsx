@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Send, Clock, Hash, TrendingUp, MessageSquare } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { ArrowLeft, Send, Clock, TrendingUp, MessageSquare, Flag } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { addMinutes, differenceInMilliseconds, format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEvents } from "@/contexts/EventsContext";
@@ -10,12 +11,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Navigation from "@/components/Navigation";
 import DesktopNavigation from "@/components/DesktopNavigation";
-import { format } from "date-fns";
 
 interface CrewMessage {
   id: string;
@@ -29,6 +28,7 @@ interface CrewMessage {
   created_at: string;
 }
 
+const JUST_ENDED_WINDOW_MS = 60_000;
 
 const CrewLiveView = () => {
   const { eventId } = useParams();
@@ -38,6 +38,8 @@ const CrewLiveView = () => {
   const { toast } = useToast();
 
   const [messages, setMessages] = useState<CrewMessage[]>([]);
+  const [sessions, setSessions] = useState<{ name: string; start_time: string | null; duration: number | null }[]>([]);
+  const [currentTime, setCurrentTime] = useState(new Date());
   const [gapAhead, setGapAhead] = useState("");
   const [position, setPosition] = useState("");
   const [timeRemaining, setTimeRemaining] = useState("");
@@ -46,7 +48,144 @@ const CrewLiveView = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const event = getEventById(eventId || "");
+  const eventBaseDate = event?.eventDate ? new Date(event.eventDate) : null;
 
+  // Parse personal-event sessions from localStorage
+  const parseLocalSessions = useCallback((eid: string) => {
+    const saved = localStorage.getItem(`sessions-${eid}`);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return parsed.map((s: any) => ({
+          name: s.referenceName || s.name,
+          start_time: s.startTime || s.start_time || null,
+          duration: s.duration || null,
+        }));
+      } catch { /* skip */ }
+    }
+    return null;
+  }, []);
+
+  // Load sessions
+  useEffect(() => {
+    if (!eventId || !user) return;
+    const loadSessions = async () => {
+      const { data: eventRow } = await supabase
+        .from("events")
+        .select("public_event_id")
+        .eq("id", eventId)
+        .maybeSingle();
+
+      if (eventRow?.public_event_id) {
+        const { data } = await (supabase as any)
+          .from("public_event_sessions")
+          .select("name, start_time, duration_minutes")
+          .eq("event_id", eventRow.public_event_id)
+          .order("sort_order", { ascending: true });
+        if (data) {
+          setSessions(data.map((s: any) => ({
+            name: s.name,
+            start_time: s.start_time || null,
+            duration: s.duration_minutes || null,
+          })));
+        }
+      } else {
+        const localSessions = parseLocalSessions(eventId);
+        if (localSessions) setSessions(localSessions);
+      }
+    };
+    loadSessions();
+  }, [eventId, user, parseLocalSessions]);
+
+  // Listen for localStorage changes (cross-tab + same-tab polling)
+  useEffect(() => {
+    if (!eventId) return;
+    const storageKey = `sessions-${eventId}`;
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === storageKey) {
+        const updated = parseLocalSessions(eventId);
+        if (updated) setSessions(updated);
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+
+    let lastValue = localStorage.getItem(storageKey);
+    const poll = setInterval(() => {
+      const current = localStorage.getItem(storageKey);
+      if (current !== lastValue) {
+        lastValue = current;
+        const updated = parseLocalSessions(eventId);
+        if (updated) setSessions(updated);
+      }
+    }, 2000);
+
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      clearInterval(poll);
+    };
+  }, [eventId, parseLocalSessions]);
+
+  // Tick every second
+  useEffect(() => {
+    const interval = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Compute active session, just-ended, next session
+  const { activeSessionInfo, justEndedSession, nextSessionCountdown } = (() => {
+    let active: { name: string | null; minutes: number | null; seconds: number | null; label: string; progress: number | null } | null = null;
+    let justEnded: { name: string } | null = null;
+    let nextSession: { name: string; label: string } | null = null;
+
+    if (eventBaseDate && !Number.isNaN(eventBaseDate.getTime()) && sessions.length) {
+      let earliestUpcoming: { name: string; diffMs: number } | null = null;
+
+      for (const s of sessions) {
+        if (!s.start_time || !s.duration) continue;
+        try {
+          const [h, m] = s.start_time.split(':').map(Number);
+          const start = new Date(eventBaseDate);
+          start.setHours(h, m, 0, 0);
+          const end = addMinutes(start, s.duration);
+
+          if (currentTime >= start && currentTime < end) {
+            const diff = differenceInMilliseconds(end, currentTime);
+            const totalMs = s.duration * 60 * 1000;
+            const elapsedMs = totalMs - diff;
+            active = {
+              name: s.name,
+              minutes: Math.floor(diff / (1000 * 60)),
+              seconds: Math.floor((diff % (1000 * 60)) / 1000),
+              label: `${Math.floor(diff / (1000 * 60))}:${Math.floor((diff % (1000 * 60)) / 1000).toString().padStart(2, '0')}`,
+              progress: Math.min(1, Math.max(0, elapsedMs / totalMs)),
+            };
+          }
+
+          const msSinceEnd = currentTime.getTime() - end.getTime();
+          if (msSinceEnd >= 0 && msSinceEnd < JUST_ENDED_WINDOW_MS) {
+            justEnded = { name: s.name };
+          }
+
+          const diffToStart = start.getTime() - currentTime.getTime();
+          if (diffToStart > 0 && (!earliestUpcoming || diffToStart < earliestUpcoming.diffMs)) {
+            earliestUpcoming = { name: s.name, diffMs: diffToStart };
+          }
+        } catch { /* skip */ }
+      }
+
+      if (earliestUpcoming) {
+        const d = earliestUpcoming.diffMs;
+        const hrs = Math.floor(d / (1000 * 60 * 60));
+        const mins = Math.floor((d % (1000 * 60 * 60)) / (1000 * 60));
+        const secs = Math.floor((d % (1000 * 60)) / 1000);
+        const label = hrs > 0 ? `${hrs}h ${mins}m ${secs}s` : `${mins}m ${secs}s`;
+        nextSession = { name: earliestUpcoming.name, label };
+      }
+    }
+
+    return { activeSessionInfo: active, justEndedSession: justEnded, nextSessionCountdown: nextSession };
+  })();
 
   // Load existing messages + subscribe to realtime
   useEffect(() => {
@@ -137,9 +276,78 @@ const CrewLiveView = () => {
             <h1 className="text-xl font-bold text-foreground truncate">Crew View</h1>
             <p className="text-sm text-muted-foreground truncate">{event?.name || "Event"}</p>
           </div>
-          <Badge variant="outline" className="text-xs">CREW</Badge>
+          <Badge variant="outline" className="text-sm px-3 py-1 animate-pulse border-green-500 text-green-500 font-semibold">
+            ● LIVE
+          </Badge>
         </div>
 
+        {/* Active Session Timer */}
+        {activeSessionInfo && (
+          <div className="rounded-xl border border-green-500/40 bg-green-500/10 backdrop-blur-sm px-5 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-widest text-green-500 font-semibold">
+                  {activeSessionInfo.name ? "Session Active" : "Time Remaining"}
+                </p>
+                {activeSessionInfo.name && (
+                  <p className="text-sm font-medium text-foreground">{activeSessionInfo.name}</p>
+                )}
+              </div>
+              <p className="text-3xl sm:text-4xl font-black text-green-400 tabular-nums">
+                {activeSessionInfo.label}
+              </p>
+            </div>
+            {activeSessionInfo.progress !== null && (
+              <div className="mt-3 h-2 w-full rounded-full bg-green-500/20 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-green-500 transition-all duration-1000 ease-linear"
+                  style={{ width: `${activeSessionInfo.progress * 100}%` }}
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Checkered Flag — Session Just Ended */}
+        {!activeSessionInfo && justEndedSession && (
+          <div className="rounded-xl border-2 border-yellow-500/60 bg-yellow-500/10 backdrop-blur-sm px-5 py-5 animate-fade-in">
+            <div className="flex items-center gap-4">
+              <div className="flex-shrink-0 text-4xl">🏁</div>
+              <div className="flex-1">
+                <p className="text-xs uppercase tracking-widest text-yellow-500 font-bold mb-1">
+                  Session Complete
+                </p>
+                <p className="text-xl sm:text-2xl font-black text-foreground">
+                  Come to Pits
+                </p>
+                {justEndedSession.name && (
+                  <p className="text-sm text-muted-foreground mt-0.5">{justEndedSession.name} has ended</p>
+                )}
+              </div>
+              <Flag size={32} className="text-yellow-500 flex-shrink-0" />
+            </div>
+          </div>
+        )}
+
+        {/* Next Session Countdown */}
+        {!activeSessionInfo && !justEndedSession && nextSessionCountdown && (
+          <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm px-5 py-4 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
+                  Next Session
+                </p>
+                <p className="text-sm font-medium text-foreground">{nextSessionCountdown.name}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl sm:text-3xl font-black text-primary tabular-nums">
+                  {nextSessionCountdown.label}
+                </p>
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground">until start</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Structured Quick Entry */}
         <Card className="bg-card/60 backdrop-blur-sm border-border/50">
@@ -147,6 +355,9 @@ const CrewLiveView = () => {
             <CardTitle className="text-base flex items-center gap-2">
               <TrendingUp size={16} className="text-primary" />
               Quick Update
+              {activeSessionInfo?.name && (
+                <span className="text-xs text-muted-foreground font-normal">— {activeSessionInfo.name}</span>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
