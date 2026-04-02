@@ -177,7 +177,7 @@ const DriverLiveView = () => {
         )}
 
         {/* Hero Status Cards */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <div className="relative overflow-hidden rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/15 to-card/80 backdrop-blur-md p-6 sm:p-8 text-center">
             <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent pointer-events-none" />
             <Hash size={24} className="mx-auto text-primary mb-2 relative" />
@@ -194,15 +194,6 @@ const DriverLiveView = () => {
               {latestGap}
             </p>
             <p className="text-xs sm:text-sm uppercase tracking-widest text-muted-foreground mt-2 font-medium relative">Gap Ahead</p>
-          </div>
-
-          <div className="relative overflow-hidden rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/15 to-card/80 backdrop-blur-md p-6 sm:p-8 text-center">
-            <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent pointer-events-none" />
-            <Clock size={24} className="mx-auto text-primary mb-2 relative" />
-            <p className="text-5xl sm:text-6xl lg:text-7xl font-black text-foreground tabular-nums relative tracking-tight">
-              {latestTimeRemaining}
-            </p>
-            <p className="text-xs sm:text-sm uppercase tracking-widest text-muted-foreground mt-2 font-medium relative">Time Left</p>
           </div>
         </div>
 
