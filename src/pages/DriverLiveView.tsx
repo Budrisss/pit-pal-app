@@ -164,27 +164,29 @@ const DriverLiveView = () => {
 
         {/* Active Session Timer */}
         {activeSessionInfo && (
-          <div className="rounded-xl border border-primary/40 bg-primary/10 backdrop-blur-sm px-5 py-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-widest text-primary font-semibold">
-                {activeSessionInfo.name ? "Session Active" : "Time Remaining"}
+          <div className="rounded-xl border border-primary/40 bg-primary/10 backdrop-blur-sm px-5 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-widest text-primary font-semibold">
+                  {activeSessionInfo.name ? "Session Active" : "Time Remaining"}
+                </p>
+                {activeSessionInfo.name && (
+                  <p className="text-sm font-medium text-foreground">{activeSessionInfo.name}</p>
+                )}
+              </div>
+              <p className="text-3xl sm:text-4xl font-black text-primary tabular-nums">
+                {activeSessionInfo.label}
               </p>
-              {activeSessionInfo.name && (
-                <p className="text-sm font-medium text-foreground">{activeSessionInfo.name}</p>
-              )}
             </div>
-            <p className="text-3xl sm:text-4xl font-black text-primary tabular-nums">
-              {activeSessionInfo.label}
-            </p>
+            {activeSessionInfo.progress !== null && (
+              <div className="mt-3 h-2 w-full rounded-full bg-primary/20 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-primary transition-all duration-1000 ease-linear"
+                  style={{ width: `${activeSessionInfo.progress * 100}%` }}
+                />
+              </div>
+            )}
           </div>
-          {activeSessionInfo.progress !== null && (
-            <div className="mt-3 h-2 w-full rounded-full bg-primary/20 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-primary transition-all duration-1000 ease-linear"
-                style={{ width: `${(activeSessionInfo.progress) * 100}%` }}
-              />
-            </div>
-          )}
         )}
 
         {/* Hero Status Cards */}
