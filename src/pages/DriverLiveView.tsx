@@ -137,11 +137,14 @@ const DriverLiveView = () => {
   // Compute active session remaining time + just-ended session
   const JUST_ENDED_WINDOW_MS = 60_000; // show checkered flag for 60s after session ends
 
-  const { activeSessionInfo, justEndedSession } = (() => {
+  const { activeSessionInfo, justEndedSession, nextSessionCountdown } = (() => {
     let active: { name: string | null; minutes: number | null; seconds: number | null; label: string; progress: number | null } | null = null;
     let justEnded: { name: string } | null = null;
+    let nextSession: { name: string; label: string } | null = null;
 
     if (eventBaseDate && !Number.isNaN(eventBaseDate.getTime()) && sessions.length) {
+      let earliestUpcoming: { name: string; diffMs: number } | null = null;
+
       for (const s of sessions) {
         if (!s.start_time || !s.duration) continue;
         try {
@@ -169,7 +172,24 @@ const DriverLiveView = () => {
           if (msSinceEnd >= 0 && msSinceEnd < JUST_ENDED_WINDOW_MS) {
             justEnded = { name: s.name };
           }
+
+          // Upcoming session
+          const diffToStart = start.getTime() - currentTime.getTime();
+          if (diffToStart > 0 && (!earliestUpcoming || diffToStart < earliestUpcoming.diffMs)) {
+            earliestUpcoming = { name: s.name, diffMs: diffToStart };
+          }
         } catch { /* skip */ }
+      }
+
+      if (earliestUpcoming) {
+        const d = earliestUpcoming.diffMs;
+        const hrs = Math.floor(d / (1000 * 60 * 60));
+        const mins = Math.floor((d % (1000 * 60 * 60)) / (1000 * 60));
+        const secs = Math.floor((d % (1000 * 60)) / 1000);
+        const label = hrs > 0
+          ? `${hrs}h ${mins}m ${secs}s`
+          : `${mins}m ${secs}s`;
+        nextSession = { name: earliestUpcoming.name, label };
       }
     }
 
@@ -178,7 +198,7 @@ const DriverLiveView = () => {
       active = { name: null, label: latestTimeRemaining, minutes: null, seconds: null, progress: null };
     }
 
-    return { activeSessionInfo: active, justEndedSession: justEnded };
+    return { activeSessionInfo: active, justEndedSession: justEnded, nextSessionCountdown: nextSession };
   })();
 
   // Load + subscribe
@@ -283,6 +303,26 @@ const DriverLiveView = () => {
                 )}
               </div>
               <Flag size={32} className="text-yellow-500 flex-shrink-0" />
+            </div>
+          </div>
+        )}
+
+        {/* Next Session Countdown */}
+        {!activeSessionInfo && nextSessionCountdown && (
+          <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm px-5 py-4 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
+                  Next Session
+                </p>
+                <p className="text-sm font-medium text-foreground">{nextSessionCountdown.name}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl sm:text-3xl font-black text-primary tabular-nums">
+                  {nextSessionCountdown.label}
+                </p>
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground">until start</p>
+              </div>
             </div>
           </div>
         )}
