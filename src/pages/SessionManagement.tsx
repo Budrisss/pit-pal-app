@@ -62,12 +62,13 @@ interface SettingsData {
 }
 
 // Sortable Session Item
-const SortableSessionItem = ({ session, onDelete, onMarkComplete, onEditNote, onToggleNotes, isSameDayEvent, isRegisteredEvent, isNotesExpanded }: {
+const SortableSessionItem = ({ session, onDelete, onMarkComplete, onEditNote, onToggleNotes, onEdit, isSameDayEvent, isRegisteredEvent, isNotesExpanded }: {
   session: Session;
   onDelete: (id: string) => void;
   onMarkComplete: (id: string) => void;
   onEditNote: (id: string) => void;
   onToggleNotes: (id: string) => void;
+  onEdit?: (id: string) => void;
   isSameDayEvent: boolean;
   isRegisteredEvent?: boolean;
   isNotesExpanded?: boolean;
@@ -162,6 +163,12 @@ const SortableSessionItem = ({ session, onDelete, onMarkComplete, onEditNote, on
                 <DropdownMenuItem onClick={() => onToggleNotes(session.id)}>
                   <FileText size={14} className="mr-2" />
                   {isNotesExpanded ? "Hide Notes" : "Show Notes"}
+                </DropdownMenuItem>
+              )}
+              {!isRegisteredEvent && onEdit && (
+                <DropdownMenuItem onClick={() => onEdit(session.id)}>
+                  <Settings size={14} className="mr-2" />
+                  Edit Session
                 </DropdownMenuItem>
               )}
               {!isRegisteredEvent && isSameDayEvent && session.state !== "completed" && (
@@ -297,6 +304,11 @@ const SessionManagement = () => {
   const [eventState, setEventState] = useState<"pre-event" | "active" | "post-event">("pre-event");
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editNoteText, setEditNoteText] = useState("");
+  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [editSessionName, setEditSessionName] = useState("");
+  const [editSessionTime, setEditSessionTime] = useState("");
+  const [editSessionDuration, setEditSessionDuration] = useState("");
+  const [editSessionType, setEditSessionType] = useState<"practice" | "qualifying" | "race">("practice");
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
   const [weatherError, setWeatherError] = useState<string | null>(null);
@@ -871,6 +883,35 @@ const SessionManagement = () => {
     setEditNoteText("");
   };
 
+  const handleEditSession = (sessionId: string) => {
+    const session = sessions.find(s => s.id === sessionId);
+    if (!session) return;
+    setEditingSessionId(sessionId);
+    setEditSessionName(session.referenceName);
+    setEditSessionTime(session.startTime);
+    setEditSessionDuration(String(session.duration));
+    setEditSessionType(session.type as "practice" | "qualifying" | "race");
+  };
+
+  const handleSaveSessionEdit = (sessionId: string) => {
+    setSessions(prev => {
+      const updated = prev.map(s =>
+        s.id === sessionId
+          ? {
+              ...s,
+              referenceName: editSessionName,
+              startTime: editSessionTime,
+              duration: parseInt(editSessionDuration) || s.duration,
+              type: editSessionType,
+            }
+          : s
+      );
+      saveSessions(updated);
+      return updated;
+    });
+    setEditingSessionId(null);
+  };
+
   const countdown = getCountdownToNext();
   const allStatedSessions = calculateSessionStates();
   const currentActiveSession = allStatedSessions.find(s => s.state === "active");
@@ -1289,10 +1330,64 @@ const SessionManagement = () => {
                         onMarkComplete={handleMarkSessionComplete}
                         onEditNote={handleEditNote}
                         onToggleNotes={handleToggleNotes}
+                        onEdit={!isRegisteredEvent ? handleEditSession : undefined}
                         isSameDayEvent={isSameDayEvent}
                         isRegisteredEvent={isRegisteredEvent}
                         isNotesExpanded={expandedNotes.has(session.id)}
                       />
+                      {/* Inline session editing */}
+                      {editingSessionId === session.id && (
+                        <div className="ml-6 p-3 bg-card/60 backdrop-blur-sm border border-border/50 rounded-lg space-y-3">
+                          <div className="space-y-2">
+                            <Label className="text-xs">Session Name</Label>
+                            <Input
+                              value={editSessionName}
+                              onChange={(e) => setEditSessionName(e.target.value)}
+                              placeholder="Session name"
+                              className="text-sm"
+                            />
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div className="space-y-2">
+                              <Label className="text-xs">Type</Label>
+                              <Select value={editSessionType} onValueChange={(v) => setEditSessionType(v as any)}>
+                                <SelectTrigger className="text-sm">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="practice">Practice</SelectItem>
+                                  <SelectItem value="qualifying">Qualifying</SelectItem>
+                                  <SelectItem value="race">Race</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-xs">Duration (min)</Label>
+                              <Input
+                                type="number"
+                                value={editSessionDuration}
+                                onChange={(e) => setEditSessionDuration(e.target.value)}
+                                min="1"
+                                max="120"
+                                className="text-sm"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-xs">Start Time</Label>
+                              <Input
+                                type="time"
+                                value={editSessionTime}
+                                onChange={(e) => setEditSessionTime(e.target.value)}
+                                className="text-sm"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={() => handleSaveSessionEdit(session.id)}>Save</Button>
+                            <Button size="sm" variant="outline" onClick={() => setEditingSessionId(null)}>Cancel</Button>
+                          </div>
+                        </div>
+                      )}
                       {/* Inline note editing */}
                       {editingNoteId === session.id && (
                         <div className="ml-6 p-3 bg-card/60 backdrop-blur-sm border border-border/50 rounded-lg">
