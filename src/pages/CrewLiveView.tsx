@@ -221,8 +221,8 @@ const CrewLiveView = () => {
 
   const sendStructured = async () => {
     if (!eventId || !user) return;
-    if (!gapAhead && !position && !timeRemaining) {
-      toast({ title: "Enter at least one field", variant: "destructive" });
+    if (!gapAhead) {
+      toast({ title: "Enter gap ahead", variant: "destructive" });
       return;
     }
     setSending(true);
@@ -230,15 +230,11 @@ const CrewLiveView = () => {
       event_id: eventId,
       user_id: user.id,
       gap_ahead: gapAhead || null,
-      position: position || null,
-      time_remaining: timeRemaining || null,
     });
     if (error) {
       toast({ title: "Failed to send", description: error.message, variant: "destructive" });
     } else {
       setGapAhead("");
-      setPosition("");
-      setTimeRemaining("");
     }
     setSending(false);
   };
