@@ -972,28 +972,53 @@ const LocalEvents = () => {
                     )}
 
                     <div className="mt-auto flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => navigate(`/public-event/${event.id}`)}
+                      >
+                        View
+                      </Button>
                       {!isOrganizerEvent(event) && (
-                        <Button 
-                          size="sm" 
-                          className="flex-1"
-                          onClick={() => {
-                            setRegisteringEvent(event);
-                            setRegForm({ name: '', email: user?.email || '', phone: '', notes: '', carNumber: '', carId: '' });
-                            // Auto-select if only one reg type
-                            if (event.registration_types?.length === 1 && event.registration_types[0].id) {
-                              setSelectedRegTypeId(event.registration_types[0].id);
-                            }
-                          }}
-                        >
-                          <UserCheck size={14} className="mr-1" /> Register
-                        </Button>
-                      )}
-                      {event.registration_link && (
-                        <Button size="sm" variant="outline" asChild>
-                          <a href={event.registration_link} target="_blank" rel="noopener noreferrer">
-                            Info <ExternalLink size={14} className="ml-1" />
-                          </a>
-                        </Button>
+                        userRegisteredEventIds.has(event.id) ? (
+                          <>
+                            <Button 
+                              size="sm" 
+                              variant="secondary"
+                              className="flex-1"
+                              onClick={() => {
+                                setRegisteringEvent(event);
+                                setRegForm({ name: '', email: user?.email || '', phone: '', notes: '', carNumber: '', carId: '' });
+                                if (event.registration_types?.length === 1 && event.registration_types[0].id) {
+                                  setSelectedRegTypeId(event.registration_types[0].id);
+                                }
+                              }}
+                            >
+                              <Pencil size={14} className="mr-1" /> Edit Reg
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="destructive"
+                              onClick={() => setUnregisteringEventId(event.id)}
+                            >
+                              <X size={14} />
+                            </Button>
+                          </>
+                        ) : (
+                          <Button 
+                            size="sm" 
+                            className="flex-1"
+                            onClick={() => {
+                              setRegisteringEvent(event);
+                              setRegForm({ name: '', email: user?.email || '', phone: '', notes: '', carNumber: '', carId: '' });
+                              if (event.registration_types?.length === 1 && event.registration_types[0].id) {
+                                setSelectedRegTypeId(event.registration_types[0].id);
+                              }
+                            }}
+                          >
+                            <UserCheck size={14} className="mr-1" /> Register
+                          </Button>
+                        )
                       )}
                     </div>
                   </CardContent>
