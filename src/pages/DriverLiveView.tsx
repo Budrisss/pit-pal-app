@@ -147,10 +147,11 @@ const DriverLiveView = () => {
   // Compute active session remaining time + just-ended session
   const JUST_ENDED_WINDOW_MS = 60_000; // show checkered flag for 60s after session ends
 
-  const { activeSessionInfo, justEndedSession, nextSessionCountdown } = (() => {
+  const { activeSessionInfo, justEndedSession, nextSessionCountdown, activeSessionWindow } = (() => {
     let active: { name: string | null; minutes: number | null; seconds: number | null; label: string; progress: number | null } | null = null;
     let justEnded: { name: string } | null = null;
     let nextSession: { name: string; label: string } | null = null;
+    let sessionWindow: { start: Date; end: Date } | null = null;
 
     if (eventBaseDate && !Number.isNaN(eventBaseDate.getTime()) && sessions.length) {
       let earliestUpcoming: { name: string; diffMs: number } | null = null;
@@ -175,12 +176,15 @@ const DriverLiveView = () => {
               label: `${Math.floor(diff / (1000 * 60))}:${Math.floor((diff % (1000 * 60)) / 1000).toString().padStart(2, '0')}`,
               progress: Math.min(1, Math.max(0, elapsedMs / totalMs)),
             };
+            sessionWindow = { start, end };
           }
 
           // Just ended (within window)
           const msSinceEnd = currentTime.getTime() - end.getTime();
           if (msSinceEnd >= 0 && msSinceEnd < JUST_ENDED_WINDOW_MS) {
             justEnded = { name: s.name };
+            // Also set session window for just-ended so we keep showing those messages
+            if (!sessionWindow) sessionWindow = { start, end };
           }
 
           // Upcoming session
@@ -203,13 +207,19 @@ const DriverLiveView = () => {
       }
     }
 
-    // Fallback for active
-    if (!active && latestTimeRemaining && latestTimeRemaining !== "—") {
-      active = { name: null, label: latestTimeRemaining, minutes: null, seconds: null, progress: null };
-    }
-
-    return { activeSessionInfo: active, justEndedSession: justEnded, nextSessionCountdown: nextSession };
+    return { activeSessionInfo: active, justEndedSession: justEnded, nextSessionCountdown: nextSession, activeSessionWindow: sessionWindow };
   })();
+
+  // Filter messages to the current/just-ended session window
+  const sessionMessages = activeSessionWindow
+    ? messages.filter(m => {
+        const ts = new Date(m.created_at).getTime();
+        return ts >= activeSessionWindow.start.getTime() && ts <= activeSessionWindow.end.getTime() + JUST_ENDED_WINDOW_MS;
+      })
+    : messages;
+
+  const latestGap = sessionMessages.find((m) => m.gap_ahead)?.gap_ahead || "—";
+  const latestMessage = sessionMessages.find((m) => m.message)?.message || null;
 
   // Load + subscribe
   useEffect(() => {
