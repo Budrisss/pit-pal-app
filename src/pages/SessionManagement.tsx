@@ -304,6 +304,11 @@ const SessionManagement = () => {
   const [eventState, setEventState] = useState<"pre-event" | "active" | "post-event">("pre-event");
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editNoteText, setEditNoteText] = useState("");
+  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [editSessionName, setEditSessionName] = useState("");
+  const [editSessionTime, setEditSessionTime] = useState("");
+  const [editSessionDuration, setEditSessionDuration] = useState("");
+  const [editSessionType, setEditSessionType] = useState<"practice" | "qualifying" | "race">("practice");
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
   const [weatherError, setWeatherError] = useState<string | null>(null);
