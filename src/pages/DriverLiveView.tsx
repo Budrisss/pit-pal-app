@@ -35,16 +35,26 @@ const DriverLiveView = () => {
   const [sessions, setSessions] = useState<{ name: string; start_time: string | null; duration: number | null }[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
   const feedEndRef = useRef<HTMLDivElement>(null);
+  const [trackNotes, setTrackNotes] = useState("");
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [notesDraft, setNotesDraft] = useState("");
 
   const event = getEventById(eventId || "");
   const eventBaseDate = event?.eventDate ? new Date(event.eventDate) : null;
 
-  const latestPosition = messages.find((m) => m.position)?.position || "—";
-  const latestGap = messages.find((m) => m.gap_ahead)?.gap_ahead || "—";
-  const latestTimeRemaining = messages.find((m) => m.time_remaining)?.time_remaining || "—";
+  // Load/save track notes from localStorage
+  useEffect(() => {
+    if (!eventId) return;
+    const saved = localStorage.getItem(`track-notes-${eventId}`);
+    if (saved) setTrackNotes(saved);
+  }, [eventId]);
 
-  // Latest free-text message
-  const latestMessage = messages.find((m) => m.message)?.message || null;
+  const saveTrackNotes = () => {
+    if (!eventId) return;
+    localStorage.setItem(`track-notes-${eventId}`, notesDraft);
+    setTrackNotes(notesDraft);
+    setIsEditingNotes(false);
+  };
 
   const scrollToBottom = useCallback(() => {
     feedEndRef.current?.scrollIntoView({ behavior: "smooth" });
