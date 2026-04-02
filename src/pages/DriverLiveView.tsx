@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Clock, TrendingUp, Hash, MessageSquare } from "lucide-react";
+import { ArrowLeft, Clock, TrendingUp, Hash, MessageSquare, Flag } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { addMinutes, differenceInMilliseconds } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -134,9 +134,13 @@ const DriverLiveView = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Compute active session remaining time
-  const activeSessionInfo = (() => {
-    // Try computed countdown from session schedule
+  // Compute active session remaining time + just-ended session
+  const JUST_ENDED_WINDOW_MS = 60_000; // show checkered flag for 60s after session ends
+
+  const { activeSessionInfo, justEndedSession } = (() => {
+    let active: { name: string | null; minutes: number | null; seconds: number | null; label: string; progress: number | null } | null = null;
+    let justEnded: { name: string } | null = null;
+
     if (eventBaseDate && !Number.isNaN(eventBaseDate.getTime()) && sessions.length) {
       for (const s of sessions) {
         if (!s.start_time || !s.duration) continue;
@@ -145,11 +149,13 @@ const DriverLiveView = () => {
           const start = new Date(eventBaseDate);
           start.setHours(h, m, 0, 0);
           const end = addMinutes(start, s.duration);
+
+          // Active session
           if (currentTime >= start && currentTime < end) {
             const diff = differenceInMilliseconds(end, currentTime);
             const totalMs = s.duration * 60 * 1000;
             const elapsedMs = totalMs - diff;
-            return {
+            active = {
               name: s.name,
               minutes: Math.floor(diff / (1000 * 60)),
               seconds: Math.floor((diff % (1000 * 60)) / 1000),
@@ -157,14 +163,22 @@ const DriverLiveView = () => {
               progress: Math.min(1, Math.max(0, elapsedMs / totalMs)),
             };
           }
+
+          // Just ended (within window)
+          const msSinceEnd = currentTime.getTime() - end.getTime();
+          if (msSinceEnd >= 0 && msSinceEnd < JUST_ENDED_WINDOW_MS) {
+            justEnded = { name: s.name };
+          }
         } catch { /* skip */ }
       }
     }
-    // Fallback: use crew-reported time remaining
-    if (latestTimeRemaining && latestTimeRemaining !== "—") {
-      return { name: null, label: latestTimeRemaining, minutes: null, seconds: null, progress: null };
+
+    // Fallback for active
+    if (!active && latestTimeRemaining && latestTimeRemaining !== "—") {
+      active = { name: null, label: latestTimeRemaining, minutes: null, seconds: null, progress: null };
     }
-    return null;
+
+    return { activeSessionInfo: active, justEndedSession: justEnded };
   })();
 
   // Load + subscribe
@@ -252,7 +266,27 @@ const DriverLiveView = () => {
           </div>
         )}
 
-        {/* Hero Status Cards */}
+        {/* Checkered Flag — Session Just Ended */}
+        {!activeSessionInfo && justEndedSession && (
+          <div className="rounded-xl border-2 border-yellow-500/60 bg-yellow-500/10 backdrop-blur-sm px-5 py-5 animate-fade-in">
+            <div className="flex items-center gap-4">
+              <div className="flex-shrink-0 text-4xl">🏁</div>
+              <div className="flex-1">
+                <p className="text-xs uppercase tracking-widest text-yellow-500 font-bold mb-1">
+                  Session Complete
+                </p>
+                <p className="text-xl sm:text-2xl font-black text-foreground">
+                  Come to Pits
+                </p>
+                {justEndedSession.name && (
+                  <p className="text-sm text-muted-foreground mt-0.5">{justEndedSession.name} has ended</p>
+                )}
+              </div>
+              <Flag size={32} className="text-yellow-500 flex-shrink-0" />
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-4">
           <div className="relative overflow-hidden rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/15 to-card/80 backdrop-blur-md p-6 sm:p-8 text-center">
             <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent pointer-events-none" />
