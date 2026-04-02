@@ -1006,7 +1006,7 @@ const SessionManagement = () => {
 
         {/* Active Session Banner */}
         {currentActiveSession && (
-          <div className="rounded-xl border border-green-500/30 bg-green-500/10 backdrop-blur-sm p-5 sm:p-6">
+          <div className="rounded-xl border border-green-500/30 bg-green-500/10 backdrop-blur-sm p-5 sm:p-6 border-none">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="w-4 h-4 rounded-full bg-green-500 animate-pulse" />
