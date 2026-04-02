@@ -32,7 +32,6 @@ const DriverLiveView = () => {
   const { toast } = useToast();
 
   const [messages, setMessages] = useState<CrewMessage[]>([]);
-  const [copied, setCopied] = useState(false);
   const feedEndRef = useRef<HTMLDivElement>(null);
 
   const event = getEventById(eventId || "");
