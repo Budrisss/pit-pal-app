@@ -892,10 +892,6 @@ const SessionManagement = () => {
             <h1 className="text-xl sm:text-2xl font-bold text-foreground truncate">{eventData.name}</h1>
             <p className="text-sm text-muted-foreground truncate">{eventData.track} • {eventData.car}</p>
           </div>
-          <Dialog open={showSettings} onOpenChange={setShowSettings}>
-            <DialogTrigger asChild>
-              <Button variant="ghost" size="icon"><Settings size={18} /></Button>
-            </DialogTrigger>
           {publicEventId && (
             <Button variant="outline" size="sm" onClick={() => navigate(`/race-live/${publicEventId}`)} className="gap-1.5">
               <Radio size={14} /> Live View
@@ -906,6 +902,10 @@ const SessionManagement = () => {
               <Radio size={14} /> Crew View
             </Button>
           )}
+          <Dialog open={showSettings} onOpenChange={setShowSettings}>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="icon"><Settings size={18} /></Button>
+            </DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle>Settings</DialogTitle></DialogHeader>
               <div className="space-y-4">
