@@ -24,7 +24,7 @@ const ChecklistCard = ({ id, title, type, eventDate, items, onToggleItem }: Chec
   const progressPercentage = (completedItems / items.length) * 100;
 
   return (
-    <Card className="bg-gradient-dark border-border/50 hover:border-primary/30 transition-all duration-300 hover:shadow-racing">
+    <Card className="bg-card/40 backdrop-blur-md border-border/50 hover:border-primary/30 transition-all duration-300 hover:shadow-racing">
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start">
           <div>
