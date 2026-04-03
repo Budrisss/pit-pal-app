@@ -38,6 +38,7 @@ interface MaintenanceRecord {
   service_type: string;
   service_date: string;
   mileage: number | null;
+  cost: number | null;
   notes: string | null;
   created_at: string;
   attachments: Attachment[];
