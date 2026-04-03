@@ -96,7 +96,7 @@ const Setups = () => {
       fetchSessions();
       // Resolve track name from event
       const evt = userEvents.find((e) => e.id === sheetEvent);
-      setResolvedTrack(evt?.address || "");
+      setResolvedTrack(evt?.trackName || evt?.address || "");
     } else {
       setSessions([]);
       setSheetSession("");
