@@ -29,6 +29,7 @@ import OrganizerLiveManage from "./pages/OrganizerLiveManage";
 import RacerLiveView from "./pages/RacerLiveView";
 import DriverLiveView from "./pages/DriverLiveView";
 import CrewLiveView from "./pages/CrewLiveView";
+import MaintenanceLog from "./pages/MaintenanceLog";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
