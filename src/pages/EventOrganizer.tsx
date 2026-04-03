@@ -703,7 +703,33 @@ const EventOrganizer = () => {
     }
   };
 
-  const saveSessions = async (eventId: string, sessions: EventSession[], existingIds?: string[]) => {
+  const saveRunGroups = async (eventId: string, groups: RunGroup[], existingIds?: string[]): Promise<Record<string, string>> => {
+    // Returns a map from temp key (new-0, new-1) to actual saved id
+    const idMap: Record<string, string> = {};
+    if (existingIds && existingIds.length > 0) {
+      const keepIds = groups.filter(g => g.id).map(g => g.id!);
+      const toDelete = existingIds.filter(id => !keepIds.includes(id));
+      if (toDelete.length > 0) {
+        await (supabase as any).from('run_groups').delete().in('id', toDelete);
+      }
+    }
+    for (let i = 0; i < groups.length; i++) {
+      const g = groups[i];
+      if (!g.name.trim()) continue;
+      if (g.id) {
+        await (supabase as any).from('run_groups').update({ name: g.name, sort_order: i }).eq('id', g.id);
+        idMap[g.id] = g.id;
+      } else {
+        const { data } = await (supabase as any).from('run_groups').insert({
+          event_id: eventId, name: g.name, sort_order: i,
+        }).select('id').single();
+        if (data) idMap[`new-${i}`] = data.id;
+      }
+    }
+    return idMap;
+  };
+
+  const saveSessions = async (eventId: string, sessions: EventSession[], runGroupIdMap?: Record<string, string>, existingIds?: string[]) => {
     if (existingIds && existingIds.length > 0) {
       const keepIds = sessions.filter(s => s.id).map(s => s.id!);
       const toDelete = existingIds.filter(id => !keepIds.includes(id));
@@ -714,8 +740,14 @@ const EventOrganizer = () => {
     for (let i = 0; i < sessions.length; i++) {
       const s = sessions[i];
       if (!s.name.trim()) continue;
-      const payload = {
+      // Resolve run_group_id: if it starts with "new-", look up the real id from the map
+      let resolvedRunGroupId = s.run_group_id;
+      if (resolvedRunGroupId && runGroupIdMap && runGroupIdMap[resolvedRunGroupId]) {
+        resolvedRunGroupId = runGroupIdMap[resolvedRunGroupId];
+      }
+      const payload: any = {
         name: s.name,
+        run_group_id: resolvedRunGroupId || null,
         registration_type_id: s.registration_type_id || null,
         start_time: s.start_time || null,
         duration_minutes: s.duration_minutes,
