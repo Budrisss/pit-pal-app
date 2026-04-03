@@ -68,6 +68,7 @@ const Setups = () => {
   const [savedSetups, setSavedSetups] = useState<SavedSetup[]>([]);
   const [allAttachments, setAllAttachments] = useState<SetupAttachment[]>([]);
   const [expandedSetup, setExpandedSetup] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // General setup sheet form state
   const [sheetName, setSheetName] = useState("");
