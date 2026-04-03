@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Wrench, ChevronDown, ChevronUp, Upload, Car, Calendar, Clock, MapPin, Save, Trash2, Pencil } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Wrench, ChevronDown, ChevronUp, Upload, Car, Calendar, Clock, MapPin, Save, Trash2, Pencil, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -64,6 +65,7 @@ interface Session {
 
 const Setups = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [formOpen, setFormOpen] = useState(false);
   const [savedSetups, setSavedSetups] = useState<SavedSetup[]>([]);
@@ -328,12 +330,17 @@ const Setups = () => {
       <div className="p-4 space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center pt-2">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <Wrench className="text-primary" />
-              Vehicle Setups
-            </h1>
-            <p className="text-muted-foreground text-sm">Create and manage your chassis setups</p>
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="size-8" onClick={() => navigate('/garage')}>
+              <ArrowLeft size={18} />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                <Wrench className="text-primary" />
+                Vehicle Setups
+              </h1>
+              <p className="text-muted-foreground text-sm">Create and manage your chassis setups</p>
+            </div>
           </div>
         </div>
 
