@@ -14,7 +14,7 @@ import { useChecklists } from "@/contexts/ChecklistsContext";
 
 const Events = () => {
   const { events, loading, addEvent, updateEvent } = useEvents();
-  const { generateChecklistsForEvent } = useChecklists();
+  // Checklists are now assigned manually per event, no auto-generate
   const location = useLocation();
   const navigate = useNavigate();
   const [countdown, setCountdown] = useState("");
