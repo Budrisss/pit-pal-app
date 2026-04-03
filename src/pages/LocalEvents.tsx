@@ -383,6 +383,12 @@ const LocalEvents = () => {
         throw new Error('You are already registered for this group with this car number. Use a different car number to register again.');
       }
 
+      // Validate run group selection if event has run groups
+      const hasRunGroups = registeringEvent.run_groups && registeringEvent.run_groups.length > 0;
+      if (hasRunGroups && !selectedRunGroupId) {
+        throw new Error('Please select a run group');
+      }
+
       const { error } = await (supabase as any).from('event_registrations').insert({
         event_id: registeringEvent.id,
         registration_type_id: regTypeId,
@@ -393,6 +399,7 @@ const LocalEvents = () => {
         notes: regForm.notes || null,
         car_number: carNum,
         car_id: regForm.carId || null,
+        run_group_id: selectedRunGroupId || null,
       });
       if (error) {
         if (error.message?.includes('idx_unique_car_number_per_event')) {
