@@ -31,7 +31,7 @@ interface Session {
   startTime: string;
   notes?: string;
   state?: "upcoming" | "active" | "completed";
-  registrationTypeId?: string | null;
+  runGroupId?: string | null;
 }
 
 interface EventData {
