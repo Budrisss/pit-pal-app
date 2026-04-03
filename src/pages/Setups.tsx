@@ -54,6 +54,7 @@ interface Event {
   name: string;
   date: string;
   track_id: string;
+  address?: string;
 }
 
 interface Session {
