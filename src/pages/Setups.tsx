@@ -34,12 +34,7 @@ interface SavedSetup {
   notes_times: string | null;
 }
 
-interface Track {
-  id: string;
-  name: string;
-  city?: string;
-  state?: string;
-}
+
 
 interface UserCar {
   id: string;
