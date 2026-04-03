@@ -1143,7 +1143,7 @@ const OrganizerLiveManage = () => {
                               <ChevronRight size={14} className={`transition-transform ${isExpanded ? "rotate-90" : ""}`} />
                               <span className="text-sm font-medium">{session.name}</span>
                               <Badge variant="outline" className="text-[10px]">
-                                {getRunGroupName(session.registration_type_id)}
+                                {getRunGroupName(session.run_group_id)}
                               </Badge>
                               <Badge variant={session.state === "active" ? "default" : "secondary"} className="text-[10px]">
                                 {session.state === "active" ? "Active" : session.state === "completed" ? "Completed" : "Upcoming"}
