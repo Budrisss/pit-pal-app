@@ -1,44 +1,34 @@
 
 
-## Plan: Database-Backed Checklists with Templates and Per-Event Views
+## Plan: Add Schedule & Requirements to Events
 
 ### Overview
-Convert the hardcoded Checklists page into a database-backed system with two tabs: **Templates** (create/edit reusable checklist templates) and **By Event** (view and check off items for each event). When an event is created, all templates are automatically copied as event-specific checklists.
+Add `schedule` and `requirements` fields to the `events` database table so users can define them when creating/editing events. Remove the hardcoded fallback data from EventDetails.
 
 ### Database Changes (1 migration)
 
-**4 new tables:**
+Add two columns to the `events` table:
+- **`schedule`** — `jsonb`, nullable, default `null`. Stores array of `{time, activity}` objects.
+- **`requirements`** — `text[]`, nullable, default `null`. Stores array of requirement strings.
 
-1. **`checklist_templates`** — `id`, `user_id`, `name`, `type` (event/trailer), `sort_order`, `created_at`
-2. **`checklist_template_items`** — `id`, `template_id`, `user_id`, `text`, `sort_order`
-3. **`event_checklists`** — `id`, `event_id`, `user_id`, `template_id` (nullable), `name`, `type`, `created_at`
-4. **`event_checklist_items`** — `id`, `checklist_id`, `user_id`, `text`, `completed` (default false), `sort_order`
+### Files to Modify
 
-All with standard user-owns-row RLS (CRUD where `auth.uid() = user_id`).
+| File | Change |
+|------|--------|
+| Migration SQL | `ALTER TABLE events ADD COLUMN schedule jsonb, ADD COLUMN requirements text[]` |
+| `src/components/EventForm.tsx` | Add schedule builder (add/remove time+activity rows) and requirements builder (add/remove text items) to the form |
+| `EventFormData` interface | Add `schedule` and `requirements` fields |
+| `src/contexts/EventsContext.tsx` | Include `schedule` and `requirements` in insert/update calls and in `mapDbRowToEvent` |
+| `src/pages/EventDetails.tsx` | Remove hardcoded fallbacks; only show Schedule/Requirements sections when data exists |
+| `src/pages/Events.tsx` | Pass new fields through `handleSaveEvent` |
 
-### Files to Create/Modify
+### UI in EventForm
+- **Schedule section**: Repeatable rows with time input + activity text input, plus "Add Schedule Item" button
+- **Requirements section**: Repeatable text inputs, plus "Add Requirement" button
+- Both sections are optional — users can leave them empty
 
-| File | What |
-|------|------|
-| Migration SQL | Create 4 tables + RLS |
-| `src/contexts/ChecklistsContext.tsx` | **New** — CRUD for templates + event checklists, auto-generate on event creation |
-| `src/pages/Checklists.tsx` | **Rewrite** — Two tabs: "Templates" (create/edit/delete templates with items) and "By Event" (grouped checklists with checkable items) |
-| `src/components/ChecklistCard.tsx` | **Update** — Accept DB-backed data, support both template-mode (edit items) and event-mode (toggle completion) |
-| `src/components/EventCard.tsx` | **Update** — Show progress badge (e.g. "✓ 4/12") from event checklist data |
-| `src/contexts/EventsContext.tsx` | **Update** — After creating an event, call checklist context to generate checklists from templates |
-| `src/pages/EventDetails.tsx` | **Update** — Add expandable checklists section |
-| `src/App.tsx` | Wrap app with `ChecklistsProvider` |
-
-### How It Works
-
-1. **Templates tab**: Users create templates (e.g. "Pre-Track Day") with a list of items. These are the blueprints.
-2. **Event creation**: All user templates are copied into `event_checklists` + `event_checklist_items` for the new event.
-3. **By Event tab**: Shows checklists grouped by event name. Users check/uncheck items, which saves to DB in real-time.
-4. **Event cards**: Query checklist completion counts and display a small colored progress badge.
-
-### UI Details
-
-- **Templates tab**: List of template cards with inline item editing, add/delete template buttons
-- **By Event tab**: Accordion or collapsible sections per event, each showing its checklists with checkable items
-- **EventCard badge**: `✓ 4/12` — green at 100%, orange when partial, hidden when no checklists exist
+### Technical Details
+- Schedule stored as `jsonb` array: `[{"time":"8:00 AM","activity":"Registration"}]`
+- Requirements stored as `text[]`: `{"Valid driver's license","Helmet"}`
+- EventDetails hides sections entirely if no data provided (no more fake placeholders)
 
