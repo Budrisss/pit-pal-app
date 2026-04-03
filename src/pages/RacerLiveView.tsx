@@ -73,6 +73,7 @@ const RacerLiveView = () => {
 
   // Driver communication state
   const [personalEventId, setPersonalEventId] = useState<string | null>(null);
+  const [crewEnabled, setCrewEnabled] = useState(false);
   const [crewMessages, setCrewMessages] = useState<{ id: string; gap_ahead: string | null; message: string | null; created_at: string; position: string | null; time_remaining: string | null }[]>([]);
   const [trackNotes, setTrackNotes] = useState("");
   const [isEditingNotes, setIsEditingNotes] = useState(false);
@@ -155,7 +156,7 @@ const RacerLiveView = () => {
       supabase.from("public_event_sessions").select("*").eq("event_id", eventId).order("sort_order"),
       supabase.from("event_flags").select("*").eq("event_id", eventId).eq("is_active", true),
       supabase.from("event_announcements").select("id, message, created_at").eq("event_id", eventId).order("created_at", { ascending: false }).limit(10),
-      user ? supabase.from("event_registrations").select("run_group_id, car_number").eq("event_id", eventId).eq("user_id", user.id) : Promise.resolve({ data: null }),
+      user ? supabase.from("event_registrations").select("run_group_id, car_number, crew_enabled").eq("event_id", eventId).eq("user_id", user.id) : Promise.resolve({ data: null }),
     ]);
     if (eventRes.data) {
       setEventName(eventRes.data.name);
@@ -168,6 +169,9 @@ const RacerLiveView = () => {
     const registrations = regRes.data as any[] | null;
     const registeredCarNumber = registrations && registrations.length > 0 ? registrations[0].car_number : null;
     if (registeredCarNumber) setUserCarNumber(registeredCarNumber);
+    // Check if any registration has crew_enabled
+    const hasCrewEnabled = registrations?.some((r: any) => r.crew_enabled) || false;
+    setCrewEnabled(hasCrewEnabled);
 
     // Read localStorage for selected run groups (including legacy per-personal-event key)
     const storedIds = await readRunGroupsFromStorage();
@@ -958,7 +962,7 @@ const RacerLiveView = () => {
         )}
 
         {/* Driver Communication Panels */}
-        {personalEventId && (
+        {personalEventId && crewEnabled && (
           <div className="bg-gray-950 border-t border-white/10 shrink-0">
             {/* Track Notes + Gap Ahead */}
             <div className="grid grid-cols-2 gap-3 p-3">

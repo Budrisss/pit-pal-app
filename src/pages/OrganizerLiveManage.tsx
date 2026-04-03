@@ -11,7 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Radio, Clock, Megaphone, Send, Users, Plus, Trash2, X, ChevronDown, Flag, AlertTriangle, Pencil, Check, History, ChevronRight } from "lucide-react";
+import { ArrowLeft, Radio, Clock, Megaphone, Send, Users, Plus, Trash2, X, ChevronDown, Flag, AlertTriangle, Pencil, Check, History, ChevronRight, MessageSquare } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrganizerMode } from "@/contexts/OrganizerModeContext";
 import { useToast } from "@/hooks/use-toast";
@@ -58,6 +59,7 @@ interface EventRegistrationWithCar {
   car_number: number | null;
   registration_type_id: string;
   run_group_id: string | null;
+  crew_enabled: boolean;
 }
 
 const OrganizerLiveManage = () => {
@@ -115,7 +117,7 @@ const OrganizerLiveManage = () => {
         supabase.from("public_event_sessions").select("*").eq("event_id", eventId).order("sort_order"),
         (supabase as any).from("run_groups").select("id, name").eq("event_id", eventId).order("sort_order"),
         supabase.from("event_announcements").select("id, message, created_at").eq("event_id", eventId).order("created_at", { ascending: false }),
-        supabase.from("event_registrations").select("id, user_id, user_name, car_number, registration_type_id, run_group_id").eq("event_id", eventId),
+        supabase.from("event_registrations").select("id, user_id, user_name, car_number, registration_type_id, run_group_id, crew_enabled").eq("event_id", eventId),
         supabase.from("event_flags").select("*").eq("event_id", eventId).eq("is_active", true),
         supabase.from("event_flags").select("*").eq("event_id", eventId).eq("is_active", false).not("session_id", "is", null).order("created_at", { ascending: true }),
       ]);
@@ -423,6 +425,21 @@ const OrganizerLiveManage = () => {
     if (!eventId) return;
     await supabase.from("event_flags").update({ is_active: false }).eq("event_id", eventId).eq("is_active", true);
     toast({ title: "All flags cleared" });
+  };
+
+  const handleToggleCrewEnabled = async (registrationId: string, currentValue: boolean) => {
+    const { error } = await (supabase as any)
+      .from("event_registrations")
+      .update({ crew_enabled: !currentValue })
+      .eq("id", registrationId);
+    if (error) {
+      toast({ title: "Failed to update crew access", variant: "destructive" });
+    } else {
+      setRegistrations(prev =>
+        prev.map(r => r.id === registrationId ? { ...r, crew_enabled: !currentValue } : r)
+      );
+      toast({ title: !currentValue ? "Crew messaging enabled" : "Crew messaging disabled" });
+    }
   };
 
   const getRunGroupName = (runGroupId: string | null) => {
@@ -987,9 +1004,51 @@ const OrganizerLiveManage = () => {
           )}
         </motion.div>
 
+        {/* Participants — Crew Messaging Toggle */}
         <Separator className="mb-6" />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="mb-6"
+        >
+          <h2 className="font-semibold flex items-center gap-2 mb-3">
+            <MessageSquare size={16} className="text-primary" /> Crew Messaging
+          </h2>
+          <p className="text-xs text-muted-foreground mb-3">
+            Enable crew messaging per driver so their pit crew can send real-time updates.
+          </p>
+          {registrations.length === 0 ? (
+            <p className="text-sm text-muted-foreground italic">No registrations yet.</p>
+          ) : (
+            <div className="space-y-1.5 max-h-[300px] overflow-y-auto">
+              {Object.entries(groupRegistrationsByType(registrations)).map(([groupName, groupRegs]) => (
+                <div key={groupName}>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1 mt-2">{groupName}</p>
+                  {groupRegs
+                    .sort((a, b) => (a.car_number || 0) - (b.car_number || 0))
+                    .map(r => (
+                    <div key={r.id} className="flex items-center justify-between gap-2 p-2 rounded-lg border border-border/50 bg-card/60">
+                      <div className="flex items-center gap-2 min-w-0">
+                        {r.car_number && <Badge variant="outline" className="font-mono text-[10px] shrink-0">#{r.car_number}</Badge>}
+                        <span className="text-sm truncate">{r.user_name}</span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[10px] text-muted-foreground">{r.crew_enabled ? "On" : "Off"}</span>
+                        <Switch
+                          checked={r.crew_enabled}
+                          onCheckedChange={() => handleToggleCrewEnabled(r.id, r.crew_enabled)}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
+        </motion.div>
 
-        {/* Sessions */}
+        <Separator className="mb-6" />
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

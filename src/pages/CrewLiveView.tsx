@@ -43,6 +43,7 @@ const CrewLiveView = () => {
   const [gapAhead, setGapAhead] = useState("");
   const [freeText, setFreeText] = useState("");
   const [sending, setSending] = useState(false);
+  const [crewEnabled, setCrewEnabled] = useState<boolean | null>(null); // null = loading
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const event = getEventById(eventId || "");
@@ -64,17 +65,27 @@ const CrewLiveView = () => {
     return null;
   }, []);
 
-  // Load sessions
+  // Load sessions + check crew_enabled
   useEffect(() => {
     if (!eventId || !user) return;
     const loadSessions = async () => {
       const { data: eventRow } = await supabase
         .from("events")
-        .select("public_event_id")
+        .select("public_event_id, user_id")
         .eq("id", eventId)
         .maybeSingle();
 
       if (eventRow?.public_event_id) {
+        // Check if crew_enabled for this event's owner
+        const { data: regData } = await (supabase as any)
+          .from("event_registrations")
+          .select("crew_enabled")
+          .eq("event_id", eventRow.public_event_id)
+          .eq("user_id", eventRow.user_id)
+          .limit(1);
+        const enabled = regData && regData.length > 0 ? regData[0].crew_enabled : false;
+        setCrewEnabled(enabled);
+
         const { data } = await (supabase as any)
           .from("public_event_sessions")
           .select("name, start_time, duration_minutes")
@@ -88,6 +99,8 @@ const CrewLiveView = () => {
           })));
         }
       } else {
+        // Personal event — crew is always enabled
+        setCrewEnabled(true);
         const localSessions = parseLocalSessions(eventId);
         if (localSessions) setSessions(localSessions);
       }
@@ -275,8 +288,17 @@ const CrewLiveView = () => {
           </Badge>
         </div>
 
+        {/* Crew not enabled message */}
+        {crewEnabled === false && (
+          <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm px-5 py-6 text-center">
+            <MessageSquare size={32} className="text-muted-foreground mx-auto mb-3 opacity-40" />
+            <p className="text-sm font-medium text-foreground mb-1">Crew Messaging Not Enabled</p>
+            <p className="text-xs text-muted-foreground">The event organizer has not enabled crew messaging for this driver yet.</p>
+          </div>
+        )}
+
         {/* Active Session Timer */}
-        {activeSessionInfo && (
+        {crewEnabled && activeSessionInfo && (
           <div className="rounded-xl border border-green-500/40 bg-green-500/10 backdrop-blur-sm px-5 py-4">
             <div className="flex items-center justify-between">
               <div>
@@ -302,6 +324,7 @@ const CrewLiveView = () => {
           </div>
         )}
 
+        {crewEnabled && <>
         {/* Checkered Flag — Session Just Ended */}
         {!activeSessionInfo && justEndedSession && (
           <div className="rounded-xl border-2 border-yellow-500/60 bg-yellow-500/10 backdrop-blur-sm px-5 py-5 animate-fade-in">
@@ -431,6 +454,7 @@ const CrewLiveView = () => {
             </ScrollArea>
           </CardContent>
         </Card>
+        </>}
       </div>
       <Navigation />
     </div>

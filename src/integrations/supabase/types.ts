@@ -363,6 +363,7 @@ export type Database = {
           car_id: string | null
           car_number: number | null
           created_at: string
+          crew_enabled: boolean
           event_id: string
           id: string
           notes: string | null
@@ -377,6 +378,7 @@ export type Database = {
           car_id?: string | null
           car_number?: number | null
           created_at?: string
+          crew_enabled?: boolean
           event_id: string
           id?: string
           notes?: string | null
@@ -391,6 +393,7 @@ export type Database = {
           car_id?: string | null
           car_number?: number | null
           created_at?: string
+          crew_enabled?: boolean
           event_id?: string
           id?: string
           notes?: string | null
