@@ -782,16 +782,21 @@ const EventOrganizer = () => {
         latitude: lat, longitude: lng,
       }).select('id').single();
       if (error) throw error;
+      let runGroupIdMap: Record<string, string> = {};
+      if (data && newRunGroups.length > 0) {
+        runGroupIdMap = await saveRunGroups(data.id, newRunGroups);
+      }
       if (data && newRegTypes.length > 0) {
         await saveRegistrationTypes(data.id, newRegTypes);
       }
       if (data && newSessions.length > 0) {
-        await saveSessions(data.id, newSessions);
+        await saveSessions(data.id, newSessions, runGroupIdMap);
       }
       toast({ title: "Event created!", description: "Your event is now live." });
       setShowCreateDialog(false);
       setNewEvent({ name: '', date: '', time: '', description: '', track_name: '', address: '', city: '', state: '', zip_code: '', entry_fee: '', car_classes: '', registration_link: '' });
       setNewRegTypes([]);
+      setNewRunGroups([]);
       setNewSessions([]);
       fetchEvents();
     } catch (err: any) {
