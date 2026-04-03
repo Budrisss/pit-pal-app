@@ -31,7 +31,7 @@ interface Session {
   startTime: string;
   notes?: string;
   state?: "upcoming" | "active" | "completed";
-  registrationTypeId?: string | null;
+  runGroupId?: string | null;
 }
 
 interface EventData {
@@ -321,7 +321,7 @@ const SessionManagement = () => {
   const [isRegisteredEvent, setIsRegisteredEvent] = useState(false);
   const [myRunGroups, setMyRunGroups] = useState<Set<string>>(new Set()); // stores multiple run group IDs
   const [runGroups, setRunGroups] = useState<{ id: string; name: string }[]>([]);
-  const [userRegMap, setUserRegMap] = useState<Record<string, { carNumber: number | null; carName: string | null }>>({}); // reg_type_id -> car info
+  const [userRegMap, setUserRegMap] = useState<Record<string, { carNumber: number | null; carName: string | null }>>({}); // run_group_id -> car info
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
 
   const handleToggleNotes = (sessionId: string) => {
@@ -370,7 +370,7 @@ const SessionManagement = () => {
     // If user selected run groups, only count sessions matching any selected group
     if (myRunGroups.size > 0) {
       const filtered = upcomingSessions.filter(s => {
-        if (s.registrationTypeId) return myRunGroups.has(s.registrationTypeId);
+        if (s.runGroupId) return myRunGroups.has(s.runGroupId);
         return Array.from(myRunGroups).some(gId => {
           const grp = runGroups.find(rg => rg.id === gId);
           return grp && s.referenceName === grp.name;
@@ -392,7 +392,7 @@ const SessionManagement = () => {
     // If user selected run groups, prioritize showing a matching group's active state
     if (myRunGroups.size > 0) {
       const matchesFn = (s: typeof statedSessions[number]) => {
-        if (s.registrationTypeId) return myRunGroups.has(s.registrationTypeId);
+        if (s.runGroupId) return myRunGroups.has(s.runGroupId);
         return Array.from(myRunGroups).some(gId => {
           const grp = runGroups.find(rg => rg.id === gId);
           return grp && s.referenceName === grp.name;
@@ -598,17 +598,17 @@ const SessionManagement = () => {
 
       if (eventRow?.public_event_id) {
         setIsRegisteredEvent(true);
-        const [sessionsRes, regTypesRes] = await Promise.all([
+        const [sessionsRes, runGroupsRes] = await Promise.all([
           (supabase as any)
             .from("public_event_sessions")
             .select("*")
             .eq("event_id", eventRow.public_event_id)
             .order("sort_order", { ascending: true }),
           (supabase as any)
-            .from("registration_types")
+            .from("run_groups")
             .select("id, name")
             .eq("event_id", eventRow.public_event_id)
-            .order("created_at", { ascending: true }),
+            .order("sort_order", { ascending: true }),
         ]);
         const orgSessions = sessionsRes.data;
         if (orgSessions && orgSessions.length > 0) {
@@ -628,15 +628,15 @@ const SessionManagement = () => {
             referenceName: s.name,
             startTime: s.start_time || "00:00",
             state: (savedStates[s.id] === "completed" ? "completed" : "upcoming") as "completed" | "upcoming",
-            registrationTypeId: s.registration_type_id || null,
+            runGroupId: s.run_group_id || null,
           }));
           setSessions(mapped);
           localStorage.setItem(`sessions-${eventId}`, JSON.stringify(mapped));
         } else {
           setSessions([]);
         }
-        if (regTypesRes.data && regTypesRes.data.length > 0) {
-          setRunGroups(regTypesRes.data);
+        if (runGroupsRes.data && runGroupsRes.data.length > 0) {
+          setRunGroups(runGroupsRes.data);
         }
       } else {
         // Personal event — use localStorage / hardcoded defaults
@@ -680,11 +680,11 @@ const SessionManagement = () => {
         const userId = (await supabase.auth.getUser()).data.user?.id;
         const { data: regData } = await (supabase as any)
           .from("event_registrations")
-          .select("registration_type_id, car_number, car_id")
+          .select("run_group_id, car_number, car_id")
           .eq("event_id", eventRow.public_event_id)
           .eq("user_id", userId);
         if (regData && regData.length > 0) {
-          const groupIds = [...new Set(regData.map((r: any) => String(r.registration_type_id)).filter(Boolean))] as string[];
+          const groupIds = [...new Set(regData.map((r: any) => String(r.run_group_id)).filter((v: string) => v && v !== 'null'))] as string[];
           setMyRunGroups(new Set(groupIds));
           if (publicRunGroupKey) localStorage.setItem(publicRunGroupKey, JSON.stringify(groupIds));
           localStorage.setItem(legacyRunGroupKey, JSON.stringify(groupIds));
@@ -703,10 +703,12 @@ const SessionManagement = () => {
           }
           const regMap: Record<string, { carNumber: number | null; carName: string | null }> = {};
           for (const r of regData as any[]) {
-            regMap[r.registration_type_id] = {
-              carNumber: r.car_number,
-              carName: r.car_id ? carMap[r.car_id] || null : null,
-            };
+            if (r.run_group_id) {
+              regMap[r.run_group_id] = {
+                carNumber: r.car_number,
+                carName: r.car_id ? carMap[r.car_id] || null : null,
+              };
+            }
           }
           setUserRegMap(regMap);
         }
@@ -736,6 +738,7 @@ const SessionManagement = () => {
           startTime: s.start_time || "00:00",
           state: "upcoming" as const,
           registrationTypeId: s.registration_type_id || null,
+          runGroupId: s.run_group_id || null,
         }));
         setSessions(mapped);
         localStorage.setItem(`sessions-${eventId}`, JSON.stringify(mapped));
@@ -934,7 +937,7 @@ const SessionManagement = () => {
   })();
   // Check if the active session belongs to any of the user's selected run groups
   const activeIsMyGroup = myRunGroups.size > 0 && currentActiveSession
-    ? (currentActiveSession.registrationTypeId ? myRunGroups.has(currentActiveSession.registrationTypeId) : Array.from(myRunGroups).some(gId => currentActiveSession.referenceName === runGroups.find(rg => rg.id === gId)?.name))
+    ? (currentActiveSession.runGroupId ? myRunGroups.has(currentActiveSession.runGroupId) : Array.from(myRunGroups).some(gId => currentActiveSession.referenceName === runGroups.find(rg => rg.id === gId)?.name))
     : myRunGroups.size === 0;
   // Show "my next" countdown even when another group is active
   const showMyNextCountdown = myRunGroups.size > 0 && currentActiveSession && !activeIsMyGroup && countdown;
