@@ -14,6 +14,7 @@ import { useEvents, Event } from "@/contexts/EventsContext";
 const Events = () => {
   const { events, loading, addEvent, updateEvent } = useEvents();
   const location = useLocation();
+  const navigate = useNavigate();
   const [countdown, setCountdown] = useState("");
   const [isEventFormOpen, setIsEventFormOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
