@@ -539,6 +539,9 @@ const EventOrganizer = () => {
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
   const [newRegTypes, setNewRegTypes] = useState<RegistrationType[]>([]);
   const [editRegTypes, setEditRegTypes] = useState<RegistrationType[]>([]);
+  const [newRunGroups, setNewRunGroups] = useState<RunGroup[]>([]);
+  const [editRunGroups, setEditRunGroups] = useState<RunGroup[]>([]);
+  const [originalEditRunGroupIds, setOriginalEditRunGroupIds] = useState<string[]>([]);
   const [newSessions, setNewSessions] = useState<EventSession[]>([]);
   const [editSessions, setEditSessions] = useState<EventSession[]>([]);
   const [originalEditSessionIds, setOriginalEditSessionIds] = useState<string[]>([]);
