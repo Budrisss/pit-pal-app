@@ -11,6 +11,7 @@ export interface Event {
   status: "upcoming" | "completed";
   eventDate: Date;
   car: string;
+  car_id?: string;
   address: string;
   description?: string;
   publicEventId?: string | null;
@@ -133,6 +134,7 @@ export const EventsProvider = ({ children }: { children: ReactNode }) => {
       address: event.address || null,
       description: event.description || null,
       status: event.status || "upcoming",
+      car_id: event.car_id || null,
     });
 
     if (!error) {
@@ -155,6 +157,7 @@ export const EventsProvider = ({ children }: { children: ReactNode }) => {
         address: event.address || null,
         description: event.description || null,
         status: event.status,
+        car_id: event.car_id || null,
       })
       .eq("id", event.id)
       .eq("user_id", user.id);

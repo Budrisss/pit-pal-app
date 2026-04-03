@@ -23,6 +23,7 @@ export interface EventFormData {
   date: string;
   time: string;
   car: string;
+  car_id?: string;
   address: string;
   isSameDay?: boolean;
 }
@@ -111,7 +112,8 @@ const EventForm = ({ open, onOpenChange, onSave, editingEvent }: EventFormProps)
     }
     
     // Proceed with normal submission
-    const eventDataWithFlag = { ...formData, isSameDay };
+    const carId = selectedCarId && selectedCarId !== "manual" ? selectedCarId : undefined;
+    const eventDataWithFlag = { ...formData, car_id: carId, isSameDay };
     console.log('Proceeding with event creation:', eventDataWithFlag);
     onSave(eventDataWithFlag);
     setFormData({
@@ -128,7 +130,8 @@ const EventForm = ({ open, onOpenChange, onSave, editingEvent }: EventFormProps)
   const handleSameDayConfirm = (confirmed: boolean) => {
     setShowSameDayConfirm(false);
     if (confirmed) {
-      const eventDataWithFlag = { ...formData, isSameDay: true };
+      const carId = selectedCarId && selectedCarId !== "manual" ? selectedCarId : undefined;
+      const eventDataWithFlag = { ...formData, car_id: carId, isSameDay: true };
       onSave(eventDataWithFlag);
       setFormData({
         name: "",
