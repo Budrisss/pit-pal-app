@@ -197,7 +197,7 @@ const RegistrationTypesEditor = ({
   );
 };
 
-const emptySession = (): EventSession => ({ registration_type_id: null, name: '', start_time: '', duration_minutes: null, sort_order: 0 });
+const emptySession = (): EventSession => ({ run_group_id: null, registration_type_id: null, name: '', start_time: '', duration_minutes: null, sort_order: 0 });
 
 const SessionsEditor = ({
   sessions,
