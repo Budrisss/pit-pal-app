@@ -680,7 +680,7 @@ const SessionManagement = () => {
         const userId = (await supabase.auth.getUser()).data.user?.id;
         const { data: regData } = await (supabase as any)
           .from("event_registrations")
-          .select("registration_type_id, car_number, car_id")
+          .select("run_group_id, car_number, car_id")
           .eq("event_id", eventRow.public_event_id)
           .eq("user_id", userId);
         if (regData && regData.length > 0) {
