@@ -58,6 +58,7 @@ interface EventRegistrationWithCar {
   car_number: number | null;
   registration_type_id: string;
   run_group_id: string | null;
+  crew_enabled: boolean;
 }
 
 const OrganizerLiveManage = () => {
