@@ -50,6 +50,7 @@ interface Event {
   date: string;
   track_id: string;
   address?: string;
+  trackName?: string;
 }
 
 interface Session {
