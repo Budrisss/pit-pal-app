@@ -115,10 +115,15 @@ const Setups = () => {
     if (!user) return;
     const { data } = await (supabase as any)
       .from("events")
-      .select("id, name, date, track_id, address")
+      .select("id, name, date, track_id, address, track_name:tracks(name)")
       .eq("user_id", user.id)
       .order("date", { ascending: false });
-    if (data) setUserEvents(data);
+    if (data) {
+      setUserEvents(data.map((row: any) => ({
+        ...row,
+        trackName: row.track_name?.name || row.address || "",
+      })));
+    }
   };
 
   const fetchSessions = async () => {
