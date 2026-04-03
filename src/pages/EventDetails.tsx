@@ -158,7 +158,7 @@ const EventDetails = () => {
         </Card>
 
         {/* Schedule */}
-        {event.schedule && event.schedule.length > 0 && (
+        {Array.isArray(event.schedule) && event.schedule.length > 0 && (
           <Card className="bg-gradient-card border-border/50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -185,7 +185,7 @@ const EventDetails = () => {
         )}
 
         {/* Requirements */}
-        {event.requirements && event.requirements.length > 0 && (
+        {Array.isArray(event.requirements) && event.requirements.length > 0 && (
           <Card className="bg-gradient-card border-border/50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
