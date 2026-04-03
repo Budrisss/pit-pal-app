@@ -956,7 +956,89 @@ const RacerLiveView = () => {
             </div>
           </div>
         )}
-      </div>
+
+        {/* Driver Communication Panels */}
+        {personalEventId && (
+          <div className="bg-gray-950 border-t border-white/10 shrink-0">
+            {/* Track Notes + Gap Ahead */}
+            <div className="grid grid-cols-2 gap-3 p-3">
+              {/* Track Notes */}
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-1">
+                    <StickyNote size={12} className="text-amber-500" />
+                    <p className="text-[10px] uppercase tracking-widest text-white/50 font-medium">Track Notes</p>
+                  </div>
+                  {!isEditingNotes && (
+                    <button className="text-white/30 hover:text-white/60" onClick={() => { setNotesDraft(trackNotes); setIsEditingNotes(true); }}>
+                      <Pencil size={10} />
+                    </button>
+                  )}
+                </div>
+                {isEditingNotes ? (
+                  <div className="space-y-1.5">
+                    <textarea
+                      autoFocus
+                      value={notesDraft}
+                      onChange={(e) => setNotesDraft(e.target.value)}
+                      className="w-full bg-black/40 border border-white/10 rounded p-1.5 text-xs text-white resize-none focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+                      rows={3}
+                      placeholder="Braking points, turn notes..."
+                    />
+                    <div className="flex gap-1 justify-end">
+                      <button className="text-white/40 hover:text-white/60" onClick={() => setIsEditingNotes(false)}><X size={12} /></button>
+                      <button className="text-green-400 hover:text-green-300" onClick={saveTrackNotes}><Check size={12} /></button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-white/70 whitespace-pre-wrap leading-relaxed min-h-[40px]">
+                    {trackNotes || <span className="text-white/30 italic">Tap edit to add...</span>}
+                  </p>
+                )}
+              </div>
+
+              {/* Gap Ahead */}
+              <div className="rounded-xl border border-primary/30 bg-primary/10 p-3 text-center flex flex-col items-center justify-center">
+                <TrendingUp size={16} className="text-primary mb-1" />
+                <p className="text-3xl sm:text-4xl font-black text-white tabular-nums tracking-tight">
+                  {latestGap || "—"}
+                </p>
+                <p className="text-[10px] uppercase tracking-widest text-white/40 mt-1">Gap Ahead</p>
+              </div>
+            </div>
+
+            {/* Latest Crew Message */}
+            {latestCrewMessage && (
+              <div className="mx-3 mb-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
+                <p className="text-[10px] uppercase tracking-widest text-primary font-semibold mb-0.5">Latest from Crew</p>
+                <p className="text-sm font-semibold text-white">{latestCrewMessage}</p>
+              </div>
+            )}
+
+            {/* Crew Updates Feed */}
+            {crewMessages.length > 0 && (
+              <div className="mx-3 mb-3 rounded-lg border border-white/10 bg-white/5 overflow-hidden">
+                <div className="px-3 py-2 border-b border-white/10 flex items-center gap-1.5">
+                  <MessageSquare size={12} className="text-primary" />
+                  <span className="text-xs font-bold text-white/70">Crew Updates</span>
+                  <Badge className="text-[10px] ml-auto bg-white/10 text-white/50 border-0">{crewMessages.length}</Badge>
+                </div>
+                <div className="max-h-[200px] overflow-y-auto p-2 space-y-1.5">
+                  {crewMessages.map(msg => (
+                    <div key={msg.id} className="p-2 rounded bg-white/5 border border-white/5">
+                      <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+                        <span className="text-[10px] text-white/30">{formatCrewTime(msg.created_at)}</span>
+                        {msg.gap_ahead && <Badge className="text-[10px] bg-primary/20 text-primary border-0 py-0 px-1">Gap: {msg.gap_ahead}</Badge>}
+                      </div>
+                      {msg.message && <p className="text-xs text-white/70">{msg.message}</p>}
+                    </div>
+                  ))}
+                  <div ref={feedEndRef} />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
     </div>
   );
 };

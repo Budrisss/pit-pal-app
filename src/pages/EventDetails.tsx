@@ -282,9 +282,22 @@ const EventDetails = () => {
               Go Live
             </Button>
           )}
+          {!event.publicEventId && (
+            <Button variant="outline" className="flex-1" onClick={() => navigate(`/crew-live/${event.id}`)}>
+              <Users size={16} />
+              Crew View
+            </Button>
+          )}
           {event.publicEventId && (
-            <Button variant="outline" className="flex-1">
-              Start Event
+            <Button variant="outline" className="flex-1" onClick={() => navigate(`/race-live/${event.publicEventId}`)}>
+              <Radio size={16} />
+              Go Live
+            </Button>
+          )}
+          {event.publicEventId && (
+            <Button variant="outline" className="flex-1" onClick={() => navigate(`/crew-live/${event.id}`)}>
+              <Users size={16} />
+              Crew View
             </Button>
           )}
         </div>
