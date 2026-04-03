@@ -512,7 +512,7 @@ const OrganizerLiveManage = () => {
   const isLocalCaution = (f: EventFlag) => f.flag_type === "yellow_turn" || (f.flag_type === "blue" && !isBlueExpired(f)) || (f.flag_type === "black" && f.target_user_id);
 
   const activeSession = sessionStates.find((s) => s.state === "active");
-  const activeSessionRegTypeId = activeSession?.registration_type_id || null;
+  const activeSessionRunGroupId = activeSession?.run_group_id || null;
   const activeSessionIdRef = useRef<string | null>(null);
   activeSessionIdRef.current = activeSession?.id || null;
 
