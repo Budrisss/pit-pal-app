@@ -113,7 +113,7 @@ const OrganizerLiveManage = () => {
       const [eventRes, sessRes, regTypesRes, annRes, regsRes, flagsRes, flagHistoryRes] = await Promise.all([
         supabase.from("public_events").select("name, organizer_id, date").eq("id", eventId).single(),
         supabase.from("public_event_sessions").select("*").eq("event_id", eventId).order("sort_order"),
-        supabase.from("registration_types").select("id, name").eq("event_id", eventId),
+        (supabase as any).from("run_groups").select("id, name").eq("event_id", eventId).order("sort_order"),
         supabase.from("event_announcements").select("id, message, created_at").eq("event_id", eventId).order("created_at", { ascending: false }),
         supabase.from("event_registrations").select("id, user_id, user_name, car_number, registration_type_id").eq("event_id", eventId),
         supabase.from("event_flags").select("*").eq("event_id", eventId).eq("is_active", true),
