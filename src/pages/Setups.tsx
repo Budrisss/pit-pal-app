@@ -465,6 +465,15 @@ const Setups = () => {
                           compact
                         />
                       )}
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="w-full mt-2"
+                        onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(setup.id); }}
+                      >
+                        <Trash2 size={14} className="mr-2" />
+                        Delete Setup
+                      </Button>
                     </CardContent>
                   )}
                 </Card>
