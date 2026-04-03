@@ -70,7 +70,15 @@ const Setups = () => {
   const [allAttachments, setAllAttachments] = useState<SetupAttachment[]>([]);
   const [expandedSetup, setExpandedSetup] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-
+  const [editingSetup, setEditingSetup] = useState<SavedSetup | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editCar, setEditCar] = useState("");
+  const [editEvent, setEditEvent] = useState("");
+  const [editSession, setEditSession] = useState("");
+  const [editFastestLap, setEditFastestLap] = useState("");
+  const [editSessions, setEditSessions] = useState<Session[]>([]);
+  const [editResolvedTrack, setEditResolvedTrack] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
   // General setup sheet form state
   const [sheetName, setSheetName] = useState("");
   const [sheetCar, setSheetCar] = useState("");
