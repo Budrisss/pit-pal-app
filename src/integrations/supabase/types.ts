@@ -367,6 +367,7 @@ export type Database = {
           id: string
           notes: string | null
           registration_type_id: string
+          run_group_id: string | null
           user_email: string
           user_id: string
           user_name: string
@@ -380,6 +381,7 @@ export type Database = {
           id?: string
           notes?: string | null
           registration_type_id: string
+          run_group_id?: string | null
           user_email: string
           user_id: string
           user_name: string
@@ -393,6 +395,7 @@ export type Database = {
           id?: string
           notes?: string | null
           registration_type_id?: string
+          run_group_id?: string | null
           user_email?: string
           user_id?: string
           user_name?: string
@@ -411,6 +414,13 @@ export type Database = {
             columns: ["registration_type_id"]
             isOneToOne: false
             referencedRelation: "registration_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_registrations_run_group_id_fkey"
+            columns: ["run_group_id"]
+            isOneToOne: false
+            referencedRelation: "run_groups"
             referencedColumns: ["id"]
           },
         ]
@@ -699,6 +709,7 @@ export type Database = {
           id: string
           name: string
           registration_type_id: string | null
+          run_group_id: string | null
           sort_order: number
           start_time: string | null
           updated_at: string
@@ -710,6 +721,7 @@ export type Database = {
           id?: string
           name: string
           registration_type_id?: string | null
+          run_group_id?: string | null
           sort_order?: number
           start_time?: string | null
           updated_at?: string
@@ -721,6 +733,7 @@ export type Database = {
           id?: string
           name?: string
           registration_type_id?: string | null
+          run_group_id?: string | null
           sort_order?: number
           start_time?: string | null
           updated_at?: string
@@ -738,6 +751,13 @@ export type Database = {
             columns: ["registration_type_id"]
             isOneToOne: false
             referencedRelation: "registration_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "public_event_sessions_run_group_id_fkey"
+            columns: ["run_group_id"]
+            isOneToOne: false
+            referencedRelation: "run_groups"
             referencedColumns: ["id"]
           },
         ]
@@ -850,6 +870,38 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "registration_types_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      run_groups: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "run_groups_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "public_events"
