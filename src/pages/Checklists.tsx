@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Plus, CheckSquare } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Plus, CheckSquare, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ChecklistCard from "@/components/ChecklistCard";
 import Navigation from "@/components/Navigation";
