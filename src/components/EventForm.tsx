@@ -58,7 +58,9 @@ const EventForm = ({ open, onOpenChange, onSave, editingEvent }: EventFormProps)
     date: "",
     time: "",
     car: "",
-    address: ""
+    address: "",
+    schedule: [],
+    requirements: [],
   });
   
   const [tracks, setTracks] = useState<Track[]>([]);
