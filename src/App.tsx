@@ -42,6 +42,7 @@ const App = () => (
         <OrganizerModeProvider>
         <CarsProvider>
           <EventsProvider>
+          <ChecklistsProvider>
             <Toaster />
             <Sonner />
             <BrowserRouter>
