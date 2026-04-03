@@ -616,6 +616,101 @@ const Setups = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!editingSetup} onOpenChange={(open) => !open && setEditingSetup(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil size={20} className="text-primary" />
+              Edit Setup
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Setup Name</Label>
+              <Input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="e.g., Dry Weather Setup" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Event</Label>
+                <Select value={editEvent} onValueChange={setEditEvent}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select event" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {userEvents.map((event) => (
+                      <SelectItem key={event.id} value={event.id}>
+                        <div className="flex items-center gap-2">
+                          <Calendar size={14} />
+                          {event.name} - {new Date(event.date).toLocaleDateString()}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Car</Label>
+                <Select value={editCar} onValueChange={setEditCar}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select car" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cars.map((car) => (
+                      <SelectItem key={car.id} value={car.id}>
+                        <div className="flex items-center gap-2">
+                          <Car size={14} />
+                          {car.name} {car.year && car.make && `(${car.year} ${car.make} ${car.model})`}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {editResolvedTrack && (
+              <div className="space-y-2">
+                <Label>Track / Venue</Label>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/30 rounded-md px-3 py-2 border border-border/50">
+                  <MapPin size={14} className="text-primary" />
+                  {editResolvedTrack}
+                </div>
+              </div>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Session</Label>
+                <Select value={editSession} onValueChange={setEditSession} disabled={!editEvent}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={editEvent ? "Select session" : "Select event first"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {editSessions.map((session) => (
+                      <SelectItem key={session.id} value={session.id}>
+                        <div className="flex items-center gap-2">
+                          <Clock size={14} />
+                          {session.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Fastest Lap</Label>
+                <Input value={editFastestLap} onChange={(e) => setEditFastestLap(e.target.value)} placeholder="e.g., 1:23.456" />
+              </div>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" onClick={() => setEditingSetup(null)} className="flex-1">Cancel</Button>
+              <Button onClick={handleUpdateSetup} disabled={editSaving || !editName.trim()} className="flex-1">
+                <Save size={14} className="mr-2" />
+                {editSaving ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
