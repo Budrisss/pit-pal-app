@@ -130,6 +130,7 @@ const MaintenanceLog = () => {
     setCustomType("");
     setServiceDate(new Date());
     setMileage("");
+    setCost("");
     setNotes("");
     setFiles([]);
     setEditingRecord(null);
