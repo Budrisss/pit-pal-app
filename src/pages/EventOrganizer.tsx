@@ -1114,7 +1114,8 @@ const EventOrganizer = () => {
                 setPresetTypeFilter={setPresetTypeFilter}
               />
               <RegistrationTypesEditor types={editRegTypes} onChange={setEditRegTypes} />
-              <SessionsEditor sessions={editSessions} onChange={setEditSessions} registrationTypes={editRegTypes} />
+              <RunGroupsEditor groups={editRunGroups} onChange={setEditRunGroups} />
+              <SessionsEditor sessions={editSessions} onChange={setEditSessions} runGroups={editRunGroups} />
               <Button type="submit" disabled={creating} className="w-full">
                 {creating ? <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : 'Save Changes'}
               </Button>
