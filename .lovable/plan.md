@@ -1,19 +1,74 @@
 
 
-## Plan: Add Progress Bar to Driver Live View Active Session Banner
+## Maintenance Log Feature
 
-### Change
+### Overview
+Add a per-vehicle maintenance log accessible via a new "Maintenance" button on each CarCard (alongside Events and Setups). Users can add service records with date, service type (from presets or custom), mileage, notes, and attach photos/PDFs. Records display in a simple chronological list (newest first).
 
-**File: `src/pages/DriverLiveView.tsx`**
+### Database Changes
 
-1. Update the `activeSessionInfo` computation to include a `progress` value (0→1) representing elapsed time, using the same logic as Session Management: `elapsedMs / totalMs`.
+**New table: `maintenance_logs`**
+- `id` (uuid, PK)
+- `user_id` (uuid, NOT NULL)
+- `car_id` (uuid, NOT NULL)
+- `service_type` (text, NOT NULL) — e.g. "Oil Change", "Brake Pads", or custom text
+- `service_date` (date, NOT NULL)
+- `mileage` (integer, nullable)
+- `notes` (text, nullable)
+- `created_at` (timestamptz, default now())
 
-2. Add a progress bar to the existing "Active Session Timer" banner (around line 120). Insert a slim progress bar below the timer text, styled to match the Driver View theme — using `bg-primary/20` for the track and `bg-primary` for the fill, with the same glassmorphic rounded style.
+RLS: standard user-owns-row pattern (SELECT/INSERT/UPDATE/DELETE where `auth.uid() = user_id`).
 
-The banner already exists; we're just adding the progress calculation and a `<div>` progress bar element inside it.
+**New storage bucket: `maintenance-attachments`** (public)
+- Path convention: `{user_id}/{log_id}/{filename}`
 
-### Files Modified
-| File | Change |
-|------|--------|
-| `src/pages/DriverLiveView.tsx` | Add `progress` to `activeSessionInfo`; render progress bar inside the existing active session banner |
+**New table: `maintenance_attachments`**
+- `id` (uuid, PK)
+- `log_id` (uuid, NOT NULL) — references maintenance_logs.id
+- `user_id` (uuid, NOT NULL)
+- `file_url` (text, NOT NULL)
+- `file_name` (text, NOT NULL)
+- `file_type` (text, nullable) — e.g. "image/jpeg", "application/pdf"
+- `created_at` (timestamptz, default now())
+
+RLS: same user-owns-row pattern.
+
+### New Route & Page
+
+**`/maintenance/:carId`** — new protected route.
+
+**`src/pages/MaintenanceLog.tsx`**:
+- Header shows car name (fetched from CarsContext)
+- "Add Record" button opens a dialog/sheet with:
+  - **Service Type**: Select with presets (Oil Change, Brake Pads, Brake Fluid, Tire Rotation, Alignment, Coolant Flush, Transmission Fluid, Spark Plugs, Air Filter, Belt Replacement, Custom) — selecting "Custom" shows a text input
+  - **Date**: date picker (defaults to today)
+  - **Mileage**: optional number input
+  - **Notes**: optional textarea
+  - **Attachments**: file upload (accept images + PDFs), multiple files allowed
+- Chronological list of records showing service type badge, date, mileage, notes preview, and attachment thumbnails
+- Tap a record to expand/view full details and attachments
+- Swipe-to-delete pattern (consistent with CarCard)
+
+### CarCard Update
+
+Add a third action button "Maintenance" (Wrench icon) in `CarCard.tsx` alongside Events and Setups, navigating to `/maintenance/{carId}`.
+
+### App.tsx Update
+
+Add route: `<Route path="/maintenance/:carId" element={<ProtectedRoute><MaintenanceLog /></ProtectedRoute>} />`
+
+### Preset Service Types
+```
+Oil Change, Brake Pads, Brake Fluid, Tire Rotation, Alignment,
+Coolant Flush, Transmission Fluid, Spark Plugs, Air Filter,
+Belt Replacement, Custom
+```
+
+### Technical Details
+
+- File uploads use Supabase Storage (`maintenance-attachments` bucket)
+- After inserting a log record, upload attachments to storage, get public URLs, then insert into `maintenance_attachments` table
+- Display PDFs as a file icon with name; images as thumbnails
+- Uses existing app patterns: CarsContext for car info, supabase client for data, toast for feedback
+- Consistent styling with the rest of the app (glassmorphic scrollbars, card styles, etc.)
 
