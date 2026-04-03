@@ -72,6 +72,7 @@ const MaintenanceLog = () => {
   const [customType, setCustomType] = useState("");
   const [serviceDate, setServiceDate] = useState<Date>(new Date());
   const [mileage, setMileage] = useState("");
+  const [cost, setCost] = useState("");
   const [notes, setNotes] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
