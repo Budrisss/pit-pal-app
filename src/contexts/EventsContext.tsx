@@ -11,6 +11,7 @@ export interface Event {
   status: "upcoming" | "completed";
   eventDate: Date;
   car: string;
+  car_id?: string;
   address: string;
   description?: string;
   publicEventId?: string | null;
