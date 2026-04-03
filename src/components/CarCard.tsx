@@ -238,6 +238,10 @@ const CarCard = ({
                   <Settings size={14} className="sm:size-4" />
                   <span className="ml-1 sm:ml-2">Setups</span>
                 </Button>
+                <Button variant="outline" size="sm" className="flex-1 rounded-full border-2 hover:shadow-pulse text-xs sm:text-sm" onClick={() => navigate(`/maintenance/${id}`)}>
+                  <Wrench size={14} className="sm:size-4" />
+                  <span className="ml-1 sm:ml-2">Maint.</span>
+                </Button>
               </div>
             </CardContent>
           </Card>
