@@ -71,6 +71,65 @@ export type Database = {
         }
         Relationships: []
       }
+      checklist_template_items: {
+        Row: {
+          id: string
+          sort_order: number
+          template_id: string
+          text: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          sort_order?: number
+          template_id: string
+          text: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          sort_order?: number
+          template_id?: string
+          text?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_template_items_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_templates: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       crew_messages: {
         Row: {
           created_at: string
@@ -157,6 +216,86 @@ export type Database = {
             columns: ["organizer_id"]
             isOneToOne: false
             referencedRelation: "organizer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_checklist_items: {
+        Row: {
+          checklist_id: string
+          completed: boolean
+          id: string
+          sort_order: number
+          text: string
+          user_id: string
+        }
+        Insert: {
+          checklist_id: string
+          completed?: boolean
+          id?: string
+          sort_order?: number
+          text: string
+          user_id: string
+        }
+        Update: {
+          checklist_id?: string
+          completed?: boolean
+          id?: string
+          sort_order?: number
+          text?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_checklist_items_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "event_checklists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_checklists: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          name: string
+          template_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          name: string
+          template_id?: string | null
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          name?: string
+          template_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_checklists_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_checklists_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_templates"
             referencedColumns: ["id"]
           },
         ]
