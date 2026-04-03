@@ -81,7 +81,37 @@ export const CarsProvider = ({ children }: { children: ReactNode }) => {
       .order("created_at", { ascending: false });
 
     if (!error && data) {
-      setCars(data.map(mapDbRowToCar));
+      // Fetch event and setup counts per car
+      const carIds = data.map((r: any) => r.id);
+      
+      const [eventsRes, setupsRes] = await Promise.all([
+        (supabase as any)
+          .from("events")
+          .select("id, car_id")
+          .eq("user_id", user.id)
+          .in("car_id", carIds.length > 0 ? carIds : [""]),
+        (supabase as any)
+          .from("setup_data")
+          .select("id, car_id")
+          .eq("user_id", user.id)
+          .in("car_id", carIds.length > 0 ? carIds : [""]),
+      ]);
+
+      const eventCounts: Record<string, number> = {};
+      const setupCounts: Record<string, number> = {};
+      
+      (eventsRes.data || []).forEach((e: any) => {
+        if (e.car_id) eventCounts[e.car_id] = (eventCounts[e.car_id] || 0) + 1;
+      });
+      (setupsRes.data || []).forEach((s: any) => {
+        if (s.car_id) setupCounts[s.car_id] = (setupCounts[s.car_id] || 0) + 1;
+      });
+
+      setCars(data.map((row: any) => ({
+        ...mapDbRowToCar(row),
+        events: eventCounts[row.id] || 0,
+        setups: setupCounts[row.id] || 0,
+      })));
     }
     setLoading(false);
   }, [user]);
