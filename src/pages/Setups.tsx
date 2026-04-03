@@ -244,6 +244,82 @@ const Setups = () => {
     setDeleteConfirmId(null);
   };
 
+  const openEditDialog = (setup: SavedSetup) => {
+    setEditingSetup(setup);
+    setEditName(setup.setup_name || "");
+    setEditCar(setup.car_id || "");
+    setEditEvent(setup.event_id || "");
+    setEditSession("");
+    setEditFastestLap(setup.fastest_lap_time || "");
+    setEditResolvedTrack("");
+    // Fetch sessions for the setup's event
+    if (setup.event_id) {
+      (supabase as any)
+        .from("sessions")
+        .select("id, name, type, event_id")
+        .eq("event_id", setup.event_id)
+        .order("created_at")
+        .then(({ data }: any) => {
+          setEditSessions(data || []);
+          // Try to find matching session by name
+          const match = (data || []).find((s: Session) => s.name === setup.session_name);
+          if (match) setEditSession(match.id);
+        });
+      const evt = userEvents.find((e) => e.id === setup.event_id);
+      setEditResolvedTrack(evt?.trackName || evt?.address || "");
+    }
+  };
+
+  useEffect(() => {
+    if (editEvent && editingSetup) {
+      (supabase as any)
+        .from("sessions")
+        .select("id, name, type, event_id")
+        .eq("event_id", editEvent)
+        .order("created_at")
+        .then(({ data }: any) => {
+          setEditSessions(data || []);
+          if (editEvent !== editingSetup.event_id) setEditSession("");
+        });
+      const evt = userEvents.find((e) => e.id === editEvent);
+      setEditResolvedTrack(evt?.trackName || evt?.address || "");
+    } else if (!editEvent) {
+      setEditSessions([]);
+      setEditSession("");
+      setEditResolvedTrack("");
+    }
+  }, [editEvent]);
+
+  const handleUpdateSetup = async () => {
+    if (!user || !editingSetup || !editName.trim()) {
+      toast({ title: "Setup name is required", variant: "destructive" });
+      return;
+    }
+    setEditSaving(true);
+    const sessionObj = editSessions.find((s) => s.id === editSession);
+    const { error } = await (supabase as any)
+      .from("setup_data")
+      .update({
+        setup_name: editName.trim(),
+        car_id: editCar || null,
+        event_id: editEvent || null,
+        session_id: editSession || null,
+        session_name: sessionObj?.name || null,
+        fastest_lap_time: editFastestLap.trim() || null,
+      })
+      .eq("id", editingSetup.id)
+      .eq("user_id", user.id);
+
+    setEditSaving(false);
+    if (error) {
+      toast({ title: "Error updating setup", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Setup updated" });
+      setEditingSetup(null);
+      fetchSetups();
+    }
+  };
+
   const generalAttachments = allAttachments.filter((a) => !a.setup_id);
   const getSetupAttachments = (setupId: string) => allAttachments.filter((a) => a.setup_id === setupId);
 
