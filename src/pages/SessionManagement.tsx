@@ -392,7 +392,7 @@ const SessionManagement = () => {
     // If user selected run groups, prioritize showing a matching group's active state
     if (myRunGroups.size > 0) {
       const matchesFn = (s: typeof statedSessions[number]) => {
-        if (s.registrationTypeId) return myRunGroups.has(s.registrationTypeId);
+        if (s.runGroupId) return myRunGroups.has(s.runGroupId);
         return Array.from(myRunGroups).some(gId => {
           const grp = runGroups.find(rg => rg.id === gId);
           return grp && s.referenceName === grp.name;
