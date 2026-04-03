@@ -442,7 +442,7 @@ const OrganizerLiveManage = () => {
     }
   };
 
-
+  const getRunGroupName = (runGroupId: string | null) => {
     if (!runGroupId) return "All groups";
     return registrationTypes.find((rt) => rt.id === runGroupId)?.name || "Unknown";
   };
