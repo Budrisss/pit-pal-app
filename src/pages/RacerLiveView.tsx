@@ -174,7 +174,7 @@ const RacerLiveView = () => {
 
     // Set display name from first selected group
     if (effectiveIds.length > 0) {
-      const { data: rtData } = await supabase.from("registration_types").select("name").eq("id", effectiveIds[0]).single();
+      const { data: rtData } = await (supabase as any).from("run_groups").select("name").eq("id", effectiveIds[0]).single();
       if (rtData) setRegTypeName(rtData.name);
     }
 
