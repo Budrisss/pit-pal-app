@@ -448,7 +448,15 @@ const OrganizerLiveManage = () => {
   };
 
   const orderedSessions = useMemo(
-    () => [...sessions].sort((a, b) => (a.sort_order ?? Number.MAX_SAFE_INTEGER) - (b.sort_order ?? Number.MAX_SAFE_INTEGER) || a.id.localeCompare(b.id)),
+    () => [...sessions].sort((a, b) => {
+      const sortDiff = (a.sort_order ?? Number.MAX_SAFE_INTEGER) - (b.sort_order ?? Number.MAX_SAFE_INTEGER);
+      if (sortDiff !== 0) return sortDiff;
+      // When sort_order is equal, order by start_time so the earlier session comes first
+      if (a.start_time && b.start_time) return a.start_time.localeCompare(b.start_time);
+      if (a.start_time) return -1;
+      if (b.start_time) return 1;
+      return (a.id || "").localeCompare(b.id || "");
+    }),
     [sessions]
   );
 
