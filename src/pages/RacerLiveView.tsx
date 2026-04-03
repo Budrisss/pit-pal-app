@@ -240,6 +240,75 @@ const RacerLiveView = () => {
     return () => { supabase.removeChannel(channel); };
   }, [eventId, toast]);
 
+  // --- Driver Communication: find personal event, load track notes, subscribe to crew messages ---
+  useEffect(() => {
+    if (!eventId || !user?.id) return;
+    const findPersonalEvent = async () => {
+      const { data } = await supabase
+        .from("events")
+        .select("id")
+        .eq("public_event_id", eventId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (data?.id) {
+        setPersonalEventId(data.id);
+        const savedNotes = localStorage.getItem(`track-notes-${data.id}`);
+        if (savedNotes) setTrackNotes(savedNotes);
+      }
+    };
+    findPersonalEvent();
+  }, [eventId, user?.id]);
+
+  // Load & subscribe to crew messages for the personal event
+  useEffect(() => {
+    if (!personalEventId) return;
+    const loadMessages = async () => {
+      const { data } = await supabase
+        .from("crew_messages")
+        .select("*")
+        .eq("event_id", personalEventId)
+        .order("created_at", { ascending: true });
+      if (data) setCrewMessages(data as any[]);
+    };
+    loadMessages();
+
+    const channel = supabase
+      .channel(`racer-crew-${personalEventId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "crew_messages", filter: `event_id=eq.${personalEventId}` },
+        (payload) => {
+          setCrewMessages(prev => [...prev, payload.new as any]);
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [personalEventId]);
+
+  // Auto-scroll crew feed
+  useEffect(() => {
+    feedEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [crewMessages.length]);
+
+  const saveTrackNotes = () => {
+    if (!personalEventId) return;
+    localStorage.setItem(`track-notes-${personalEventId}`, notesDraft);
+    setTrackNotes(notesDraft);
+    setIsEditingNotes(false);
+  };
+
+  const latestGap = useMemo(() => {
+    return [...crewMessages].reverse().find(m => m.gap_ahead)?.gap_ahead || null;
+  }, [crewMessages]);
+
+  const latestCrewMessage = useMemo(() => {
+    return [...crewMessages].reverse().find(m => m.message)?.message || null;
+  }, [crewMessages]);
+
+  const formatCrewTime = (ts: string) => {
+    try { return format(new Date(ts), "h:mm:ss a"); } catch { return ts; }
+  };
+
   // Active flags for this user
   const activeFlags = useMemo(() => {
     return flags.filter(f => {
