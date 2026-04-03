@@ -1,0 +1,1 @@
+ALTER TABLE public.setup_attachments ALTER COLUMN setup_id DROP NOT NULL;
