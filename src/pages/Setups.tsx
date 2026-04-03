@@ -350,6 +350,8 @@ const Setups = () => {
             {savedSetups.map((setup) => {
               const isExpanded = expandedSetup === setup.id;
               const setupAtts = getSetupAttachments(setup.id);
+              const setupCar = cars.find((c) => c.id === setup.car_id);
+              const setupEvent = userEvents.find((e) => e.id === setup.event_id);
               return (
                 <Card key={setup.id} className="border-border/50">
                   <CardHeader
@@ -389,9 +391,36 @@ const Setups = () => {
                     </div>
                   </CardHeader>
                   {isExpanded && (
-                    <CardContent className="pt-0">
+                    <CardContent className="pt-0 space-y-3">
+                      {/* Setup metadata */}
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        {setupCar && (
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <Car size={12} className="text-primary shrink-0" />
+                            <span>{setupCar.name} {setupCar.year && setupCar.make ? `(${setupCar.year} ${setupCar.make} ${setupCar.model})` : ""}</span>
+                          </div>
+                        )}
+                        {setupEvent && (
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <Calendar size={12} className="text-primary shrink-0" />
+                            <span>{setupEvent.name} - {new Date(setupEvent.date).toLocaleDateString()}</span>
+                          </div>
+                        )}
+                        {setupEvent?.address && (
+                          <div className="flex items-center gap-1.5 text-muted-foreground col-span-2">
+                            <MapPin size={12} className="text-primary shrink-0" />
+                            <span>{setupEvent.address}</span>
+                          </div>
+                        )}
+                        {setup.fastest_lap_time && (
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <Clock size={12} className="text-primary shrink-0" />
+                            <span>Fastest Lap: {setup.fastest_lap_time}</span>
+                          </div>
+                        )}
+                      </div>
                       {setup.notes_times && (
-                        <p className="text-xs text-muted-foreground mb-3 whitespace-pre-wrap">{setup.notes_times}</p>
+                        <p className="text-xs text-muted-foreground whitespace-pre-wrap">{setup.notes_times}</p>
                       )}
                       {user && (
                         <SetupAttachments
