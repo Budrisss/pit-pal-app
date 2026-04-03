@@ -937,7 +937,7 @@ const SessionManagement = () => {
   })();
   // Check if the active session belongs to any of the user's selected run groups
   const activeIsMyGroup = myRunGroups.size > 0 && currentActiveSession
-    ? (currentActiveSession.registrationTypeId ? myRunGroups.has(currentActiveSession.registrationTypeId) : Array.from(myRunGroups).some(gId => currentActiveSession.referenceName === runGroups.find(rg => rg.id === gId)?.name))
+    ? (currentActiveSession.runGroupId ? myRunGroups.has(currentActiveSession.runGroupId) : Array.from(myRunGroups).some(gId => currentActiveSession.referenceName === runGroups.find(rg => rg.id === gId)?.name))
     : myRunGroups.size === 0;
   // Show "my next" countdown even when another group is active
   const showMyNextCountdown = myRunGroups.size > 0 && currentActiveSession && !activeIsMyGroup && countdown;
