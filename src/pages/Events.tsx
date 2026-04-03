@@ -84,10 +84,7 @@ const Events = () => {
         address: eventData.address,
         description: `Track day event at ${eventData.track}. Get ready for an exciting day on the track!`,
       };
-      const newEventId = await addEvent(newEvent);
-      if (newEventId) {
-        await generateChecklistsForEvent(newEventId);
-      }
+      await addEvent(newEvent);
     }
     setEditingEvent(null);
   };
