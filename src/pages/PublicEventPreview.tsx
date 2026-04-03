@@ -76,6 +76,7 @@ const PublicEventPreview = () => {
   const [event, setEvent] = useState<PublicEventData | null>(null);
   const [sessions, setSessions] = useState<EventSession[]>([]);
   const [regTypes, setRegTypes] = useState<RegistrationType[]>([]);
+  const [runGroups, setRunGroups] = useState<{ id: string; name: string }[]>([]);
   const [regCounts, setRegCounts] = useState<Record<string, number>>({});
   const [organizer, setOrganizer] = useState<OrganizerInfo | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
