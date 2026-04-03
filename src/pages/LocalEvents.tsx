@@ -1243,7 +1243,25 @@ const LocalEvents = () => {
                 ) : null;
               })()}
 
-              <div className="space-y-2">
+              {/* Run Group selector */}
+              {registeringEvent.run_groups && registeringEvent.run_groups.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Select Run Group *</Label>
+                  <Select value={selectedRunGroupId} onValueChange={setSelectedRunGroupId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose your run group..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {registeringEvent.run_groups.map(rg => (
+                        <SelectItem key={rg.id} value={rg.id}>
+                          {rg.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
                 <Label>Your Name *</Label>
                 <Input value={regForm.name} onChange={e => setRegForm(p => ({ ...p, name: e.target.value }))} required placeholder="John Doe" />
               </div>
