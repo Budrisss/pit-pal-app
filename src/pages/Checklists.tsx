@@ -109,6 +109,7 @@ const Checklists = () => {
                     onAddItem={(text) => addTemplateItem(template.id, text)}
                     onUpdateItem={updateTemplateItem}
                     onDeleteItem={deleteTemplateItem}
+                    onReorderItems={(orderedIds) => reorderTemplateItems(template.id, orderedIds)}
                     onDelete={() => deleteTemplate(template.id)}
                   />
                 ))}
