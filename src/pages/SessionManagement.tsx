@@ -598,17 +598,17 @@ const SessionManagement = () => {
 
       if (eventRow?.public_event_id) {
         setIsRegisteredEvent(true);
-        const [sessionsRes, regTypesRes] = await Promise.all([
+        const [sessionsRes, runGroupsRes] = await Promise.all([
           (supabase as any)
             .from("public_event_sessions")
             .select("*")
             .eq("event_id", eventRow.public_event_id)
             .order("sort_order", { ascending: true }),
           (supabase as any)
-            .from("registration_types")
+            .from("run_groups")
             .select("id, name")
             .eq("event_id", eventRow.public_event_id)
-            .order("created_at", { ascending: true }),
+            .order("sort_order", { ascending: true }),
         ]);
         const orgSessions = sessionsRes.data;
         if (orgSessions && orgSessions.length > 0) {
