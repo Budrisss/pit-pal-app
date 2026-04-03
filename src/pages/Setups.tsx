@@ -1,14 +1,18 @@
 import { useState, useEffect } from "react";
-import { Wrench, ChevronDown, ChevronUp, Upload, Car, Calendar, Clock } from "lucide-react";
+import { Wrench, ChevronDown, ChevronUp, Upload, Car, Calendar, Clock, MapPin, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { VehicleSetupForm } from "@/components/VehicleSetupForm";
 import Navigation from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import SetupAttachments from "@/components/SetupAttachments";
+import { useToast } from "@/hooks/use-toast";
 
 interface SetupAttachment {
   id: string;
@@ -30,19 +34,117 @@ interface SavedSetup {
   notes_times: string | null;
 }
 
+interface Track {
+  id: string;
+  name: string;
+  city?: string;
+  state?: string;
+}
+
+interface UserCar {
+  id: string;
+  name: string;
+  make?: string;
+  model?: string;
+  year?: number;
+}
+
+interface Event {
+  id: string;
+  name: string;
+  date: string;
+  track_id: string;
+}
+
+interface Session {
+  id: string;
+  name: string;
+  type: string;
+  event_id: string;
+}
+
 const Setups = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [formOpen, setFormOpen] = useState(false);
   const [savedSetups, setSavedSetups] = useState<SavedSetup[]>([]);
   const [allAttachments, setAllAttachments] = useState<SetupAttachment[]>([]);
   const [expandedSetup, setExpandedSetup] = useState<string | null>(null);
 
+  // General setup sheet form state
+  const [sheetName, setSheetName] = useState("");
+  const [sheetTrack, setSheetTrack] = useState("");
+  const [sheetCar, setSheetCar] = useState("");
+  const [sheetEvent, setSheetEvent] = useState("");
+  const [sheetSession, setSheetSession] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  // Selector data
+  const [tracks, setTracks] = useState<Track[]>([]);
+  const [cars, setCars] = useState<UserCar[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
+
   useEffect(() => {
     if (user) {
       fetchSetups();
       fetchAttachments();
+      fetchTracks();
+      fetchCars();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (sheetTrack && sheetCar) {
+      fetchEvents();
+    } else {
+      setEvents([]);
+      setSheetEvent("");
+    }
+  }, [sheetTrack, sheetCar]);
+
+  useEffect(() => {
+    if (sheetEvent) {
+      fetchSessions();
+    } else {
+      setSessions([]);
+      setSheetSession("");
+    }
+  }, [sheetEvent]);
+
+  const fetchTracks = async () => {
+    const { data } = await (supabase as any)
+      .from("tracks")
+      .select("id, name, city, state")
+      .order("name");
+    if (data) setTracks(data);
+  };
+
+  const fetchCars = async () => {
+    const { data } = await (supabase as any)
+      .from("cars")
+      .select("id, name, make, model, year")
+      .order("name");
+    if (data) setCars(data);
+  };
+
+  const fetchEvents = async () => {
+    const { data } = await (supabase as any)
+      .from("events")
+      .select("id, name, date, track_id")
+      .eq("track_id", sheetTrack)
+      .order("date", { ascending: false });
+    if (data) setEvents(data);
+  };
+
+  const fetchSessions = async () => {
+    const { data } = await (supabase as any)
+      .from("sessions")
+      .select("id, name, type, event_id")
+      .eq("event_id", sheetEvent)
+      .order("created_at");
+    if (data) setSessions(data);
+  };
 
   const fetchSetups = async () => {
     if (!user) return;
@@ -64,6 +166,56 @@ const Setups = () => {
     if (data) setAllAttachments(data);
   };
 
+  const handleSaveSetupSheet = async () => {
+    if (!user || !sheetName.trim()) {
+      toast({ title: "Setup name is required", variant: "destructive" });
+      return;
+    }
+
+    setSaving(true);
+    const sessionObj = sessions.find((s) => s.id === sheetSession);
+
+    const { data, error } = await (supabase as any)
+      .from("setup_data")
+      .insert({
+        user_id: user.id,
+        setup_name: sheetName.trim(),
+        car_id: sheetCar || null,
+        event_id: sheetEvent || null,
+        session_id: sheetSession || null,
+        session_name: sessionObj?.name || null,
+      })
+      .select("id")
+      .single();
+
+    setSaving(false);
+
+    if (error) {
+      toast({ title: "Error saving setup", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    // Move any unlinked attachments to this new setup
+    const unlinked = allAttachments.filter((a) => !a.setup_id);
+    if (unlinked.length > 0 && data?.id) {
+      for (const att of unlinked) {
+        await (supabase as any)
+          .from("setup_attachments")
+          .update({ setup_id: data.id })
+          .eq("id", att.id);
+      }
+    }
+
+    toast({ title: "Setup saved", description: "Your setup sheet has been created" });
+    setSheetName("");
+    setSheetTrack("");
+    setSheetCar("");
+    setSheetEvent("");
+    setSheetSession("");
+    fetchSetups();
+    fetchAttachments();
+  };
+
   const generalAttachments = allAttachments.filter((a) => !a.setup_id);
   const getSetupAttachments = (setupId: string) => allAttachments.filter((a) => a.setup_id === setupId);
 
@@ -81,16 +233,109 @@ const Setups = () => {
           </div>
         </div>
 
-        {/* General Upload (unlinked files) */}
+        {/* General Upload with metadata */}
         <Card className="border-border/50">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <Upload size={20} className="text-primary" />
-              General Setup Sheets
+              New Setup Sheet
             </CardTitle>
-            <p className="text-muted-foreground text-xs">Upload images or PDFs not linked to a specific setup</p>
+            <p className="text-muted-foreground text-xs">Upload images or PDFs and link to a car, event & session</p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            {/* Setup Name */}
+            <div className="space-y-2">
+              <Label>Setup Name</Label>
+              <Input
+                placeholder="e.g., Dry Weather Setup"
+                value={sheetName}
+                onChange={(e) => setSheetName(e.target.value)}
+              />
+            </div>
+
+            {/* Track & Car row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Track</Label>
+                <Select value={sheetTrack} onValueChange={setSheetTrack}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select track" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {tracks.map((track) => (
+                      <SelectItem key={track.id} value={track.id}>
+                        <div className="flex items-center gap-2">
+                          <MapPin size={14} />
+                          {track.name} {track.city && `- ${track.city}, ${track.state}`}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Car</Label>
+                <Select value={sheetCar} onValueChange={setSheetCar}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select car" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cars.map((car) => (
+                      <SelectItem key={car.id} value={car.id}>
+                        <div className="flex items-center gap-2">
+                          <Car size={14} />
+                          {car.name} {car.year && car.make && `(${car.year} ${car.make} ${car.model})`}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Event & Session row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Event</Label>
+                <Select value={sheetEvent} onValueChange={setSheetEvent} disabled={!sheetTrack || !sheetCar}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={sheetTrack && sheetCar ? "Select event" : "Select track & car first"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {events.map((event) => (
+                      <SelectItem key={event.id} value={event.id}>
+                        <div className="flex items-center gap-2">
+                          <Calendar size={14} />
+                          {event.name} - {new Date(event.date).toLocaleDateString()}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Session</Label>
+                <Select value={sheetSession} onValueChange={setSheetSession} disabled={!sheetEvent}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={sheetEvent ? "Select session" : "Select event first"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sessions.map((session) => (
+                      <SelectItem key={session.id} value={session.id}>
+                        <div className="flex items-center gap-2">
+                          <Clock size={14} />
+                          {session.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* File upload */}
             {user && (
               <SetupAttachments
                 attachments={generalAttachments}
@@ -99,6 +344,16 @@ const Setups = () => {
                 onChanged={fetchAttachments}
               />
             )}
+
+            {/* Save button */}
+            <Button
+              onClick={handleSaveSetupSheet}
+              disabled={saving || !sheetName.trim()}
+              className="w-full"
+            >
+              <Save size={16} className="mr-2" />
+              {saving ? "Saving..." : "Save Setup Sheet"}
+            </Button>
           </CardContent>
         </Card>
 
