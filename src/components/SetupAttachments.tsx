@@ -85,6 +85,14 @@ const SetupAttachments = ({ attachments, setupId, userId, onChanged, compact }: 
   };
 
   const isImage = (type: string | null) => type?.startsWith("image/");
+  const isPdf = (type: string | null) => type === "application/pdf";
+
+  const [previewType, setPreviewType] = useState<"image" | "pdf">("image");
+
+  const openPreview = (url: string, type: string | null) => {
+    setPreviewType(isPdf(type) ? "pdf" : "image");
+    setPreviewUrl(url);
+  };
 
   return (
     <div className="space-y-3">
@@ -116,23 +124,21 @@ const SetupAttachments = ({ attachments, setupId, userId, onChanged, compact }: 
                   src={att.file_url}
                   alt={att.file_name}
                   className="w-full h-24 object-cover cursor-pointer"
-                  onClick={() => setPreviewUrl(att.file_url)}
+                  onClick={() => openPreview(att.file_url, att.file_type)}
                 />
               ) : (
                 <div
                   className="w-full h-24 flex flex-col items-center justify-center cursor-pointer gap-1"
-                  onClick={() => window.open(att.file_url, "_blank")}
+                  onClick={() => openPreview(att.file_url, att.file_type)}
                 >
                   <FileText size={24} className="text-primary" />
                   <span className="text-[10px] text-muted-foreground truncate max-w-[90%] px-1">{att.file_name}</span>
                 </div>
               )}
               <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                {isImage(att.file_type) && (
-                  <button onClick={() => setPreviewUrl(att.file_url)} className="bg-background/80 rounded-full p-1">
-                    <Eye size={12} className="text-foreground" />
-                  </button>
-                )}
+                <button onClick={() => openPreview(att.file_url, att.file_type)} className="bg-background/80 rounded-full p-1">
+                  <Eye size={12} className="text-foreground" />
+                </button>
                 <button onClick={() => handleDelete(att)} className="bg-destructive/80 rounded-full p-1">
                   <X size={12} className="text-destructive-foreground" />
                 </button>
@@ -148,8 +154,25 @@ const SetupAttachments = ({ attachments, setupId, userId, onChanged, compact }: 
           <DialogHeader>
             <DialogTitle>Setup Sheet</DialogTitle>
           </DialogHeader>
-          {previewUrl && (
+          {previewUrl && previewType === "image" && (
             <img src={previewUrl} alt="Setup preview" className="w-full h-auto max-h-[75vh] object-contain rounded" />
+          )}
+          {previewUrl && previewType === "pdf" && (
+            <div className="flex flex-col gap-2">
+              <iframe
+                src={previewUrl}
+                className="w-full h-[70vh] rounded border border-border/50"
+                title="PDF Preview"
+              />
+              <a
+                href={previewUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-primary underline text-center"
+              >
+                Open PDF in new tab
+              </a>
+            </div>
           )}
         </DialogContent>
       </Dialog>
