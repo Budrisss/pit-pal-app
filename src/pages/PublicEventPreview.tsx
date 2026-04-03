@@ -103,12 +103,13 @@ const PublicEventPreview = () => {
     if (!id) return;
     const fetchAll = async () => {
       setLoading(true);
-      const [{ data: eventData }, { data: sessData }, { data: rtData }, { data: regsData }, { data: annData }] = await Promise.all([
+      const [{ data: eventData }, { data: sessData }, { data: rtData }, { data: regsData }, { data: annData }, { data: rgData }] = await Promise.all([
         supabase.from("public_events").select("*").eq("id", id).single(),
         supabase.from("public_event_sessions").select("*").eq("event_id", id).order("sort_order"),
         supabase.from("registration_types").select("*").eq("event_id", id),
         supabase.from("event_registrations").select("registration_type_id").eq("event_id", id),
         supabase.from("event_announcements").select("id, message, created_at").eq("event_id", id).order("created_at", { ascending: false }),
+        (supabase as any).from("run_groups").select("id, name").eq("event_id", id).order("sort_order"),
       ]);
 
       if (eventData) {
