@@ -197,17 +197,70 @@ const RegistrationTypesEditor = ({
   );
 };
 
+const emptyRunGroup = (): RunGroup => ({ name: '', sort_order: 0 });
+
+const RunGroupsEditor = ({
+  groups,
+  onChange,
+}: {
+  groups: RunGroup[];
+  onChange: (groups: RunGroup[]) => void;
+}) => {
+  const addGroup = () => onChange([...groups, { ...emptyRunGroup(), sort_order: groups.length }]);
+  const removeGroup = (i: number) => onChange(groups.filter((_, idx) => idx !== i));
+  const updateGroup = (i: number, value: string) => {
+    const updated = [...groups];
+    updated[i] = { ...updated[i], name: value };
+    onChange(updated);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <Label className="flex items-center gap-1.5">
+          <Users size={14} /> Run Groups
+        </Label>
+        <Button type="button" variant="outline" size="sm" onClick={addGroup}>
+          <Plus size={14} className="mr-1" /> Add Run Group
+        </Button>
+      </div>
+      {groups.length === 0 && (
+        <p className="text-xs text-muted-foreground italic">No run groups yet. Add groups like "Beginner", "Intermediate", "Advanced" to assign to sessions.</p>
+      )}
+      {groups.map((rg, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <Input
+            value={rg.name}
+            onChange={e => updateGroup(i, e.target.value)}
+            placeholder={`e.g. Group ${String.fromCharCode(65 + i)}`}
+            className="h-8 text-sm flex-1"
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+            onClick={() => removeGroup(i)}
+          >
+            <X size={14} />
+          </Button>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const emptySession = (): EventSession => ({ run_group_id: null, registration_type_id: null, name: '', start_time: '', duration_minutes: null, sort_order: 0 });
 
 const SessionsEditor = ({
   sessions,
   onChange,
-  registrationTypes,
+  runGroups,
   defaultDuration = null,
 }: {
   sessions: EventSession[];
   onChange: (sessions: EventSession[]) => void;
-  registrationTypes: RegistrationType[];
+  runGroups: RunGroup[];
   defaultDuration?: number | null;
 }) => {
   const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
@@ -272,17 +325,17 @@ const SessionsEditor = ({
             <div className="space-y-1">
               <Label className="text-xs">Run Group</Label>
               <Select
-                value={s.registration_type_id || 'none'}
-                onValueChange={v => updateSession(i, 'registration_type_id', v === 'none' ? null : v)}
+                value={s.run_group_id || 'none'}
+                onValueChange={v => updateSession(i, 'run_group_id', v === 'none' ? null : v)}
               >
                 <SelectTrigger className="h-8 text-sm">
                   <SelectValue placeholder="All groups" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">All groups</SelectItem>
-                  {registrationTypes.filter(rt => rt.name.trim()).map((rt, idx) => (
-                    <SelectItem key={rt.id || `new-${idx}`} value={rt.id || `new-${idx}`}>
-                      {rt.name}
+                  {runGroups.filter(rg => rg.name.trim()).map((rg, idx) => (
+                    <SelectItem key={rg.id || `new-${idx}`} value={rg.id || `new-${idx}`}>
+                      {rg.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
