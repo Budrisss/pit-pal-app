@@ -622,7 +622,7 @@ const OrganizerLiveManage = () => {
       const start = new Date(evDate);
       start.setHours(h, m, 0, 0);
       const diffMs = differenceInMilliseconds(start, currentTime);
-      if (diffMs <= 0) return { hours: 0, minutes: 0, seconds: 0, isBufferZone: true, sessionName: next.name, runGroup: getRunGroupName(next.registration_type_id) };
+      if (diffMs <= 0) return { hours: 0, minutes: 0, seconds: 0, isBufferZone: true, sessionName: next.name, runGroup: getRunGroupName(next.run_group_id) };
       const hrs = Math.floor(diffMs / 3600000);
       const mins = Math.floor((diffMs % 3600000) / 60000);
       const secs = Math.floor((diffMs % 60000) / 1000);
