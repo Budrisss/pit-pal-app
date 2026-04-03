@@ -50,6 +50,7 @@ interface Event {
   date: string;
   track_id: string;
   address?: string;
+  trackName?: string;
 }
 
 interface Session {
@@ -95,7 +96,7 @@ const Setups = () => {
       fetchSessions();
       // Resolve track name from event
       const evt = userEvents.find((e) => e.id === sheetEvent);
-      setResolvedTrack(evt?.address || "");
+      setResolvedTrack(evt?.trackName || evt?.address || "");
     } else {
       setSessions([]);
       setSheetSession("");
@@ -115,10 +116,15 @@ const Setups = () => {
     if (!user) return;
     const { data } = await (supabase as any)
       .from("events")
-      .select("id, name, date, track_id, address")
+      .select("id, name, date, track_id, address, track_name:tracks(name)")
       .eq("user_id", user.id)
       .order("date", { ascending: false });
-    if (data) setUserEvents(data);
+    if (data) {
+      setUserEvents(data.map((row: any) => ({
+        ...row,
+        trackName: row.track_name?.name || row.address || "",
+      })));
+    }
   };
 
   const fetchSessions = async () => {
@@ -406,10 +412,10 @@ const Setups = () => {
                             <span>{setupEvent.name} - {new Date(setupEvent.date).toLocaleDateString()}</span>
                           </div>
                         )}
-                        {setupEvent?.address && (
+                        {(setupEvent?.trackName || setupEvent?.address) && (
                           <div className="flex items-center gap-1.5 text-muted-foreground col-span-2">
                             <MapPin size={12} className="text-primary shrink-0" />
-                            <span>{setupEvent.address}</span>
+                            <span>{setupEvent.trackName || setupEvent.address}</span>
                           </div>
                         )}
                         {setup.fastest_lap_time && (
