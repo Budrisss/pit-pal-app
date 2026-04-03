@@ -331,7 +331,7 @@ const Setups = () => {
         {/* Header */}
         <div className="flex justify-between items-center pt-2">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="size-8" onClick={() => navigate('/garage')}>
+            <Button variant="glass" size="icon" className="size-8" onClick={() => navigate('/garage')}>
               <ArrowLeft size={18} />
             </Button>
             <div>

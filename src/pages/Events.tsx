@@ -115,7 +115,7 @@ const Events = () => {
         {/* Header */}
         <div className="flex justify-between items-center pt-2">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="size-8" onClick={() => navigate('/dashboard')}>
+            <Button variant="glass" size="icon" className="size-8" onClick={() => navigate('/dashboard')}>
               <ArrowLeft size={18} />
             </Button>
             <div>

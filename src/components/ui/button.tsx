@@ -20,6 +20,7 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
         pulse: "bg-gradient-pulse text-primary-foreground hover:shadow-glow transform hover:scale-105",
         orange: "bg-pulse-orange text-primary-foreground hover:bg-pulse-orange/90 shadow-pulse",
+        glass: "bg-white/10 backdrop-blur-md border border-white/20 text-foreground hover:bg-white/20 shadow-lg",
       },
       size: {
         default: "h-10 px-4 py-2",
