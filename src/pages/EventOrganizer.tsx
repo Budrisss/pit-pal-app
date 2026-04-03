@@ -55,8 +55,15 @@ interface RegistrationType {
   max_spots: number | null;
 }
 
+interface RunGroup {
+  id?: string;
+  name: string;
+  sort_order: number;
+}
+
 interface EventSession {
   id?: string;
+  run_group_id: string | null;
   registration_type_id: string | null;
   name: string;
   start_time: string;
