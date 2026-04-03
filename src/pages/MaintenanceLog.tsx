@@ -184,6 +184,19 @@ const MaintenanceLog = () => {
         return;
       }
       logId = editingRecord.id;
+
+      // Remove attachments marked for deletion
+      for (const attId of removedAttachmentIds) {
+        const att = editingRecord.attachments.find((a) => a.id === attId);
+        if (att) {
+          // Extract storage path from URL
+          const urlParts = att.file_url.split("/maintenance-attachments/");
+          if (urlParts[1]) {
+            await supabase.storage.from("maintenance-attachments").remove([decodeURIComponent(urlParts[1])]);
+          }
+          await (supabase as any).from("maintenance_attachments").delete().eq("id", attId).eq("user_id", user.id);
+        }
+      }
     } else {
       // Insert new
       const { data: log, error } = await (supabase as any)
