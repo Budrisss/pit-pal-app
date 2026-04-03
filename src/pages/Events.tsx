@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Calendar, Timer, MapPin, Clock, Flag } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { Plus, Calendar, Timer, MapPin, Clock, Flag, ArrowLeft } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
