@@ -23,6 +23,7 @@ import DesktopNavigation from "@/components/DesktopNavigation";
 interface EventSession {
   id?: string;
   registration_type_id: string | null;
+  run_group_id: string | null;
   name: string;
   start_time: string;
   duration_minutes: number | null;
@@ -56,6 +57,7 @@ interface EventRegistrationWithCar {
   user_name: string;
   car_number: number | null;
   registration_type_id: string;
+  run_group_id: string | null;
 }
 
 const OrganizerLiveManage = () => {
@@ -68,7 +70,7 @@ const OrganizerLiveManage = () => {
   const [eventName, setEventName] = useState("");
   const [eventDate, setEventDate] = useState("");
   const [sessions, setSessions] = useState<EventSession[]>([]);
-  const [registrationTypes, setRegistrationTypes] = useState<RegistrationType[]>([]);
+  const [registrationTypes, setRegistrationTypes] = useState<RegistrationType[]>([]); // run groups for display
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [newAnnouncement, setNewAnnouncement] = useState("");
   const [postingAnnouncement, setPostingAnnouncement] = useState(false);
@@ -111,9 +113,9 @@ const OrganizerLiveManage = () => {
       const [eventRes, sessRes, regTypesRes, annRes, regsRes, flagsRes, flagHistoryRes] = await Promise.all([
         supabase.from("public_events").select("name, organizer_id, date").eq("id", eventId).single(),
         supabase.from("public_event_sessions").select("*").eq("event_id", eventId).order("sort_order"),
-        supabase.from("registration_types").select("id, name").eq("event_id", eventId),
+        (supabase as any).from("run_groups").select("id, name").eq("event_id", eventId).order("sort_order"),
         supabase.from("event_announcements").select("id, message, created_at").eq("event_id", eventId).order("created_at", { ascending: false }),
-        supabase.from("event_registrations").select("id, user_id, user_name, car_number, registration_type_id").eq("event_id", eventId),
+        supabase.from("event_registrations").select("id, user_id, user_name, car_number, registration_type_id, run_group_id").eq("event_id", eventId),
         supabase.from("event_flags").select("*").eq("event_id", eventId).eq("is_active", true),
         supabase.from("event_flags").select("*").eq("event_id", eventId).eq("is_active", false).not("session_id", "is", null).order("created_at", { ascending: true }),
       ]);
@@ -126,6 +128,7 @@ const OrganizerLiveManage = () => {
         (sessRes.data || []).map((s: any) => ({
           id: s.id,
           registration_type_id: s.registration_type_id,
+          run_group_id: s.run_group_id,
           name: s.name,
           start_time: s.start_time || "",
           duration_minutes: s.duration_minutes,
@@ -170,6 +173,7 @@ const OrganizerLiveManage = () => {
                   data.map((s: any) => ({
                     id: s.id,
                     registration_type_id: s.registration_type_id,
+                    run_group_id: s.run_group_id,
                     name: s.name,
                     start_time: s.start_time || "",
                     duration_minutes: s.duration_minutes,
@@ -322,7 +326,7 @@ const OrganizerLiveManage = () => {
     const reg = blueFlagTarget === "all" ? null : registrations.find(r => r.id === blueFlagTarget);
     const targetUserId = reg?.user_id || null;
     const carLabel = reg?.car_number ? `Car #${reg.car_number}` : "";
-    const groupName = reg ? (registrationTypes.find(rt => rt.id === reg.registration_type_id)?.name || "") : "";
+    const groupName = reg ? (registrationTypes.find(rt => rt.id === reg.run_group_id)?.name || "") : "";
     const fullMessage = [carLabel, groupName, blueFlagMessage.trim()].filter(Boolean).join(" — ") || "Faster traffic approaching";
     const { error } = await supabase.from("event_flags").insert({
       event_id: eventId,
@@ -391,7 +395,7 @@ const OrganizerLiveManage = () => {
         .neq("flag_type", "yellow_turn")
         .neq("flag_type", "blue");
     }
-    const groupName = reg ? (registrationTypes.find(rt => rt.id === reg.registration_type_id)?.name || "") : "";
+    const groupName = reg ? (registrationTypes.find(rt => rt.id === reg.run_group_id)?.name || "") : "";
     const messagePrefix = reg?.car_number ? `Car #${reg.car_number}` : null;
     const fullMessage = [messagePrefix, groupName, blackFlagMessage.trim()].filter(Boolean).join(" — ") || null;
     const { error } = await supabase.from("event_flags").insert({
@@ -421,9 +425,9 @@ const OrganizerLiveManage = () => {
     toast({ title: "All flags cleared" });
   };
 
-  const getRunGroupName = (regTypeId: string | null) => {
-    if (!regTypeId) return "All groups";
-    return registrationTypes.find((rt) => rt.id === regTypeId)?.name || "Unknown";
+  const getRunGroupName = (runGroupId: string | null) => {
+    if (!runGroupId) return "All groups";
+    return registrationTypes.find((rt) => rt.id === runGroupId)?.name || "Unknown";
   };
 
   const orderedSessions = useMemo(
@@ -508,15 +512,15 @@ const OrganizerLiveManage = () => {
   const isLocalCaution = (f: EventFlag) => f.flag_type === "yellow_turn" || (f.flag_type === "blue" && !isBlueExpired(f)) || (f.flag_type === "black" && f.target_user_id);
 
   const activeSession = sessionStates.find((s) => s.state === "active");
-  const activeSessionRegTypeId = activeSession?.registration_type_id || null;
+  const activeSessionRunGroupId = activeSession?.run_group_id || null;
   const activeSessionIdRef = useRef<string | null>(null);
   activeSessionIdRef.current = activeSession?.id || null;
 
   // Helper: filter registrations by group
   const getFilteredRegistrations = (filter: "active" | "all", search: string) => {
     let filtered = registrations;
-    if (filter === "active" && activeSessionRegTypeId) {
-      filtered = filtered.filter(r => r.registration_type_id === activeSessionRegTypeId);
+    if (filter === "active" && activeSessionRunGroupId) {
+      filtered = filtered.filter(r => r.run_group_id === activeSessionRunGroupId);
     }
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -529,7 +533,9 @@ const OrganizerLiveManage = () => {
   const groupRegistrationsByType = (regs: EventRegistrationWithCar[]) => {
     const groups: Record<string, EventRegistrationWithCar[]> = {};
     for (const r of regs) {
-      const groupName = registrationTypes.find(rt => rt.id === r.registration_type_id)?.name || "Unknown";
+      const groupName = r.run_group_id
+        ? (registrationTypes.find(rt => rt.id === r.run_group_id)?.name || "Unknown")
+        : "No Run Group";
       if (!groups[groupName]) groups[groupName] = [];
       groups[groupName].push(r);
     }
@@ -618,15 +624,15 @@ const OrganizerLiveManage = () => {
       const start = new Date(evDate);
       start.setHours(h, m, 0, 0);
       const diffMs = differenceInMilliseconds(start, currentTime);
-      if (diffMs <= 0) return { hours: 0, minutes: 0, seconds: 0, isBufferZone: true, sessionName: next.name, runGroup: getRunGroupName(next.registration_type_id) };
+      if (diffMs <= 0) return { hours: 0, minutes: 0, seconds: 0, isBufferZone: true, sessionName: next.name, runGroup: getRunGroupName(next.run_group_id) };
       const hrs = Math.floor(diffMs / 3600000);
       const mins = Math.floor((diffMs % 3600000) / 60000);
       const secs = Math.floor((diffMs % 60000) / 1000);
       const isBufferZone = diffMs <= 5 * 60 * 1000;
-      return { hours: hrs, minutes: mins, seconds: secs, isBufferZone, sessionName: next.name, runGroup: getRunGroupName(next.registration_type_id) };
+      return { hours: hrs, minutes: mins, seconds: secs, isBufferZone, sessionName: next.name, runGroup: getRunGroupName(next.run_group_id) };
     }
     // No start_time — just show the session name without countdown
-    return { hours: 0, minutes: 0, seconds: 0, isBufferZone: false, sessionName: next.name, runGroup: getRunGroupName(next.registration_type_id) };
+    return { hours: 0, minutes: 0, seconds: 0, isBufferZone: false, sessionName: next.name, runGroup: getRunGroupName(next.run_group_id) };
   }, [sessionStates, eventDate, currentTime]);
 
   if (loading) {
@@ -687,7 +693,7 @@ const OrganizerLiveManage = () => {
                 <div>
                   <p className="text-lg font-bold text-foreground">{activeSession.name}</p>
                   <p className="text-sm text-muted-foreground">
-                    {getRunGroupName(activeSession.registration_type_id)} • Started at {activeSession.start_time}
+                    {getRunGroupName(activeSession.run_group_id)} • Started at {activeSession.start_time}
                   </p>
                 </div>
               </div>
@@ -1024,7 +1030,7 @@ const OrganizerLiveManage = () => {
                             className="h-8 text-sm font-medium"
                           />
                           <Badge variant="outline" className="text-[10px] shrink-0">
-                            {getRunGroupName(s.registration_type_id)}
+                            {getRunGroupName(s.run_group_id)}
                           </Badge>
                         </div>
                         <div className="grid grid-cols-3 gap-2">
@@ -1056,11 +1062,11 @@ const OrganizerLiveManage = () => {
                           <div className="space-y-1">
                             <Label className="text-xs">Run Group</Label>
                             <Select
-                              value={s.registration_type_id || "none"}
+                              value={s.run_group_id || "none"}
                               onValueChange={(v) =>
                                 handleUpdateSession(
                                   s.id!,
-                                  "registration_type_id",
+                                  "run_group_id",
                                   v === "none" ? null : v
                                 )
                               }
@@ -1137,7 +1143,7 @@ const OrganizerLiveManage = () => {
                               <ChevronRight size={14} className={`transition-transform ${isExpanded ? "rotate-90" : ""}`} />
                               <span className="text-sm font-medium">{session.name}</span>
                               <Badge variant="outline" className="text-[10px]">
-                                {getRunGroupName(session.registration_type_id)}
+                                {getRunGroupName(session.run_group_id)}
                               </Badge>
                               <Badge variant={session.state === "active" ? "default" : "secondary"} className="text-[10px]">
                                 {session.state === "active" ? "Active" : session.state === "completed" ? "Completed" : "Upcoming"}
@@ -1264,7 +1270,7 @@ const OrganizerLiveManage = () => {
                   </button>
                 </div>
               </div>
-              {blackFlagGroupFilter === "active" && !activeSessionRegTypeId && (
+              {blackFlagGroupFilter === "active" && !activeSessionRunGroupId && (
                 <p className="text-[10px] text-muted-foreground italic">No active session — showing all drivers</p>
               )}
               <Input
@@ -1293,7 +1299,7 @@ const OrganizerLiveManage = () => {
                         <div className="px-3 py-1.5 bg-muted/60 sticky top-0">
                           <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                             {groupName}
-                            {activeSessionRegTypeId && regs[0]?.registration_type_id === activeSessionRegTypeId && (
+                            {activeSessionRunGroupId && regs[0]?.run_group_id === activeSessionRunGroupId && (
                               <Badge variant="default" className="ml-2 text-[8px] px-1 py-0">Active</Badge>
                             )}
                           </span>
@@ -1323,7 +1329,7 @@ const OrganizerLiveManage = () => {
                       <div className="flex items-center justify-between">
                         <p className="text-sm font-medium">#{r.car_number} — {r.user_name}</p>
                         <Badge variant="outline" className="text-[10px]">
-                          {registrationTypes.find(rt => rt.id === r.registration_type_id)?.name || "—"}
+                          {registrationTypes.find(rt => rt.id === r.run_group_id)?.name || "—"}
                         </Badge>
                       </div>
                     </div>
@@ -1424,7 +1430,7 @@ const OrganizerLiveManage = () => {
                   </button>
                 </div>
               </div>
-              {blueFlagGroupFilter === "active" && !activeSessionRegTypeId && (
+              {blueFlagGroupFilter === "active" && !activeSessionRunGroupId && (
                 <p className="text-[10px] text-muted-foreground italic">No active session — showing all drivers</p>
               )}
               <Input
@@ -1451,7 +1457,7 @@ const OrganizerLiveManage = () => {
                         <div className="px-3 py-1.5 bg-muted/60 sticky top-0">
                           <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                             {groupName}
-                            {activeSessionRegTypeId && regs[0]?.registration_type_id === activeSessionRegTypeId && (
+                            {activeSessionRunGroupId && regs[0]?.run_group_id === activeSessionRunGroupId && (
                               <Badge variant="default" className="ml-2 text-[8px] px-1 py-0">Active</Badge>
                             )}
                           </span>
@@ -1480,7 +1486,7 @@ const OrganizerLiveManage = () => {
                       {r.car_number && <Badge variant="outline" className="font-mono text-[10px]">#{r.car_number}</Badge>}
                       <span className="text-sm">{r.user_name}</span>
                       <Badge variant="outline" className="text-[10px] ml-auto">
-                        {registrationTypes.find(rt => rt.id === r.registration_type_id)?.name || "—"}
+                        {registrationTypes.find(rt => rt.id === r.run_group_id)?.name || "—"}
                       </Badge>
                     </div>
                   ));

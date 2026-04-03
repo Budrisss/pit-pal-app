@@ -31,6 +31,7 @@ interface EventSession {
   duration_minutes: number | null;
   sort_order: number;
   registration_type_id: string | null;
+  run_group_id: string | null;
 }
 
 const FLAG_CONFIG: Record<string, { bg: string; text: string; label: string; textColor: string }> = {
@@ -146,7 +147,7 @@ const RacerLiveView = () => {
       supabase.from("public_event_sessions").select("*").eq("event_id", eventId).order("sort_order"),
       supabase.from("event_flags").select("*").eq("event_id", eventId).eq("is_active", true),
       supabase.from("event_announcements").select("id, message, created_at").eq("event_id", eventId).order("created_at", { ascending: false }).limit(10),
-      user ? supabase.from("event_registrations").select("registration_type_id, car_number").eq("event_id", eventId).eq("user_id", user.id) : Promise.resolve({ data: null }),
+      user ? supabase.from("event_registrations").select("run_group_id, car_number").eq("event_id", eventId).eq("user_id", user.id) : Promise.resolve({ data: null }),
     ]);
     if (eventRes.data) {
       setEventName(eventRes.data.name);
@@ -164,7 +165,7 @@ const RacerLiveView = () => {
     const storedIds = await readRunGroupsFromStorage();
 
     // If no saved selection exists, fall back to all registered group IDs
-    const fallbackIds = registrations?.map((r: any) => String(r.registration_type_id)).filter(Boolean) || [];
+    const fallbackIds = registrations?.map((r: any) => String(r.run_group_id)).filter((v: string) => v && v !== 'null') || [];
     const effectiveIds = storedIds.length > 0 ? storedIds : fallbackIds;
 
     if (storedIds.length === 0 && fallbackIds.length > 0) {
@@ -173,7 +174,7 @@ const RacerLiveView = () => {
 
     // Set display name from first selected group
     if (effectiveIds.length > 0) {
-      const { data: rtData } = await supabase.from("registration_types").select("name").eq("id", effectiveIds[0]).single();
+      const { data: rtData } = await (supabase as any).from("run_groups").select("name").eq("id", effectiveIds[0]).single();
       if (rtData) setRegTypeName(rtData.name);
     }
 
@@ -372,7 +373,7 @@ const RacerLiveView = () => {
   // Placed before primaryFlag so synthetic green can use it
   const myActiveSession = useMemo(() => {
     if (userRegTypeIds.size === 0) return null;
-    return sessionStates.find(s => s.state === "active" && s.registration_type_id && userRegTypeIds.has(s.registration_type_id)) || null;
+    return sessionStates.find(s => s.state === "active" && s.run_group_id && userRegTypeIds.has(s.run_group_id)) || null;
   }, [sessionStates, userRegTypeIds]);
 
   // Determine the highest-priority flag to display (excluding accepted targeted black flags)
@@ -489,7 +490,7 @@ const RacerLiveView = () => {
   const myNextSession = useMemo(() => {
     if (userRegTypeIds.size === 0) return null;
     // First upcoming session by sort_order that matches the user's run group
-    return sessionStates.find(s => s.state === "upcoming" && s.registration_type_id && userRegTypeIds.has(s.registration_type_id)) || null;
+    return sessionStates.find(s => s.state === "upcoming" && s.run_group_id && userRegTypeIds.has(s.run_group_id)) || null;
   }, [sessionStates, userRegTypeIds]);
 
   const myNextCountdown = useMemo(() => {

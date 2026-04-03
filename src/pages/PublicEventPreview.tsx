@@ -30,6 +30,7 @@ interface RegistrationType {
 interface EventSession {
   id: string;
   registration_type_id: string | null;
+  run_group_id: string | null;
   name: string;
   start_time: string | null;
   duration_minutes: number | null;
@@ -75,6 +76,7 @@ const PublicEventPreview = () => {
   const [event, setEvent] = useState<PublicEventData | null>(null);
   const [sessions, setSessions] = useState<EventSession[]>([]);
   const [regTypes, setRegTypes] = useState<RegistrationType[]>([]);
+  const [runGroups, setRunGroups] = useState<{ id: string; name: string }[]>([]);
   const [regCounts, setRegCounts] = useState<Record<string, number>>({});
   const [organizer, setOrganizer] = useState<OrganizerInfo | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -101,12 +103,13 @@ const PublicEventPreview = () => {
     if (!id) return;
     const fetchAll = async () => {
       setLoading(true);
-      const [{ data: eventData }, { data: sessData }, { data: rtData }, { data: regsData }, { data: annData }] = await Promise.all([
+      const [{ data: eventData }, { data: sessData }, { data: rtData }, { data: regsData }, { data: annData }, { data: rgData }] = await Promise.all([
         supabase.from("public_events").select("*").eq("id", id).single(),
         supabase.from("public_event_sessions").select("*").eq("event_id", id).order("sort_order"),
         supabase.from("registration_types").select("*").eq("event_id", id),
         supabase.from("event_registrations").select("registration_type_id").eq("event_id", id),
         supabase.from("event_announcements").select("id, message, created_at").eq("event_id", id).order("created_at", { ascending: false }),
+        (supabase as any).from("run_groups").select("id, name").eq("event_id", id).order("sort_order"),
       ]);
 
       if (eventData) {
@@ -120,6 +123,7 @@ const PublicEventPreview = () => {
       }
       setSessions((sessData as EventSession[]) || []);
       setRegTypes((rtData as RegistrationType[]) || []);
+      setRunGroups((rgData as { id: string; name: string }[]) || []);
       setAnnouncements((annData as Announcement[]) || []);
 
       if (regsData) {
@@ -332,9 +336,9 @@ const PublicEventPreview = () => {
     );
   }
 
-  const getGroupName = (regTypeId: string | null) => {
-    if (!regTypeId) return null;
-    return regTypes.find((rt) => rt.id === regTypeId)?.name || null;
+  const getGroupName = (runGroupId: string | null) => {
+    if (!runGroupId) return null;
+    return runGroups.find((rg) => rg.id === runGroupId)?.name || null;
   };
 
   const totalRegistered = Object.values(regCounts).reduce((a, b) => a + b, 0);
@@ -578,7 +582,7 @@ const PublicEventPreview = () => {
               <CardContent className="p-0">
                 <div className="divide-y divide-border">
                   {sessions.map((s, idx) => {
-                    const groupName = getGroupName(s.registration_type_id);
+                    const groupName = getGroupName(s.run_group_id);
                     return (
                       <div
                         key={s.id || idx}
