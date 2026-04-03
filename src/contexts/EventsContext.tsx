@@ -61,6 +61,8 @@ const mapDbRowToEvent = (row: any): Event => {
     address: row.address || "",
     description: row.description || undefined,
     publicEventId: row.public_event_id || null,
+    schedule: row.schedule || undefined,
+    requirements: row.requirements || undefined,
   };
 };
 
