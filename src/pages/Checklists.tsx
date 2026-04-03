@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { Plus, CheckSquare } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Plus, CheckSquare, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ChecklistCard from "@/components/ChecklistCard";
 import Navigation from "@/components/Navigation";
 
 const Checklists = () => {
+  const navigate = useNavigate();
   const [checklists, setChecklists] = useState([
     {
       id: "1",
@@ -71,12 +73,17 @@ const Checklists = () => {
       <div className="p-4 space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center pt-2">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <CheckSquare className="text-primary" />
-              Checklists
-            </h1>
-            <p className="text-muted-foreground text-sm">Stay organized for track events</p>
+          <div className="flex items-center gap-3">
+            <Button variant="glass" size="icon" className="size-8" onClick={() => navigate('/dashboard')}>
+              <ArrowLeft size={18} />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                <CheckSquare className="text-primary" />
+                Checklists
+              </h1>
+              <p className="text-muted-foreground text-sm">Stay organized for track events</p>
+            </div>
           </div>
           <Button variant="pulse" size="sm" onClick={() => console.log('New Checklist clicked')}>
             <Plus size={16} />
