@@ -627,7 +627,7 @@ const OrganizerLiveManage = () => {
       const mins = Math.floor((diffMs % 3600000) / 60000);
       const secs = Math.floor((diffMs % 60000) / 1000);
       const isBufferZone = diffMs <= 5 * 60 * 1000;
-      return { hours: hrs, minutes: mins, seconds: secs, isBufferZone, sessionName: next.name, runGroup: getRunGroupName(next.registration_type_id) };
+      return { hours: hrs, minutes: mins, seconds: secs, isBufferZone, sessionName: next.name, runGroup: getRunGroupName(next.run_group_id) };
     }
     // No start_time — just show the session name without countdown
     return { hours: 0, minutes: 0, seconds: 0, isBufferZone: false, sessionName: next.name, runGroup: getRunGroupName(next.registration_type_id) };
