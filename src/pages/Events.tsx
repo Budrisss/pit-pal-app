@@ -114,12 +114,17 @@ const Events = () => {
       <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center pt-2">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <Calendar className="text-primary" />
-              Track Events
-            </h1>
-            <p className="text-muted-foreground text-sm">Manage your motorsport schedule</p>
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="size-8" onClick={() => navigate('/dashboard')}>
+              <ArrowLeft size={18} />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                <Calendar className="text-primary" />
+                Track Events
+              </h1>
+              <p className="text-muted-foreground text-sm">Manage your motorsport schedule</p>
+            </div>
           </div>
           <Button variant="pulse" size="sm" onClick={handleNewEvent}>
             <Plus size={16} />
