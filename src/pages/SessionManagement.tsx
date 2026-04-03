@@ -703,10 +703,12 @@ const SessionManagement = () => {
           }
           const regMap: Record<string, { carNumber: number | null; carName: string | null }> = {};
           for (const r of regData as any[]) {
-            regMap[r.registration_type_id] = {
-              carNumber: r.car_number,
-              carName: r.car_id ? carMap[r.car_id] || null : null,
-            };
+            if (r.run_group_id) {
+              regMap[r.run_group_id] = {
+                carNumber: r.car_number,
+                carName: r.car_id ? carMap[r.car_id] || null : null,
+              };
+            }
           }
           setUserRegMap(regMap);
         }
