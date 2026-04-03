@@ -462,6 +462,22 @@ const Setups = () => {
           </CardContent>
         </Card>
 
+        {/* Collapsible Chassis Setup Form */}
+        <Collapsible open={formOpen} onOpenChange={setFormOpen}>
+          <CollapsibleTrigger asChild>
+            <Button variant="outline" className="w-full flex justify-between items-center">
+              <span className="flex items-center gap-2">
+                <Wrench size={16} className="text-primary" />
+                Chassis Setup Form
+              </span>
+              {formOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-3">
+            <VehicleSetupForm />
+          </CollapsibleContent>
+        </Collapsible>
+
         {/* Saved Setups List */}
         {savedSetups.length > 0 && (
           <div className="space-y-3">
@@ -577,22 +593,6 @@ const Setups = () => {
             })}
           </div>
         )}
-
-        {/* Collapsible Chassis Setup Form */}
-        <Collapsible open={formOpen} onOpenChange={setFormOpen}>
-          <CollapsibleTrigger asChild>
-            <Button variant="outline" className="w-full flex justify-between items-center">
-              <span className="flex items-center gap-2">
-                <Wrench size={16} className="text-primary" />
-                Chassis Setup Form
-              </span>
-              {formOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="mt-3">
-            <VehicleSetupForm />
-          </CollapsibleContent>
-        </Collapsible>
       </div>
 
       <Navigation />
