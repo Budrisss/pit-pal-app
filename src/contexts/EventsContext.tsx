@@ -157,6 +157,7 @@ export const EventsProvider = ({ children }: { children: ReactNode }) => {
         address: event.address || null,
         description: event.description || null,
         status: event.status,
+        car_id: event.car_id || null,
       })
       .eq("id", event.id)
       .eq("user_id", user.id);
