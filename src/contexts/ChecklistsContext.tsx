@@ -327,6 +327,7 @@ export const ChecklistsProvider = ({ children }: { children: ReactNode }) => {
       addTemplateItem,
       updateTemplateItem,
       deleteTemplateItem,
+      reorderTemplateItems,
       generateChecklistsForEvent,
       fetchEventChecklists,
       toggleChecklistItem,
