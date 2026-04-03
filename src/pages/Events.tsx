@@ -63,6 +63,7 @@ const Events = () => {
         time: new Date(`2000-01-01T${eventData.time}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
         eventDate: new Date(`${eventData.date}T${eventData.time}`),
         car: eventData.car,
+        car_id: eventData.car_id,
         address: eventData.address,
       };
       await updateEvent(updatedEvent);
