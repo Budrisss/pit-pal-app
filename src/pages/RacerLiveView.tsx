@@ -169,6 +169,9 @@ const RacerLiveView = () => {
     const registrations = regRes.data as any[] | null;
     const registeredCarNumber = registrations && registrations.length > 0 ? registrations[0].car_number : null;
     if (registeredCarNumber) setUserCarNumber(registeredCarNumber);
+    // Check if any registration has crew_enabled
+    const hasCrewEnabled = registrations?.some((r: any) => r.crew_enabled) || false;
+    setCrewEnabled(hasCrewEnabled);
 
     // Read localStorage for selected run groups (including legacy per-personal-event key)
     const storedIds = await readRunGroupsFromStorage();
