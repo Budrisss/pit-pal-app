@@ -92,6 +92,12 @@ const Events = () => {
     setEditingEvent(null);
   };
 
+  const { fetchAllEventChecklists } = useChecklists();
+
+  useEffect(() => {
+    fetchAllEventChecklists();
+  }, [events]);
+
   useEffect(() => {
     const updateCountdown = () => {
       if (nextUpcomingEvent) {
