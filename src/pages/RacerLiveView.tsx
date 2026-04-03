@@ -73,6 +73,7 @@ const RacerLiveView = () => {
 
   // Driver communication state
   const [personalEventId, setPersonalEventId] = useState<string | null>(null);
+  const [crewEnabled, setCrewEnabled] = useState(false);
   const [crewMessages, setCrewMessages] = useState<{ id: string; gap_ahead: string | null; message: string | null; created_at: string; position: string | null; time_remaining: string | null }[]>([]);
   const [trackNotes, setTrackNotes] = useState("");
   const [isEditingNotes, setIsEditingNotes] = useState(false);
