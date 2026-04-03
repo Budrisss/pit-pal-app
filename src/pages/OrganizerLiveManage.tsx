@@ -1428,7 +1428,7 @@ const OrganizerLiveManage = () => {
                   </button>
                 </div>
               </div>
-              {blueFlagGroupFilter === "active" && !activeSessionRegTypeId && (
+              {blueFlagGroupFilter === "active" && !activeSessionRunGroupId && (
                 <p className="text-[10px] text-muted-foreground italic">No active session — showing all drivers</p>
               )}
               <Input
