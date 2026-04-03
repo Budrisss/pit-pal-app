@@ -18,7 +18,6 @@ export interface Event {
   weather?: { temperature: string; condition: string; windSpeed: string };
   schedule?: { time: string; activity: string }[];
   requirements?: string[];
-  description?: string;
 }
 
 const getEventStatus = (eventDate: Date): "upcoming" | "completed" => {
