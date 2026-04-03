@@ -165,7 +165,7 @@ const RacerLiveView = () => {
     const storedIds = await readRunGroupsFromStorage();
 
     // If no saved selection exists, fall back to all registered group IDs
-    const fallbackIds = registrations?.map((r: any) => String(r.registration_type_id)).filter(Boolean) || [];
+    const fallbackIds = registrations?.map((r: any) => String(r.run_group_id)).filter((v: string) => v && v !== 'null') || [];
     const effectiveIds = storedIds.length > 0 ? storedIds : fallbackIds;
 
     if (storedIds.length === 0 && fallbackIds.length > 0) {
