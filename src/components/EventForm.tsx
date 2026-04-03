@@ -279,7 +279,7 @@ const EventForm = ({ open, onOpenChange, onSave, editingEvent }: EventFormProps)
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Calendar className="text-primary" size={24} />
