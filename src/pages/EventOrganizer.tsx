@@ -936,7 +936,8 @@ const EventOrganizer = () => {
                   setPresetTypeFilter={setPresetTypeFilter}
                 />
                 <RegistrationTypesEditor types={newRegTypes} onChange={setNewRegTypes} />
-                <SessionsEditor sessions={newSessions} onChange={setNewSessions} registrationTypes={newRegTypes} defaultDuration={defaultSessionDuration} />
+                <RunGroupsEditor groups={newRunGroups} onChange={setNewRunGroups} />
+                <SessionsEditor sessions={newSessions} onChange={setNewSessions} runGroups={newRunGroups} defaultDuration={defaultSessionDuration} />
                 <Button type="submit" disabled={creating} className="w-full">
                   {creating ? <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : 'Publish Event'}
                 </Button>
