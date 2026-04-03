@@ -51,6 +51,7 @@ interface ChecklistsContextType {
   addTemplateItem: (templateId: string, text: string) => Promise<void>;
   updateTemplateItem: (itemId: string, text: string) => Promise<void>;
   deleteTemplateItem: (itemId: string) => Promise<void>;
+  reorderTemplateItems: (templateId: string, orderedIds: string[]) => Promise<void>;
   // Event checklists
   generateChecklistsForEvent: (eventId: string) => Promise<void>;
   fetchEventChecklists: (eventId: string) => Promise<void>;
@@ -157,6 +158,22 @@ export const ChecklistsProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return;
     await (supabase as any).from("checklist_template_items").delete().eq("id", itemId).eq("user_id", user.id);
     await fetchTemplates();
+  };
+
+  const reorderTemplateItems = async (templateId: string, orderedIds: string[]) => {
+    if (!user) return;
+    // Optimistic update
+    setTemplates(prev => prev.map(t => {
+      if (t.id !== templateId) return t;
+      const itemMap = new Map(t.items.map(i => [i.id, i]));
+      const reordered = orderedIds.map((id, idx) => ({ ...itemMap.get(id)!, sort_order: idx }));
+      return { ...t, items: reordered };
+    }));
+    // Persist
+    const updates = orderedIds.map((id, idx) =>
+      (supabase as any).from("checklist_template_items").update({ sort_order: idx }).eq("id", id).eq("user_id", user.id)
+    );
+    await Promise.all(updates);
   };
 
   const generateChecklistsForEvent = async (eventId: string) => {
@@ -310,6 +327,7 @@ export const ChecklistsProvider = ({ children }: { children: ReactNode }) => {
       addTemplateItem,
       updateTemplateItem,
       deleteTemplateItem,
+      reorderTemplateItems,
       generateChecklistsForEvent,
       fetchEventChecklists,
       toggleChecklistItem,

@@ -17,7 +17,7 @@ const Checklists = () => {
   const {
     templates, eventChecklists, loadingTemplates, loadingEventChecklists,
     addTemplate, deleteTemplate,
-    addTemplateItem, updateTemplateItem, deleteTemplateItem,
+    addTemplateItem, updateTemplateItem, deleteTemplateItem, reorderTemplateItems,
     toggleChecklistItem, fetchAllEventChecklists,
   } = useChecklists();
   const { events } = useEvents();
@@ -109,6 +109,7 @@ const Checklists = () => {
                     onAddItem={(text) => addTemplateItem(template.id, text)}
                     onUpdateItem={updateTemplateItem}
                     onDeleteItem={deleteTemplateItem}
+                    onReorderItems={(orderedIds) => reorderTemplateItems(template.id, orderedIds)}
                     onDelete={() => deleteTemplate(template.id)}
                   />
                 ))}
