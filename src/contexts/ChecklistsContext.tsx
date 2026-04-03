@@ -160,6 +160,22 @@ export const ChecklistsProvider = ({ children }: { children: ReactNode }) => {
     await fetchTemplates();
   };
 
+  const reorderTemplateItems = async (templateId: string, orderedIds: string[]) => {
+    if (!user) return;
+    // Optimistic update
+    setTemplates(prev => prev.map(t => {
+      if (t.id !== templateId) return t;
+      const itemMap = new Map(t.items.map(i => [i.id, i]));
+      const reordered = orderedIds.map((id, idx) => ({ ...itemMap.get(id)!, sort_order: idx }));
+      return { ...t, items: reordered };
+    }));
+    // Persist
+    const updates = orderedIds.map((id, idx) =>
+      (supabase as any).from("checklist_template_items").update({ sort_order: idx }).eq("id", id).eq("user_id", user.id)
+    );
+    await Promise.all(updates);
+  };
+
   const generateChecklistsForEvent = async (eventId: string) => {
     if (!user || templates.length === 0) return;
 
