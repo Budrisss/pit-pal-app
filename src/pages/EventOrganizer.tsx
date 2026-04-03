@@ -827,13 +827,15 @@ const EventOrganizer = () => {
         latitude: lat, longitude: lng,
       }).eq('id', ev.id);
       if (error) throw error;
-      const existingIds = (editingEvent.registration_types || []).filter(t => t.id).map(t => t.id!);
-      await saveRegistrationTypes(ev.id, editRegTypes, existingIds);
-      await saveSessions(ev.id, editSessions, originalEditSessionIds);
+      const existingRegIds = (editingEvent.registration_types || []).filter(t => t.id).map(t => t.id!);
+      await saveRegistrationTypes(ev.id, editRegTypes, existingRegIds);
+      const runGroupIdMap = await saveRunGroups(ev.id, editRunGroups, originalEditRunGroupIds);
+      await saveSessions(ev.id, editSessions, runGroupIdMap, originalEditSessionIds);
       toast({ title: "Event updated!" });
       setShowEditDialog(false);
       setEditingEvent(null);
       setEditRegTypes([]);
+      setEditRunGroups([]);
       setEditSessions([]);
       fetchEvents();
     } catch (err: any) {
