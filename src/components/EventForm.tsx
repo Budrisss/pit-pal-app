@@ -130,7 +130,8 @@ const EventForm = ({ open, onOpenChange, onSave, editingEvent }: EventFormProps)
   const handleSameDayConfirm = (confirmed: boolean) => {
     setShowSameDayConfirm(false);
     if (confirmed) {
-      const eventDataWithFlag = { ...formData, isSameDay: true };
+      const carId = selectedCarId && selectedCarId !== "manual" ? selectedCarId : undefined;
+      const eventDataWithFlag = { ...formData, car_id: carId, isSameDay: true };
       onSave(eventDataWithFlag);
       setFormData({
         name: "",
