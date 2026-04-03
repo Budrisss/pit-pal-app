@@ -117,13 +117,20 @@ const EventCard = ({ id, name, track, date, time, countdown, status, car, addres
             </div>
           </div>
 
-          {/* Countdown */}
-          {countdown && status === "upcoming" && (
-            <div className="flex items-center gap-2 text-racing-orange bg-racing-orange/10 p-2 rounded-lg">
-              <Timer size={14} />
-              <span className="text-sm font-medium">{countdown}</span>
-            </div>
-          )}
+          {/* Countdown + Checklist Progress */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {countdown && status === "upcoming" && (
+              <div className="flex items-center gap-2 text-racing-orange bg-racing-orange/10 p-2 rounded-lg flex-1">
+                <Timer size={14} />
+                <span className="text-sm font-medium">{countdown}</span>
+              </div>
+            )}
+            {progress.total > 0 && (
+              <div className={`flex items-center gap-1.5 text-xs font-medium px-2 py-1.5 rounded-lg ${progress.completed === progress.total ? 'bg-success/15 text-success' : 'bg-racing-orange/15 text-racing-orange'}`}>
+                ✓ {progress.completed}/{progress.total}
+              </div>
+            )}
+          </div>
 
           {/* Actions */}
           <div className="flex gap-2 pt-1">
