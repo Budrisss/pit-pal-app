@@ -43,6 +43,7 @@ const CrewLiveView = () => {
   const [gapAhead, setGapAhead] = useState("");
   const [freeText, setFreeText] = useState("");
   const [sending, setSending] = useState(false);
+  const [crewEnabled, setCrewEnabled] = useState<boolean | null>(null); // null = loading
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const event = getEventById(eventId || "");
