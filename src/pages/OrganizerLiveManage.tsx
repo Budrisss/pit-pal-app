@@ -23,6 +23,7 @@ import DesktopNavigation from "@/components/DesktopNavigation";
 interface EventSession {
   id?: string;
   registration_type_id: string | null;
+  run_group_id: string | null;
   name: string;
   start_time: string;
   duration_minutes: number | null;
