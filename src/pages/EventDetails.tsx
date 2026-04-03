@@ -158,53 +158,53 @@ const EventDetails = () => {
         </Card>
 
         {/* Schedule */}
-        <Card className="bg-gradient-card border-border/50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="text-primary" />
-              Event Schedule
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {(event.schedule || [
-                { time: "8:00 AM", activity: "Registration & Setup" },
-                { time: "9:00 AM", activity: "Drivers Meeting" },
-                { time: "10:00 AM", activity: "Track Session Begins" }
-              ]).map((item, index) => (
-                <div key={index} className="flex items-center gap-4 p-3 rounded-lg bg-background/50">
-                  <div className="text-sm font-medium text-primary min-w-[80px]">
-                    {item.time}
+        {event.schedule && event.schedule.length > 0 && (
+          <Card className="bg-gradient-card border-border/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="text-primary" />
+                Event Schedule
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {event.schedule.map((item, index) => (
+                  <div key={index} className="flex items-center gap-4 p-3 rounded-lg bg-background/50">
+                    <div className="text-sm font-medium text-primary min-w-[80px]">
+                      {item.time}
+                    </div>
+                    <Separator orientation="vertical" className="h-6" />
+                    <div className="text-sm text-foreground">
+                      {item.activity}
+                    </div>
                   </div>
-                  <Separator orientation="vertical" className="h-6" />
-                  <div className="text-sm text-foreground">
-                    {item.activity}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Requirements */}
-        <Card className="bg-gradient-card border-border/50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <NavigationIcon className="text-primary" />
-              Requirements & What to Bring
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {(event.requirements || ["Valid driver's license", "Helmet", "Closed-toe shoes"]).map((requirement, index) => (
-                <div key={index} className="flex items-center gap-2 p-2">
-                  <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0" />
-                  <span className="text-sm text-foreground">{requirement}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        {event.requirements && event.requirements.length > 0 && (
+          <Card className="bg-gradient-card border-border/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <NavigationIcon className="text-primary" />
+                Requirements & What to Bring
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {event.requirements.map((requirement, index) => (
+                  <div key={index} className="flex items-center gap-2 p-2">
+                    <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0" />
+                    <span className="text-sm text-foreground">{requirement}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Checklists */}
         {(eventChecklists[id!] || []).length > 0 && (

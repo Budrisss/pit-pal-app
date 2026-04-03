@@ -61,6 +61,8 @@ const mapDbRowToEvent = (row: any): Event => {
     address: row.address || "",
     description: row.description || undefined,
     publicEventId: row.public_event_id || null,
+    schedule: row.schedule || undefined,
+    requirements: row.requirements || undefined,
   };
 };
 
@@ -135,6 +137,8 @@ export const EventsProvider = ({ children }: { children: ReactNode }) => {
       description: event.description || null,
       status: event.status || "upcoming",
       car_id: event.car_id || null,
+      schedule: event.schedule && event.schedule.length > 0 ? JSON.stringify(event.schedule) : null,
+      requirements: event.requirements && event.requirements.length > 0 ? event.requirements : null,
     }).select("id").single();
 
     if (!error && data) {
@@ -160,6 +164,8 @@ export const EventsProvider = ({ children }: { children: ReactNode }) => {
         description: event.description || null,
         status: event.status,
         car_id: event.car_id || null,
+        schedule: event.schedule && event.schedule.length > 0 ? JSON.stringify(event.schedule) : null,
+        requirements: event.requirements && event.requirements.length > 0 ? event.requirements : null,
       })
       .eq("id", event.id)
       .eq("user_id", user.id);
