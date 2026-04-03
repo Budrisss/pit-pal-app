@@ -1262,6 +1262,7 @@ const LocalEvents = () => {
                 </div>
               )}
 
+              <div className="space-y-2">
                 <Label>Your Name *</Label>
                 <Input value={regForm.name} onChange={e => setRegForm(p => ({ ...p, name: e.target.value }))} required placeholder="John Doe" />
               </div>
