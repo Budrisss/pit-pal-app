@@ -183,6 +183,8 @@ const RacerLiveView = () => {
 
     if (storedIds.length === 0 && fallbackIds.length > 0) {
       setUserRegTypeIds(new Set(fallbackIds));
+      // Persist so subsequent renders / visibility changes don't reset to empty
+      localStorage.setItem(`my-run-groups-${eventId}`, JSON.stringify(fallbackIds));
     }
 
     // Set display name from first selected group
