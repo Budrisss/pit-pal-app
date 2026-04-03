@@ -77,6 +77,7 @@ const Events = () => {
         status: "upcoming",
         eventDate: eventDateTime,
         car: eventData.car,
+        car_id: eventData.car_id,
         address: eventData.address,
         description: `Track day event at ${eventData.track}. Get ready for an exciting day on the track!`,
       };
