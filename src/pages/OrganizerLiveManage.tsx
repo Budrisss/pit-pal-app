@@ -1486,7 +1486,7 @@ const OrganizerLiveManage = () => {
                       {r.car_number && <Badge variant="outline" className="font-mono text-[10px]">#{r.car_number}</Badge>}
                       <span className="text-sm">{r.user_name}</span>
                       <Badge variant="outline" className="text-[10px] ml-auto">
-                        {registrationTypes.find(rt => rt.id === r.registration_type_id)?.name || "—"}
+                        {registrationTypes.find(rt => rt.id === r.run_group_id)?.name || "—"}
                       </Badge>
                     </div>
                   ));
