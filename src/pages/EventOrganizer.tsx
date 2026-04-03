@@ -860,14 +860,19 @@ const EventOrganizer = () => {
 
   const openEditDialog = async (event: PublicEvent) => {
     setEditingEvent(event);
-    const [{ data: regData }, { data: sessData }] = await Promise.all([
+    const [{ data: regData }, { data: sessData }, { data: rgData }] = await Promise.all([
       supabase.from('registration_types').select('*').eq('event_id', event.id),
       supabase.from('public_event_sessions').select('*').eq('event_id', event.id).order('sort_order'),
+      (supabase as any).from('run_groups').select('*').eq('event_id', event.id).order('sort_order'),
     ]);
     setEditRegTypes((regData || []).map((rt: any) => ({
       id: rt.id, name: rt.name, description: rt.description || '',
       price: rt.price || '', max_spots: rt.max_spots,
     })));
+    setEditRunGroups((rgData || []).map((rg: any) => ({
+      id: rg.id, name: rg.name, sort_order: rg.sort_order,
+    })));
+    setOriginalEditRunGroupIds((rgData || []).filter((rg: any) => rg.id).map((rg: any) => rg.id));
     const mappedSessions = (sessData || []).map((s: any) => ({
       id: s.id, registration_type_id: s.registration_type_id,
       run_group_id: s.run_group_id || null,
