@@ -67,6 +67,8 @@ const Events = () => {
         car: eventData.car,
         car_id: eventData.car_id,
         address: eventData.address,
+        schedule: eventData.schedule?.filter(s => s.time && s.activity),
+        requirements: eventData.requirements?.filter(r => r.trim()),
       };
       await updateEvent(updatedEvent);
     } else {
@@ -82,6 +84,8 @@ const Events = () => {
         car_id: eventData.car_id,
         address: eventData.address,
         description: `Track day event at ${eventData.track}. Get ready for an exciting day on the track!`,
+        schedule: eventData.schedule?.filter(s => s.time && s.activity),
+        requirements: eventData.requirements?.filter(r => r.trim()),
       };
       await addEvent(newEvent);
     }

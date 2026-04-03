@@ -527,6 +527,108 @@ const EventForm = ({ open, onOpenChange, onSave, editingEvent }: EventFormProps)
               )}
             </div>
 
+            {/* Schedule Builder */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Clock size={16} />
+                Schedule (optional)
+              </Label>
+              {(formData.schedule || []).map((item, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <Input
+                    value={item.time}
+                    onChange={(e) => {
+                      const updated = [...(formData.schedule || [])];
+                      updated[index] = { ...updated[index], time: e.target.value };
+                      setFormData(prev => ({ ...prev, schedule: updated }));
+                    }}
+                    placeholder="e.g., 8:00 AM"
+                    className="w-28"
+                  />
+                  <Input
+                    value={item.activity}
+                    onChange={(e) => {
+                      const updated = [...(formData.schedule || [])];
+                      updated[index] = { ...updated[index], activity: e.target.value };
+                      setFormData(prev => ({ ...prev, schedule: updated }));
+                    }}
+                    placeholder="e.g., Registration & Setup"
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 shrink-0"
+                    onClick={() => {
+                      const updated = (formData.schedule || []).filter((_, i) => i !== index);
+                      setFormData(prev => ({ ...prev, schedule: updated }));
+                    }}
+                  >
+                    <X size={14} />
+                  </Button>
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setFormData(prev => ({
+                  ...prev,
+                  schedule: [...(prev.schedule || []), { time: "", activity: "" }]
+                }))}
+              >
+                <Plus size={14} />
+                Add Schedule Item
+              </Button>
+            </div>
+
+            {/* Requirements Builder */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <MapPin size={16} />
+                Requirements (optional)
+              </Label>
+              {(formData.requirements || []).map((req, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <Input
+                    value={req}
+                    onChange={(e) => {
+                      const updated = [...(formData.requirements || [])];
+                      updated[index] = e.target.value;
+                      setFormData(prev => ({ ...prev, requirements: updated }));
+                    }}
+                    placeholder="e.g., Valid driver's license"
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 shrink-0"
+                    onClick={() => {
+                      const updated = (formData.requirements || []).filter((_, i) => i !== index);
+                      setFormData(prev => ({ ...prev, requirements: updated }));
+                    }}
+                  >
+                    <X size={14} />
+                  </Button>
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setFormData(prev => ({
+                  ...prev,
+                  requirements: [...(prev.requirements || []), ""]
+                }))}
+              >
+                <Plus size={14} />
+                Add Requirement
+              </Button>
+            </div>
+
             <div className="flex gap-2 pt-4">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
                 Cancel
