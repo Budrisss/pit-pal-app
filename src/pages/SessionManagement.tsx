@@ -738,6 +738,7 @@ const SessionManagement = () => {
           startTime: s.start_time || "00:00",
           state: "upcoming" as const,
           registrationTypeId: s.registration_type_id || null,
+          runGroupId: s.run_group_id || null,
         }));
         setSessions(mapped);
         localStorage.setItem(`sessions-${eventId}`, JSON.stringify(mapped));
