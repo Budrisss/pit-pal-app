@@ -27,7 +27,7 @@ const getEventStatus = (eventDate: Date): "upcoming" | "completed" => {
 interface EventsContextType {
   events: Event[];
   loading: boolean;
-  addEvent: (event: Omit<Event, "id">) => Promise<void>;
+  addEvent: (event: Omit<Event, "id">) => Promise<string | null>;
   updateEvent: (event: Event) => Promise<void>;
   deleteEvent: (id: string, cancelRegistration?: boolean) => Promise<void>;
   getEventById: (id: string) => Event | undefined;
