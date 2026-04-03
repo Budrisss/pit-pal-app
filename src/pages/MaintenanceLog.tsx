@@ -131,6 +131,7 @@ const MaintenanceLog = () => {
     setNotes("");
     setFiles([]);
     setEditingRecord(null);
+    setRemovedAttachmentIds([]);
   };
 
   const openAddDialog = () => {
