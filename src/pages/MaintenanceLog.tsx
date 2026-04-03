@@ -74,6 +74,7 @@ const MaintenanceLog = () => {
   const [notes, setNotes] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
+  const [removedAttachmentIds, setRemovedAttachmentIds] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchRecords = async () => {
