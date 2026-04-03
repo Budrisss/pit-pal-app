@@ -6,6 +6,7 @@ import ChecklistCard from "@/components/ChecklistCard";
 import Navigation from "@/components/Navigation";
 
 const Checklists = () => {
+  const navigate = useNavigate();
   const [checklists, setChecklists] = useState([
     {
       id: "1",
