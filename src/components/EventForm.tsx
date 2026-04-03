@@ -217,19 +217,22 @@ const EventForm = ({ open, onOpenChange, onSave, editingEvent }: EventFormProps)
         date: eventDate.toISOString().split('T')[0],
         time: eventDate.toTimeString().slice(0, 5),
         car: editingEvent.car,
-        address: editingEvent.address
+        address: editingEvent.address,
+        schedule: editingEvent.schedule || [],
+        requirements: editingEvent.requirements || [],
       });
       setSelectedTrackId("manual");
       setSelectedCarId("manual");
     } else if (!editingEvent && open) {
-      // Reset form for new event
       setFormData({
         name: "",
         track: "",
         date: "",
         time: "",
         car: "",
-        address: ""
+        address: "",
+        schedule: [],
+        requirements: [],
       });
       setSelectedTrackId("");
       setSelectedCarId("");
