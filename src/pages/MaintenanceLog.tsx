@@ -413,9 +413,15 @@ const MaintenanceLog = () => {
               </Popover>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">Mileage (optional)</label>
-              <Input type="number" placeholder="e.g. 45000" value={mileage} onChange={(e) => setMileage(e.target.value)} />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">Mileage (optional)</label>
+                <Input type="number" placeholder="e.g. 45000" value={mileage} onChange={(e) => setMileage(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">Cost (optional)</label>
+                <Input type="number" step="0.01" placeholder="e.g. 75.00" value={cost} onChange={(e) => setCost(e.target.value)} />
+              </div>
             </div>
 
             <div className="space-y-1.5">
