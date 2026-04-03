@@ -1455,7 +1455,7 @@ const OrganizerLiveManage = () => {
                         <div className="px-3 py-1.5 bg-muted/60 sticky top-0">
                           <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                             {groupName}
-                            {activeSessionRegTypeId && regs[0]?.registration_type_id === activeSessionRegTypeId && (
+                            {activeSessionRunGroupId && regs[0]?.run_group_id === activeSessionRunGroupId && (
                               <Badge variant="default" className="ml-2 text-[8px] px-1 py-0">Active</Badge>
                             )}
                           </span>
