@@ -31,6 +31,7 @@ interface EventSession {
   duration_minutes: number | null;
   sort_order: number;
   registration_type_id: string | null;
+  run_group_id: string | null;
 }
 
 const FLAG_CONFIG: Record<string, { bg: string; text: string; label: string; textColor: string }> = {
