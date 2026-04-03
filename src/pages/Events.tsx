@@ -9,6 +9,7 @@ import EventCard from "@/components/EventCard";
 import EventForm, { EventFormData } from "@/components/EventForm";
 import Navigation from "@/components/Navigation";
 import DesktopNavigation from "@/components/DesktopNavigation";
+import { useEvents, Event } from "@/contexts/EventsContext";
 import { useChecklists } from "@/contexts/ChecklistsContext";
 
 const Events = () => {
