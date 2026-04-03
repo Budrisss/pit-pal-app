@@ -427,7 +427,22 @@ const OrganizerLiveManage = () => {
     toast({ title: "All flags cleared" });
   };
 
-  const getRunGroupName = (runGroupId: string | null) => {
+  const handleToggleCrewEnabled = async (registrationId: string, currentValue: boolean) => {
+    const { error } = await (supabase as any)
+      .from("event_registrations")
+      .update({ crew_enabled: !currentValue })
+      .eq("id", registrationId);
+    if (error) {
+      toast({ title: "Failed to update crew access", variant: "destructive" });
+    } else {
+      setRegistrations(prev =>
+        prev.map(r => r.id === registrationId ? { ...r, crew_enabled: !currentValue } : r)
+      );
+      toast({ title: !currentValue ? "Crew messaging enabled" : "Crew messaging disabled" });
+    }
+  };
+
+
     if (!runGroupId) return "All groups";
     return registrationTypes.find((rt) => rt.id === runGroupId)?.name || "Unknown";
   };
