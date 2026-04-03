@@ -321,6 +321,7 @@ const MaintenanceLog = () => {
                         <p className="text-sm text-muted-foreground">
                           {format(new Date(record.service_date), "MMM d, yyyy")}
                           {record.mileage && ` · ${record.mileage.toLocaleString()} mi`}
+                          {record.cost && ` · $${record.cost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                         </p>
                         {!isExpanded && record.notes && (
                           <p className="text-xs text-muted-foreground mt-1 truncate">{record.notes}</p>
