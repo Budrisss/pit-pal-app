@@ -148,6 +148,7 @@ const MaintenanceLog = () => {
     setCustomType(isPreset ? "" : record.service_type);
     setServiceDate(new Date(record.service_date + "T00:00:00"));
     setMileage(record.mileage ? record.mileage.toString() : "");
+    setCost(record.cost ? record.cost.toString() : "");
     setNotes(record.notes || "");
     setFiles([]);
     setEditingRecord(record);
