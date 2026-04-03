@@ -34,12 +34,7 @@ interface SavedSetup {
   notes_times: string | null;
 }
 
-interface Track {
-  id: string;
-  name: string;
-  city?: string;
-  state?: string;
-}
+
 
 interface UserCar {
   id: string;
@@ -54,6 +49,7 @@ interface Event {
   name: string;
   date: string;
   track_id: string;
+  address?: string;
 }
 
 interface Session {
@@ -73,52 +69,39 @@ const Setups = () => {
 
   // General setup sheet form state
   const [sheetName, setSheetName] = useState("");
-  const [sheetTrack, setSheetTrack] = useState("");
   const [sheetCar, setSheetCar] = useState("");
   const [sheetEvent, setSheetEvent] = useState("");
   const [sheetSession, setSheetSession] = useState("");
+  const [sheetFastestLap, setSheetFastestLap] = useState("");
   const [saving, setSaving] = useState(false);
 
   // Selector data
-  const [tracks, setTracks] = useState<Track[]>([]);
   const [cars, setCars] = useState<UserCar[]>([]);
-  const [events, setEvents] = useState<Event[]>([]);
+  const [userEvents, setUserEvents] = useState<Event[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [resolvedTrack, setResolvedTrack] = useState("");
 
   useEffect(() => {
     if (user) {
       fetchSetups();
       fetchAttachments();
-      fetchTracks();
       fetchCars();
+      fetchUserEvents();
     }
   }, [user]);
 
   useEffect(() => {
-    if (sheetTrack && sheetCar) {
-      fetchEvents();
-    } else {
-      setEvents([]);
-      setSheetEvent("");
-    }
-  }, [sheetTrack, sheetCar]);
-
-  useEffect(() => {
     if (sheetEvent) {
       fetchSessions();
+      // Resolve track name from event
+      const evt = userEvents.find((e) => e.id === sheetEvent);
+      setResolvedTrack(evt?.address || "");
     } else {
       setSessions([]);
       setSheetSession("");
+      setResolvedTrack("");
     }
-  }, [sheetEvent]);
-
-  const fetchTracks = async () => {
-    const { data } = await (supabase as any)
-      .from("tracks")
-      .select("id, name, city, state")
-      .order("name");
-    if (data) setTracks(data);
-  };
+  }, [sheetEvent, userEvents]);
 
   const fetchCars = async () => {
     const { data } = await (supabase as any)
@@ -128,13 +111,14 @@ const Setups = () => {
     if (data) setCars(data);
   };
 
-  const fetchEvents = async () => {
+  const fetchUserEvents = async () => {
+    if (!user) return;
     const { data } = await (supabase as any)
       .from("events")
-      .select("id, name, date, track_id")
-      .eq("track_id", sheetTrack)
+      .select("id, name, date, track_id, address")
+      .eq("user_id", user.id)
       .order("date", { ascending: false });
-    if (data) setEvents(data);
+    if (data) setUserEvents(data);
   };
 
   const fetchSessions = async () => {
@@ -184,6 +168,7 @@ const Setups = () => {
         event_id: sheetEvent || null,
         session_id: sheetSession || null,
         session_name: sessionObj?.name || null,
+        fastest_lap_time: sheetFastestLap.trim() || null,
       })
       .select("id")
       .single();
@@ -208,10 +193,10 @@ const Setups = () => {
 
     toast({ title: "Setup saved", description: "Your setup sheet has been created" });
     setSheetName("");
-    setSheetTrack("");
     setSheetCar("");
     setSheetEvent("");
     setSheetSession("");
+    setSheetFastestLap("");
     fetchSetups();
     fetchAttachments();
   };
@@ -253,20 +238,20 @@ const Setups = () => {
               />
             </div>
 
-            {/* Track & Car row */}
+            {/* Event & Car row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>Track</Label>
-                <Select value={sheetTrack} onValueChange={setSheetTrack}>
+                <Label>Event</Label>
+                <Select value={sheetEvent} onValueChange={setSheetEvent}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select track" />
+                    <SelectValue placeholder="Select event" />
                   </SelectTrigger>
                   <SelectContent>
-                    {tracks.map((track) => (
-                      <SelectItem key={track.id} value={track.id}>
+                    {userEvents.map((event) => (
+                      <SelectItem key={event.id} value={event.id}>
                         <div className="flex items-center gap-2">
-                          <MapPin size={14} />
-                          {track.name} {track.city && `- ${track.city}, ${track.state}`}
+                          <Calendar size={14} />
+                          {event.name} - {new Date(event.date).toLocaleDateString()}
                         </div>
                       </SelectItem>
                     ))}
@@ -294,27 +279,19 @@ const Setups = () => {
               </div>
             </div>
 
-            {/* Event & Session row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Track (auto-resolved) */}
+            {resolvedTrack && (
               <div className="space-y-2">
-                <Label>Event</Label>
-                <Select value={sheetEvent} onValueChange={setSheetEvent} disabled={!sheetTrack || !sheetCar}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={sheetTrack && sheetCar ? "Select event" : "Select track & car first"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {events.map((event) => (
-                      <SelectItem key={event.id} value={event.id}>
-                        <div className="flex items-center gap-2">
-                          <Calendar size={14} />
-                          {event.name} - {new Date(event.date).toLocaleDateString()}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Track / Venue</Label>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/30 rounded-md px-3 py-2 border border-border/50">
+                  <MapPin size={14} className="text-primary" />
+                  {resolvedTrack}
+                </div>
               </div>
+            )}
 
+            {/* Session & Fastest Lap row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>Session</Label>
                 <Select value={sheetSession} onValueChange={setSheetSession} disabled={!sheetEvent}>
@@ -332,6 +309,15 @@ const Setups = () => {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Fastest Lap</Label>
+                <Input
+                  placeholder="e.g., 1:23.456"
+                  value={sheetFastestLap}
+                  onChange={(e) => setSheetFastestLap(e.target.value)}
+                />
               </div>
             </div>
 
