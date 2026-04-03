@@ -1062,11 +1062,11 @@ const OrganizerLiveManage = () => {
                           <div className="space-y-1">
                             <Label className="text-xs">Run Group</Label>
                             <Select
-                              value={s.registration_type_id || "none"}
+                              value={s.run_group_id || "none"}
                               onValueChange={(v) =>
                                 handleUpdateSession(
                                   s.id!,
-                                  "registration_type_id",
+                                  "run_group_id",
                                   v === "none" ? null : v
                                 )
                               }
