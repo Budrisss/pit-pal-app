@@ -139,11 +139,10 @@ const RacerLiveView = () => {
         }
         return ids;
       } catch {
-        setUserRegTypeIds(new Set());
+        // Don't clear — let the registration fallback in fetchData handle it
       }
-    } else {
-      setUserRegTypeIds(new Set());
     }
+    // Don't setUserRegTypeIds(new Set()) here — it creates a race with the fallback
 
     return [] as string[];
   }, [eventId, user?.id]);
@@ -183,6 +182,8 @@ const RacerLiveView = () => {
 
     if (storedIds.length === 0 && fallbackIds.length > 0) {
       setUserRegTypeIds(new Set(fallbackIds));
+      // Persist so subsequent renders / visibility changes don't reset to empty
+      localStorage.setItem(`my-run-groups-${eventId}`, JSON.stringify(fallbackIds));
     }
 
     // Set display name from first selected group
