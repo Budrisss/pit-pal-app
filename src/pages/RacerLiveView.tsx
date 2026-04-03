@@ -156,7 +156,7 @@ const RacerLiveView = () => {
       supabase.from("public_event_sessions").select("*").eq("event_id", eventId).order("sort_order"),
       supabase.from("event_flags").select("*").eq("event_id", eventId).eq("is_active", true),
       supabase.from("event_announcements").select("id, message, created_at").eq("event_id", eventId).order("created_at", { ascending: false }).limit(10),
-      user ? supabase.from("event_registrations").select("run_group_id, car_number").eq("event_id", eventId).eq("user_id", user.id) : Promise.resolve({ data: null }),
+      user ? supabase.from("event_registrations").select("run_group_id, car_number, crew_enabled").eq("event_id", eventId).eq("user_id", user.id) : Promise.resolve({ data: null }),
     ]);
     if (eventRes.data) {
       setEventName(eventRes.data.name);
