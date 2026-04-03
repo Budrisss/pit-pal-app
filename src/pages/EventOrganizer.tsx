@@ -775,6 +775,7 @@ const EventOrganizer = () => {
     })));
     const mappedSessions = (sessData || []).map((s: any) => ({
       id: s.id, registration_type_id: s.registration_type_id,
+      run_group_id: s.run_group_id || null,
       name: s.name, start_time: s.start_time || '',
       duration_minutes: s.duration_minutes, sort_order: s.sort_order,
     }));
