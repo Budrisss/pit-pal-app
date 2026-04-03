@@ -209,6 +209,32 @@ const Setups = () => {
     fetchAttachments();
   };
 
+  const handleDeleteSetup = async (setupId: string) => {
+    if (!user) return;
+    // Delete attachments first, then the setup record
+    await (supabase as any)
+      .from("setup_attachments")
+      .delete()
+      .eq("setup_id", setupId)
+      .eq("user_id", user.id);
+    
+    const { error } = await (supabase as any)
+      .from("setup_data")
+      .delete()
+      .eq("id", setupId)
+      .eq("user_id", user.id);
+
+    if (error) {
+      toast({ title: "Error deleting setup", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Setup deleted" });
+      setSavedSetups((prev) => prev.filter((s) => s.id !== setupId));
+      setAllAttachments((prev) => prev.filter((a) => a.setup_id !== setupId));
+      if (expandedSetup === setupId) setExpandedSetup(null);
+    }
+    setDeleteConfirmId(null);
+  };
+
   const generalAttachments = allAttachments.filter((a) => !a.setup_id);
   const getSetupAttachments = (setupId: string) => allAttachments.filter((a) => a.setup_id === setupId);
 
