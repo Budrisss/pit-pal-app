@@ -550,15 +550,26 @@ const Setups = () => {
                           compact
                         />
                       )}
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="w-full mt-2"
-                        onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(setup.id); }}
-                      >
-                        <Trash2 size={14} className="mr-2" />
-                        Delete Setup
-                      </Button>
+                      <div className="flex gap-2 mt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={(e) => { e.stopPropagation(); openEditDialog(setup); }}
+                        >
+                          <Pencil size={14} className="mr-2" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="flex-1"
+                          onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(setup.id); }}
+                        >
+                          <Trash2 size={14} className="mr-2" />
+                          Delete
+                        </Button>
+                      </div>
                     </CardContent>
                   )}
                 </Card>
