@@ -71,6 +71,14 @@ const RacerLiveView = () => {
   const [regTypeName, setRegTypeName] = useState<string | null>(null);
   const [userCarNumber, setUserCarNumber] = useState<number | null>(null);
 
+  // Driver communication state
+  const [personalEventId, setPersonalEventId] = useState<string | null>(null);
+  const [crewMessages, setCrewMessages] = useState<{ id: string; gap_ahead: string | null; message: string | null; created_at: string; position: string | null; time_remaining: string | null }[]>([]);
+  const [trackNotes, setTrackNotes] = useState("");
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [notesDraft, setNotesDraft] = useState("");
+  const feedEndRef = useRef<HTMLDivElement>(null);
+
   // Black flag accept state
   const [blackFlagAccepted, setBlackFlagAccepted] = useState<string | null>(null);
   const [blackFlagAcceptedAt, setBlackFlagAcceptedAt] = useState<number | null>(null);

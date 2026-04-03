@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, Clock, MapPin, Car, Navigation as NavigationIcon, Thermometer, Wind, Eye, Edit, Trash2, Radio, CheckSquare } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, MapPin, Car, Navigation as NavigationIcon, Thermometer, Wind, Eye, Edit, Trash2, Radio, CheckSquare, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
