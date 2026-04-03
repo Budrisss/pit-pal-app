@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Calendar, Timer, MapPin, Clock, Flag } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { Plus, Calendar, Timer, MapPin, Clock, Flag, ArrowLeft } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -14,6 +14,7 @@ import { useEvents, Event } from "@/contexts/EventsContext";
 const Events = () => {
   const { events, loading, addEvent, updateEvent } = useEvents();
   const location = useLocation();
+  const navigate = useNavigate();
   const [countdown, setCountdown] = useState("");
   const [isEventFormOpen, setIsEventFormOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
@@ -113,12 +114,17 @@ const Events = () => {
       <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center pt-2">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <Calendar className="text-primary" />
-              Track Events
-            </h1>
-            <p className="text-muted-foreground text-sm">Manage your motorsport schedule</p>
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="size-8" onClick={() => navigate('/dashboard')}>
+              <ArrowLeft size={18} />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                <Calendar className="text-primary" />
+                Track Events
+              </h1>
+              <p className="text-muted-foreground text-sm">Manage your motorsport schedule</p>
+            </div>
           </div>
           <Button variant="pulse" size="sm" onClick={handleNewEvent}>
             <Plus size={16} />
