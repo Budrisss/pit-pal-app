@@ -9,14 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Car, Calendar, MapPin, Clock, Save } from "lucide-react";
-
-interface Track {
-  id: string;
-  name: string;
-  city?: string;
-  state?: string;
-}
 
 interface UserCar {
   id: string;
@@ -26,17 +20,19 @@ interface UserCar {
   year?: number;
 }
 
-interface Event {
+interface UserEvent {
   id: string;
   name: string;
   date: string;
   track_id: string;
+  address?: string;
+  trackName?: string;
 }
 
 interface Session {
   id: string;
   name: string;
-  type: 'practice' | 'qualifying' | 'race';
+  type: string;
   event_id: string;
 }
 
@@ -46,7 +42,6 @@ interface SetupFormData {
   event_id: string;
   session_id: string;
   fastest_lap_time: string;
-  // Chassis setup fields
   lf_camber: number;
   rf_camber: number;
   lr_camber: number;
@@ -73,111 +68,83 @@ interface SetupFormData {
 
 export const VehicleSetupForm = () => {
   const { toast } = useToast();
-  const [tracks, setTracks] = useState<Track[]>([]);
+  const { user } = useAuth();
   const [cars, setCars] = useState<UserCar[]>([]);
-  const [events, setEvents] = useState<Event[]>([]);
+  const [userEvents, setUserEvents] = useState<UserEvent[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
-  const [selectedTrack, setSelectedTrack] = useState<string>("");
   const [selectedCar, setSelectedCar] = useState<string>("");
   const [selectedEvent, setSelectedEvent] = useState<string>("");
-  
+  const [selectedSession, setSelectedSession] = useState<string>("");
+  const [resolvedTrack, setResolvedTrack] = useState("");
+
   const form = useForm<SetupFormData>();
 
   useEffect(() => {
-    fetchTracks();
-    fetchCars();
-  }, []);
-
-  useEffect(() => {
-    if (selectedTrack && selectedCar) {
-      fetchEvents();
+    if (user) {
+      fetchCars();
+      fetchUserEvents();
     }
-  }, [selectedTrack, selectedCar]);
+  }, [user]);
 
   useEffect(() => {
     if (selectedEvent) {
       fetchSessions();
-    }
-  }, [selectedEvent]);
-
-  const fetchTracks = async () => {
-    const { data, error } = await (supabase as any)
-      .from('tracks')
-      .select('id, name, city, state')
-      .order('name');
-    
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load tracks",
-        variant: "destructive",
-      });
+      const evt = userEvents.find((e) => e.id === selectedEvent);
+      setResolvedTrack(evt?.trackName || evt?.address || "");
     } else {
-      setTracks(data || []);
+      setSessions([]);
+      setSelectedSession("");
+      setResolvedTrack("");
     }
-  };
+  }, [selectedEvent, userEvents]);
 
   const fetchCars = async () => {
-    const { data, error } = await (supabase as any)
-      .from('cars')
-      .select('id, name, make, model, year')
-      .order('name');
-    
-    if (error) {
-      toast({
-        title: "Error", 
-        description: "Failed to load cars",
-        variant: "destructive",
-      });
-    } else {
-      setCars(data || []);
-    }
+    const { data } = await (supabase as any)
+      .from("cars")
+      .select("id, name, make, model, year")
+      .order("name");
+    if (data) setCars(data);
   };
 
-  const fetchEvents = async () => {
-    const { data, error } = await (supabase as any)
-      .from('events')
-      .select('id, name, date, track_id')
-      .eq('track_id', selectedTrack)
-      .order('date', { ascending: false });
-    
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load events", 
-        variant: "destructive",
-      });
-    } else {
-      setEvents(data || []);
+  const fetchUserEvents = async () => {
+    if (!user) return;
+    const { data } = await (supabase as any)
+      .from("events")
+      .select("id, name, date, track_id, address, track_name:tracks(name)")
+      .eq("user_id", user.id)
+      .order("date", { ascending: false });
+    if (data) {
+      setUserEvents(
+        data.map((row: any) => ({
+          ...row,
+          trackName: row.track_name?.name || row.address || "",
+        }))
+      );
     }
   };
 
   const fetchSessions = async () => {
-    const { data, error } = await (supabase as any)
-      .from('sessions')
-      .select('id, name, type, event_id')
-      .eq('event_id', selectedEvent)
-      .order('created_at');
-    
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load sessions",
-        variant: "destructive",
-      });
-    } else {
-      setSessions((data || []) as Session[]);
-    }
+    const { data } = await (supabase as any)
+      .from("sessions")
+      .select("id, name, type, event_id")
+      .eq("event_id", selectedEvent)
+      .order("created_at");
+    if (data) setSessions(data);
   };
 
   const onSubmit = async (data: SetupFormData) => {
+    if (!user) return;
     try {
+      const sessionObj = sessions.find((s) => s.id === selectedSession);
       const { error } = await (supabase as any)
-        .from('setup_data')
+        .from("setup_data")
         .insert({
           ...data,
-          user_id: (await supabase.auth.getUser()).data.user?.id || '',
-          session_name: sessions.find(s => s.id === data.session_id)?.name || '',
+          user_id: user.id,
+          car_id: selectedCar || null,
+          event_id: selectedEvent || null,
+          session_id: selectedSession || null,
+          session_name: sessionObj?.name || null,
         });
 
       if (error) throw error;
@@ -188,6 +155,10 @@ export const VehicleSetupForm = () => {
       });
 
       form.reset();
+      setSelectedCar("");
+      setSelectedEvent("");
+      setSelectedSession("");
+      setResolvedTrack("");
     } catch (error) {
       toast({
         title: "Error",
@@ -223,19 +194,19 @@ export const VehicleSetupForm = () => {
                   </FormItem>
                 )}
               />
-              
+
               <div className="space-y-2">
-                <Label>Track</Label>
-                <Select value={selectedTrack} onValueChange={setSelectedTrack}>
+                <Label>Event</Label>
+                <Select value={selectedEvent} onValueChange={setSelectedEvent}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select track" />
+                    <SelectValue placeholder="Select event" />
                   </SelectTrigger>
                   <SelectContent>
-                    {tracks.map((track) => (
-                      <SelectItem key={track.id} value={track.id}>
+                    {userEvents.map((event) => (
+                      <SelectItem key={event.id} value={event.id}>
                         <div className="flex items-center gap-2">
-                          <MapPin size={16} />
-                          {track.name} {track.city && `- ${track.city}, ${track.state}`}
+                          <Calendar size={14} />
+                          {event.name} - {new Date(event.date).toLocaleDateString()}
                         </div>
                       </SelectItem>
                     ))}
@@ -253,7 +224,7 @@ export const VehicleSetupForm = () => {
                     {cars.map((car) => (
                       <SelectItem key={car.id} value={car.id}>
                         <div className="flex items-center gap-2">
-                          <Car size={16} />
+                          <Car size={14} />
                           {car.name} {car.year && car.make && `(${car.year} ${car.make} ${car.model})`}
                         </div>
                       </SelectItem>
@@ -262,18 +233,29 @@ export const VehicleSetupForm = () => {
                 </Select>
               </div>
 
+              {/* Track (auto-resolved from event) */}
+              {resolvedTrack && (
+                <div className="space-y-2">
+                  <Label>Track / Venue</Label>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/30 rounded-md px-3 py-2 border border-border/50">
+                    <MapPin size={14} className="text-primary" />
+                    {resolvedTrack}
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-2">
-                <Label>Event</Label>
-                <Select value={selectedEvent} onValueChange={setSelectedEvent}>
+                <Label>Session</Label>
+                <Select value={selectedSession} onValueChange={setSelectedSession} disabled={!selectedEvent}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select event" />
+                    <SelectValue placeholder={selectedEvent ? "Select session" : "Select event first"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {events.map((event) => (
-                      <SelectItem key={event.id} value={event.id}>
+                    {sessions.map((session) => (
+                      <SelectItem key={session.id} value={session.id}>
                         <div className="flex items-center gap-2">
-                          <Calendar size={16} />
-                          {event.name} - {new Date(event.date).toLocaleDateString()}
+                          <Clock size={14} />
+                          {session.name}
                         </div>
                       </SelectItem>
                     ))}
@@ -283,40 +265,12 @@ export const VehicleSetupForm = () => {
 
               <FormField
                 control={form.control}
-                name="session_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Session</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select session" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {sessions.map((session) => (
-                          <SelectItem key={session.id} value={session.id}>
-                            <div className="flex items-center gap-2">
-                              <Clock size={16} />
-                              {session.name} ({session.type})
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
                 name="fastest_lap_time"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Fastest Lap Time</FormLabel>
+                    <FormLabel>Fastest Lap</FormLabel>
                     <FormControl>
-                      <Input placeholder="1:23.456" {...field} />
+                      <Input placeholder="e.g., 1:23.456" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -327,7 +281,7 @@ export const VehicleSetupForm = () => {
             {/* Suspension Settings */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Suspension Settings</h3>
-              
+
               {/* Camber */}
               <div className="space-y-2">
                 <h4 className="font-medium">Camber (degrees)</h4>
@@ -539,7 +493,7 @@ export const VehicleSetupForm = () => {
                   <FormItem>
                     <FormLabel>Setup Notes & Times</FormLabel>
                     <FormControl>
-                      <Textarea 
+                      <Textarea
                         placeholder="Notes about handling, lap times, weather conditions, etc."
                         className="min-h-[100px]"
                         {...field}
