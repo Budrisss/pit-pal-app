@@ -134,6 +134,7 @@ export const EventsProvider = ({ children }: { children: ReactNode }) => {
       address: event.address || null,
       description: event.description || null,
       status: event.status || "upcoming",
+      car_id: event.car_id || null,
     });
 
     if (!error) {
