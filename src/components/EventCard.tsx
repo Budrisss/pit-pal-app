@@ -28,6 +28,8 @@ interface EventCardProps {
 const EventCard = ({ id, name, track, date, time, countdown, status, car, address, isRegistered, publicEventId, onEdit }: EventCardProps) => {
   const navigate = useNavigate();
   const { deleteEvent } = useEvents();
+  const { getEventProgress } = useChecklists();
+  const progress = getEventProgress(id);
   const [isChecklistDialogOpen, setIsChecklistDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
