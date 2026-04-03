@@ -50,6 +50,12 @@ interface EventRegistration {
   created_at: string;
 }
 
+interface RunGroup {
+  id: string;
+  name: string;
+  sort_order: number;
+}
+
 interface PublicEvent {
   id: string;
   name: string;
@@ -69,6 +75,7 @@ interface PublicEvent {
   latitude: number | null;
   longitude: number | null;
   registration_types?: RegistrationType[];
+  run_groups?: RunGroup[];
 }
 
 interface OrganizerProfile {
@@ -195,6 +202,7 @@ const LocalEvents = () => {
   // Registration state
   const [registeringEvent, setRegisteringEvent] = useState<PublicEvent | null>(null);
   const [selectedRegTypeId, setSelectedRegTypeId] = useState<string>('');
+  const [selectedRunGroupId, setSelectedRunGroupId] = useState<string>('');
   const [regForm, setRegForm] = useState({ name: '', email: '', phone: '', notes: '', carNumber: '', carId: '' });
   const [registering, setRegistering] = useState(false);
   const [userRegistrations, setUserRegistrations] = useState<Set<string>>(new Set());
@@ -273,6 +281,22 @@ const LocalEvents = () => {
             byEvent[rt.event_id].push(rt);
           });
           eventsData = eventsData.map(e => ({ ...e, registration_types: byEvent[e.id] || [] }));
+        }
+
+        // Fetch run groups for all events
+        const { data: runGroupsData } = await supabase
+          .from('run_groups')
+          .select('*')
+          .in('event_id', eventIds)
+          .order('sort_order');
+        
+        if (runGroupsData) {
+          const rgByEvent: Record<string, RunGroup[]> = {};
+          runGroupsData.forEach((rg: any) => {
+            if (!rgByEvent[rg.event_id]) rgByEvent[rg.event_id] = [];
+            rgByEvent[rg.event_id].push(rg);
+          });
+          eventsData = eventsData.map(e => ({ ...e, run_groups: rgByEvent[e.id] || [] }));
         }
       }
 
@@ -359,6 +383,12 @@ const LocalEvents = () => {
         throw new Error('You are already registered for this group with this car number. Use a different car number to register again.');
       }
 
+      // Validate run group selection if event has run groups
+      const hasRunGroups = registeringEvent.run_groups && registeringEvent.run_groups.length > 0;
+      if (hasRunGroups && !selectedRunGroupId) {
+        throw new Error('Please select a run group');
+      }
+
       const { error } = await (supabase as any).from('event_registrations').insert({
         event_id: registeringEvent.id,
         registration_type_id: regTypeId,
@@ -369,6 +399,7 @@ const LocalEvents = () => {
         notes: regForm.notes || null,
         car_number: carNum,
         car_id: regForm.carId || null,
+        run_group_id: selectedRunGroupId || null,
       });
       if (error) {
         if (error.message?.includes('idx_unique_car_number_per_event')) {
@@ -417,6 +448,7 @@ const LocalEvents = () => {
       toast({ title: "Registered!", description: "Event added to your schedule." });
       setRegisteringEvent(null);
       setSelectedRegTypeId('');
+      setSelectedRunGroupId('');
       setRegForm({ name: '', email: '', phone: '', notes: '', carNumber: '', carId: '' });
 
       // Navigate to the user's events page
@@ -1140,7 +1172,7 @@ const LocalEvents = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog open={!!registeringEvent} onOpenChange={(open) => { if (!open) { setRegisteringEvent(null); setSelectedRegTypeId(''); } }}>
+      <Dialog open={!!registeringEvent} onOpenChange={(open) => { if (!open) { setRegisteringEvent(null); setSelectedRegTypeId(''); setSelectedRunGroupId(''); } }}>
         <DialogContent className="max-w-md max-h-[calc(100vh-2rem)] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Register for {registeringEvent?.name}</DialogTitle>
@@ -1211,6 +1243,25 @@ const LocalEvents = () => {
                 ) : null;
               })()}
 
+              {/* Run Group selector */}
+              {registeringEvent.run_groups && registeringEvent.run_groups.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Select Run Group *</Label>
+                  <Select value={selectedRunGroupId} onValueChange={setSelectedRunGroupId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose your run group..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {registeringEvent.run_groups.map(rg => (
+                        <SelectItem key={rg.id} value={rg.id}>
+                          {rg.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label>Your Name *</Label>
                 <Input value={regForm.name} onChange={e => setRegForm(p => ({ ...p, name: e.target.value }))} required placeholder="John Doe" />
@@ -1251,7 +1302,7 @@ const LocalEvents = () => {
               </div>
               <Button 
                 type="submit" 
-                disabled={registering || (registeringEvent.registration_types && registeringEvent.registration_types.length > 1 && !selectedRegTypeId)} 
+                disabled={registering || (registeringEvent.registration_types && registeringEvent.registration_types.length > 1 && !selectedRegTypeId) || (registeringEvent.run_groups && registeringEvent.run_groups.length > 0 && !selectedRunGroupId)} 
                 className="w-full"
               >
                 {registering ? <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : 'Confirm Registration'}
