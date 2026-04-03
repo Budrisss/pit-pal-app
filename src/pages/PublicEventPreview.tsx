@@ -123,6 +123,7 @@ const PublicEventPreview = () => {
       }
       setSessions((sessData as EventSession[]) || []);
       setRegTypes((rtData as RegistrationType[]) || []);
+      setRunGroups((rgData as { id: string; name: string }[]) || []);
       setAnnouncements((annData as Announcement[]) || []);
 
       if (regsData) {
