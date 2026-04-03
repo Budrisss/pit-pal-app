@@ -9,6 +9,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import Navigation from "@/components/Navigation";
 import DesktopNavigation from "@/components/DesktopNavigation";
 import { useEvents } from "@/contexts/EventsContext";
+import { useChecklists } from "@/contexts/ChecklistsContext";
+import ChecklistCard from "@/components/ChecklistCard";
 
 const EventDetails = () => {
   const { id } = useParams();
