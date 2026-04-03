@@ -263,7 +263,7 @@ const CrewLiveView = () => {
       <div className="p-4 sm:p-6 lg:p-8 space-y-4 max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+          <Button variant="glass" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft size={20} />
           </Button>
           <div className="flex-1 min-w-0">

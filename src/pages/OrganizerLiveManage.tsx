@@ -649,7 +649,7 @@ const OrganizerLiveManage = () => {
           className="flex items-center gap-3 mb-6"
         >
           <Button
-            variant="ghost"
+            variant="glass"
             size="icon"
             onClick={() => navigate("/event-organizer")}
             className="shrink-0"

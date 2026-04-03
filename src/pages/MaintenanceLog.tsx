@@ -270,7 +270,7 @@ const MaintenanceLog = () => {
       <main className="container mx-auto px-4 py-6 pb-24 lg:pb-6 max-w-2xl">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <Button variant="ghost" size="icon" className="rounded-full" onClick={() => navigate("/garage")}>
+          <Button variant="glass" size="icon" className="rounded-full" onClick={() => navigate("/garage")}>
             <ArrowLeft size={20} />
           </Button>
           <div className="flex-1 min-w-0">

@@ -547,7 +547,7 @@ const RacerLiveView = () => {
     <div className="min-h-screen bg-black text-white flex flex-col select-none">
       {/* Top bar */}
       <div className="flex items-center justify-between px-4 py-2 bg-black/80 border-b border-white/10 shrink-0">
-        <Button variant="ghost" size="icon" className="text-white/60 hover:text-white h-8 w-8" onClick={() => navigate(-1)}>
+        <Button variant="glass" size="icon" className="text-white/60 hover:text-white h-8 w-8" onClick={() => navigate(-1)}>
           <ArrowLeft size={18} />
         </Button>
         <span className="text-sm font-semibold truncate max-w-[40%]">{eventName}</span>

@@ -24,7 +24,7 @@ const EventDetails = () => {
         <DesktopNavigation />
         <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-4xl mx-auto">
           <div className="flex items-center gap-4">
-            <Button variant="outline" size="icon" onClick={() => navigate(-1)}>
+            <Button variant="glass" size="icon" onClick={() => navigate(-1)}>
               <ArrowLeft size={20} />
             </Button>
             <h1 className="text-2xl font-bold text-foreground">Event Not Found</h1>
@@ -59,7 +59,7 @@ const EventDetails = () => {
       <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={() => navigate(-1)}>
+          <Button variant="glass" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft size={20} />
           </Button>
           <div className="flex-1">

@@ -951,7 +951,7 @@ const SessionManagement = () => {
       <div className="p-4 sm:p-6 lg:p-8 space-y-5 max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-3 pt-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/events')} className="flex-shrink-0">
+          <Button variant="glass" size="icon" onClick={() => navigate('/events')} className="flex-shrink-0">
             <ArrowLeft size={20} />
           </Button>
           <div className="flex-1 min-w-0">
