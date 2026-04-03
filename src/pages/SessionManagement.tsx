@@ -370,7 +370,7 @@ const SessionManagement = () => {
     // If user selected run groups, only count sessions matching any selected group
     if (myRunGroups.size > 0) {
       const filtered = upcomingSessions.filter(s => {
-        if (s.registrationTypeId) return myRunGroups.has(s.registrationTypeId);
+        if (s.runGroupId) return myRunGroups.has(s.runGroupId);
         return Array.from(myRunGroups).some(gId => {
           const grp = runGroups.find(rg => rg.id === gId);
           return grp && s.referenceName === grp.name;
