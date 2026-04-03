@@ -55,8 +55,15 @@ interface RegistrationType {
   max_spots: number | null;
 }
 
+interface RunGroup {
+  id?: string;
+  name: string;
+  sort_order: number;
+}
+
 interface EventSession {
   id?: string;
+  run_group_id: string | null;
   registration_type_id: string | null;
   name: string;
   start_time: string;
@@ -190,17 +197,70 @@ const RegistrationTypesEditor = ({
   );
 };
 
-const emptySession = (): EventSession => ({ registration_type_id: null, name: '', start_time: '', duration_minutes: null, sort_order: 0 });
+const emptyRunGroup = (): RunGroup => ({ name: '', sort_order: 0 });
+
+const RunGroupsEditor = ({
+  groups,
+  onChange,
+}: {
+  groups: RunGroup[];
+  onChange: (groups: RunGroup[]) => void;
+}) => {
+  const addGroup = () => onChange([...groups, { ...emptyRunGroup(), sort_order: groups.length }]);
+  const removeGroup = (i: number) => onChange(groups.filter((_, idx) => idx !== i));
+  const updateGroup = (i: number, value: string) => {
+    const updated = [...groups];
+    updated[i] = { ...updated[i], name: value };
+    onChange(updated);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <Label className="flex items-center gap-1.5">
+          <Users size={14} /> Run Groups
+        </Label>
+        <Button type="button" variant="outline" size="sm" onClick={addGroup}>
+          <Plus size={14} className="mr-1" /> Add Run Group
+        </Button>
+      </div>
+      {groups.length === 0 && (
+        <p className="text-xs text-muted-foreground italic">No run groups yet. Add groups like "Beginner", "Intermediate", "Advanced" to assign to sessions.</p>
+      )}
+      {groups.map((rg, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <Input
+            value={rg.name}
+            onChange={e => updateGroup(i, e.target.value)}
+            placeholder={`e.g. Group ${String.fromCharCode(65 + i)}`}
+            className="h-8 text-sm flex-1"
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+            onClick={() => removeGroup(i)}
+          >
+            <X size={14} />
+          </Button>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const emptySession = (): EventSession => ({ run_group_id: null, registration_type_id: null, name: '', start_time: '', duration_minutes: null, sort_order: 0 });
 
 const SessionsEditor = ({
   sessions,
   onChange,
-  registrationTypes,
+  runGroups,
   defaultDuration = null,
 }: {
   sessions: EventSession[];
   onChange: (sessions: EventSession[]) => void;
-  registrationTypes: RegistrationType[];
+  runGroups: RunGroup[];
   defaultDuration?: number | null;
 }) => {
   const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
@@ -265,17 +325,17 @@ const SessionsEditor = ({
             <div className="space-y-1">
               <Label className="text-xs">Run Group</Label>
               <Select
-                value={s.registration_type_id || 'none'}
-                onValueChange={v => updateSession(i, 'registration_type_id', v === 'none' ? null : v)}
+                value={s.run_group_id || 'none'}
+                onValueChange={v => updateSession(i, 'run_group_id', v === 'none' ? null : v)}
               >
                 <SelectTrigger className="h-8 text-sm">
                   <SelectValue placeholder="All groups" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">All groups</SelectItem>
-                  {registrationTypes.filter(rt => rt.name.trim()).map((rt, idx) => (
-                    <SelectItem key={rt.id || `new-${idx}`} value={rt.id || `new-${idx}`}>
-                      {rt.name}
+                  {runGroups.filter(rg => rg.name.trim()).map((rg, idx) => (
+                    <SelectItem key={rg.id || `new-${idx}`} value={rg.id || `new-${idx}`}>
+                      {rg.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -479,6 +539,9 @@ const EventOrganizer = () => {
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
   const [newRegTypes, setNewRegTypes] = useState<RegistrationType[]>([]);
   const [editRegTypes, setEditRegTypes] = useState<RegistrationType[]>([]);
+  const [newRunGroups, setNewRunGroups] = useState<RunGroup[]>([]);
+  const [editRunGroups, setEditRunGroups] = useState<RunGroup[]>([]);
+  const [originalEditRunGroupIds, setOriginalEditRunGroupIds] = useState<string[]>([]);
   const [newSessions, setNewSessions] = useState<EventSession[]>([]);
   const [editSessions, setEditSessions] = useState<EventSession[]>([]);
   const [originalEditSessionIds, setOriginalEditSessionIds] = useState<string[]>([]);
@@ -640,7 +703,33 @@ const EventOrganizer = () => {
     }
   };
 
-  const saveSessions = async (eventId: string, sessions: EventSession[], existingIds?: string[]) => {
+  const saveRunGroups = async (eventId: string, groups: RunGroup[], existingIds?: string[]): Promise<Record<string, string>> => {
+    // Returns a map from temp key (new-0, new-1) to actual saved id
+    const idMap: Record<string, string> = {};
+    if (existingIds && existingIds.length > 0) {
+      const keepIds = groups.filter(g => g.id).map(g => g.id!);
+      const toDelete = existingIds.filter(id => !keepIds.includes(id));
+      if (toDelete.length > 0) {
+        await (supabase as any).from('run_groups').delete().in('id', toDelete);
+      }
+    }
+    for (let i = 0; i < groups.length; i++) {
+      const g = groups[i];
+      if (!g.name.trim()) continue;
+      if (g.id) {
+        await (supabase as any).from('run_groups').update({ name: g.name, sort_order: i }).eq('id', g.id);
+        idMap[g.id] = g.id;
+      } else {
+        const { data } = await (supabase as any).from('run_groups').insert({
+          event_id: eventId, name: g.name, sort_order: i,
+        }).select('id').single();
+        if (data) idMap[`new-${i}`] = data.id;
+      }
+    }
+    return idMap;
+  };
+
+  const saveSessions = async (eventId: string, sessions: EventSession[], runGroupIdMap?: Record<string, string>, existingIds?: string[]) => {
     if (existingIds && existingIds.length > 0) {
       const keepIds = sessions.filter(s => s.id).map(s => s.id!);
       const toDelete = existingIds.filter(id => !keepIds.includes(id));
@@ -651,8 +740,14 @@ const EventOrganizer = () => {
     for (let i = 0; i < sessions.length; i++) {
       const s = sessions[i];
       if (!s.name.trim()) continue;
-      const payload = {
+      // Resolve run_group_id: if it starts with "new-", look up the real id from the map
+      let resolvedRunGroupId = s.run_group_id;
+      if (resolvedRunGroupId && runGroupIdMap && runGroupIdMap[resolvedRunGroupId]) {
+        resolvedRunGroupId = runGroupIdMap[resolvedRunGroupId];
+      }
+      const payload: any = {
         name: s.name,
+        run_group_id: resolvedRunGroupId || null,
         registration_type_id: s.registration_type_id || null,
         start_time: s.start_time || null,
         duration_minutes: s.duration_minutes,
@@ -687,16 +782,21 @@ const EventOrganizer = () => {
         latitude: lat, longitude: lng,
       }).select('id').single();
       if (error) throw error;
+      let runGroupIdMap: Record<string, string> = {};
+      if (data && newRunGroups.length > 0) {
+        runGroupIdMap = await saveRunGroups(data.id, newRunGroups);
+      }
       if (data && newRegTypes.length > 0) {
         await saveRegistrationTypes(data.id, newRegTypes);
       }
       if (data && newSessions.length > 0) {
-        await saveSessions(data.id, newSessions);
+        await saveSessions(data.id, newSessions, runGroupIdMap);
       }
       toast({ title: "Event created!", description: "Your event is now live." });
       setShowCreateDialog(false);
       setNewEvent({ name: '', date: '', time: '', description: '', track_name: '', address: '', city: '', state: '', zip_code: '', entry_fee: '', car_classes: '', registration_link: '' });
       setNewRegTypes([]);
+      setNewRunGroups([]);
       setNewSessions([]);
       fetchEvents();
     } catch (err: any) {
@@ -727,13 +827,15 @@ const EventOrganizer = () => {
         latitude: lat, longitude: lng,
       }).eq('id', ev.id);
       if (error) throw error;
-      const existingIds = (editingEvent.registration_types || []).filter(t => t.id).map(t => t.id!);
-      await saveRegistrationTypes(ev.id, editRegTypes, existingIds);
-      await saveSessions(ev.id, editSessions, originalEditSessionIds);
+      const existingRegIds = (editingEvent.registration_types || []).filter(t => t.id).map(t => t.id!);
+      await saveRegistrationTypes(ev.id, editRegTypes, existingRegIds);
+      const runGroupIdMap = await saveRunGroups(ev.id, editRunGroups, originalEditRunGroupIds);
+      await saveSessions(ev.id, editSessions, runGroupIdMap, originalEditSessionIds);
       toast({ title: "Event updated!" });
       setShowEditDialog(false);
       setEditingEvent(null);
       setEditRegTypes([]);
+      setEditRunGroups([]);
       setEditSessions([]);
       fetchEvents();
     } catch (err: any) {
@@ -758,16 +860,22 @@ const EventOrganizer = () => {
 
   const openEditDialog = async (event: PublicEvent) => {
     setEditingEvent(event);
-    const [{ data: regData }, { data: sessData }] = await Promise.all([
+    const [{ data: regData }, { data: sessData }, { data: rgData }] = await Promise.all([
       supabase.from('registration_types').select('*').eq('event_id', event.id),
       supabase.from('public_event_sessions').select('*').eq('event_id', event.id).order('sort_order'),
+      (supabase as any).from('run_groups').select('*').eq('event_id', event.id).order('sort_order'),
     ]);
     setEditRegTypes((regData || []).map((rt: any) => ({
       id: rt.id, name: rt.name, description: rt.description || '',
       price: rt.price || '', max_spots: rt.max_spots,
     })));
+    setEditRunGroups((rgData || []).map((rg: any) => ({
+      id: rg.id, name: rg.name, sort_order: rg.sort_order,
+    })));
+    setOriginalEditRunGroupIds((rgData || []).filter((rg: any) => rg.id).map((rg: any) => rg.id));
     const mappedSessions = (sessData || []).map((s: any) => ({
       id: s.id, registration_type_id: s.registration_type_id,
+      run_group_id: s.run_group_id || null,
       name: s.name, start_time: s.start_time || '',
       duration_minutes: s.duration_minutes, sort_order: s.sort_order,
     }));
@@ -872,7 +980,8 @@ const EventOrganizer = () => {
                   setPresetTypeFilter={setPresetTypeFilter}
                 />
                 <RegistrationTypesEditor types={newRegTypes} onChange={setNewRegTypes} />
-                <SessionsEditor sessions={newSessions} onChange={setNewSessions} registrationTypes={newRegTypes} defaultDuration={defaultSessionDuration} />
+                <RunGroupsEditor groups={newRunGroups} onChange={setNewRunGroups} />
+                <SessionsEditor sessions={newSessions} onChange={setNewSessions} runGroups={newRunGroups} defaultDuration={defaultSessionDuration} />
                 <Button type="submit" disabled={creating} className="w-full">
                   {creating ? <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : 'Publish Event'}
                 </Button>
@@ -1049,7 +1158,8 @@ const EventOrganizer = () => {
                 setPresetTypeFilter={setPresetTypeFilter}
               />
               <RegistrationTypesEditor types={editRegTypes} onChange={setEditRegTypes} />
-              <SessionsEditor sessions={editSessions} onChange={setEditSessions} registrationTypes={editRegTypes} />
+              <RunGroupsEditor groups={editRunGroups} onChange={setEditRunGroups} />
+              <SessionsEditor sessions={editSessions} onChange={setEditSessions} runGroups={editRunGroups} />
               <Button type="submit" disabled={creating} className="w-full">
                 {creating ? <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : 'Save Changes'}
               </Button>
