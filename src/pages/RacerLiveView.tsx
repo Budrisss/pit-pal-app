@@ -16,6 +16,7 @@ interface EventFlag {
   target_user_id: string | null;
   is_active: boolean;
   created_at: string;
+  session_id: string | null;
 }
 
 interface Announcement {
@@ -350,9 +351,22 @@ const RacerLiveView = () => {
   }, [activeFlags, user?.id]);
 
   // Non-yellow-turn, non-blue flags for priority display
+  // Filter session-specific flags (green, checkered) by user's run groups
   const priorityFlags = useMemo(() => {
-    return activeFlags.filter(f => f.flag_type !== "yellow_turn" && f.flag_type !== "blue");
-  }, [activeFlags]);
+    const sessionRunGroupTypes = ["green", "checkered"];
+    return activeFlags.filter(f => {
+      if (f.flag_type === "yellow_turn" || f.flag_type === "blue") return false;
+      // If the user has run groups selected and the flag is session-specific (green/checkered),
+      // only show if the flag's session matches the user's groups
+      if (userRegTypeIds.size > 0 && sessionRunGroupTypes.includes(f.flag_type) && f.session_id) {
+        const flagSession = sessions.find(s => s.id === f.session_id);
+        if (flagSession?.run_group_id && !userRegTypeIds.has(flagSession.run_group_id)) {
+          return false; // This flag is for a different run group
+        }
+      }
+      return true;
+    });
+  }, [activeFlags, userRegTypeIds, sessions]);
 
   // Track when targeted black flags first appear + vibrate
   useEffect(() => {
