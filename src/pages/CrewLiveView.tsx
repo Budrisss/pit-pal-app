@@ -288,8 +288,17 @@ const CrewLiveView = () => {
           </Badge>
         </div>
 
+        {/* Crew not enabled message */}
+        {crewEnabled === false && (
+          <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm px-5 py-6 text-center">
+            <MessageSquare size={32} className="text-muted-foreground mx-auto mb-3 opacity-40" />
+            <p className="text-sm font-medium text-foreground mb-1">Crew Messaging Not Enabled</p>
+            <p className="text-xs text-muted-foreground">The event organizer has not enabled crew messaging for this driver yet.</p>
+          </div>
+        )}
+
         {/* Active Session Timer */}
-        {activeSessionInfo && (
+        {crewEnabled && activeSessionInfo && (
           <div className="rounded-xl border border-green-500/40 bg-green-500/10 backdrop-blur-sm px-5 py-4">
             <div className="flex items-center justify-between">
               <div>
