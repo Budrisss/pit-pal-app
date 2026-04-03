@@ -412,10 +412,10 @@ const Setups = () => {
                             <span>{setupEvent.name} - {new Date(setupEvent.date).toLocaleDateString()}</span>
                           </div>
                         )}
-                        {setupEvent?.address && (
+                        {(setupEvent?.trackName || setupEvent?.address) && (
                           <div className="flex items-center gap-1.5 text-muted-foreground col-span-2">
                             <MapPin size={12} className="text-primary shrink-0" />
-                            <span>{setupEvent.address}</span>
+                            <span>{setupEvent.trackName || setupEvent.address}</span>
                           </div>
                         )}
                         {setup.fastest_lap_time && (
