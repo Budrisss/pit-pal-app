@@ -1,74 +1,44 @@
 
 
-## Maintenance Log Feature
+## Plan: Database-Backed Checklists with Templates and Per-Event Views
 
 ### Overview
-Add a per-vehicle maintenance log accessible via a new "Maintenance" button on each CarCard (alongside Events and Setups). Users can add service records with date, service type (from presets or custom), mileage, notes, and attach photos/PDFs. Records display in a simple chronological list (newest first).
+Convert the hardcoded Checklists page into a database-backed system with two tabs: **Templates** (create/edit reusable checklist templates) and **By Event** (view and check off items for each event). When an event is created, all templates are automatically copied as event-specific checklists.
 
-### Database Changes
+### Database Changes (1 migration)
 
-**New table: `maintenance_logs`**
-- `id` (uuid, PK)
-- `user_id` (uuid, NOT NULL)
-- `car_id` (uuid, NOT NULL)
-- `service_type` (text, NOT NULL) — e.g. "Oil Change", "Brake Pads", or custom text
-- `service_date` (date, NOT NULL)
-- `mileage` (integer, nullable)
-- `notes` (text, nullable)
-- `created_at` (timestamptz, default now())
+**4 new tables:**
 
-RLS: standard user-owns-row pattern (SELECT/INSERT/UPDATE/DELETE where `auth.uid() = user_id`).
+1. **`checklist_templates`** — `id`, `user_id`, `name`, `type` (event/trailer), `sort_order`, `created_at`
+2. **`checklist_template_items`** — `id`, `template_id`, `user_id`, `text`, `sort_order`
+3. **`event_checklists`** — `id`, `event_id`, `user_id`, `template_id` (nullable), `name`, `type`, `created_at`
+4. **`event_checklist_items`** — `id`, `checklist_id`, `user_id`, `text`, `completed` (default false), `sort_order`
 
-**New storage bucket: `maintenance-attachments`** (public)
-- Path convention: `{user_id}/{log_id}/{filename}`
+All with standard user-owns-row RLS (CRUD where `auth.uid() = user_id`).
 
-**New table: `maintenance_attachments`**
-- `id` (uuid, PK)
-- `log_id` (uuid, NOT NULL) — references maintenance_logs.id
-- `user_id` (uuid, NOT NULL)
-- `file_url` (text, NOT NULL)
-- `file_name` (text, NOT NULL)
-- `file_type` (text, nullable) — e.g. "image/jpeg", "application/pdf"
-- `created_at` (timestamptz, default now())
+### Files to Create/Modify
 
-RLS: same user-owns-row pattern.
+| File | What |
+|------|------|
+| Migration SQL | Create 4 tables + RLS |
+| `src/contexts/ChecklistsContext.tsx` | **New** — CRUD for templates + event checklists, auto-generate on event creation |
+| `src/pages/Checklists.tsx` | **Rewrite** — Two tabs: "Templates" (create/edit/delete templates with items) and "By Event" (grouped checklists with checkable items) |
+| `src/components/ChecklistCard.tsx` | **Update** — Accept DB-backed data, support both template-mode (edit items) and event-mode (toggle completion) |
+| `src/components/EventCard.tsx` | **Update** — Show progress badge (e.g. "✓ 4/12") from event checklist data |
+| `src/contexts/EventsContext.tsx` | **Update** — After creating an event, call checklist context to generate checklists from templates |
+| `src/pages/EventDetails.tsx` | **Update** — Add expandable checklists section |
+| `src/App.tsx` | Wrap app with `ChecklistsProvider` |
 
-### New Route & Page
+### How It Works
 
-**`/maintenance/:carId`** — new protected route.
+1. **Templates tab**: Users create templates (e.g. "Pre-Track Day") with a list of items. These are the blueprints.
+2. **Event creation**: All user templates are copied into `event_checklists` + `event_checklist_items` for the new event.
+3. **By Event tab**: Shows checklists grouped by event name. Users check/uncheck items, which saves to DB in real-time.
+4. **Event cards**: Query checklist completion counts and display a small colored progress badge.
 
-**`src/pages/MaintenanceLog.tsx`**:
-- Header shows car name (fetched from CarsContext)
-- "Add Record" button opens a dialog/sheet with:
-  - **Service Type**: Select with presets (Oil Change, Brake Pads, Brake Fluid, Tire Rotation, Alignment, Coolant Flush, Transmission Fluid, Spark Plugs, Air Filter, Belt Replacement, Custom) — selecting "Custom" shows a text input
-  - **Date**: date picker (defaults to today)
-  - **Mileage**: optional number input
-  - **Notes**: optional textarea
-  - **Attachments**: file upload (accept images + PDFs), multiple files allowed
-- Chronological list of records showing service type badge, date, mileage, notes preview, and attachment thumbnails
-- Tap a record to expand/view full details and attachments
-- Swipe-to-delete pattern (consistent with CarCard)
+### UI Details
 
-### CarCard Update
-
-Add a third action button "Maintenance" (Wrench icon) in `CarCard.tsx` alongside Events and Setups, navigating to `/maintenance/{carId}`.
-
-### App.tsx Update
-
-Add route: `<Route path="/maintenance/:carId" element={<ProtectedRoute><MaintenanceLog /></ProtectedRoute>} />`
-
-### Preset Service Types
-```
-Oil Change, Brake Pads, Brake Fluid, Tire Rotation, Alignment,
-Coolant Flush, Transmission Fluid, Spark Plugs, Air Filter,
-Belt Replacement, Custom
-```
-
-### Technical Details
-
-- File uploads use Supabase Storage (`maintenance-attachments` bucket)
-- After inserting a log record, upload attachments to storage, get public URLs, then insert into `maintenance_attachments` table
-- Display PDFs as a file icon with name; images as thumbnails
-- Uses existing app patterns: CarsContext for car info, supabase client for data, toast for feedback
-- Consistent styling with the rest of the app (glassmorphic scrollbars, card styles, etc.)
+- **Templates tab**: List of template cards with inline item editing, add/delete template buttons
+- **By Event tab**: Accordion or collapsible sections per event, each showing its checklists with checkable items
+- **EventCard badge**: `✓ 4/12` — green at 100%, orange when partial, hidden when no checklists exist
 
