@@ -50,6 +50,12 @@ interface EventRegistration {
   created_at: string;
 }
 
+interface RunGroup {
+  id: string;
+  name: string;
+  sort_order: number;
+}
+
 interface PublicEvent {
   id: string;
   name: string;
@@ -69,6 +75,7 @@ interface PublicEvent {
   latitude: number | null;
   longitude: number | null;
   registration_types?: RegistrationType[];
+  run_groups?: RunGroup[];
 }
 
 interface OrganizerProfile {
