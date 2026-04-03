@@ -1,5 +1,6 @@
+import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, Clock, MapPin, Car, Navigation as NavigationIcon, Thermometer, Wind, Eye, Edit, Trash2, Radio } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, MapPin, Car, Navigation as NavigationIcon, Thermometer, Wind, Eye, Edit, Trash2, Radio, CheckSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,11 +9,18 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import Navigation from "@/components/Navigation";
 import DesktopNavigation from "@/components/DesktopNavigation";
 import { useEvents } from "@/contexts/EventsContext";
+import { useChecklists } from "@/contexts/ChecklistsContext";
+import ChecklistCard from "@/components/ChecklistCard";
 
 const EventDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { getEventById, deleteEvent } = useEvents();
+  const { eventChecklists, fetchEventChecklists, toggleChecklistItem } = useChecklists();
+
+  useEffect(() => {
+    if (id) fetchEventChecklists(id);
+  }, [id]);
 
   // Find the specific event by ID
   const event = getEventById(id!);
@@ -197,6 +205,31 @@ const EventDetails = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Checklists */}
+        {(eventChecklists[id!] || []).length > 0 && (
+          <Card className="bg-gradient-card border-border/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CheckSquare className="text-primary" />
+                Checklists
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {(eventChecklists[id!] || []).map(cl => (
+                <ChecklistCard
+                  key={cl.id}
+                  id={cl.id}
+                  title={cl.name}
+                  type={cl.type as "event" | "trailer"}
+                  mode="event"
+                  items={cl.items}
+                  onToggleItem={(itemId, completed) => toggleChecklistItem(itemId, completed)}
+                />
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3 pt-4">

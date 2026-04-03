@@ -10,9 +10,11 @@ import EventForm, { EventFormData } from "@/components/EventForm";
 import Navigation from "@/components/Navigation";
 import DesktopNavigation from "@/components/DesktopNavigation";
 import { useEvents, Event } from "@/contexts/EventsContext";
+import { useChecklists } from "@/contexts/ChecklistsContext";
 
 const Events = () => {
   const { events, loading, addEvent, updateEvent } = useEvents();
+  const { generateChecklistsForEvent } = useChecklists();
   const location = useLocation();
   const navigate = useNavigate();
   const [countdown, setCountdown] = useState("");
@@ -82,10 +84,19 @@ const Events = () => {
         address: eventData.address,
         description: `Track day event at ${eventData.track}. Get ready for an exciting day on the track!`,
       };
-      await addEvent(newEvent);
+      const newEventId = await addEvent(newEvent);
+      if (newEventId) {
+        await generateChecklistsForEvent(newEventId);
+      }
     }
     setEditingEvent(null);
   };
+
+  const { fetchAllEventChecklists } = useChecklists();
+
+  useEffect(() => {
+    fetchAllEventChecklists();
+  }, [events]);
 
   useEffect(() => {
     const updateCountdown = () => {

@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { OrganizerModeProvider } from "@/contexts/OrganizerModeContext";
 import { CarsProvider } from "@/contexts/CarsContext";
 import { EventsProvider } from "@/contexts/EventsContext";
+import { ChecklistsProvider } from "@/contexts/ChecklistsContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
@@ -41,6 +42,7 @@ const App = () => (
         <OrganizerModeProvider>
         <CarsProvider>
           <EventsProvider>
+          <ChecklistsProvider>
             <Toaster />
             <Sonner />
             <BrowserRouter>
@@ -70,6 +72,7 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
+          </ChecklistsProvider>
           </EventsProvider>
         </CarsProvider>
         </OrganizerModeProvider>

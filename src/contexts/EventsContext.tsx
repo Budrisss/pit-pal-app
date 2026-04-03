@@ -27,7 +27,7 @@ const getEventStatus = (eventDate: Date): "upcoming" | "completed" => {
 interface EventsContextType {
   events: Event[];
   loading: boolean;
-  addEvent: (event: Omit<Event, "id">) => Promise<void>;
+  addEvent: (event: Omit<Event, "id">) => Promise<string | null>;
   updateEvent: (event: Event) => Promise<void>;
   deleteEvent: (id: string, cancelRegistration?: boolean) => Promise<void>;
   getEventById: (id: string) => Event | undefined;
@@ -119,14 +119,14 @@ export const EventsProvider = ({ children }: { children: ReactNode }) => {
     fetchEvents();
   }, [fetchEvents]);
 
-  const addEvent = async (event: Omit<Event, "id">) => {
-    if (!user) return;
+  const addEvent = async (event: Omit<Event, "id">): Promise<string | null> => {
+    if (!user) return null;
 
     // Parse the date back to ISO format for storage
     const dateStr = event.eventDate.toISOString().split("T")[0];
     const timeStr = event.eventDate.toTimeString().slice(0, 5); // HH:MM
 
-    const { error } = await (supabase as any).from("events").insert({
+    const { data, error } = await (supabase as any).from("events").insert({
       user_id: user.id,
       name: event.name,
       date: dateStr,
@@ -135,11 +135,13 @@ export const EventsProvider = ({ children }: { children: ReactNode }) => {
       description: event.description || null,
       status: event.status || "upcoming",
       car_id: event.car_id || null,
-    });
+    }).select("id").single();
 
-    if (!error) {
+    if (!error && data) {
       await fetchEvents();
+      return data.id;
     }
+    return null;
   };
 
   const updateEvent = async (event: Event) => {

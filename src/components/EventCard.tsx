@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { useEvents } from "@/contexts/EventsContext";
+import { useChecklists } from "@/contexts/ChecklistsContext";
 
 interface EventCardProps {
   id: string;
@@ -27,6 +28,8 @@ interface EventCardProps {
 const EventCard = ({ id, name, track, date, time, countdown, status, car, address, isRegistered, publicEventId, onEdit }: EventCardProps) => {
   const navigate = useNavigate();
   const { deleteEvent } = useEvents();
+  const { getEventProgress } = useChecklists();
+  const progress = getEventProgress(id);
   const [isChecklistDialogOpen, setIsChecklistDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
@@ -114,13 +117,20 @@ const EventCard = ({ id, name, track, date, time, countdown, status, car, addres
             </div>
           </div>
 
-          {/* Countdown */}
-          {countdown && status === "upcoming" && (
-            <div className="flex items-center gap-2 text-racing-orange bg-racing-orange/10 p-2 rounded-lg">
-              <Timer size={14} />
-              <span className="text-sm font-medium">{countdown}</span>
-            </div>
-          )}
+          {/* Countdown + Checklist Progress */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {countdown && status === "upcoming" && (
+              <div className="flex items-center gap-2 text-racing-orange bg-racing-orange/10 p-2 rounded-lg flex-1">
+                <Timer size={14} />
+                <span className="text-sm font-medium">{countdown}</span>
+              </div>
+            )}
+            {progress.total > 0 && (
+              <div className={`flex items-center gap-1.5 text-xs font-medium px-2 py-1.5 rounded-lg ${progress.completed === progress.total ? 'bg-success/15 text-success' : 'bg-racing-orange/15 text-racing-orange'}`}>
+                ✓ {progress.completed}/{progress.total}
+              </div>
+            )}
+          </div>
 
           {/* Actions */}
           <div className="flex gap-2 pt-1">
