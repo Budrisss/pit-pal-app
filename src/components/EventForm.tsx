@@ -26,6 +26,8 @@ export interface EventFormData {
   car_id?: string;
   address: string;
   isSameDay?: boolean;
+  schedule?: { time: string; activity: string }[];
+  requirements?: string[];
 }
 
 interface Track {
