@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, Clock, MapPin, Car, Navigation as NavigationIcon, Thermometer, Wind, Eye, Edit, Trash2, Radio, CheckSquare } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, MapPin, Car, Navigation as NavigationIcon, Thermometer, Wind, Eye, Edit, Trash2, Radio, CheckSquare, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -282,9 +282,22 @@ const EventDetails = () => {
               Go Live
             </Button>
           )}
+          {!event.publicEventId && (
+            <Button variant="outline" className="flex-1" onClick={() => navigate(`/crew-live/${event.id}`)}>
+              <Users size={16} />
+              Crew View
+            </Button>
+          )}
           {event.publicEventId && (
-            <Button variant="outline" className="flex-1">
-              Start Event
+            <Button variant="outline" className="flex-1" onClick={() => navigate(`/race-live/${event.publicEventId}`)}>
+              <Radio size={16} />
+              Go Live
+            </Button>
+          )}
+          {event.publicEventId && (
+            <Button variant="outline" className="flex-1" onClick={() => navigate(`/crew-live/${event.id}`)}>
+              <Users size={16} />
+              Crew View
             </Button>
           )}
         </div>
