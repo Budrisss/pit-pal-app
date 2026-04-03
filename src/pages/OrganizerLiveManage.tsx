@@ -1030,7 +1030,7 @@ const OrganizerLiveManage = () => {
                             className="h-8 text-sm font-medium"
                           />
                           <Badge variant="outline" className="text-[10px] shrink-0">
-                            {getRunGroupName(s.registration_type_id)}
+                            {getRunGroupName(s.run_group_id)}
                           </Badge>
                         </div>
                         <div className="grid grid-cols-3 gap-2">
