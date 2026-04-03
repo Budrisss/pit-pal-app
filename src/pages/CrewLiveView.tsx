@@ -324,6 +324,7 @@ const CrewLiveView = () => {
           </div>
         )}
 
+        {crewEnabled && <>
         {/* Checkered Flag — Session Just Ended */}
         {!activeSessionInfo && justEndedSession && (
           <div className="rounded-xl border-2 border-yellow-500/60 bg-yellow-500/10 backdrop-blur-sm px-5 py-5 animate-fade-in">
