@@ -633,7 +633,7 @@ const EventForm = ({ open, onOpenChange, onSave, editingEvent }: EventFormProps)
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
                 Cancel
               </Button>
-              <Button type="submit" variant="pulse" className="flex-1">
+              <Button type="submit" variant="outline" className="flex-1">
                 {editingEvent ? "Update Event" : "Create Event"}
               </Button>
             </div>
