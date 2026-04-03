@@ -29,6 +29,7 @@ import OrganizerLiveManage from "./pages/OrganizerLiveManage";
 import RacerLiveView from "./pages/RacerLiveView";
 import DriverLiveView from "./pages/DriverLiveView";
 import CrewLiveView from "./pages/CrewLiveView";
+import MaintenanceLog from "./pages/MaintenanceLog";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -65,6 +66,7 @@ const App = () => (
                 <Route path="/race-live/:eventId" element={<ProtectedRoute><RacerLiveView /></ProtectedRoute>} />
                 <Route path="/driver-live/:eventId" element={<ProtectedRoute><DriverLiveView /></ProtectedRoute>} />
                 <Route path="/crew-live/:eventId" element={<ProtectedRoute><CrewLiveView /></ProtectedRoute>} />
+                <Route path="/maintenance/:carId" element={<ProtectedRoute><MaintenanceLog /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
