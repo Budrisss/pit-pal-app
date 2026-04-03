@@ -420,13 +420,24 @@ const MaintenanceLog = () => {
                   ))}
                 </div>
               )}
-              {editingRecord && editingRecord.attachments.length > 0 && (
+              {editingRecord && editingRecord.attachments.filter((a) => !removedAttachmentIds.includes(a.id)).length > 0 && (
                 <div className="mt-2">
                   <p className="text-xs text-muted-foreground mb-1">Existing attachments:</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {editingRecord.attachments.map((att) => (
-                      <Badge key={att.id} variant="outline" className="text-xs">{att.file_name}</Badge>
-                    ))}
+                    {editingRecord.attachments
+                      .filter((a) => !removedAttachmentIds.includes(a.id))
+                      .map((att) => (
+                        <Badge key={att.id} variant="outline" className="text-xs flex items-center gap-1 pr-1">
+                          {att.file_name}
+                          <button
+                            type="button"
+                            className="size-4 rounded-full bg-destructive/80 hover:bg-destructive text-destructive-foreground flex items-center justify-center ml-0.5"
+                            onClick={() => setRemovedAttachmentIds((prev) => [...prev, att.id])}
+                          >
+                            <X size={8} />
+                          </button>
+                        </Badge>
+                      ))}
                   </div>
                 </div>
               )}
