@@ -1039,6 +1039,7 @@ const RacerLiveView = () => {
             )}
           </div>
         )}
+      </div>
     </div>
   );
 };
