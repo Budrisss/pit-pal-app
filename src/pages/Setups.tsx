@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Wrench, ChevronDown, ChevronUp, Upload, Car, Calendar, Clock, MapPin, Save } from "lucide-react";
+import { Wrench, ChevronDown, ChevronUp, Upload, Car, Calendar, Clock, MapPin, Save, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Badge } from "@/components/ui/badge";
 import SetupAttachments from "@/components/SetupAttachments";
 import { useToast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface SetupAttachment {
   id: string;
@@ -67,6 +68,7 @@ const Setups = () => {
   const [savedSetups, setSavedSetups] = useState<SavedSetup[]>([]);
   const [allAttachments, setAllAttachments] = useState<SetupAttachment[]>([]);
   const [expandedSetup, setExpandedSetup] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // General setup sheet form state
   const [sheetName, setSheetName] = useState("");
@@ -205,6 +207,32 @@ const Setups = () => {
     setSheetFastestLap("");
     fetchSetups();
     fetchAttachments();
+  };
+
+  const handleDeleteSetup = async (setupId: string) => {
+    if (!user) return;
+    // Delete attachments first, then the setup record
+    await (supabase as any)
+      .from("setup_attachments")
+      .delete()
+      .eq("setup_id", setupId)
+      .eq("user_id", user.id);
+    
+    const { error } = await (supabase as any)
+      .from("setup_data")
+      .delete()
+      .eq("id", setupId)
+      .eq("user_id", user.id);
+
+    if (error) {
+      toast({ title: "Error deleting setup", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Setup deleted" });
+      setSavedSetups((prev) => prev.filter((s) => s.id !== setupId));
+      setAllAttachments((prev) => prev.filter((a) => a.setup_id !== setupId));
+      if (expandedSetup === setupId) setExpandedSetup(null);
+    }
+    setDeleteConfirmId(null);
   };
 
   const generalAttachments = allAttachments.filter((a) => !a.setup_id);
@@ -437,6 +465,15 @@ const Setups = () => {
                           compact
                         />
                       )}
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="w-full mt-2"
+                        onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(setup.id); }}
+                      >
+                        <Trash2 size={14} className="mr-2" />
+                        Delete Setup
+                      </Button>
                     </CardContent>
                   )}
                 </Card>
@@ -463,6 +500,26 @@ const Setups = () => {
       </div>
 
       <Navigation />
+
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Setup?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this setup and all its attached files. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteConfirmId && handleDeleteSetup(deleteConfirmId)}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
