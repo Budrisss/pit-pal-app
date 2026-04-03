@@ -519,8 +519,8 @@ const OrganizerLiveManage = () => {
   // Helper: filter registrations by group
   const getFilteredRegistrations = (filter: "active" | "all", search: string) => {
     let filtered = registrations;
-    if (filter === "active" && activeSessionRegTypeId) {
-      filtered = filtered.filter(r => r.registration_type_id === activeSessionRegTypeId);
+    if (filter === "active" && activeSessionRunGroupId) {
+      filtered = filtered.filter(r => r.run_group_id === activeSessionRunGroupId);
     }
     if (search.trim()) {
       const q = search.toLowerCase();
