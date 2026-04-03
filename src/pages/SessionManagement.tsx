@@ -321,7 +321,7 @@ const SessionManagement = () => {
   const [isRegisteredEvent, setIsRegisteredEvent] = useState(false);
   const [myRunGroups, setMyRunGroups] = useState<Set<string>>(new Set()); // stores multiple run group IDs
   const [runGroups, setRunGroups] = useState<{ id: string; name: string }[]>([]);
-  const [userRegMap, setUserRegMap] = useState<Record<string, { carNumber: number | null; carName: string | null }>>({}); // reg_type_id -> car info
+  const [userRegMap, setUserRegMap] = useState<Record<string, { carNumber: number | null; carName: string | null }>>({}); // run_group_id -> car info
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
 
   const handleToggleNotes = (sessionId: string) => {
