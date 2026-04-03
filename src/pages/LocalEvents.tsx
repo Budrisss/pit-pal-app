@@ -1302,7 +1302,7 @@ const LocalEvents = () => {
               </div>
               <Button 
                 type="submit" 
-                disabled={registering || (registeringEvent.registration_types && registeringEvent.registration_types.length > 1 && !selectedRegTypeId)} 
+                disabled={registering || (registeringEvent.registration_types && registeringEvent.registration_types.length > 1 && !selectedRegTypeId) || (registeringEvent.run_groups && registeringEvent.run_groups.length > 0 && !selectedRunGroupId)} 
                 className="w-full"
               >
                 {registering ? <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : 'Confirm Registration'}
