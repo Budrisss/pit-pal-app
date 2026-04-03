@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Wrench, Calendar, FileText, Trash2, Paperclip, Pencil, X } from "lucide-react";
+import { ArrowLeft, Plus, Wrench, Calendar, FileText, Trash2, Paperclip, Pencil, X, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +38,7 @@ interface MaintenanceRecord {
   service_type: string;
   service_date: string;
   mileage: number | null;
+  cost: number | null;
   notes: string | null;
   created_at: string;
   attachments: Attachment[];
@@ -71,6 +72,7 @@ const MaintenanceLog = () => {
   const [customType, setCustomType] = useState("");
   const [serviceDate, setServiceDate] = useState<Date>(new Date());
   const [mileage, setMileage] = useState("");
+  const [cost, setCost] = useState("");
   const [notes, setNotes] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
@@ -128,6 +130,7 @@ const MaintenanceLog = () => {
     setCustomType("");
     setServiceDate(new Date());
     setMileage("");
+    setCost("");
     setNotes("");
     setFiles([]);
     setEditingRecord(null);
@@ -145,6 +148,7 @@ const MaintenanceLog = () => {
     setCustomType(isPreset ? "" : record.service_type);
     setServiceDate(new Date(record.service_date + "T00:00:00"));
     setMileage(record.mileage ? record.mileage.toString() : "");
+    setCost(record.cost ? record.cost.toString() : "");
     setNotes(record.notes || "");
     setFiles([]);
     setEditingRecord(record);
@@ -165,6 +169,7 @@ const MaintenanceLog = () => {
       service_type: finalType,
       service_date: format(serviceDate, "yyyy-MM-dd"),
       mileage: mileage ? parseInt(mileage) : null,
+      cost: cost ? parseFloat(cost) : null,
       notes: notes.trim() || null,
     };
 
@@ -289,6 +294,19 @@ const MaintenanceLog = () => {
           </div>
         ) : (
           <div className="space-y-3">
+            {/* Running Total */}
+            {(() => {
+              const totalCost = records.reduce((sum, r) => sum + (r.cost || 0), 0);
+              return totalCost > 0 ? (
+                <div className="flex items-center justify-between p-3 rounded-xl bg-secondary border border-border">
+                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <DollarSign size={16} className="text-primary" />
+                    Total Spent
+                  </div>
+                  <span className="text-lg font-bold text-primary">${totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+              ) : null;
+            })()}
             {records.map((record) => {
               const isExpanded = expandedId === record.id;
               return (
@@ -303,6 +321,7 @@ const MaintenanceLog = () => {
                         <p className="text-sm text-muted-foreground">
                           {format(new Date(record.service_date), "MMM d, yyyy")}
                           {record.mileage && ` · ${record.mileage.toLocaleString()} mi`}
+                          {record.cost && ` · $${record.cost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                         </p>
                         {!isExpanded && record.notes && (
                           <p className="text-xs text-muted-foreground mt-1 truncate">{record.notes}</p>
@@ -394,9 +413,15 @@ const MaintenanceLog = () => {
               </Popover>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">Mileage (optional)</label>
-              <Input type="number" placeholder="e.g. 45000" value={mileage} onChange={(e) => setMileage(e.target.value)} />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">Mileage (optional)</label>
+                <Input type="number" placeholder="e.g. 45000" value={mileage} onChange={(e) => setMileage(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">Cost (optional)</label>
+                <Input type="number" step="0.01" placeholder="e.g. 75.00" value={cost} onChange={(e) => setCost(e.target.value)} />
+              </div>
             </div>
 
             <div className="space-y-1.5">

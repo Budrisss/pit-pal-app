@@ -380,6 +380,7 @@ export type Database = {
       maintenance_logs: {
         Row: {
           car_id: string
+          cost: number | null
           created_at: string
           id: string
           mileage: number | null
@@ -390,6 +391,7 @@ export type Database = {
         }
         Insert: {
           car_id: string
+          cost?: number | null
           created_at?: string
           id?: string
           mileage?: number | null
@@ -400,6 +402,7 @@ export type Database = {
         }
         Update: {
           car_id?: string
+          cost?: number | null
           created_at?: string
           id?: string
           mileage?: number | null
