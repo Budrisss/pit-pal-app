@@ -112,7 +112,8 @@ const EventForm = ({ open, onOpenChange, onSave, editingEvent }: EventFormProps)
     }
     
     // Proceed with normal submission
-    const eventDataWithFlag = { ...formData, isSameDay };
+    const carId = selectedCarId && selectedCarId !== "manual" ? selectedCarId : undefined;
+    const eventDataWithFlag = { ...formData, car_id: carId, isSameDay };
     console.log('Proceeding with event creation:', eventDataWithFlag);
     onSave(eventDataWithFlag);
     setFormData({
