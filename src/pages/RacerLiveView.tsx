@@ -962,7 +962,7 @@ const RacerLiveView = () => {
         )}
 
         {/* Driver Communication Panels */}
-        {personalEventId && (
+        {personalEventId && crewEnabled && (
           <div className="bg-gray-950 border-t border-white/10 shrink-0">
             {/* Track Notes + Gap Ahead */}
             <div className="grid grid-cols-2 gap-3 p-3">
