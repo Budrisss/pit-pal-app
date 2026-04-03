@@ -1172,7 +1172,7 @@ const LocalEvents = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog open={!!registeringEvent} onOpenChange={(open) => { if (!open) { setRegisteringEvent(null); setSelectedRegTypeId(''); } }}>
+      <Dialog open={!!registeringEvent} onOpenChange={(open) => { if (!open) { setRegisteringEvent(null); setSelectedRegTypeId(''); setSelectedRunGroupId(''); } }}>
         <DialogContent className="max-w-md max-h-[calc(100vh-2rem)] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Register for {registeringEvent?.name}</DialogTitle>
