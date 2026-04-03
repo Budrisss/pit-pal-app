@@ -282,6 +282,22 @@ const LocalEvents = () => {
           });
           eventsData = eventsData.map(e => ({ ...e, registration_types: byEvent[e.id] || [] }));
         }
+
+        // Fetch run groups for all events
+        const { data: runGroupsData } = await supabase
+          .from('run_groups')
+          .select('*')
+          .in('event_id', eventIds)
+          .order('sort_order');
+        
+        if (runGroupsData) {
+          const rgByEvent: Record<string, RunGroup[]> = {};
+          runGroupsData.forEach((rg: any) => {
+            if (!rgByEvent[rg.event_id]) rgByEvent[rg.event_id] = [];
+            rgByEvent[rg.event_id].push(rg);
+          });
+          eventsData = eventsData.map(e => ({ ...e, run_groups: rgByEvent[e.id] || [] }));
+        }
       }
 
       setEvents(eventsData);
