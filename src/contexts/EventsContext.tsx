@@ -164,6 +164,8 @@ export const EventsProvider = ({ children }: { children: ReactNode }) => {
         description: event.description || null,
         status: event.status,
         car_id: event.car_id || null,
+        schedule: event.schedule && event.schedule.length > 0 ? JSON.stringify(event.schedule) : null,
+        requirements: event.requirements && event.requirements.length > 0 ? event.requirements : null,
       })
       .eq("id", event.id)
       .eq("user_id", user.id);
