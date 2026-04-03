@@ -139,11 +139,10 @@ const RacerLiveView = () => {
         }
         return ids;
       } catch {
-        setUserRegTypeIds(new Set());
+        // Don't clear — let the registration fallback in fetchData handle it
       }
-    } else {
-      setUserRegTypeIds(new Set());
     }
+    // Don't setUserRegTypeIds(new Set()) here — it creates a race with the fallback
 
     return [] as string[];
   }, [eventId, user?.id]);
