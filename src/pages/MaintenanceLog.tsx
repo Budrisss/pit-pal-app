@@ -169,6 +169,7 @@ const MaintenanceLog = () => {
       service_type: finalType,
       service_date: format(serviceDate, "yyyy-MM-dd"),
       mileage: mileage ? parseInt(mileage) : null,
+      cost: cost ? parseFloat(cost) : null,
       notes: notes.trim() || null,
     };
 
