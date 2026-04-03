@@ -582,7 +582,7 @@ const PublicEventPreview = () => {
               <CardContent className="p-0">
                 <div className="divide-y divide-border">
                   {sessions.map((s, idx) => {
-                    const groupName = getGroupName(s.registration_type_id);
+                    const groupName = getGroupName(s.run_group_id);
                     return (
                       <div
                         key={s.id || idx}
