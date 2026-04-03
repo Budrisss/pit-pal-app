@@ -23,6 +23,7 @@ export interface EventFormData {
   date: string;
   time: string;
   car: string;
+  car_id?: string;
   address: string;
   isSameDay?: boolean;
 }
