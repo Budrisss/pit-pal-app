@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Wrench, Calendar, FileText, Image, Trash2, Paperclip } from "lucide-react";
+import { ArrowLeft, Plus, Wrench, Calendar, FileText, Trash2, Paperclip, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -62,6 +62,7 @@ const MaintenanceLog = () => {
   const [records, setRecords] = useState<MaintenanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<MaintenanceRecord | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -128,6 +129,24 @@ const MaintenanceLog = () => {
     setMileage("");
     setNotes("");
     setFiles([]);
+    setEditingRecord(null);
+  };
+
+  const openAddDialog = () => {
+    resetForm();
+    setDialogOpen(true);
+  };
+
+  const openEditDialog = (record: MaintenanceRecord) => {
+    const isPreset = SERVICE_PRESETS.includes(record.service_type);
+    setServiceType(isPreset ? record.service_type : "Custom");
+    setCustomType(isPreset ? "" : record.service_type);
+    setServiceDate(new Date(record.service_date + "T00:00:00"));
+    setMileage(record.mileage ? record.mileage.toString() : "");
+    setNotes(record.notes || "");
+    setFiles([]);
+    setEditingRecord(record);
+    setDialogOpen(true);
   };
 
   const handleSave = async () => {
@@ -140,28 +159,48 @@ const MaintenanceLog = () => {
 
     setSaving(true);
 
-    const { data: log, error } = await (supabase as any)
-      .from("maintenance_logs")
-      .insert({
-        user_id: user.id,
-        car_id: carId,
-        service_type: finalType,
-        service_date: format(serviceDate, "yyyy-MM-dd"),
-        mileage: mileage ? parseInt(mileage) : null,
-        notes: notes.trim() || null,
-      })
-      .select()
-      .single();
+    const payload = {
+      service_type: finalType,
+      service_date: format(serviceDate, "yyyy-MM-dd"),
+      mileage: mileage ? parseInt(mileage) : null,
+      notes: notes.trim() || null,
+    };
 
-    if (error || !log) {
-      toast({ title: "Failed to save record", variant: "destructive" });
-      setSaving(false);
-      return;
+    let logId: string;
+
+    if (editingRecord) {
+      // Update existing
+      const { error } = await (supabase as any)
+        .from("maintenance_logs")
+        .update(payload)
+        .eq("id", editingRecord.id)
+        .eq("user_id", user.id);
+
+      if (error) {
+        toast({ title: "Failed to update record", variant: "destructive" });
+        setSaving(false);
+        return;
+      }
+      logId = editingRecord.id;
+    } else {
+      // Insert new
+      const { data: log, error } = await (supabase as any)
+        .from("maintenance_logs")
+        .insert({ user_id: user.id, car_id: carId, ...payload })
+        .select()
+        .single();
+
+      if (error || !log) {
+        toast({ title: "Failed to save record", variant: "destructive" });
+        setSaving(false);
+        return;
+      }
+      logId = log.id;
     }
 
-    // Upload attachments
+    // Upload new attachments
     for (const file of files) {
-      const filePath = `${user.id}/${log.id}/${file.name}`;
+      const filePath = `${user.id}/${logId}/${file.name}`;
       const { error: uploadError } = await supabase.storage
         .from("maintenance-attachments")
         .upload(filePath, file, { upsert: true });
@@ -173,7 +212,7 @@ const MaintenanceLog = () => {
 
         if (urlData?.publicUrl) {
           await (supabase as any).from("maintenance_attachments").insert({
-            log_id: log.id,
+            log_id: logId,
             user_id: user.id,
             file_url: urlData.publicUrl,
             file_name: file.name,
@@ -183,7 +222,7 @@ const MaintenanceLog = () => {
       }
     }
 
-    toast({ title: "Service record added" });
+    toast({ title: editingRecord ? "Record updated" : "Service record added" });
     resetForm();
     setDialogOpen(false);
     setSaving(false);
@@ -218,85 +257,10 @@ const MaintenanceLog = () => {
             <h1 className="text-xl font-bold text-foreground truncate">Maintenance Log</h1>
             {car && <p className="text-sm text-muted-foreground truncate">{car.year} {car.make} {car.model}</p>}
           </div>
-          <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="rounded-full gap-1.5">
-                <Plus size={16} />
-                Add Record
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Add Service Record</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 pt-2">
-                {/* Service Type */}
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-foreground">Service Type</label>
-                  <Select value={serviceType} onValueChange={setServiceType}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {SERVICE_PRESETS.map((s) => (
-                        <SelectItem key={s} value={s}>{s}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {serviceType === "Custom" && (
-                    <Input placeholder="Enter custom service type" value={customType} onChange={(e) => setCustomType(e.target.value)} />
-                  )}
-                </div>
-
-                {/* Date */}
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-foreground">Date</label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !serviceDate && "text-muted-foreground")}>
-                        <Calendar size={16} className="mr-2" />
-                        {serviceDate ? format(serviceDate, "PPP") : "Pick a date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <CalendarComponent mode="single" selected={serviceDate} onSelect={(d) => d && setServiceDate(d)} initialFocus className="p-3 pointer-events-auto" />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                {/* Mileage */}
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-foreground">Mileage (optional)</label>
-                  <Input type="number" placeholder="e.g. 45000" value={mileage} onChange={(e) => setMileage(e.target.value)} />
-                </div>
-
-                {/* Notes */}
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-foreground">Notes (optional)</label>
-                  <Textarea placeholder="Any details about this service..." value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
-                </div>
-
-                {/* Attachments */}
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-foreground">Attachments (optional)</label>
-                  <Button variant="outline" size="sm" className="w-full gap-2" onClick={() => fileInputRef.current?.click()}>
-                    <Paperclip size={14} />
-                    {files.length > 0 ? `${files.length} file(s) selected` : "Add photos or PDFs"}
-                  </Button>
-                  <input ref={fileInputRef} type="file" accept="image/*,.pdf" multiple className="hidden" onChange={(e) => { if (e.target.files) setFiles(Array.from(e.target.files)); }} />
-                  {files.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mt-1">
-                      {files.map((f, i) => (
-                        <Badge key={i} variant="secondary" className="text-xs">{f.name}</Badge>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <Button className="w-full" onClick={handleSave} disabled={saving}>
-                  {saving ? "Saving..." : "Save Record"}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Button size="sm" className="rounded-full gap-1.5" onClick={openAddDialog}>
+            <Plus size={16} />
+            Add Record
+          </Button>
         </div>
 
         {/* Records List */}
@@ -329,14 +293,24 @@ const MaintenanceLog = () => {
                           <p className="text-xs text-muted-foreground mt-1 truncate">{record.notes}</p>
                         )}
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-8 text-muted-foreground hover:text-destructive flex-shrink-0"
-                        onClick={(e) => { e.stopPropagation(); setDeleteId(record.id); }}
-                      >
-                        <Trash2 size={14} />
-                      </Button>
+                      <div className="flex items-center gap-0.5 flex-shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8 text-muted-foreground hover:text-foreground"
+                          onClick={(e) => { e.stopPropagation(); openEditDialog(record); }}
+                        >
+                          <Pencil size={14} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8 text-muted-foreground hover:text-destructive"
+                          onClick={(e) => { e.stopPropagation(); setDeleteId(record.id); }}
+                        >
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
                     </div>
 
                     {isExpanded && (
@@ -367,6 +341,88 @@ const MaintenanceLog = () => {
           </div>
         )}
       </main>
+
+      {/* Add/Edit Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingRecord ? "Edit Service Record" : "Add Service Record"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">Service Type</label>
+              <Select value={serviceType} onValueChange={setServiceType}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {SERVICE_PRESETS.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {serviceType === "Custom" && (
+                <Input placeholder="Enter custom service type" value={customType} onChange={(e) => setCustomType(e.target.value)} />
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">Date</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !serviceDate && "text-muted-foreground")}>
+                    <Calendar size={16} className="mr-2" />
+                    {serviceDate ? format(serviceDate, "PPP") : "Pick a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent mode="single" selected={serviceDate} onSelect={(d) => d && setServiceDate(d)} initialFocus className="p-3 pointer-events-auto" />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">Mileage (optional)</label>
+              <Input type="number" placeholder="e.g. 45000" value={mileage} onChange={(e) => setMileage(e.target.value)} />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">Notes (optional)</label>
+              <Textarea placeholder="Any details about this service..." value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">
+                {editingRecord ? "Add more attachments (optional)" : "Attachments (optional)"}
+              </label>
+              <Button variant="outline" size="sm" className="w-full gap-2" onClick={() => fileInputRef.current?.click()}>
+                <Paperclip size={14} />
+                {files.length > 0 ? `${files.length} file(s) selected` : "Add photos or PDFs"}
+              </Button>
+              <input ref={fileInputRef} type="file" accept="image/*,.pdf" multiple className="hidden" onChange={(e) => { if (e.target.files) setFiles(Array.from(e.target.files)); }} />
+              {files.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {files.map((f, i) => (
+                    <Badge key={i} variant="secondary" className="text-xs">{f.name}</Badge>
+                  ))}
+                </div>
+              )}
+              {editingRecord && editingRecord.attachments.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-xs text-muted-foreground mb-1">Existing attachments:</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {editingRecord.attachments.map((att) => (
+                      <Badge key={att.id} variant="outline" className="text-xs">{att.file_name}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <Button className="w-full" onClick={handleSave} disabled={saving}>
+              {saving ? "Saving..." : editingRecord ? "Update Record" : "Save Record"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
         <AlertDialogContent>
