@@ -294,6 +294,19 @@ const MaintenanceLog = () => {
           </div>
         ) : (
           <div className="space-y-3">
+            {/* Running Total */}
+            {(() => {
+              const totalCost = records.reduce((sum, r) => sum + (r.cost || 0), 0);
+              return totalCost > 0 ? (
+                <div className="flex items-center justify-between p-3 rounded-xl bg-secondary border border-border">
+                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <DollarSign size={16} className="text-primary" />
+                    Total Spent
+                  </div>
+                  <span className="text-lg font-bold text-primary">${totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+              ) : null;
+            })()}
             {records.map((record) => {
               const isExpanded = expandedId === record.id;
               return (
