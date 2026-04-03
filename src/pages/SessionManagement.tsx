@@ -684,7 +684,7 @@ const SessionManagement = () => {
           .eq("event_id", eventRow.public_event_id)
           .eq("user_id", userId);
         if (regData && regData.length > 0) {
-          const groupIds = [...new Set(regData.map((r: any) => String(r.registration_type_id)).filter(Boolean))] as string[];
+          const groupIds = [...new Set(regData.map((r: any) => String(r.run_group_id)).filter((v: string) => v && v !== 'null'))] as string[];
           setMyRunGroups(new Set(groupIds));
           if (publicRunGroupKey) localStorage.setItem(publicRunGroupKey, JSON.stringify(groupIds));
           localStorage.setItem(legacyRunGroupKey, JSON.stringify(groupIds));
