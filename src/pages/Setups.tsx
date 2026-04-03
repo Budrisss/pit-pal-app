@@ -243,20 +243,20 @@ const Setups = () => {
               />
             </div>
 
-            {/* Track & Car row */}
+            {/* Event & Car row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>Track</Label>
-                <Select value={sheetTrack} onValueChange={setSheetTrack}>
+                <Label>Event</Label>
+                <Select value={sheetEvent} onValueChange={setSheetEvent}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select track" />
+                    <SelectValue placeholder="Select event" />
                   </SelectTrigger>
                   <SelectContent>
-                    {tracks.map((track) => (
-                      <SelectItem key={track.id} value={track.id}>
+                    {userEvents.map((event) => (
+                      <SelectItem key={event.id} value={event.id}>
                         <div className="flex items-center gap-2">
-                          <MapPin size={14} />
-                          {track.name} {track.city && `- ${track.city}, ${track.state}`}
+                          <Calendar size={14} />
+                          {event.name} - {new Date(event.date).toLocaleDateString()}
                         </div>
                       </SelectItem>
                     ))}
@@ -284,27 +284,19 @@ const Setups = () => {
               </div>
             </div>
 
-            {/* Event & Session row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Track (auto-resolved) */}
+            {resolvedTrack && (
               <div className="space-y-2">
-                <Label>Event</Label>
-                <Select value={sheetEvent} onValueChange={setSheetEvent} disabled={!sheetTrack || !sheetCar}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={sheetTrack && sheetCar ? "Select event" : "Select track & car first"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {events.map((event) => (
-                      <SelectItem key={event.id} value={event.id}>
-                        <div className="flex items-center gap-2">
-                          <Calendar size={14} />
-                          {event.name} - {new Date(event.date).toLocaleDateString()}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Track / Venue</Label>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/30 rounded-md px-3 py-2 border border-border/50">
+                  <MapPin size={14} className="text-primary" />
+                  {resolvedTrack}
+                </div>
               </div>
+            )}
 
+            {/* Session & Fastest Lap row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>Session</Label>
                 <Select value={sheetSession} onValueChange={setSheetSession} disabled={!sheetEvent}>
@@ -322,6 +314,15 @@ const Setups = () => {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Fastest Lap</Label>
+                <Input
+                  placeholder="e.g., 1:23.456"
+                  value={sheetFastestLap}
+                  onChange={(e) => setSheetFastestLap(e.target.value)}
+                />
               </div>
             </div>
 
