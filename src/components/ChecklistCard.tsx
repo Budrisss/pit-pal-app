@@ -237,7 +237,7 @@ const ChecklistCard = ({ id, title, type, mode, items, onToggleItem, onAddItem, 
             itemsList
           )}
 
-          {mode === "template" && (
+          {(mode === "template" || (mode === "event" && onAddItem)) && (
             <div className="flex items-center gap-2">
               <Input
                 placeholder="Add item..."
