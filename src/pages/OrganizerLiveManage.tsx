@@ -693,7 +693,7 @@ const OrganizerLiveManage = () => {
                 <div>
                   <p className="text-lg font-bold text-foreground">{activeSession.name}</p>
                   <p className="text-sm text-muted-foreground">
-                    {getRunGroupName(activeSession.registration_type_id)} • Started at {activeSession.start_time}
+                    {getRunGroupName(activeSession.run_group_id)} • Started at {activeSession.start_time}
                   </p>
                 </div>
               </div>
