@@ -630,7 +630,7 @@ const OrganizerLiveManage = () => {
       return { hours: hrs, minutes: mins, seconds: secs, isBufferZone, sessionName: next.name, runGroup: getRunGroupName(next.run_group_id) };
     }
     // No start_time — just show the session name without countdown
-    return { hours: 0, minutes: 0, seconds: 0, isBufferZone: false, sessionName: next.name, runGroup: getRunGroupName(next.registration_type_id) };
+    return { hours: 0, minutes: 0, seconds: 0, isBufferZone: false, sessionName: next.name, runGroup: getRunGroupName(next.run_group_id) };
   }, [sessionStates, eventDate, currentTime]);
 
   if (loading) {
