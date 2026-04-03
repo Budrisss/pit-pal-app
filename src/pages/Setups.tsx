@@ -89,36 +89,23 @@ const Setups = () => {
     if (user) {
       fetchSetups();
       fetchAttachments();
-      fetchTracks();
       fetchCars();
+      fetchUserEvents();
     }
   }, [user]);
 
   useEffect(() => {
-    if (sheetTrack && sheetCar) {
-      fetchEvents();
-    } else {
-      setEvents([]);
-      setSheetEvent("");
-    }
-  }, [sheetTrack, sheetCar]);
-
-  useEffect(() => {
     if (sheetEvent) {
       fetchSessions();
+      // Resolve track name from event
+      const evt = userEvents.find((e) => e.id === sheetEvent);
+      setResolvedTrack(evt?.address || "");
     } else {
       setSessions([]);
       setSheetSession("");
+      setResolvedTrack("");
     }
-  }, [sheetEvent]);
-
-  const fetchTracks = async () => {
-    const { data } = await (supabase as any)
-      .from("tracks")
-      .select("id, name, city, state")
-      .order("name");
-    if (data) setTracks(data);
-  };
+  }, [sheetEvent, userEvents]);
 
   const fetchCars = async () => {
     const { data } = await (supabase as any)
@@ -128,13 +115,14 @@ const Setups = () => {
     if (data) setCars(data);
   };
 
-  const fetchEvents = async () => {
+  const fetchUserEvents = async () => {
+    if (!user) return;
     const { data } = await (supabase as any)
       .from("events")
-      .select("id, name, date, track_id")
-      .eq("track_id", sheetTrack)
+      .select("id, name, date, track_id, address")
+      .eq("user_id", user.id)
       .order("date", { ascending: false });
-    if (data) setEvents(data);
+    if (data) setUserEvents(data);
   };
 
   const fetchSessions = async () => {
@@ -184,6 +172,7 @@ const Setups = () => {
         event_id: sheetEvent || null,
         session_id: sheetSession || null,
         session_name: sessionObj?.name || null,
+        fastest_lap_time: sheetFastestLap.trim() || null,
       })
       .select("id")
       .single();
@@ -208,10 +197,10 @@ const Setups = () => {
 
     toast({ title: "Setup saved", description: "Your setup sheet has been created" });
     setSheetName("");
-    setSheetTrack("");
     setSheetCar("");
     setSheetEvent("");
     setSheetSession("");
+    setSheetFastestLap("");
     fetchSetups();
     fetchAttachments();
   };
