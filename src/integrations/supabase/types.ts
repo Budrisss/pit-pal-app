@@ -762,6 +762,44 @@ export type Database = {
           },
         ]
       }
+      setup_attachments: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_type: string | null
+          file_url: string
+          id: string
+          setup_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_type?: string | null
+          file_url: string
+          id?: string
+          setup_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          setup_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "setup_attachments_setup_id_fkey"
+            columns: ["setup_id"]
+            isOneToOne: false
+            referencedRelation: "setup_data"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       setup_data: {
         Row: {
           car_id: string | null
