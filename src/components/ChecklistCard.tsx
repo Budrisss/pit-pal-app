@@ -207,7 +207,7 @@ const ChecklistCard = ({ id, title, type, mode, items, onToggleItem, onAddItem, 
             <Badge className={type === "event" ? "bg-racing-red text-primary-foreground" : "bg-racing-orange text-background"}>
               {type.charAt(0).toUpperCase() + type.slice(1)}
             </Badge>
-            {mode === "template" && onDelete && (
+            {onDelete && (
               <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={onDelete}>
                 <Trash2 size={14} />
               </Button>
@@ -237,7 +237,7 @@ const ChecklistCard = ({ id, title, type, mode, items, onToggleItem, onAddItem, 
             itemsList
           )}
 
-          {mode === "template" && (
+          {(mode === "template" || (mode === "event" && onAddItem)) && (
             <div className="flex items-center gap-2">
               <Input
                 placeholder="Add item..."

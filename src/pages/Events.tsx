@@ -14,7 +14,6 @@ import { useChecklists } from "@/contexts/ChecklistsContext";
 
 const Events = () => {
   const { events, loading, addEvent, updateEvent } = useEvents();
-  const { generateChecklistsForEvent } = useChecklists();
   const location = useLocation();
   const navigate = useNavigate();
   const [countdown, setCountdown] = useState("");
@@ -84,10 +83,7 @@ const Events = () => {
         address: eventData.address,
         description: `Track day event at ${eventData.track}. Get ready for an exciting day on the track!`,
       };
-      const newEventId = await addEvent(newEvent);
-      if (newEventId) {
-        await generateChecklistsForEvent(newEventId);
-      }
+      await addEvent(newEvent);
     }
     setEditingEvent(null);
   };

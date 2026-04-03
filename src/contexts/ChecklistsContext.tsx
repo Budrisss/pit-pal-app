@@ -53,7 +53,10 @@ interface ChecklistsContextType {
   deleteTemplateItem: (itemId: string) => Promise<void>;
   reorderTemplateItems: (templateId: string, orderedIds: string[]) => Promise<void>;
   // Event checklists
-  generateChecklistsForEvent: (eventId: string) => Promise<void>;
+  assignTemplateToEvent: (eventId: string, templateId: string) => Promise<void>;
+  addCustomChecklistToEvent: (eventId: string, name: string, type: "event" | "trailer") => Promise<string | null>;
+  addEventChecklistItem: (checklistId: string, text: string) => Promise<void>;
+  deleteEventChecklist: (checklistId: string) => Promise<void>;
   fetchEventChecklists: (eventId: string) => Promise<void>;
   toggleChecklistItem: (itemId: string, completed: boolean) => Promise<void>;
   getEventProgress: (eventId: string) => EventChecklistProgress;
@@ -176,33 +179,80 @@ export const ChecklistsProvider = ({ children }: { children: ReactNode }) => {
     await Promise.all(updates);
   };
 
-  const generateChecklistsForEvent = async (eventId: string) => {
-    if (!user || templates.length === 0) return;
+  const assignTemplateToEvent = async (eventId: string, templateId: string) => {
+    if (!user) return;
+    const template = templates.find(t => t.id === templateId);
+    if (!template) return;
 
-    for (const template of templates) {
-      const { data: checklist } = await (supabase as any)
-        .from("event_checklists")
-        .insert({
-          event_id: eventId,
-          user_id: user.id,
-          template_id: template.id,
-          name: template.name,
-          type: template.type,
-        })
-        .select("id")
-        .single();
+    const { data: checklist } = await (supabase as any)
+      .from("event_checklists")
+      .insert({
+        event_id: eventId,
+        user_id: user.id,
+        template_id: template.id,
+        name: template.name,
+        type: template.type,
+      })
+      .select("id")
+      .single();
 
-      if (checklist && template.items.length > 0) {
-        const items = template.items.map((item, idx) => ({
-          checklist_id: checklist.id,
-          user_id: user.id,
-          text: item.text,
-          completed: false,
-          sort_order: idx,
-        }));
-        await (supabase as any).from("event_checklist_items").insert(items);
-      }
+    if (checklist && template.items.length > 0) {
+      const items = template.items.map((item, idx) => ({
+        checklist_id: checklist.id,
+        user_id: user.id,
+        text: item.text,
+        completed: false,
+        sort_order: idx,
+      }));
+      await (supabase as any).from("event_checklist_items").insert(items);
     }
+    await fetchEventChecklists(eventId);
+  };
+
+  const addCustomChecklistToEvent = async (eventId: string, name: string, type: "event" | "trailer"): Promise<string | null> => {
+    if (!user) return null;
+    const { data, error } = await (supabase as any)
+      .from("event_checklists")
+      .insert({
+        event_id: eventId,
+        user_id: user.id,
+        template_id: null,
+        name,
+        type,
+      })
+      .select("id")
+      .single();
+    if (!error && data) {
+      await fetchEventChecklists(eventId);
+      return data.id;
+    }
+    return null;
+  };
+
+  const addEventChecklistItem = async (checklistId: string, text: string) => {
+    if (!user) return;
+    // Find the checklist to get the current item count for sort_order
+    let sortOrder = 0;
+    for (const checklists of Object.values(eventChecklists)) {
+      const cl = checklists.find(c => c.id === checklistId);
+      if (cl) { sortOrder = cl.items.length; break; }
+    }
+    await (supabase as any).from("event_checklist_items").insert({
+      checklist_id: checklistId,
+      user_id: user.id,
+      text,
+      completed: false,
+      sort_order: sortOrder,
+    });
+    // Re-fetch all to update state
+    await fetchAllEventChecklists();
+  };
+
+  const deleteEventChecklist = async (checklistId: string) => {
+    if (!user) return;
+    await (supabase as any).from("event_checklist_items").delete().eq("checklist_id", checklistId).eq("user_id", user.id);
+    await (supabase as any).from("event_checklists").delete().eq("id", checklistId).eq("user_id", user.id);
+    await fetchAllEventChecklists();
   };
 
   const fetchEventChecklists = async (eventId: string) => {
@@ -328,7 +378,10 @@ export const ChecklistsProvider = ({ children }: { children: ReactNode }) => {
       updateTemplateItem,
       deleteTemplateItem,
       reorderTemplateItems,
-      generateChecklistsForEvent,
+      assignTemplateToEvent,
+      addCustomChecklistToEvent,
+      addEventChecklistItem,
+      deleteEventChecklist,
       fetchEventChecklists,
       toggleChecklistItem,
       getEventProgress,

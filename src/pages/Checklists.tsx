@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, CheckSquare, ArrowLeft, ListChecks, Calendar } from "lucide-react";
+import { Plus, CheckSquare, ArrowLeft, ListChecks, Calendar, ChevronDown, ChevronRight, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import ChecklistCard from "@/components/ChecklistCard";
 import Navigation from "@/components/Navigation";
 import { useChecklists } from "@/contexts/ChecklistsContext";
@@ -18,7 +17,8 @@ const Checklists = () => {
     templates, eventChecklists, loadingTemplates, loadingEventChecklists,
     addTemplate, deleteTemplate,
     addTemplateItem, updateTemplateItem, deleteTemplateItem, reorderTemplateItems,
-    toggleChecklistItem, fetchAllEventChecklists,
+    assignTemplateToEvent, addCustomChecklistToEvent, addEventChecklistItem,
+    deleteEventChecklist, toggleChecklistItem, fetchAllEventChecklists,
   } = useChecklists();
   const { events } = useEvents();
 
@@ -26,6 +26,13 @@ const Checklists = () => {
   const [newTemplateName, setNewTemplateName] = useState("");
   const [newTemplateType, setNewTemplateType] = useState<"event" | "trailer">("event");
   const [openEventIds, setOpenEventIds] = useState<string[]>([]);
+
+  // Assign template dialog
+  const [assignDialogEventId, setAssignDialogEventId] = useState<string | null>(null);
+  const [assignMode, setAssignMode] = useState<"template" | "custom">("template");
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
+  const [customName, setCustomName] = useState("");
+  const [customType, setCustomType] = useState<"event" | "trailer">("event");
 
   useEffect(() => {
     fetchAllEventChecklists();
@@ -45,8 +52,26 @@ const Checklists = () => {
     );
   };
 
-  // Get events that have checklists
-  const eventsWithChecklists = events.filter(e => eventChecklists[e.id]?.length > 0);
+  const handleAssign = async () => {
+    if (!assignDialogEventId) return;
+    if (assignMode === "template" && selectedTemplateId) {
+      await assignTemplateToEvent(assignDialogEventId, selectedTemplateId);
+    } else if (assignMode === "custom" && customName.trim()) {
+      await addCustomChecklistToEvent(assignDialogEventId, customName.trim(), customType);
+    }
+    closeAssignDialog();
+  };
+
+  const closeAssignDialog = () => {
+    setAssignDialogEventId(null);
+    setSelectedTemplateId("");
+    setCustomName("");
+    setCustomType("event");
+    setAssignMode("template");
+  };
+
+  // Sort events: upcoming first
+  const sortedEvents = [...events].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   return (
     <div className="min-h-screen bg-gradient-dark pb-20">
@@ -94,7 +119,7 @@ const Checklists = () => {
               <div className="text-center py-12 space-y-3">
                 <ListChecks size={48} className="mx-auto text-muted-foreground/40" />
                 <p className="text-muted-foreground">No templates yet</p>
-                <p className="text-muted-foreground text-sm">Create a template to auto-generate checklists for new events.</p>
+                <p className="text-muted-foreground text-sm">Create a template to use as a blueprint for event checklists.</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -121,15 +146,15 @@ const Checklists = () => {
           <TabsContent value="by-event" className="space-y-4">
             {loadingEventChecklists ? (
               <p className="text-muted-foreground text-center py-8">Loading checklists...</p>
-            ) : eventsWithChecklists.length === 0 ? (
+            ) : sortedEvents.length === 0 ? (
               <div className="text-center py-12 space-y-3">
                 <Calendar size={48} className="mx-auto text-muted-foreground/40" />
-                <p className="text-muted-foreground">No event checklists yet</p>
-                <p className="text-muted-foreground text-sm">Create templates first, then add a new event to auto-generate checklists.</p>
+                <p className="text-muted-foreground">No events yet</p>
+                <p className="text-muted-foreground text-sm">Create an event first, then assign checklists to it.</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {eventsWithChecklists.map(event => {
+                {sortedEvents.map(event => {
                   const checklists = eventChecklists[event.id] || [];
                   const allItems = checklists.flatMap(c => c.items);
                   const completed = allItems.filter(i => i.completed).length;
@@ -137,32 +162,60 @@ const Checklists = () => {
                   const isOpen = openEventIds.includes(event.id);
 
                   return (
-                    <Collapsible key={event.id} open={isOpen} onOpenChange={() => toggleEventOpen(event.id)}>
-                      <CollapsibleTrigger asChild>
-                        <div className="flex items-center justify-between p-3 rounded-lg bg-muted/40 border border-border cursor-pointer hover:border-primary/30 transition-colors">
+                    <div key={event.id} className="rounded-lg border border-border overflow-hidden">
+                      {/* Event header */}
+                      <div
+                        className="flex items-center justify-between p-3 bg-muted/40 cursor-pointer hover:bg-muted/60 transition-colors"
+                        onClick={() => toggleEventOpen(event.id)}
+                      >
+                        <div className="flex items-center gap-2">
+                          {isOpen ? <ChevronDown size={16} className="text-muted-foreground" /> : <ChevronRight size={16} className="text-muted-foreground" />}
                           <div>
                             <p className="font-semibold text-foreground text-sm">{event.name}</p>
                             <p className="text-xs text-muted-foreground">{event.date}</p>
                           </div>
-                          <div className={`text-xs font-medium px-2 py-1 rounded-full ${completed === total ? 'bg-success/20 text-success' : 'bg-racing-orange/20 text-racing-orange'}`}>
-                            ✓ {completed}/{total}
-                          </div>
                         </div>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent className="space-y-3 pt-3">
-                        {checklists.map(cl => (
-                          <ChecklistCard
-                            key={cl.id}
-                            id={cl.id}
-                            title={cl.name}
-                            type={cl.type as "event" | "trailer"}
-                            mode="event"
-                            items={cl.items}
-                            onToggleItem={(itemId, completed) => toggleChecklistItem(itemId, completed)}
-                          />
-                        ))}
-                      </CollapsibleContent>
-                    </Collapsible>
+                        <div className="flex items-center gap-2">
+                          {total > 0 && (
+                            <div className={`text-xs font-medium px-2 py-1 rounded-full ${completed === total ? 'bg-success/20 text-success' : 'bg-racing-orange/20 text-racing-orange'}`}>
+                              ✓ {completed}/{total}
+                            </div>
+                          )}
+                          {checklists.length === 0 && (
+                            <span className="text-xs text-muted-foreground">No checklists</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Expanded content */}
+                      {isOpen && (
+                        <div className="p-3 space-y-3 border-t border-border">
+                          {checklists.map(cl => (
+                            <ChecklistCard
+                              key={cl.id}
+                              id={cl.id}
+                              title={cl.name}
+                              type={cl.type as "event" | "trailer"}
+                              mode="event"
+                              items={cl.items}
+                              onToggleItem={(itemId, completed) => toggleChecklistItem(itemId, completed)}
+                              onAddItem={(text) => addEventChecklistItem(cl.id, text)}
+                              onDelete={() => deleteEventChecklist(cl.id)}
+                            />
+                          ))}
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full"
+                            onClick={(e) => { e.stopPropagation(); setAssignDialogEventId(event.id); }}
+                          >
+                            <Plus size={14} />
+                            Add Checklist
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>
@@ -197,6 +250,77 @@ const Checklists = () => {
             <Button variant="pulse" className="w-full" onClick={handleCreateTemplate} disabled={!newTemplateName.trim()}>
               Create Template
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Checklist Dialog */}
+      <Dialog open={!!assignDialogEventId} onOpenChange={(open) => { if (!open) closeAssignDialog(); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Add Checklist</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Tabs value={assignMode} onValueChange={(v) => setAssignMode(v as "template" | "custom")}>
+              <TabsList className="w-full">
+                <TabsTrigger value="template" className="flex-1">From Template</TabsTrigger>
+                <TabsTrigger value="custom" className="flex-1">Custom</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="template" className="space-y-3 pt-2">
+                {templates.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">No templates available. Create one in the Templates tab first.</p>
+                ) : (
+                  <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a template" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {templates.map(t => (
+                        <SelectItem key={t.id} value={t.id}>
+                          {t.name} ({t.type})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                <Button
+                  variant="pulse"
+                  className="w-full"
+                  onClick={handleAssign}
+                  disabled={!selectedTemplateId}
+                >
+                  Assign Template
+                </Button>
+              </TabsContent>
+
+              <TabsContent value="custom" className="space-y-3 pt-2">
+                <Input
+                  placeholder="Checklist name"
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleAssign()}
+                  autoFocus
+                />
+                <Select value={customType} onValueChange={(v) => setCustomType(v as "event" | "trailer")}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="event">Event</SelectItem>
+                    <SelectItem value="trailer">Trailer</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="pulse"
+                  className="w-full"
+                  onClick={handleAssign}
+                  disabled={!customName.trim()}
+                >
+                  Create Checklist
+                </Button>
+              </TabsContent>
+            </Tabs>
           </div>
         </DialogContent>
       </Dialog>
