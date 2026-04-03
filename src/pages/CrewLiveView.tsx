@@ -65,17 +65,27 @@ const CrewLiveView = () => {
     return null;
   }, []);
 
-  // Load sessions
+  // Load sessions + check crew_enabled
   useEffect(() => {
     if (!eventId || !user) return;
     const loadSessions = async () => {
       const { data: eventRow } = await supabase
         .from("events")
-        .select("public_event_id")
+        .select("public_event_id, user_id")
         .eq("id", eventId)
         .maybeSingle();
 
       if (eventRow?.public_event_id) {
+        // Check if crew_enabled for this event's owner
+        const { data: regData } = await (supabase as any)
+          .from("event_registrations")
+          .select("crew_enabled")
+          .eq("event_id", eventRow.public_event_id)
+          .eq("user_id", eventRow.user_id)
+          .limit(1);
+        const enabled = regData && regData.length > 0 ? regData[0].crew_enabled : false;
+        setCrewEnabled(enabled);
+
         const { data } = await (supabase as any)
           .from("public_event_sessions")
           .select("name, start_time, duration_minutes")
@@ -89,6 +99,8 @@ const CrewLiveView = () => {
           })));
         }
       } else {
+        // Personal event — crew is always enabled
+        setCrewEnabled(true);
         const localSessions = parseLocalSessions(eventId);
         if (localSessions) setSessions(localSessions);
       }
