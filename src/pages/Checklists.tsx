@@ -17,7 +17,7 @@ const Checklists = () => {
   const {
     templates, eventChecklists, loadingTemplates, loadingEventChecklists,
     addTemplate, deleteTemplate,
-    addTemplateItem, updateTemplateItem, deleteTemplateItem,
+    addTemplateItem, updateTemplateItem, deleteTemplateItem, reorderTemplateItems,
     toggleChecklistItem, fetchAllEventChecklists,
   } = useChecklists();
   const { events } = useEvents();
