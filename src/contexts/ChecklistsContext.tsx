@@ -53,7 +53,10 @@ interface ChecklistsContextType {
   deleteTemplateItem: (itemId: string) => Promise<void>;
   reorderTemplateItems: (templateId: string, orderedIds: string[]) => Promise<void>;
   // Event checklists
-  generateChecklistsForEvent: (eventId: string) => Promise<void>;
+  assignTemplateToEvent: (eventId: string, templateId: string) => Promise<void>;
+  addCustomChecklistToEvent: (eventId: string, name: string, type: "event" | "trailer") => Promise<string | null>;
+  addEventChecklistItem: (checklistId: string, text: string) => Promise<void>;
+  deleteEventChecklist: (checklistId: string) => Promise<void>;
   fetchEventChecklists: (eventId: string) => Promise<void>;
   toggleChecklistItem: (itemId: string, completed: boolean) => Promise<void>;
   getEventProgress: (eventId: string) => EventChecklistProgress;
