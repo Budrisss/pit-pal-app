@@ -70,7 +70,7 @@ const OrganizerLiveManage = () => {
   const [eventName, setEventName] = useState("");
   const [eventDate, setEventDate] = useState("");
   const [sessions, setSessions] = useState<EventSession[]>([]);
-  const [registrationTypes, setRegistrationTypes] = useState<RegistrationType[]>([]);
+  const [registrationTypes, setRegistrationTypes] = useState<RegistrationType[]>([]); // run groups for display
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [newAnnouncement, setNewAnnouncement] = useState("");
   const [postingAnnouncement, setPostingAnnouncement] = useState(false);
