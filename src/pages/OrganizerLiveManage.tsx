@@ -395,7 +395,7 @@ const OrganizerLiveManage = () => {
         .neq("flag_type", "yellow_turn")
         .neq("flag_type", "blue");
     }
-    const groupName = reg ? (registrationTypes.find(rt => rt.id === reg.registration_type_id)?.name || "") : "";
+    const groupName = reg ? (registrationTypes.find(rt => rt.id === reg.run_group_id)?.name || "") : "";
     const messagePrefix = reg?.car_number ? `Car #${reg.car_number}` : null;
     const fullMessage = [messagePrefix, groupName, blackFlagMessage.trim()].filter(Boolean).join(" — ") || null;
     const { error } = await supabase.from("event_flags").insert({
