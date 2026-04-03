@@ -454,6 +454,7 @@ const CrewLiveView = () => {
             </ScrollArea>
           </CardContent>
         </Card>
+        </>}
       </div>
       <Navigation />
     </div>
