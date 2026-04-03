@@ -16,6 +16,11 @@ const EventDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { getEventById, deleteEvent } = useEvents();
+  const { eventChecklists, fetchEventChecklists, toggleChecklistItem } = useChecklists();
+
+  useEffect(() => {
+    if (id) fetchEventChecklists(id);
+  }, [id]);
 
   // Find the specific event by ID
   const event = getEventById(id!);
