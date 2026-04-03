@@ -206,6 +206,31 @@ const EventDetails = () => {
           </CardContent>
         </Card>
 
+        {/* Checklists */}
+        {(eventChecklists[id!] || []).length > 0 && (
+          <Card className="bg-gradient-card border-border/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CheckSquare className="text-primary" />
+                Checklists
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {(eventChecklists[id!] || []).map(cl => (
+                <ChecklistCard
+                  key={cl.id}
+                  id={cl.id}
+                  title={cl.name}
+                  type={cl.type as "event" | "trailer"}
+                  mode="event"
+                  items={cl.items}
+                  onToggleItem={(itemId, completed) => toggleChecklistItem(itemId, completed)}
+                />
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3 pt-4">
           <Button variant="pulse" className="flex-1">
