@@ -336,9 +336,9 @@ const PublicEventPreview = () => {
     );
   }
 
-  const getGroupName = (regTypeId: string | null) => {
-    if (!regTypeId) return null;
-    return regTypes.find((rt) => rt.id === regTypeId)?.name || null;
+  const getGroupName = (runGroupId: string | null) => {
+    if (!runGroupId) return null;
+    return runGroups.find((rg) => rg.id === runGroupId)?.name || null;
   };
 
   const totalRegistered = Object.values(regCounts).reduce((a, b) => a + b, 0);
