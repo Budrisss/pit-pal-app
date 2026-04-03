@@ -313,7 +313,6 @@ const Garage = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 max-w-6xl mx-auto">
           <div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white flex items-center gap-2 sm:gap-3">
-              <Car className="text-white size-6 sm:size-8 lg:size-10" />
               My Garage
             </h1>
             <p className="text-white/80 text-sm sm:text-lg lg:text-xl mt-1 sm:mt-2">Manage your racing collection</p>
