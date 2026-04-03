@@ -10,11 +10,9 @@ import EventForm, { EventFormData } from "@/components/EventForm";
 import Navigation from "@/components/Navigation";
 import DesktopNavigation from "@/components/DesktopNavigation";
 import { useEvents, Event } from "@/contexts/EventsContext";
-import { useChecklists } from "@/contexts/ChecklistsContext";
 
 const Events = () => {
   const { events, loading, addEvent, updateEvent } = useEvents();
-  // Checklists are now assigned manually per event, no auto-generate
   const location = useLocation();
   const navigate = useNavigate();
   const [countdown, setCountdown] = useState("");
