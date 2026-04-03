@@ -425,9 +425,9 @@ const OrganizerLiveManage = () => {
     toast({ title: "All flags cleared" });
   };
 
-  const getRunGroupName = (regTypeId: string | null) => {
-    if (!regTypeId) return "All groups";
-    return registrationTypes.find((rt) => rt.id === regTypeId)?.name || "Unknown";
+  const getRunGroupName = (runGroupId: string | null) => {
+    if (!runGroupId) return "All groups";
+    return registrationTypes.find((rt) => rt.id === runGroupId)?.name || "Unknown";
   };
 
   const orderedSessions = useMemo(
