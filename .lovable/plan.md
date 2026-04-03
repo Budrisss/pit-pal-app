@@ -1,22 +1,53 @@
 
 
-## Plan: My Run Groups Card Uses Run Groups Instead of Registration Types
+## Plan: Add Crew/Driver Communication to Global Events
 
-### What Changes
-The "My Run Groups" card in Session Management currently shows **registration types** (pricing tiers) and filters sessions by `registration_type_id`. It should instead show the **run group** the user selected during registration and filter sessions by `run_group_id`.
+### What We're Building
+Port the personal event crew/driver communication system to global events:
+1. **Racer Live View** gets driver panels (track notes, gap ahead, crew messages feed) — read-only
+2. **Crew Live View** is extended to work with global events so a crew member can send messages
 
-### File: `src/pages/SessionManagement.tsx`
+### Current State
+- **Personal events**: DriverLiveView (read-only, track notes + gap + crew feed) and CrewLiveView (sends gap/messages) work via `crew_messages` table, keyed by personal `event_id`
+- **Global events**: RacerLiveView shows flags, sessions, announcements — no crew communication
 
-1. **Fetch run groups instead of registration types** — Change the data load (line ~607-611) to query `run_groups` table instead of `registration_types` for the group list.
+### Changes
 
-2. **Map sessions with `run_group_id`** — Update session mapping (lines ~631, ~738) to use `runGroupId: s.run_group_id` instead of `registrationTypeId: s.registration_type_id`.
+#### 1. Extend `src/pages/RacerLiveView.tsx` (~887 lines)
+- Add driver communication panels below the existing flag/session UI:
+  - **Track Notes** card (editable, saved to localStorage per event)
+  - **Gap Ahead** hero card showing latest `gap_ahead` from `crew_messages`
+  - **Latest Crew Message** banner
+  - **Crew Updates** feed (scrollable, real-time via Supabase channel)
+- Subscribe to `crew_messages` table filtered by the user's personal `events.id` (the user's personal event linked to the global event via `public_event_id`)
+- Reuse the same `crew_messages` table — the crew member will send messages keyed to the racer's personal event ID
 
-3. **Auto-default from user's registration** — Update the auto-default logic (lines ~683-687) to read `run_group_id` from `event_registrations` instead of `registration_type_id`, and key the `userRegMap` by `run_group_id`.
+#### 2. Extend `src/pages/CrewLiveView.tsx` (~440 lines)
+- Currently only works with personal events (uses `EventsContext.getEventById` and localStorage sessions)
+- Add detection: if the personal event has a `public_event_id`, fetch sessions from `public_event_sessions` instead of localStorage
+- Use the global event's session timers (start_time, duration) for the active session banner
+- Keep the same crew message sending logic (writes to `crew_messages` with the personal event ID)
+- Add a way to access this page from the event details or session management (link/button)
 
-4. **Filter sessions by run group** — Update any session filtering/countdown logic that matches `registrationTypeId` to match `runGroupId` instead.
+#### 3. Add navigation links
+- **EventDetails page**: Add a "Crew View" link/button so a designated crew member can access `/crew-live/:eventId`
+- **RacerLiveView**: No navigation change needed — the driver panels are embedded
 
-5. **Rename internal state** — Rename `registrationTypeId` on the `Session` interface to `runGroupId` for clarity.
+### Data Flow
+```text
+Crew member → CrewLiveView → sends to crew_messages (event_id = personal event ID)
+                                      ↓
+Racer → RacerLiveView → subscribes to crew_messages (same personal event ID)
+                         shows gap ahead, messages, track notes
+```
 
-### No Database Changes Needed
-The `run_group_id` columns already exist on both `public_event_sessions` and `event_registrations`.
+### No Database Changes
+The `crew_messages` table already exists and works. Messages are keyed by the racer's personal `events.id`, which is the same whether accessed from personal or global event context.
+
+### Files Modified
+| File | Change |
+|------|--------|
+| `src/pages/RacerLiveView.tsx` | Add track notes, gap ahead, crew message feed, real-time subscription |
+| `src/pages/CrewLiveView.tsx` | Support global events by fetching `public_event_sessions` when `public_event_id` exists |
+| `src/pages/EventDetails.tsx` | Add "Crew View" navigation button |
 
