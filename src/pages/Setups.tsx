@@ -65,6 +65,7 @@ interface Session {
 
 const Setups = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [formOpen, setFormOpen] = useState(false);
   const [savedSetups, setSavedSetups] = useState<SavedSetup[]>([]);
