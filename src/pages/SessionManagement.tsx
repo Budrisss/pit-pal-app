@@ -635,8 +635,8 @@ const SessionManagement = () => {
         } else {
           setSessions([]);
         }
-        if (regTypesRes.data && regTypesRes.data.length > 0) {
-          setRunGroups(regTypesRes.data);
+        if (runGroupsRes.data && runGroupsRes.data.length > 0) {
+          setRunGroups(runGroupsRes.data);
         }
       } else {
         // Personal event — use localStorage / hardcoded defaults
