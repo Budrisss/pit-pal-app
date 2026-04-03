@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Wrench, ChevronDown, ChevronUp, Upload, Car, Calendar, Clock, MapPin, Save, Trash2 } from "lucide-react";
+import { Wrench, ChevronDown, ChevronUp, Upload, Car, Calendar, Clock, MapPin, Save, Trash2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import SetupAttachments from "@/components/SetupAttachments";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface SetupAttachment {
   id: string;
@@ -69,7 +70,15 @@ const Setups = () => {
   const [allAttachments, setAllAttachments] = useState<SetupAttachment[]>([]);
   const [expandedSetup, setExpandedSetup] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-
+  const [editingSetup, setEditingSetup] = useState<SavedSetup | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editCar, setEditCar] = useState("");
+  const [editEvent, setEditEvent] = useState("");
+  const [editSession, setEditSession] = useState("");
+  const [editFastestLap, setEditFastestLap] = useState("");
+  const [editSessions, setEditSessions] = useState<Session[]>([]);
+  const [editResolvedTrack, setEditResolvedTrack] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
   // General setup sheet form state
   const [sheetName, setSheetName] = useState("");
   const [sheetCar, setSheetCar] = useState("");
@@ -233,6 +242,82 @@ const Setups = () => {
       if (expandedSetup === setupId) setExpandedSetup(null);
     }
     setDeleteConfirmId(null);
+  };
+
+  const openEditDialog = (setup: SavedSetup) => {
+    setEditingSetup(setup);
+    setEditName(setup.setup_name || "");
+    setEditCar(setup.car_id || "");
+    setEditEvent(setup.event_id || "");
+    setEditSession("");
+    setEditFastestLap(setup.fastest_lap_time || "");
+    setEditResolvedTrack("");
+    // Fetch sessions for the setup's event
+    if (setup.event_id) {
+      (supabase as any)
+        .from("sessions")
+        .select("id, name, type, event_id")
+        .eq("event_id", setup.event_id)
+        .order("created_at")
+        .then(({ data }: any) => {
+          setEditSessions(data || []);
+          // Try to find matching session by name
+          const match = (data || []).find((s: Session) => s.name === setup.session_name);
+          if (match) setEditSession(match.id);
+        });
+      const evt = userEvents.find((e) => e.id === setup.event_id);
+      setEditResolvedTrack(evt?.trackName || evt?.address || "");
+    }
+  };
+
+  useEffect(() => {
+    if (editEvent && editingSetup) {
+      (supabase as any)
+        .from("sessions")
+        .select("id, name, type, event_id")
+        .eq("event_id", editEvent)
+        .order("created_at")
+        .then(({ data }: any) => {
+          setEditSessions(data || []);
+          if (editEvent !== editingSetup.event_id) setEditSession("");
+        });
+      const evt = userEvents.find((e) => e.id === editEvent);
+      setEditResolvedTrack(evt?.trackName || evt?.address || "");
+    } else if (!editEvent) {
+      setEditSessions([]);
+      setEditSession("");
+      setEditResolvedTrack("");
+    }
+  }, [editEvent]);
+
+  const handleUpdateSetup = async () => {
+    if (!user || !editingSetup || !editName.trim()) {
+      toast({ title: "Setup name is required", variant: "destructive" });
+      return;
+    }
+    setEditSaving(true);
+    const sessionObj = editSessions.find((s) => s.id === editSession);
+    const { error } = await (supabase as any)
+      .from("setup_data")
+      .update({
+        setup_name: editName.trim(),
+        car_id: editCar || null,
+        event_id: editEvent || null,
+        session_id: editSession || null,
+        session_name: sessionObj?.name || null,
+        fastest_lap_time: editFastestLap.trim() || null,
+      })
+      .eq("id", editingSetup.id)
+      .eq("user_id", user.id);
+
+    setEditSaving(false);
+    if (error) {
+      toast({ title: "Error updating setup", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Setup updated" });
+      setEditingSetup(null);
+      fetchSetups();
+    }
   };
 
   const generalAttachments = allAttachments.filter((a) => !a.setup_id);
@@ -465,15 +550,26 @@ const Setups = () => {
                           compact
                         />
                       )}
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="w-full mt-2"
-                        onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(setup.id); }}
-                      >
-                        <Trash2 size={14} className="mr-2" />
-                        Delete Setup
-                      </Button>
+                      <div className="flex gap-2 mt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={(e) => { e.stopPropagation(); openEditDialog(setup); }}
+                        >
+                          <Pencil size={14} className="mr-2" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="flex-1"
+                          onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(setup.id); }}
+                        >
+                          <Trash2 size={14} className="mr-2" />
+                          Delete
+                        </Button>
+                      </div>
                     </CardContent>
                   )}
                 </Card>
@@ -520,6 +616,101 @@ const Setups = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!editingSetup} onOpenChange={(open) => !open && setEditingSetup(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil size={20} className="text-primary" />
+              Edit Setup
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Setup Name</Label>
+              <Input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="e.g., Dry Weather Setup" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Event</Label>
+                <Select value={editEvent} onValueChange={setEditEvent}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select event" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {userEvents.map((event) => (
+                      <SelectItem key={event.id} value={event.id}>
+                        <div className="flex items-center gap-2">
+                          <Calendar size={14} />
+                          {event.name} - {new Date(event.date).toLocaleDateString()}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Car</Label>
+                <Select value={editCar} onValueChange={setEditCar}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select car" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cars.map((car) => (
+                      <SelectItem key={car.id} value={car.id}>
+                        <div className="flex items-center gap-2">
+                          <Car size={14} />
+                          {car.name} {car.year && car.make && `(${car.year} ${car.make} ${car.model})`}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {editResolvedTrack && (
+              <div className="space-y-2">
+                <Label>Track / Venue</Label>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/30 rounded-md px-3 py-2 border border-border/50">
+                  <MapPin size={14} className="text-primary" />
+                  {editResolvedTrack}
+                </div>
+              </div>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Session</Label>
+                <Select value={editSession} onValueChange={setEditSession} disabled={!editEvent}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={editEvent ? "Select session" : "Select event first"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {editSessions.map((session) => (
+                      <SelectItem key={session.id} value={session.id}>
+                        <div className="flex items-center gap-2">
+                          <Clock size={14} />
+                          {session.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Fastest Lap</Label>
+                <Input value={editFastestLap} onChange={(e) => setEditFastestLap(e.target.value)} placeholder="e.g., 1:23.456" />
+              </div>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" onClick={() => setEditingSetup(null)} className="flex-1">Cancel</Button>
+              <Button onClick={handleUpdateSetup} disabled={editSaving || !editName.trim()} className="flex-1">
+                <Save size={14} className="mr-2" />
+                {editSaving ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
