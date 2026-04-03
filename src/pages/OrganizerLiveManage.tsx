@@ -533,7 +533,9 @@ const OrganizerLiveManage = () => {
   const groupRegistrationsByType = (regs: EventRegistrationWithCar[]) => {
     const groups: Record<string, EventRegistrationWithCar[]> = {};
     for (const r of regs) {
-      const groupName = registrationTypes.find(rt => rt.id === r.registration_type_id)?.name || "Unknown";
+      const groupName = r.run_group_id
+        ? (registrationTypes.find(rt => rt.id === r.run_group_id)?.name || "Unknown")
+        : "No Run Group";
       if (!groups[groupName]) groups[groupName] = [];
       groups[groupName].push(r);
     }
