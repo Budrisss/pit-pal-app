@@ -425,6 +425,8 @@ export type Database = {
           id: string
           name: string
           public_event_id: string | null
+          requirements: string[] | null
+          schedule: Json | null
           status: string | null
           time: string | null
           track_id: string | null
@@ -440,6 +442,8 @@ export type Database = {
           id?: string
           name: string
           public_event_id?: string | null
+          requirements?: string[] | null
+          schedule?: Json | null
           status?: string | null
           time?: string | null
           track_id?: string | null
@@ -455,6 +459,8 @@ export type Database = {
           id?: string
           name?: string
           public_event_id?: string | null
+          requirements?: string[] | null
+          schedule?: Json | null
           status?: string | null
           time?: string | null
           track_id?: string | null
