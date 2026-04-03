@@ -73,17 +73,17 @@ const Setups = () => {
 
   // General setup sheet form state
   const [sheetName, setSheetName] = useState("");
-  const [sheetTrack, setSheetTrack] = useState("");
   const [sheetCar, setSheetCar] = useState("");
   const [sheetEvent, setSheetEvent] = useState("");
   const [sheetSession, setSheetSession] = useState("");
+  const [sheetFastestLap, setSheetFastestLap] = useState("");
   const [saving, setSaving] = useState(false);
 
   // Selector data
-  const [tracks, setTracks] = useState<Track[]>([]);
   const [cars, setCars] = useState<UserCar[]>([]);
-  const [events, setEvents] = useState<Event[]>([]);
+  const [userEvents, setUserEvents] = useState<Event[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [resolvedTrack, setResolvedTrack] = useState("");
 
   useEffect(() => {
     if (user) {
