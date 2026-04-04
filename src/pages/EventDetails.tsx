@@ -325,6 +325,11 @@ const EventDetails = () => {
               Crew View
             </Button>
           )}
+          {!event.publicEventId && (
+            <Button variant="outline" size="icon" onClick={copyCrewLink} title="Copy crew link">
+              <Copy size={16} />
+            </Button>
+          )}
           {event.publicEventId && (
             <Button variant="outline" className="flex-1" onClick={() => navigate(`/race-live/${event.publicEventId}`)}>
               <Radio size={16} />
