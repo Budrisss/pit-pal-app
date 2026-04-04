@@ -44,6 +44,9 @@ const CrewLiveView = () => {
   const [freeText, setFreeText] = useState("");
   const [sending, setSending] = useState(false);
   const [crewEnabled, setCrewEnabled] = useState<boolean | null>(null); // null = loading
+  const [eventOwnerUserId, setEventOwnerUserId] = useState<string | null>(null);
+  const [eventName, setEventName] = useState<string | null>(null);
+  const [eventDate, setEventDate] = useState<Date | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const event = getEventById(eventId || "");
