@@ -283,7 +283,12 @@ const OrganizerLiveManage = () => {
   const handleSendFlag = async (flagType: string) => {
     if (!eventId || !organizerProfileId) return;
     // Deactivate all existing flags (except local yellows and blue flags which are managed separately)
-    await supabase.from("event_flags").update({ is_active: false }).eq("event_id", eventId).eq("is_active", true).neq("flag_type", "yellow_turn").neq("flag_type", "blue");
+    // For checkered flags, deactivate ALL flags (including local); for other flags, preserve local cautions
+    if (flagType === "checkered") {
+      await supabase.from("event_flags").update({ is_active: false }).eq("event_id", eventId).eq("is_active", true);
+    } else {
+      await supabase.from("event_flags").update({ is_active: false }).eq("event_id", eventId).eq("is_active", true).neq("flag_type", "yellow_turn").neq("flag_type", "blue");
+    }
     // Insert new flag
     const { error } = await supabase.from("event_flags").insert({
       event_id: eventId,
