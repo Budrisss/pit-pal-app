@@ -217,6 +217,54 @@ const OrganizerLiveManage = () => {
     };
   }, [eventId]);
 
+  const deactivateAllActiveFlags = useCallback(async () => {
+    if (!eventId) return;
+
+    const { error } = await supabase
+      .from("event_flags")
+      .update({ is_active: false })
+      .eq("event_id", eventId)
+      .eq("is_active", true);
+
+    if (error) throw error;
+  }, [eventId]);
+
+  const deactivateFlagsByIds = useCallback(async (flagIds: string[]) => {
+    if (flagIds.length === 0) return;
+
+    const { error } = await supabase
+      .from("event_flags")
+      .update({ is_active: false })
+      .in("id", flagIds);
+
+    if (error) throw error;
+  }, []);
+
+  const insertSessionFlag = useCallback(async ({
+    flagType,
+    sessionId,
+    message = null,
+    isActive = true,
+  }: {
+    flagType: string;
+    sessionId: string | null;
+    message?: string | null;
+    isActive?: boolean;
+  }) => {
+    if (!eventId || !organizerProfileId) return;
+
+    const { error } = await supabase.from("event_flags").insert({
+      event_id: eventId,
+      organizer_id: organizerProfileId,
+      flag_type: flagType,
+      message,
+      is_active: isActive,
+      session_id: sessionId,
+    });
+
+    if (error) throw error;
+  }, [eventId, organizerProfileId]);
+
   const handleUpdateSession = async (sessionId: string, field: string, value: any) => {
     const { error } = await supabase
       .from("public_event_sessions")
@@ -285,7 +333,7 @@ const OrganizerLiveManage = () => {
     // Deactivate all existing flags (except local yellows and blue flags which are managed separately)
     // For checkered flags, deactivate ALL flags (including local); for other flags, preserve local cautions
     if (flagType === "checkered") {
-      await supabase.from("event_flags").update({ is_active: false }).eq("event_id", eventId).eq("is_active", true);
+      await deactivateAllActiveFlags();
     } else {
       await supabase.from("event_flags").update({ is_active: false }).eq("event_id", eventId).eq("is_active", true).neq("flag_type", "yellow_turn").neq("flag_type", "blue");
     }
@@ -428,7 +476,7 @@ const OrganizerLiveManage = () => {
 
   const handleClearFlags = async () => {
     if (!eventId) return;
-    await supabase.from("event_flags").update({ is_active: false }).eq("event_id", eventId).eq("is_active", true);
+    await deactivateAllActiveFlags();
     toast({ title: "All flags cleared" });
   };
 
@@ -575,57 +623,75 @@ const OrganizerLiveManage = () => {
   // Auto-send checkered flag when a session ends
   const prevActiveSessionId = useRef<string | null>(null);
   useEffect(() => {
+    if (loading || !eventId || !organizerProfileId) return;
+
     const currentActiveId = activeSession?.id || null;
     const prevId = prevActiveSessionId.current;
+    const staleFlagIds = activeFlags
+      .filter((flag) => flag.session_id && flag.session_id !== currentActiveId)
+      .map((flag) => flag.id);
+    const hasCurrentSessionTrackStatus = activeFlags.some(
+      (flag) => flag.session_id === currentActiveId && !isLocalCaution(flag) && flag.flag_type !== "checkered"
+    );
 
-    // Session just started (no prev active → now active): auto-send green flag
-    if (!prevId && currentActiveId && eventId && organizerProfileId) {
-      const autoGreen = async () => {
-        const hasGreen = activeFlags.some(f => f.flag_type === "green" && f.is_active);
-        if (hasGreen) return;
-        await supabase
-          .from("event_flags")
-          .update({ is_active: false })
-          .eq("event_id", eventId)
-          .eq("is_active", true);
-        await supabase.from("event_flags").insert({
-          event_id: eventId,
-          organizer_id: organizerProfileId,
-          flag_type: "green",
-          message: null,
-          is_active: true,
-          session_id: currentActiveId,
-        });
-        toast({ title: "🟢 Green flag auto-sent — session started" });
-      };
-      autoGreen();
-    }
-
-    // Session just ended (had prev active → now none): auto-send checkered flag
-    if (prevId && !currentActiveId && eventId && organizerProfileId) {
-      const autoCheckered = async () => {
-        const hasCheckered = activeFlags.some(f => f.flag_type === "checkered" && f.is_active);
-        if (hasCheckered) return;
-        await supabase
-          .from("event_flags")
-          .update({ is_active: false })
-          .eq("event_id", eventId)
-          .eq("is_active", true);
-        await supabase.from("event_flags").insert({
-          event_id: eventId,
-          organizer_id: organizerProfileId,
-          flag_type: "checkered",
-          message: "Session complete",
-          is_active: true,
-          session_id: prevId,
-        });
-        toast({ title: "🏁 Checkered flag auto-sent — session ended" });
-      };
-      autoCheckered();
-    }
+    if (prevId === currentActiveId) return;
 
     prevActiveSessionId.current = currentActiveId;
-  }, [activeSession?.id, eventId, organizerProfileId]);
+
+    const syncSessionFlags = async () => {
+      try {
+        // Session changed directly from one run group to another (e.g. tab throttling skipped the gap)
+        if (prevId && currentActiveId && prevId !== currentActiveId) {
+          await deactivateAllActiveFlags();
+          await insertSessionFlag({
+            flagType: "checkered",
+            sessionId: prevId,
+            message: "Session complete",
+            isActive: false,
+          });
+          await insertSessionFlag({
+            flagType: "green",
+            sessionId: currentActiveId,
+          });
+          toast({ title: "🟢 Green flag auto-sent — session changed" });
+          return;
+        }
+
+        // Session just started (or page loaded mid-session) — clear stale previous-session flags first
+        if (!prevId && currentActiveId) {
+          if (staleFlagIds.length > 0) {
+            await deactivateFlagsByIds(staleFlagIds);
+          }
+
+          if (!hasCurrentSessionTrackStatus) {
+            await insertSessionFlag({
+              flagType: "green",
+              sessionId: currentActiveId,
+            });
+            toast({ title: "🟢 Green flag auto-sent — session started" });
+          }
+
+          return;
+        }
+
+        // Session just ended (had prev active → now none)
+        if (prevId && !currentActiveId) {
+          await deactivateAllActiveFlags();
+          await insertSessionFlag({
+            flagType: "checkered",
+            sessionId: prevId,
+            message: "Session complete",
+          });
+          toast({ title: "🏁 Checkered flag auto-sent — session ended" });
+        }
+      } catch (error) {
+        console.error("Failed to sync session flags", error);
+        toast({ title: "Failed to sync track status", variant: "destructive" });
+      }
+    };
+
+    void syncSessionFlags();
+  }, [activeSession?.id, activeFlags, deactivateAllActiveFlags, deactivateFlagsByIds, eventId, insertSessionFlag, isLocalCaution, loading, organizerProfileId, toast]);
   const activeRemaining = useMemo(() => {
     if (!activeSession?.start_time || !activeSession?.duration_minutes || !eventDate) return null;
     const evDate = parseISO(eventDate);
