@@ -1051,8 +1051,8 @@ const SessionManagement = () => {
           </div>
         </div>
 
-        {/* Active Session Banner */}
-        {currentActiveSession && (
+        {/* Active Session Banner — filtered by user's run groups when selected */}
+        {currentActiveSession && activeIsMyGroup && (
           <div className="rounded-xl border border-green-500/30 bg-green-500/10 backdrop-blur-sm p-5 sm:p-6 border-none">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -1081,6 +1081,32 @@ const SessionManagement = () => {
                 />
               </div>
             )}
+          </div>
+        )}
+
+        {/* Another group is active — show muted on-track indicator + your next session */}
+        {currentActiveSession && !activeIsMyGroup && myRunGroups.size > 0 && (
+          <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-4 sm:p-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 rounded-full bg-muted-foreground/40 animate-pulse" />
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">On Track: {currentActiveSession.referenceName}</p>
+                  {bannerRemainingTime && (
+                    <p className="text-xs text-muted-foreground/60 tabular-nums">
+                      {bannerRemainingTime.minutes}:{bannerRemainingTime.seconds.toString().padStart(2, '0')} remaining
+                    </p>
+                  )}
+                </div>
+              </div>
+              {countdown && (
+                <div className="text-right">
+                  <p className="text-[10px] uppercase tracking-widest text-primary font-semibold">Your Next</p>
+                  <p className="text-lg font-bold tabular-nums text-foreground">{formatCountdown(countdown)}</p>
+                  <p className="text-[10px] text-muted-foreground">{countdown.nextSession.referenceName}</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
