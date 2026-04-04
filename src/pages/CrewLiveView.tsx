@@ -49,8 +49,10 @@ const CrewLiveView = () => {
   const [eventDate, setEventDate] = useState<Date | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const event = getEventById(eventId || "");
-  const eventBaseDate = event?.eventDate ? new Date(event.eventDate) : null;
+  // Use RPC-provided event info; fall back to context for personal events
+  const eventFromContext = getEventById(eventId || "");
+  const resolvedEventName = eventName || eventFromContext?.name || null;
+  const eventBaseDate = eventDate || (eventFromContext?.eventDate ? new Date(eventFromContext.eventDate) : null);
 
   // Parse personal-event sessions from localStorage
   const parseLocalSessions = useCallback((eid: string) => {
