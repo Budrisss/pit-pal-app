@@ -587,9 +587,7 @@ const OrganizerLiveManage = () => {
           .from("event_flags")
           .update({ is_active: false })
           .eq("event_id", eventId)
-          .eq("is_active", true)
-          .neq("flag_type", "yellow_turn")
-          .neq("flag_type", "blue");
+          .eq("is_active", true);
         await supabase.from("event_flags").insert({
           event_id: eventId,
           organizer_id: organizerProfileId,
