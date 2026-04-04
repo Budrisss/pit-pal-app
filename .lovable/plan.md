@@ -1,67 +1,26 @@
 
 
-## Plan: Crew Messaging with Organizer Approval
+## Plan: Clear Local Flags Between Sessions & Save Per Session
 
-### What We're Building
-1. Organizer can toggle crew messaging on/off per registered user from the Organizer Live Manage page
-2. Racer Live View only shows crew communication panels if the organizer has approved it for that registration
-3. A shareable Crew View link so the racer's crew member can send messages
+### Problem
+Local caution flags (`yellow_turn` and `blue`) are explicitly excluded from deactivation when sessions transition. This means a local yellow from Session 1 persists into Session 2 as an active flag, which is incorrect — each session should start clean.
 
-### Database Change
+### Changes
 
-**Add `crew_enabled` column to `event_registrations`:**
-```sql
-ALTER TABLE public.event_registrations
-ADD COLUMN crew_enabled boolean NOT NULL DEFAULT false;
-```
+**File: `src/pages/OrganizerLiveManage.tsx`**
 
-**Add UPDATE policy for organizers** (currently missing — organizers can't update registrations):
-```sql
-CREATE POLICY "Organizers can update registrations"
-ON public.event_registrations FOR UPDATE
-TO authenticated
-USING (
-  EXISTS (
-    SELECT 1 FROM public_events pe
-    JOIN organizer_profiles op ON op.id = pe.organizer_id
-    WHERE pe.id = event_registrations.event_id
-    AND op.user_id = auth.uid()
-  )
-);
-```
+1. **Auto-checkered (session ends)** — Remove the `.neq("flag_type", "yellow_turn").neq("flag_type", "blue")` exclusions from the deactivation query at ~line 606-612. This ensures ALL active flags (including local yellows and blues) are deactivated when a session ends.
 
-### File Changes
+2. **Auto-green (session starts)** — Same change at ~line 581-587. Remove the local-flag exclusions so the new session starts with a clean slate (only the new green flag active).
 
-#### 1. `src/pages/OrganizerLiveManage.tsx`
-- Add a toggle/switch per participant in the participant list to enable/disable crew messaging (`crew_enabled`)
-- When toggled, update `event_registrations.crew_enabled` for that registration
-- Visual indicator (icon/badge) showing crew status
+3. **Manual checkered flag (`handleSendFlag("checkered")`)** — Update `handleSendFlag` at ~line 286 to also clear local flags when the flag type is `"checkered"`. Currently it always excludes `yellow_turn` and `blue` from deactivation. When sending a checkered flag, all flags should be deactivated.
 
-#### 2. `src/pages/RacerLiveView.tsx`
-- When fetching the user's registration to find `personalEventId`, also check `crew_enabled`
-- Only render the driver communication panels (Track Notes, Gap Ahead, Crew Updates) if `crew_enabled === true`
-- Show a subtle "Crew messaging not enabled" note if disabled
+### What stays the same
+- Local flags are still excluded from deactivation for non-session-ending flag changes (e.g., sending a yellow or red flag should not clear local cautions — those are independent).
+- All flags already have `session_id` set via `activeSessionIdRef.current`, so the history per session is already saved correctly.
 
-#### 3. `src/pages/CrewLiveView.tsx`
-- Before allowing message sends, verify the registration has `crew_enabled = true`
-- Show a message if crew messaging is not approved for this event
-
-#### 4. `src/pages/EventDetails.tsx`
-- Already has Crew View buttons — no changes needed (crew view link already navigates to `/crew-live/:eventId`)
-
-### Data Flow
-```text
-Organizer (Live Manage) → toggles crew_enabled on event_registrations
-                                    ↓
-Racer (Racer Live View) → checks crew_enabled → shows/hides driver panels
-Crew Member (Crew View) → checks crew_enabled → allows/blocks sending
-```
-
-### Files Modified
-| File | Change |
-|------|--------|
-| Migration | Add `crew_enabled` column + organizer UPDATE policy |
-| `src/pages/OrganizerLiveManage.tsx` | Add crew toggle per participant |
-| `src/pages/RacerLiveView.tsx` | Gate driver panels on `crew_enabled` |
-| `src/pages/CrewLiveView.tsx` | Gate sending on `crew_enabled` |
+### Summary of behavior after fix
+- Session ends → all flags (global + local) deactivated, checkered inserted
+- Session starts → all flags deactivated, green inserted
+- Mid-session flag change (e.g., yellow → green) → local flags still preserved (existing behavior)
 
