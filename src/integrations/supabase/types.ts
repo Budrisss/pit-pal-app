@@ -1312,6 +1312,15 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_crew_event_info: {
+        Args: { p_event_id: string }
+        Returns: {
+          event_date: string
+          event_name: string
+          event_user_id: string
+          public_event_id: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
