@@ -290,7 +290,7 @@ const CrewLiveView = () => {
           </Button>
           <div className="flex-1 min-w-0">
             <h1 className="text-xl font-bold text-foreground truncate">Crew View</h1>
-            <p className="text-sm text-muted-foreground truncate">{event?.name || "Event"}</p>
+            <p className="text-sm text-muted-foreground truncate">{resolvedEventName || "Event"}</p>
           </div>
           <Badge variant="outline" className="text-sm px-3 py-1 animate-pulse border-green-500 text-green-500 font-semibold">
             ● LIVE
