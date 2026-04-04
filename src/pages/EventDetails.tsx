@@ -1,6 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, Clock, MapPin, Car, Navigation as NavigationIcon, Thermometer, Wind, Eye, Edit, Trash2, Radio, CheckSquare, Users } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, MapPin, Car, Navigation as NavigationIcon, Thermometer, Wind, Eye, Edit, Trash2, Radio, CheckSquare, Users, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,9 @@ import Navigation from "@/components/Navigation";
 import DesktopNavigation from "@/components/DesktopNavigation";
 import { useEvents } from "@/contexts/EventsContext";
 import { useChecklists } from "@/contexts/ChecklistsContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import ChecklistCard from "@/components/ChecklistCard";
 
 const EventDetails = () => {
@@ -17,10 +20,44 @@ const EventDetails = () => {
   const navigate = useNavigate();
   const { getEventById, deleteEvent } = useEvents();
   const { eventChecklists, fetchEventChecklists, toggleChecklistItem } = useChecklists();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [crewEnabled, setCrewEnabled] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (id) fetchEventChecklists(id);
   }, [id]);
+
+  // Check crew_enabled for global events
+  useEffect(() => {
+    if (!id || !user) return;
+    const checkCrew = async () => {
+      const { data: eventRow } = await supabase
+        .from("events")
+        .select("public_event_id, user_id")
+        .eq("id", id)
+        .maybeSingle();
+      if (eventRow?.public_event_id) {
+        const { data: regData } = await supabase
+          .from("event_registrations")
+          .select("crew_enabled")
+          .eq("event_id", eventRow.public_event_id)
+          .eq("user_id", eventRow.user_id)
+          .limit(1);
+        setCrewEnabled(regData && regData.length > 0 ? regData[0].crew_enabled : false);
+      } else {
+        // Personal events always have crew enabled
+        setCrewEnabled(true);
+      }
+    };
+    checkCrew();
+  }, [id, user]);
+
+  const copyCrewLink = () => {
+    const url = `${window.location.origin}/crew-live/${id}`;
+    navigator.clipboard.writeText(url);
+    toast({ title: "Crew link copied!", description: "Share this link with your crew member." });
+  };
 
   // Find the specific event by ID
   const event = getEventById(id!);
@@ -288,16 +325,26 @@ const EventDetails = () => {
               Crew View
             </Button>
           )}
+          {!event.publicEventId && (
+            <Button variant="outline" size="icon" onClick={copyCrewLink} title="Copy crew link">
+              <Copy size={16} />
+            </Button>
+          )}
           {event.publicEventId && (
             <Button variant="outline" className="flex-1" onClick={() => navigate(`/race-live/${event.publicEventId}`)}>
               <Radio size={16} />
               Go Live
             </Button>
           )}
-          {event.publicEventId && (
+          {event.publicEventId && crewEnabled && (
             <Button variant="outline" className="flex-1" onClick={() => navigate(`/crew-live/${event.id}`)}>
               <Users size={16} />
               Crew View
+            </Button>
+          )}
+          {event.publicEventId && crewEnabled && (
+            <Button variant="outline" size="icon" onClick={copyCrewLink} title="Copy crew link">
+              <Copy size={16} />
             </Button>
           )}
         </div>
