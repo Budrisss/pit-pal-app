@@ -20,10 +20,44 @@ const EventDetails = () => {
   const navigate = useNavigate();
   const { getEventById, deleteEvent } = useEvents();
   const { eventChecklists, fetchEventChecklists, toggleChecklistItem } = useChecklists();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [crewEnabled, setCrewEnabled] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (id) fetchEventChecklists(id);
   }, [id]);
+
+  // Check crew_enabled for global events
+  useEffect(() => {
+    if (!id || !user) return;
+    const checkCrew = async () => {
+      const { data: eventRow } = await supabase
+        .from("events")
+        .select("public_event_id, user_id")
+        .eq("id", id)
+        .maybeSingle();
+      if (eventRow?.public_event_id) {
+        const { data: regData } = await supabase
+          .from("event_registrations")
+          .select("crew_enabled")
+          .eq("event_id", eventRow.public_event_id)
+          .eq("user_id", eventRow.user_id)
+          .limit(1);
+        setCrewEnabled(regData && regData.length > 0 ? regData[0].crew_enabled : false);
+      } else {
+        // Personal events always have crew enabled
+        setCrewEnabled(true);
+      }
+    };
+    checkCrew();
+  }, [id, user]);
+
+  const copyCrewLink = () => {
+    const url = `${window.location.origin}/crew-live/${id}`;
+    navigator.clipboard.writeText(url);
+    toast({ title: "Crew link copied!", description: "Share this link with your crew member." });
+  };
 
   // Find the specific event by ID
   const event = getEventById(id!);
