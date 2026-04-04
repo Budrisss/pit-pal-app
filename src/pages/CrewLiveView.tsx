@@ -70,44 +70,48 @@ const CrewLiveView = () => {
     return null;
   }, []);
 
-  // Load sessions + check crew_enabled
+  // Load sessions + check crew_enabled using RPC (works for any authenticated user)
   useEffect(() => {
     if (!eventId || !user) return;
     const loadSessions = async () => {
-      const { data: eventRow } = await supabase
-        .from("events")
-        .select("public_event_id, user_id")
-        .eq("id", eventId)
-        .maybeSingle();
+      // Use security definer function to get event info (bypasses events RLS)
+      const { data: rpcData } = await supabase.rpc('get_crew_event_info', { p_event_id: eventId });
+      const eventRow = rpcData && rpcData.length > 0 ? rpcData[0] : null;
 
-      if (eventRow?.public_event_id) {
-        // Check if crew_enabled for this event's owner
-        const { data: regData } = await (supabase as any)
-          .from("event_registrations")
-          .select("crew_enabled")
-          .eq("event_id", eventRow.public_event_id)
-          .eq("user_id", eventRow.user_id)
-          .limit(1);
-        const enabled = regData && regData.length > 0 ? regData[0].crew_enabled : false;
-        setCrewEnabled(enabled);
+      if (eventRow) {
+        setEventOwnerUserId(eventRow.event_user_id);
+        setEventName(eventRow.event_name);
+        if (eventRow.event_date) setEventDate(new Date(eventRow.event_date));
 
-        const { data } = await (supabase as any)
-          .from("public_event_sessions")
-          .select("name, start_time, duration_minutes")
-          .eq("event_id", eventRow.public_event_id)
-          .order("sort_order", { ascending: true });
-        if (data) {
-          setSessions(data.map((s: any) => ({
-            name: s.name,
-            start_time: s.start_time || null,
-            duration: s.duration_minutes || null,
-          })));
+        if (eventRow.public_event_id) {
+          // Check if crew_enabled for this event's owner
+          const { data: regData } = await (supabase as any)
+            .from("event_registrations")
+            .select("crew_enabled")
+            .eq("event_id", eventRow.public_event_id)
+            .eq("user_id", eventRow.event_user_id)
+            .limit(1);
+          const enabled = regData && regData.length > 0 ? regData[0].crew_enabled : false;
+          setCrewEnabled(enabled);
+
+          const { data } = await (supabase as any)
+            .from("public_event_sessions")
+            .select("name, start_time, duration_minutes")
+            .eq("event_id", eventRow.public_event_id)
+            .order("sort_order", { ascending: true });
+          if (data) {
+            setSessions(data.map((s: any) => ({
+              name: s.name,
+              start_time: s.start_time || null,
+              duration: s.duration_minutes || null,
+            })));
+          }
+        } else {
+          // Personal event — crew is always enabled
+          setCrewEnabled(true);
+          const localSessions = parseLocalSessions(eventId);
+          if (localSessions) setSessions(localSessions);
         }
-      } else {
-        // Personal event — crew is always enabled
-        setCrewEnabled(true);
-        const localSessions = parseLocalSessions(eventId);
-        if (localSessions) setSessions(localSessions);
       }
     };
     loadSessions();
