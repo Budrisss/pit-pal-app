@@ -203,11 +203,12 @@ const MaintenanceLog = () => {
       for (const attId of removedAttachmentIds) {
         const att = editingRecord.attachments.find((a) => a.id === attId);
         if (att) {
-          // Extract storage path from URL
-          const urlParts = att.file_url.split("/maintenance-attachments/");
-          if (urlParts[1]) {
-            await supabase.storage.from("maintenance-attachments").remove([decodeURIComponent(urlParts[1])]);
+          let storagePath = att.file_url;
+          if (storagePath.includes("/maintenance-attachments/")) {
+            storagePath = decodeURIComponent(storagePath.split("/maintenance-attachments/").pop()!);
           }
+          if (storagePath) {
+            await supabase.storage.from("maintenance-attachments").remove([storagePath]);
           await (supabase as any).from("maintenance_attachments").delete().eq("id", attId).eq("user_id", user.id);
         }
       }
