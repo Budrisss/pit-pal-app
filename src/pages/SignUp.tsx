@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Car, Mail, Lock, UserPlus, Phone, ShieldCheck } from 'lucide-react';
+import { Car, Mail, Lock, UserPlus, Phone, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,6 +19,8 @@ const SignUp = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [phone, setPhone] = useState('');
   const [otpCode, setOtpCode] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [step, setStep] = useState<'details' | 'verify'>('details');
   const [loading, setLoading] = useState(false);
 
@@ -174,14 +176,21 @@ const SignUp = () => {
                     <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50" size={20} />
                     <Input
                       id="password"
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10 bg-white/10 border-white/30 text-white placeholder:text-white/50"
+                      className="pl-10 pr-10 bg-white/10 border-white/30 text-white placeholder:text-white/50"
                       placeholder="Create password"
                       required
                       minLength={6}
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/50 hover:text-white transition-colors"
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
                   </div>
                 </div>
 
@@ -191,14 +200,21 @@ const SignUp = () => {
                     <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50" size={20} />
                     <Input
                       id="confirmPassword"
-                      type="password"
+                      type={showConfirmPassword ? 'text' : 'password'}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="pl-10 bg-white/10 border-white/30 text-white placeholder:text-white/50"
+                      className="pl-10 pr-10 bg-white/10 border-white/30 text-white placeholder:text-white/50"
                       placeholder="Confirm password"
                       required
                       minLength={6}
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/50 hover:text-white transition-colors"
+                    >
+                      {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
                   </div>
                 </div>
 
