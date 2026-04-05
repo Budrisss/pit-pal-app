@@ -105,6 +105,7 @@ interface PublicEvent {
   latitude?: number | null;
   longitude?: number | null;
   registration_types?: RegistrationType[];
+  run_groups?: RunGroup[];
 }
 
 interface OrganizerProfile {
