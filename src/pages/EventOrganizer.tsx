@@ -1188,9 +1188,21 @@ const EventOrganizer = () => {
       <Dialog open={!!participantEvent} onOpenChange={(open) => { if (!open) setParticipantEvent(null); }}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ClipboardList size={20} /> Participants — {participantEvent?.name}
-            </DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2">
+                <ClipboardList size={20} /> Participants — {participantEvent?.name}
+              </DialogTitle>
+              {participants.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => exportParticipantsCsv(participants, participantEvent?.registration_types || [], participantEvent?.name || "event")}
+                >
+                  <Download size={14} /> Export CSV
+                </Button>
+              )}
+            </div>
           </DialogHeader>
           {loadingParticipants ? (
             <div className="flex justify-center py-8">
