@@ -1227,10 +1227,7 @@ const EventOrganizer = () => {
                             )}
                             <div className="min-w-0">
                               <p className="font-medium text-sm truncate">{p.user_name}</p>
-                            <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
-                              <span className="flex items-center gap-1"><Mail size={10} /> {p.user_email}</span>
-                              {p.user_phone && <span className="flex items-center gap-1"><Phone size={10} /> {p.user_phone}</span>}
-                            </div>
+                             <MaskedContact email={p.user_email} phone={p.user_phone} />
                               {p.notes && <p className="text-xs text-muted-foreground mt-1 italic">{p.notes}</p>}
                             </div>
                           </div>
