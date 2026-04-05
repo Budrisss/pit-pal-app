@@ -83,6 +83,7 @@ interface EventRegistration {
   notes: string | null;
   created_at: string;
   car_number: number | null;
+  run_group_id: string | null;
 }
 
 interface PublicEvent {
@@ -104,6 +105,7 @@ interface PublicEvent {
   latitude?: number | null;
   longitude?: number | null;
   registration_types?: RegistrationType[];
+  run_groups?: RunGroup[];
 }
 
 interface OrganizerProfile {
@@ -891,13 +893,12 @@ const EventOrganizer = () => {
   };
 
   const openParticipantList = async (event: PublicEvent) => {
-    setParticipantEvent(event);
     setLoadingParticipants(true);
-    const { data } = await supabase
-      .from('event_registrations')
-      .select('*')
-      .eq('event_id', event.id)
-      .order('created_at', { ascending: true });
+    const [{ data }, { data: rgData }] = await Promise.all([
+      supabase.from('event_registrations').select('*').eq('event_id', event.id).order('created_at', { ascending: true }),
+      (supabase as any).from('run_groups').select('id, name').eq('event_id', event.id).order('sort_order'),
+    ]);
+    setParticipantEvent({ ...event, run_groups: (rgData || []) as RunGroup[] });
     setParticipants((data as EventRegistration[]) || []);
     setLoadingParticipants(false);
   };
@@ -1197,7 +1198,7 @@ const EventOrganizer = () => {
                   variant="outline"
                   size="sm"
                   className="gap-1.5"
-                  onClick={() => exportParticipantsCsv(participants, participantEvent?.registration_types || [], participantEvent?.name || "event")}
+                  onClick={() => exportParticipantsCsv(participants, participantEvent?.registration_types || [], participantEvent?.name || "event", participantEvent?.run_groups || [])}
                 >
                   <Download size={14} /> Export CSV
                 </Button>
