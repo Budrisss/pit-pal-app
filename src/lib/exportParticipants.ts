@@ -11,7 +11,7 @@ export function exportParticipantsCsv(
   }[],
   registrationTypes: { id?: string; name: string }[],
   eventName: string,
-  runGroups?: { id: string; name: string }[]
+  runGroups?: { id?: string; name: string }[]
 ) {
   const rtMap = new Map(registrationTypes.map((rt) => [rt.id, rt.name]));
   const rgMap = new Map((runGroups || []).map((rg) => [rg.id, rg.name]));
