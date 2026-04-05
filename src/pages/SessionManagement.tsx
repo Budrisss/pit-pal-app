@@ -340,7 +340,7 @@ const SessionManagement = () => {
 
   const calculateSessionStates = () => {
     const now = currentTime;
-    const eventDate = parseISO(eventData.date);
+    const eventDate = parseISO(eventData.date + "T00:00:00");
     const today = new Date();
     const isSameDayEvent = today.toDateString() === eventDate.toDateString();
 
@@ -403,7 +403,7 @@ const SessionManagement = () => {
       else if (activeSession && !matchesFn(activeSession)) activeSession = undefined;
     }
     if (!activeSession) return null;
-    const eventDate = parseISO(eventData.date);
+    const eventDate = parseISO(eventData.date + "T00:00:00");
     const [hours, minutes] = activeSession.startTime.split(':').map(Number);
     const sessionStart = new Date(eventDate);
     sessionStart.setHours(hours, minutes, 0, 0);
@@ -418,7 +418,7 @@ const SessionManagement = () => {
   const getCountdownToNext = () => {
     const nextSession = getNextUpcomingSession();
     if (!nextSession) return null;
-    const eventDate = parseISO(eventData.date);
+    const eventDate = parseISO(eventData.date + "T00:00:00");
     const [hours, minutes] = nextSession.startTime.split(':').map(Number);
     const sessionStart = new Date(eventDate);
     sessionStart.setHours(hours, minutes, 0, 0);
@@ -569,7 +569,7 @@ const SessionManagement = () => {
     setEventState(determineEventState());
 
     const now = currentTime;
-    const eventDate = parseISO(eventData.date);
+    const eventDate = parseISO(eventData.date + "T00:00:00");
     const justEndedSession = updatedSessions.find(session => {
       const [hours, minutes] = session.startTime.split(':').map(Number);
       const sessionStart = new Date(eventDate);
@@ -923,7 +923,7 @@ const SessionManagement = () => {
   // Also compute remaining time for the banner's active session (ignoring run group filter)
   const bannerRemainingTime = (() => {
     if (!currentActiveSession) return null;
-    const ed = parseISO(eventData.date);
+    const ed = parseISO(eventData.date + "T00:00:00");
     const [h, m] = currentActiveSession.startTime.split(':').map(Number);
     const start = new Date(ed);
     start.setHours(h, m, 0, 0);
@@ -941,7 +941,7 @@ const SessionManagement = () => {
     : myRunGroups.size === 0;
   // Show "my next" countdown even when another group is active
   const showMyNextCountdown = myRunGroups.size > 0 && currentActiveSession && !activeIsMyGroup && countdown;
-  const eventDate = parseISO(eventData.date);
+  const eventDate = parseISO(eventData.date + "T00:00:00");
   const today = new Date();
   const isSameDayEvent = today.toDateString() === eventDate.toDateString();
   const completedCount = calculateSessionStates().filter(s => s.state === "completed").length;
@@ -1121,7 +1121,7 @@ const SessionManagement = () => {
                   </div>
                   <div>
                     <p className="text-[10px] text-muted-foreground">Date</p>
-                    <p className="font-medium text-foreground">{format(parseISO(eventData.date), "MMM d, yyyy")}</p>
+                    <p className="font-medium text-foreground">{format(parseISO(eventData.date + "T00:00:00"), "MMM d, yyyy")}</p>
                   </div>
                   <div>
                     <p className="text-[10px] text-muted-foreground">Vehicle</p>

@@ -516,7 +516,7 @@ const OrganizerLiveManage = () => {
   const sessionStates = useMemo(() => {
     if (!eventDate) return [];
     const now = currentTime;
-    const evDate = parseISO(eventDate);
+    const evDate = parseISO(eventDate + "T00:00:00");
 
     // First pass: find the active session (currently running by time)
     let activeId: string | null = null;
@@ -694,7 +694,7 @@ const OrganizerLiveManage = () => {
   }, [activeSession?.id, activeFlags, deactivateAllActiveFlags, deactivateFlagsByIds, eventId, insertSessionFlag, isLocalCaution, loading, organizerProfileId, toast]);
   const activeRemaining = useMemo(() => {
     if (!activeSession?.start_time || !activeSession?.duration_minutes || !eventDate) return null;
-    const evDate = parseISO(eventDate);
+    const evDate = parseISO(eventDate + "T00:00:00");
     const [h, m] = activeSession.start_time.split(":").map(Number);
     const start = new Date(evDate);
     start.setHours(h, m, 0, 0);
@@ -706,7 +706,7 @@ const OrganizerLiveManage = () => {
 
   const nextCountdown = useMemo(() => {
     if (!eventDate) return null;
-    const evDate = parseISO(eventDate);
+    const evDate = parseISO(eventDate + "T00:00:00");
     // Find the first upcoming session by sort_order (sessionStates is already sorted by sort_order)
     const next = sessionStates.find((s) => s.state === "upcoming");
     if (!next) return null;
