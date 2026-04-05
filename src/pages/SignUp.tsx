@@ -19,6 +19,8 @@ const SignUp = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [phone, setPhone] = useState('');
   const [otpCode, setOtpCode] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [step, setStep] = useState<'details' | 'verify'>('details');
   const [loading, setLoading] = useState(false);
 
