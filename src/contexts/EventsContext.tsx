@@ -124,9 +124,10 @@ export const EventsProvider = ({ children }: { children: ReactNode }) => {
   const addEvent = async (event: Omit<Event, "id">): Promise<string | null> => {
     if (!user) return null;
 
-    // Parse the date back to ISO format for storage
-    const dateStr = event.eventDate.toISOString().split("T")[0];
-    const timeStr = event.eventDate.toTimeString().slice(0, 5); // HH:MM
+    // Use local date parts to avoid UTC timezone shift
+    const d = event.eventDate;
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const timeStr = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 
     const { data, error } = await (supabase as any).from("events").insert({
       user_id: user.id,
