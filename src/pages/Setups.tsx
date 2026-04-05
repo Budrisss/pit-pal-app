@@ -166,7 +166,21 @@ const Setups = () => {
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
-    if (data) setAllAttachments(data);
+    if (data) {
+      const resolved = await Promise.all(
+        data.map(async (att: any) => {
+          let storagePath = att.file_url;
+          if (storagePath.includes("/setup-attachments/")) {
+            storagePath = decodeURIComponent(storagePath.split("/setup-attachments/").pop()!);
+          }
+          const { data: signedData } = await supabase.storage
+            .from("setup-attachments")
+            .createSignedUrl(storagePath, 3600);
+          return { ...att, file_url: signedData?.signedUrl || att.file_url };
+        })
+      );
+      setAllAttachments(resolved);
+    }
   };
 
   const handleSaveSetupSheet = async () => {

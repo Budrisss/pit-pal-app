@@ -57,13 +57,11 @@ const SetupAttachments = ({ attachments, setupId, userId, onChanged, compact }: 
         continue;
       }
 
-      const { data: urlData } = supabase.storage.from("setup-attachments").getPublicUrl(filePath);
-
       await (supabase as any).from("setup_attachments").insert({
         setup_id: setupId,
         user_id: userId,
         file_name: file.name,
-        file_url: urlData.publicUrl,
+        file_url: filePath,
         file_type: file.type,
       });
     }
@@ -75,9 +73,12 @@ const SetupAttachments = ({ attachments, setupId, userId, onChanged, compact }: 
   };
 
   const handleDelete = async (att: Attachment) => {
-    const urlParts = att.file_url.split("/setup-attachments/");
-    if (urlParts[1]) {
-      await supabase.storage.from("setup-attachments").remove([decodeURIComponent(urlParts[1])]);
+    let storagePath = att.file_url;
+    if (storagePath.includes("/setup-attachments/")) {
+      storagePath = decodeURIComponent(storagePath.split("/setup-attachments/").pop()!);
+    }
+    if (storagePath) {
+      await supabase.storage.from("setup-attachments").remove([storagePath]);
     }
     await (supabase as any).from("setup_attachments").delete().eq("id", att.id);
     onChanged();

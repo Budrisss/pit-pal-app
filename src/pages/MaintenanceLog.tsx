@@ -106,8 +106,17 @@ const MaintenanceLog = () => {
 
       if (attachments) {
         for (const att of attachments) {
+          // Extract storage path from file_url (handle both legacy public URLs and new paths)
+          let storagePath = att.file_url;
+          if (storagePath.includes("/maintenance-attachments/")) {
+            storagePath = decodeURIComponent(storagePath.split("/maintenance-attachments/").pop()!);
+          }
+          const { data: signedData } = await supabase.storage
+            .from("maintenance-attachments")
+            .createSignedUrl(storagePath, 3600);
+          const resolvedAtt = { ...att, file_url: signedData?.signedUrl || att.file_url };
           if (!attachmentsMap[att.log_id]) attachmentsMap[att.log_id] = [];
-          attachmentsMap[att.log_id].push(att);
+          attachmentsMap[att.log_id].push(resolvedAtt);
         }
       }
     }
@@ -194,10 +203,12 @@ const MaintenanceLog = () => {
       for (const attId of removedAttachmentIds) {
         const att = editingRecord.attachments.find((a) => a.id === attId);
         if (att) {
-          // Extract storage path from URL
-          const urlParts = att.file_url.split("/maintenance-attachments/");
-          if (urlParts[1]) {
-            await supabase.storage.from("maintenance-attachments").remove([decodeURIComponent(urlParts[1])]);
+          let storagePath = att.file_url;
+          if (storagePath.includes("/maintenance-attachments/")) {
+            storagePath = decodeURIComponent(storagePath.split("/maintenance-attachments/").pop()!);
+          }
+          if (storagePath) {
+            await supabase.storage.from("maintenance-attachments").remove([storagePath]);
           }
           await (supabase as any).from("maintenance_attachments").delete().eq("id", attId).eq("user_id", user.id);
         }
@@ -226,19 +237,13 @@ const MaintenanceLog = () => {
         .upload(filePath, file, { upsert: true });
 
       if (!uploadError) {
-        const { data: urlData } = supabase.storage
-          .from("maintenance-attachments")
-          .getPublicUrl(filePath);
-
-        if (urlData?.publicUrl) {
           await (supabase as any).from("maintenance_attachments").insert({
             log_id: logId,
             user_id: user.id,
-            file_url: urlData.publicUrl,
+            file_url: filePath,
             file_name: file.name,
             file_type: file.type || null,
           });
-        }
       }
     }
 
