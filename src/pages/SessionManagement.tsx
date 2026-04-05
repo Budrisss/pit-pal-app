@@ -205,9 +205,12 @@ const SessionManagement = () => {
   const { getEventById } = useEvents();
   const { toast } = useToast();
 
-  const getEventSessions = (eventId: string): { sessions: Session[], eventData: EventData } => {
+  const formatLocalDate = (date: Date) =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
+  const getEventSessions = (eventId: string): { sessions: Session[]; eventData: EventData } => {
     const today = new Date();
-    const todayISOString = today.toISOString().split('T')[0];
+    const todayDateString = formatLocalDate(today);
 
     if (eventId === "test-event") {
       return {
@@ -222,47 +225,28 @@ const SessionManagement = () => {
           id: eventId,
           name: "Test Track Day - Live Session",
           track: "Test Circuit",
-          date: todayISOString,
+          date: todayDateString,
           time: "19:00",
           car: "Test Car - Session Ready",
           address: "34 teal dr. Langhorne, PA 19047"
         }
       };
-    } else {
-      const currentEvent = getEventById(eventId || "");
+    }
 
-      if (currentEvent) {
-        const eventDate = new Date(currentEvent.eventDate);
-        const isSameDayEvent = today.toDateString() === eventDate.toDateString();
+    const currentEvent = getEventById(eventId || "");
 
-        if (isSameDayEvent && (!currentEvent.schedule || currentEvent.schedule.length === 0)) {
-          return {
-            sessions: [],
-            eventData: {
-              id: eventId || "1",
-              name: currentEvent.name,
-              track: currentEvent.track,
-              date: eventDate.toISOString().split('T')[0],
-              time: currentEvent.time,
-              car: currentEvent.car,
-              address: currentEvent.address || ""
-            }
-          };
-        }
+    if (currentEvent) {
+      const eventDate = new Date(currentEvent.eventDate);
+      const isSameDayEvent = today.toDateString() === eventDate.toDateString();
 
+      if (isSameDayEvent && (!currentEvent.schedule || currentEvent.schedule.length === 0)) {
         return {
-          sessions: [
-            { id: "1", type: "practice", duration: 20, referenceName: "Morning Warm-up", startTime: "08:00", state: "upcoming" },
-            { id: "2", type: "practice", duration: 30, referenceName: "Setup Testing", startTime: "09:00", state: "upcoming" },
-            { id: "3", type: "qualifying", duration: 15, referenceName: "Grid Position", startTime: "10:00", state: "upcoming" },
-            { id: "4", type: "race", duration: 45, referenceName: "Feature Race", startTime: "11:00", state: "upcoming" },
-            { id: "5", type: "practice", duration: 20, referenceName: "Cool Down", startTime: "12:30", state: "upcoming" }
-          ],
+          sessions: [],
           eventData: {
             id: eventId || "1",
             name: currentEvent.name,
             track: currentEvent.track,
-            date: eventDate.toISOString().split('T')[0],
+            date: formatLocalDate(eventDate),
             time: currentEvent.time,
             car: currentEvent.car,
             address: currentEvent.address || ""
@@ -280,15 +264,34 @@ const SessionManagement = () => {
         ],
         eventData: {
           id: eventId || "1",
-          name: "Thunderhill Track Day",
-          track: "Thunderhill Raceway",
-          date: "2024-03-15",
-          time: "08:00",
-          car: "Track Beast - 2018 Mazda MX-5",
-          address: "5250 CA-162, Willows, CA 95988"
+          name: currentEvent.name,
+          track: currentEvent.track,
+          date: formatLocalDate(eventDate),
+          time: currentEvent.time,
+          car: currentEvent.car,
+          address: currentEvent.address || ""
         }
       };
     }
+
+    return {
+      sessions: [
+        { id: "1", type: "practice", duration: 20, referenceName: "Morning Warm-up", startTime: "08:00", state: "upcoming" },
+        { id: "2", type: "practice", duration: 30, referenceName: "Setup Testing", startTime: "09:00", state: "upcoming" },
+        { id: "3", type: "qualifying", duration: 15, referenceName: "Grid Position", startTime: "10:00", state: "upcoming" },
+        { id: "4", type: "race", duration: 45, referenceName: "Feature Race", startTime: "11:00", state: "upcoming" },
+        { id: "5", type: "practice", duration: 20, referenceName: "Cool Down", startTime: "12:30", state: "upcoming" }
+      ],
+      eventData: {
+        id: eventId || "1",
+        name: "Thunderhill Track Day",
+        track: "Thunderhill Raceway",
+        date: "2024-03-15",
+        time: "08:00",
+        car: "Track Beast - 2018 Mazda MX-5",
+        address: "5250 CA-162, Willows, CA 95988"
+      }
+    };
   };
 
   const { sessions: defaultSessions, eventData } = getEventSessions(eventId || "");
