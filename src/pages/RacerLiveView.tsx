@@ -428,7 +428,7 @@ const RacerLiveView = () => {
   const sessionStates = useMemo(() => {
     if (!eventDate) return [];
     const now = currentTime;
-    const evDate = parseISO(eventDate);
+    const evDate = parseISO(eventDate + "T00:00:00");
 
     // Sort by sort_order to ensure correct sequence
     const orderedSessions = [...sessions].sort((a, b) => a.sort_order - b.sort_order);
@@ -556,7 +556,7 @@ const RacerLiveView = () => {
 
   const activeRemaining = useMemo(() => {
     if (!activeSession?.start_time || !activeSession?.duration_minutes || !eventDate) return null;
-    const evDate = parseISO(eventDate);
+    const evDate = parseISO(eventDate + "T00:00:00");
     const [h, m] = activeSession.start_time.split(":").map(Number);
     const start = new Date(evDate); start.setHours(h, m, 0, 0);
     const end = addMinutes(start, activeSession.duration_minutes);
@@ -574,7 +574,7 @@ const RacerLiveView = () => {
 
   const myActiveRemaining = useMemo(() => {
     if (!myActiveSession?.start_time || !myActiveSession?.duration_minutes || !eventDate) return null;
-    const evDate = parseISO(eventDate);
+    const evDate = parseISO(eventDate + "T00:00:00");
     const [h, m] = myActiveSession.start_time.split(":").map(Number);
     const start = new Date(evDate); start.setHours(h, m, 0, 0);
     const end = addMinutes(start, myActiveSession.duration_minutes);
@@ -591,7 +591,7 @@ const RacerLiveView = () => {
 
   const myNextCountdown = useMemo(() => {
     if (!myNextSession?.start_time || !eventDate) return null;
-    const evDate = parseISO(eventDate);
+    const evDate = parseISO(eventDate + "T00:00:00");
     const [h, m] = myNextSession.start_time.split(":").map(Number);
     const start = new Date(evDate); start.setHours(h, m, 0, 0);
     const diffMs = differenceInMilliseconds(start, currentTime);
