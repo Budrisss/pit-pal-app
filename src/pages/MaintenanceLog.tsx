@@ -209,6 +209,7 @@ const MaintenanceLog = () => {
           }
           if (storagePath) {
             await supabase.storage.from("maintenance-attachments").remove([storagePath]);
+          }
           await (supabase as any).from("maintenance_attachments").delete().eq("id", attId).eq("user_id", user.id);
         }
       }
