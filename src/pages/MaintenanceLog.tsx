@@ -106,8 +106,17 @@ const MaintenanceLog = () => {
 
       if (attachments) {
         for (const att of attachments) {
+          // Extract storage path from file_url (handle both legacy public URLs and new paths)
+          let storagePath = att.file_url;
+          if (storagePath.includes("/maintenance-attachments/")) {
+            storagePath = decodeURIComponent(storagePath.split("/maintenance-attachments/").pop()!);
+          }
+          const { data: signedData } = await supabase.storage
+            .from("maintenance-attachments")
+            .createSignedUrl(storagePath, 3600);
+          const resolvedAtt = { ...att, file_url: signedData?.signedUrl || att.file_url };
           if (!attachmentsMap[att.log_id]) attachmentsMap[att.log_id] = [];
-          attachmentsMap[att.log_id].push(att);
+          attachmentsMap[att.log_id].push(resolvedAtt);
         }
       }
     }
