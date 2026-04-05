@@ -1198,7 +1198,7 @@ const EventOrganizer = () => {
                   variant="outline"
                   size="sm"
                   className="gap-1.5"
-                  onClick={() => exportParticipantsCsv(participants, participantEvent?.registration_types || [], participantEvent?.name || "event")}
+                  onClick={() => exportParticipantsCsv(participants, participantEvent?.registration_types || [], participantEvent?.name || "event", participantEvent?.run_groups || [])}
                 >
                   <Download size={14} /> Export CSV
                 </Button>
