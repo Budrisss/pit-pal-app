@@ -226,19 +226,13 @@ const MaintenanceLog = () => {
         .upload(filePath, file, { upsert: true });
 
       if (!uploadError) {
-        const { data: urlData } = supabase.storage
-          .from("maintenance-attachments")
-          .getPublicUrl(filePath);
-
-        if (urlData?.publicUrl) {
           await (supabase as any).from("maintenance_attachments").insert({
             log_id: logId,
             user_id: user.id,
-            file_url: urlData.publicUrl,
+            file_url: filePath,
             file_name: file.name,
             file_type: file.type || null,
           });
-        }
       }
     }
 
