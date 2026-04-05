@@ -2,13 +2,13 @@ export function exportParticipantsCsv(
   participants: {
     user_name: string;
     user_email: string;
-    user_phone: string | null;
-    car_number: number | null;
-    notes: string | null;
+    user_phone?: string | null;
+    car_number?: number | null;
+    notes?: string | null;
     created_at: string;
     registration_type_id: string;
   }[],
-  registrationTypes: { id: string; name: string }[],
+  registrationTypes: { id?: string; name: string }[],
   eventName: string
 ) {
   const rtMap = new Map(registrationTypes.map((rt) => [rt.id, rt.name]));
