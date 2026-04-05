@@ -110,11 +110,11 @@ const PublicEventPreview = () => {
       if (eventData) {
         setEvent(eventData);
         const { data: orgData } = await supabase
-          .from("organizer_profiles")
+          .from("organizer_profiles_public" as any)
           .select("org_name")
           .eq("id", eventData.organizer_id)
           .single();
-        if (orgData) setOrganizer(orgData);
+        if (orgData) setOrganizer(orgData as any);
       }
       setSessions((sessData as EventSession[]) || []);
       setRegTypes((rtData as RegistrationType[]) || []);
