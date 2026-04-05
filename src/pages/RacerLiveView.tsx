@@ -649,6 +649,32 @@ const RacerLiveView = () => {
         </Button>
         <span className="text-sm font-semibold truncate max-w-[40%]">{eventName}</span>
         <div className="flex items-center gap-2">
+          {personalEventId && crewEnabled && (
+            <Button
+              variant="glass"
+              size="icon"
+              className="text-white/60 hover:text-white h-8 w-8"
+              onClick={() => {
+                const url = `${window.location.origin}/crew-live/${personalEventId}`;
+                navigator.clipboard.writeText(url);
+                toast({ title: "Crew link copied!", description: "Share this link with your crew member." });
+              }}
+              title="Copy crew link"
+            >
+              <Copy size={14} />
+            </Button>
+          )}
+          {personalEventId && crewEnabled && (
+            <Button
+              variant="glass"
+              size="icon"
+              className="text-white/60 hover:text-white h-8 w-8"
+              onClick={() => navigate(`/crew-live/${personalEventId}`)}
+              title="Crew View"
+            >
+              <Users size={14} />
+            </Button>
+          )}
           {userCarNumber && (
             <Badge className="bg-primary text-primary-foreground font-mono font-bold text-sm px-2 py-0.5">
               #{userCarNumber}
