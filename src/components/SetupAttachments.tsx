@@ -57,13 +57,11 @@ const SetupAttachments = ({ attachments, setupId, userId, onChanged, compact }: 
         continue;
       }
 
-      const { data: urlData } = supabase.storage.from("setup-attachments").getPublicUrl(filePath);
-
       await (supabase as any).from("setup_attachments").insert({
         setup_id: setupId,
         user_id: userId,
         file_name: file.name,
-        file_url: urlData.publicUrl,
+        file_url: filePath,
         file_type: file.type,
       });
     }
