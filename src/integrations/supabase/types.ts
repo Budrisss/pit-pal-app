@@ -218,6 +218,13 @@ export type Database = {
             referencedRelation: "organizer_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "event_announcements_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "organizer_profiles_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       event_checklist_items: {
@@ -347,6 +354,13 @@ export type Database = {
             columns: ["organizer_id"]
             isOneToOne: false
             referencedRelation: "organizer_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_flags_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "organizer_profiles_public"
             referencedColumns: ["id"]
           },
           {
@@ -666,6 +680,13 @@ export type Database = {
             referencedRelation: "organizer_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "organizer_settings_organizer_profile_id_fkey"
+            columns: ["organizer_profile_id"]
+            isOneToOne: true
+            referencedRelation: "organizer_profiles_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       preset_tracks: {
@@ -835,6 +856,13 @@ export type Database = {
             columns: ["organizer_id"]
             isOneToOne: false
             referencedRelation: "organizer_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "public_events_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "organizer_profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1279,7 +1307,39 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      organizer_profiles_public: {
+        Row: {
+          approved: boolean | null
+          created_at: string | null
+          description: string | null
+          id: string | null
+          org_name: string | null
+          updated_at: string | null
+          user_id: string | null
+          website: string | null
+        }
+        Insert: {
+          approved?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          org_name?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          website?: string | null
+        }
+        Update: {
+          approved?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          org_name?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       events_within_radius: {
