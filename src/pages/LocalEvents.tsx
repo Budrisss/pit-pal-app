@@ -50,6 +50,8 @@ interface EventRegistration {
   user_phone: string | null;
   notes: string | null;
   created_at: string;
+  car_number: number | null;
+  run_group_id: string | null;
 }
 
 interface RunGroup {
