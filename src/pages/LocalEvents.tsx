@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { MapPin, Search, Calendar, DollarSign, Car, ExternalLink, Plus, ChevronRight, Filter, Building2, Pencil, Trash2, MoreVertical, X, Users, Tag, UserCheck, ClipboardList, Eye, Download } from 'lucide-react';
-import { MaskedContact } from "@/components/MaskedContact";
-import { exportParticipantsCsv } from "@/lib/exportParticipants";
+import { MapPin, Search, Calendar, DollarSign, Car, ExternalLink, Plus, ChevronRight, Filter, Building2, Pencil, Trash2, MoreVertical, X, Users, Tag, UserCheck, ClipboardList, Eye } from 'lucide-react';
+import { ParticipantListDialog } from "@/components/ParticipantListDialog";
 import { useOrganizerMode } from '@/contexts/OrganizerModeContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
