@@ -83,6 +83,7 @@ interface EventRegistration {
   notes: string | null;
   created_at: string;
   car_number: number | null;
+  run_group_id: string | null;
 }
 
 interface PublicEvent {
