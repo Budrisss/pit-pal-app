@@ -42,7 +42,7 @@ const EventDetails = () => {
           .from("event_registrations")
           .select("crew_enabled")
           .eq("event_id", eventRow.public_event_id)
-          .eq("user_id", eventRow.user_id)
+          .eq("user_id", user.id)
           .limit(1);
         setCrewEnabled(regData && regData.length > 0 ? regData[0].crew_enabled : false);
       } else {
