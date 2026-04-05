@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, Calendar, MapPin, DollarSign, Car, Clock, Tag, UserCheck, ExternalLink, Users, Building2, Megaphone, Bell, Radio } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, DollarSign, Car, Clock, Tag, UserCheck, ExternalLink, Users, Building2, Megaphone, Bell, Radio, Copy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrganizerMode } from "@/contexts/OrganizerModeContext";
@@ -89,6 +89,8 @@ const PublicEventPreview = () => {
   const [regForm, setRegForm] = useState({ name: "", email: "", phone: "", notes: "", carNumber: "", carId: "" });
   const [registering, setRegistering] = useState(false);
   const [userRegistrations, setUserRegistrations] = useState<Set<string>>(new Set());
+  const [personalEventId, setPersonalEventId] = useState<string | null>(null);
+  const [crewEnabled, setCrewEnabled] = useState(false);
 
   const isOrganizerPreview = isOrganizerMode && event?.organizer_id === organizerProfileId;
 
@@ -142,17 +144,39 @@ const PublicEventPreview = () => {
   useEffect(() => {
     if (!user || !id) return;
     const fetchUserRegs = async () => {
-      const { data } = await supabase
-        .from("event_registrations")
-        .select("registration_type_id, car_number")
-        .eq("event_id", id)
-        .eq("user_id", user.id);
-      if (data) {
-        setUserRegistrations(new Set(data.map((r: any) => `${r.registration_type_id}_${r.car_number}`)));
+      const [{ data: registrationData }, { data: personalEventData }] = await Promise.all([
+        supabase
+          .from("event_registrations")
+          .select("registration_type_id, car_number, crew_enabled")
+          .eq("event_id", id)
+          .eq("user_id", user.id),
+        supabase
+          .from("events")
+          .select("id")
+          .eq("public_event_id", id)
+          .eq("user_id", user.id)
+          .maybeSingle(),
+      ]);
+
+      if (registrationData) {
+        setUserRegistrations(new Set(registrationData.map((r: any) => `${r.registration_type_id}_${r.car_number}`)));
+        setCrewEnabled(registrationData.some((r: any) => r.crew_enabled));
+      } else {
+        setUserRegistrations(new Set());
+        setCrewEnabled(false);
       }
+
+      setPersonalEventId(personalEventData?.id ?? null);
     };
     fetchUserRegs();
   }, [user, id]);
+
+  const copyCrewLink = async () => {
+    if (!personalEventId) return;
+
+    await navigator.clipboard.writeText(`${window.location.origin}/crew-live/${personalEventId}`);
+    toast({ title: "Crew link copied!", description: "Share this link with your crew member." });
+  };
 
   // Realtime subscriptions
   useEffect(() => {
@@ -500,9 +524,21 @@ const PublicEventPreview = () => {
                     <UserCheck size={18} className="mr-2" /> Register for This Event
                   </Button>
                   {userRegistrations.size > 0 && (
-                    <Button variant="outline" className="w-full" size="lg" onClick={() => navigate(`/race-live/${event.id}`)}>
-                      <Radio size={18} className="mr-2" /> Open Race Live View
-                    </Button>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <Button variant="outline" className="w-full" size="lg" onClick={() => navigate(`/race-live/${event.id}`)}>
+                        <Radio size={18} className="mr-2" /> Open Race Live View
+                      </Button>
+                      {crewEnabled && personalEventId && (
+                        <>
+                          <Button variant="outline" className="w-full" size="lg" onClick={() => navigate(`/crew-live/${personalEventId}`)}>
+                            <Users size={18} className="mr-2" /> Crew View
+                          </Button>
+                          <Button variant="outline" className="w-full sm:col-span-2" size="lg" onClick={copyCrewLink}>
+                            <Copy size={18} className="mr-2" /> Copy Crew Link
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
