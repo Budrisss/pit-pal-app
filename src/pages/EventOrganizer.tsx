@@ -9,8 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus, Users, Calendar, MapPin, Pencil, Trash2, Tag, X, ClipboardList, MoreVertical, Building2, Clock, Eye, Radio } from "lucide-react";
+import { Plus, Users, Calendar, MapPin, Pencil, Trash2, Tag, X, ClipboardList, MoreVertical, Building2, Clock, Eye, Radio, Download } from "lucide-react";
 import { MaskedContact } from "@/components/MaskedContact";
+import { exportParticipantsCsv } from "@/lib/exportParticipants";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 import { useAuth } from "@/contexts/AuthContext";
@@ -1187,9 +1188,21 @@ const EventOrganizer = () => {
       <Dialog open={!!participantEvent} onOpenChange={(open) => { if (!open) setParticipantEvent(null); }}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ClipboardList size={20} /> Participants — {participantEvent?.name}
-            </DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2">
+                <ClipboardList size={20} /> Participants — {participantEvent?.name}
+              </DialogTitle>
+              {participants.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => exportParticipantsCsv(participants, participantEvent?.registration_types || [], participantEvent?.name || "event")}
+                >
+                  <Download size={14} /> Export CSV
+                </Button>
+              )}
+            </div>
           </DialogHeader>
           {loadingParticipants ? (
             <div className="flex justify-center py-8">

@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { MapPin, Search, Calendar, DollarSign, Car, ExternalLink, Plus, ChevronRight, Filter, Building2, Pencil, Trash2, MoreVertical, X, Users, Tag, UserCheck, ClipboardList, Eye } from 'lucide-react';
+import { MapPin, Search, Calendar, DollarSign, Car, ExternalLink, Plus, ChevronRight, Filter, Building2, Pencil, Trash2, MoreVertical, X, Users, Tag, UserCheck, ClipboardList, Eye, Download } from 'lucide-react';
 import { MaskedContact } from "@/components/MaskedContact";
+import { exportParticipantsCsv } from "@/lib/exportParticipants";
 import { useOrganizerMode } from '@/contexts/OrganizerModeContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -1317,9 +1318,21 @@ const LocalEvents = () => {
       <Dialog open={!!participantEvent} onOpenChange={(open) => { if (!open) setParticipantEvent(null); }}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ClipboardList size={20} /> Participants — {participantEvent?.name}
-            </DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2">
+                <ClipboardList size={20} /> Participants — {participantEvent?.name}
+              </DialogTitle>
+              {participants.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => exportParticipantsCsv(participants, participantEvent?.registration_types || [], participantEvent?.name || "event")}
+                >
+                  <Download size={14} /> Export CSV
+                </Button>
+              )}
+            </div>
           </DialogHeader>
           {loadingParticipants ? (
             <div className="flex justify-center py-8">
