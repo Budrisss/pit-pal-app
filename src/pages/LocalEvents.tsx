@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { MapPin, Search, Calendar, DollarSign, Car, ExternalLink, Plus, ChevronRight, Filter, Building2, Pencil, Trash2, MoreVertical, X, Users, Tag, UserCheck, ClipboardList, Phone, Mail, Eye } from 'lucide-react';
+import { MapPin, Search, Calendar, DollarSign, Car, ExternalLink, Plus, ChevronRight, Filter, Building2, Pencil, Trash2, MoreVertical, X, Users, Tag, UserCheck, ClipboardList, Eye } from 'lucide-react';
+import { MaskedContact } from "@/components/MaskedContact";
 import { useOrganizerMode } from '@/contexts/OrganizerModeContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -1351,10 +1352,7 @@ const LocalEvents = () => {
                         <div key={p.id} className="p-3 flex items-center justify-between gap-3">
                           <div className="min-w-0">
                             <p className="font-medium text-sm truncate">{p.user_name}</p>
-                            <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
-                              <span className="flex items-center gap-1"><Mail size={10} /> {p.user_email}</span>
-                              {p.user_phone && <span className="flex items-center gap-1"><Phone size={10} /> {p.user_phone}</span>}
-                            </div>
+                             <MaskedContact email={p.user_email} phone={p.user_phone} />
                             {p.notes && <p className="text-xs text-muted-foreground mt-1 italic">{p.notes}</p>}
                           </div>
                           <span className="text-xs text-muted-foreground shrink-0">

@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus, Users, Calendar, MapPin, Pencil, Trash2, Tag, X, ClipboardList, Mail, Phone, MoreVertical, Building2, Clock, Eye, Radio } from "lucide-react";
+import { Plus, Users, Calendar, MapPin, Pencil, Trash2, Tag, X, ClipboardList, MoreVertical, Building2, Clock, Eye, Radio } from "lucide-react";
+import { MaskedContact } from "@/components/MaskedContact";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 import { useAuth } from "@/contexts/AuthContext";
@@ -1226,10 +1227,7 @@ const EventOrganizer = () => {
                             )}
                             <div className="min-w-0">
                               <p className="font-medium text-sm truncate">{p.user_name}</p>
-                            <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
-                              <span className="flex items-center gap-1"><Mail size={10} /> {p.user_email}</span>
-                              {p.user_phone && <span className="flex items-center gap-1"><Phone size={10} /> {p.user_phone}</span>}
-                            </div>
+                             <MaskedContact email={p.user_email} phone={p.user_phone} />
                               {p.notes && <p className="text-xs text-muted-foreground mt-1 italic">{p.notes}</p>}
                             </div>
                           </div>
