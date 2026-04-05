@@ -893,13 +893,12 @@ const EventOrganizer = () => {
   };
 
   const openParticipantList = async (event: PublicEvent) => {
-    setParticipantEvent(event);
     setLoadingParticipants(true);
-    const { data } = await supabase
-      .from('event_registrations')
-      .select('*')
-      .eq('event_id', event.id)
-      .order('created_at', { ascending: true });
+    const [{ data }, { data: rgData }] = await Promise.all([
+      supabase.from('event_registrations').select('*').eq('event_id', event.id).order('created_at', { ascending: true }),
+      (supabase as any).from('run_groups').select('id, name').eq('event_id', event.id).order('sort_order'),
+    ]);
+    setParticipantEvent({ ...event, run_groups: (rgData || []) as RunGroup[] });
     setParticipants((data as EventRegistration[]) || []);
     setLoadingParticipants(false);
   };
