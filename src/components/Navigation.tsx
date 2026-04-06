@@ -41,7 +41,7 @@ const Navigation = () => {
             <span className="text-[10px] sm:text-xs mt-1 font-medium truncate">{label}</span>
           </Link>
         ))}
-        {isOrganizer && (
+        {isOrganizer && isApproved && (
           <button
             onClick={() => {
               toggleMode();

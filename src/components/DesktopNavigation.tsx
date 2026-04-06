@@ -56,7 +56,7 @@ const DesktopNavigation = () => {
               <span className="transform skew-x-6">{label}</span>
             </Link>
           ))}
-          {isOrganizer && (
+          {isOrganizer && isApproved && (
             <button
               onClick={() => {
                 toggleMode();
