@@ -721,7 +721,7 @@ const LocalEvents = () => {
             className="space-y-3"
           >
             {/* Row 1: ZIP + Radius + Search button */}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <div className="relative">
                 <MapPin size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -734,7 +734,7 @@ const LocalEvents = () => {
                 />
               </div>
               <Select value={String(searchRadius)} onValueChange={v => setSearchRadius(Number(v))}>
-                <SelectTrigger className="w-[120px] bg-card/60 backdrop-blur-md border-border">
+                <SelectTrigger className="w-[110px] bg-card/60 backdrop-blur-md border-border">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -746,7 +746,7 @@ const LocalEvents = () => {
               <Button
                 onClick={handleZipSearch}
                 disabled={searchingZip || searchZip.length !== 5}
-                className="px-6"
+                className="px-5"
               >
                 <Search size={16} className="mr-1.5" />
                 {searchingZip ? 'Searching…' : 'Find Events'}
