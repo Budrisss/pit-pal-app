@@ -189,8 +189,14 @@ const RacerLiveView = () => {
 
     // Set display name from first selected group
     if (effectiveIds.length > 0) {
-      const { data: rtData } = await (supabase as any).from("run_groups").select("name").eq("id", effectiveIds[0]).single();
-      if (rtData) setRegTypeName(rtData.name);
+      const { data: rgData } = await (supabase as any).from("run_groups").select("id, name").in("id", effectiveIds);
+      if (rgData) {
+        const nameMap: Record<string, string> = {};
+        (rgData as any[]).forEach((rg: any) => { nameMap[rg.id] = rg.name; });
+        setRunGroupNames(nameMap);
+        const firstName = (rgData as any[])[0]?.name || null;
+        if (firstName) setRegTypeName(firstName);
+      }
     }
 
     setLoading(false);
