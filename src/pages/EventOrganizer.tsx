@@ -625,6 +625,16 @@ const EventOrganizer = () => {
     return { latitude: data.latitude, longitude: data.longitude, city: data.city, state: data.state };
   };
 
+  const detectAndSetTimezone = async (eventId: string, latitude: number, longitude: number) => {
+    try {
+      await supabase.functions.invoke('detect-timezone', {
+        body: { latitude, longitude, event_id: eventId },
+      });
+    } catch (err) {
+      console.error('Failed to detect timezone:', err);
+    }
+  };
+
   const saveRegistrationTypes = async (eventId: string, types: RegistrationType[], existingIds?: string[]) => {
     if (existingIds && existingIds.length > 0) {
       const keepIds = types.filter(t => t.id).map(t => t.id!);
