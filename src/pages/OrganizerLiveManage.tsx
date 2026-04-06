@@ -328,8 +328,32 @@ const OrganizerLiveManage = () => {
     await supabase.from("event_announcements").delete().eq("id", id);
   };
 
+  // Check if the server already sent a flag of this type for the current session
+  const checkServerAlreadySent = useCallback(async (flagType: string, sessionId: string | null): Promise<boolean> => {
+    if (!eventId || !sessionId) return false;
+    const { data } = await supabase
+      .from("event_flags")
+      .select("id")
+      .eq("event_id", eventId)
+      .eq("session_id", sessionId)
+      .eq("flag_type", flagType)
+      .eq("is_active", true)
+      .limit(1);
+    return (data && data.length > 0) || false;
+  }, [eventId]);
+
   const handleSendFlag = async (flagType: string) => {
     if (!eventId || !organizerProfileId) return;
+
+    // For green/checkered, check if server already sent one for this session
+    if ((flagType === "green" || flagType === "checkered") && activeSessionIdRef.current) {
+      const alreadySent = await checkServerAlreadySent(flagType, activeSessionIdRef.current);
+      if (alreadySent) {
+        toast({ title: `${flagType === "green" ? "🟢 Green" : "🏁 Checkered"} flag already active (auto-sent)` });
+        return;
+      }
+    }
+
     // Deactivate all existing flags (except local yellows and blue flags which are managed separately)
     // For checkered flags, deactivate ALL flags (including local); for other flags, preserve local cautions
     if (flagType === "checkered") {
