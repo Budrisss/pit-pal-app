@@ -136,7 +136,7 @@ const EventCard = ({ id, name, track, date, time, countdown, status, car, addres
           <div className="flex gap-2 pt-1">
             <Button
               size="sm"
-              className="flex-1 bg-gradient-to-r from-white/10 via-white/15 to-white/5 backdrop-blur-xl border border-white/20 text-foreground hover:from-white/15 hover:via-white/25 hover:to-white/10 hover:border-white/40 hover:shadow-[0_0_20px_rgba(255,255,255,0.08)] transition-all duration-300 hover:scale-[1.02]"
+              className="flex-1 bg-primary/15 backdrop-blur-xl border border-primary/25 text-primary hover:bg-primary/25 hover:border-primary/40 hover:shadow-[0_0_20px_hsl(var(--primary)/0.15)] transition-all duration-300"
               onClick={() => navigate(`/events/${id}`)}
             >
               <Eye size={14} />
@@ -145,7 +145,7 @@ const EventCard = ({ id, name, track, date, time, countdown, status, car, addres
             {status === "upcoming" && (
               <Button
                 size="sm"
-                className="flex-1 bg-gradient-to-r from-f1-red via-f1-red-dark to-f1-red backdrop-blur-sm border border-f1-red/30 text-primary-foreground hover:shadow-[0_0_24px_rgba(220,38,38,0.4)] hover:border-f1-red/50 transition-all duration-300 hover:scale-[1.02]"
+                className="flex-1 bg-primary/20 backdrop-blur-xl border border-primary/30 text-primary hover:bg-primary/30 hover:border-primary/50 hover:shadow-[0_0_24px_hsl(var(--primary)/0.25)] transition-all duration-300"
                 onClick={handleStartEvent}
               >
                 <Play size={14} />
@@ -155,7 +155,7 @@ const EventCard = ({ id, name, track, date, time, countdown, status, car, addres
             {status === "completed" && (
               <Button
                 size="sm"
-                className="flex-1 bg-gradient-to-r from-white/10 via-white/15 to-white/5 backdrop-blur-xl border border-white/20 text-foreground hover:from-white/15 hover:via-white/25 hover:to-white/10 hover:border-white/40 hover:shadow-[0_0_20px_rgba(255,255,255,0.08)] transition-all duration-300 hover:scale-[1.02]"
+                className="flex-1 bg-primary/15 backdrop-blur-xl border border-primary/25 text-primary hover:bg-primary/25 hover:border-primary/40 hover:shadow-[0_0_20px_hsl(var(--primary)/0.15)] transition-all duration-300"
                 onClick={() => navigate(`/session-management/${id}`)}
               >
                 <Play size={14} />
