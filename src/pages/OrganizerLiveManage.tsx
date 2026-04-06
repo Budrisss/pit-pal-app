@@ -217,6 +217,31 @@ const OrganizerLiveManage = () => {
     };
   }, [eventId]);
 
+  const syncClearedFlagsLocally = useCallback((flags: EventFlag[]) => {
+    if (flags.length === 0) return;
+
+    const clearedIds = new Set(flags.map((flag) => flag.id));
+
+    setActiveFlags((prev) => prev.filter((flag) => !clearedIds.has(flag.id)));
+
+    const sessionFlags = flags.filter((flag) => flag.session_id);
+    if (sessionFlags.length === 0) return;
+
+    setFlagHistory((prev) => {
+      const existingIds = new Set(prev.map((flag) => flag.id));
+      const additions = sessionFlags
+        .filter((flag) => !existingIds.has(flag.id))
+        .map((flag) => ({ ...flag, is_active: false }));
+
+      if (additions.length === 0) return prev;
+
+      return [...prev, ...additions].sort(
+        (a, b) =>
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+    });
+  }, []);
+
   const deactivateAllActiveFlags = useCallback(async () => {
     if (!eventId) return;
 
@@ -247,31 +272,6 @@ const OrganizerLiveManage = () => {
 
     syncClearedFlagsLocally(flagsToClear);
   }, [activeFlags, syncClearedFlagsLocally]);
-
-  const syncClearedFlagsLocally = useCallback((flags: EventFlag[]) => {
-    if (flags.length === 0) return;
-
-    const clearedIds = new Set(flags.map((flag) => flag.id));
-
-    setActiveFlags((prev) => prev.filter((flag) => !clearedIds.has(flag.id)));
-
-    const sessionFlags = flags.filter((flag) => flag.session_id);
-    if (sessionFlags.length === 0) return;
-
-    setFlagHistory((prev) => {
-      const existingIds = new Set(prev.map((flag) => flag.id));
-      const additions = sessionFlags
-        .filter((flag) => !existingIds.has(flag.id))
-        .map((flag) => ({ ...flag, is_active: false }));
-
-      if (additions.length === 0) return prev;
-
-      return [...prev, ...additions].sort(
-        (a, b) =>
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-      );
-    });
-  }, []);
 
   const insertSessionFlag = useCallback(async ({
     flagType,
