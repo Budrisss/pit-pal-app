@@ -1,7 +1,9 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Timer } from "lucide-react";
-import { Car, Calendar, CheckSquare, Settings, Plus, TrendingUp, LogOut, ChevronRight, MapPin } from "lucide-react";
+import {
+  Car, Calendar, CheckSquare, Settings, Plus, TrendingUp,
+  LogOut, ChevronRight, MapPin, Timer, Clock, Flag, Gauge,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Navigation from "@/components/Navigation";
@@ -11,9 +13,17 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 
-
 import dashboardHero from "@/assets/dashboard-hero.jpg";
 import tracksideLogo from "@/assets/trackside-logo-v2.png";
+
+const CountdownUnit = ({ value, label }: { value: string; label: string }) => (
+  <div className="flex flex-col items-center">
+    <div className="bg-background/80 border border-primary/30 rounded-lg w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center shadow-[0_0_20px_hsl(var(--primary)/0.15)]">
+      <span className="text-xl sm:text-2xl font-bold font-mono text-primary">{value}</span>
+    </div>
+    <span className="text-[10px] sm:text-xs text-muted-foreground mt-1.5 uppercase tracking-widest font-medium">{label}</span>
+  </div>
+);
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -24,20 +34,19 @@ const Dashboard = () => {
   const [localEvents, setLocalEvents] = useState<any[]>([]);
   const [localEventsLoading, setLocalEventsLoading] = useState(true);
 
-  // Fetch nearby public events
   useEffect(() => {
     if (!user) return;
     const fetchLocal = async () => {
       setLocalEventsLoading(true);
       try {
         const { data: loc } = await supabase
-          .from('user_locations')
-          .select('latitude, longitude')
-          .eq('user_id', user.id)
+          .from("user_locations")
+          .select("latitude, longitude")
+          .eq("user_id", user.id)
           .maybeSingle();
 
         if (loc) {
-          const { data } = await supabase.rpc('events_within_radius', {
+          const { data } = await supabase.rpc("events_within_radius", {
             user_lat: Number(loc.latitude),
             user_lng: Number(loc.longitude),
             radius_miles: 100,
@@ -45,7 +54,7 @@ const Dashboard = () => {
           setLocalEvents((data || []).slice(0, 3));
         }
       } catch (err) {
-        console.error('Error fetching local events:', err);
+        console.error("Error fetching local events:", err);
       } finally {
         setLocalEventsLoading(false);
       }
@@ -56,21 +65,29 @@ const Dashboard = () => {
   const totalChecklists = 3;
   const completedChecklists = 1;
 
-  const upcomingEvents = events.filter(e => e.status === "upcoming");
+  const upcomingEvents = events.filter((e) => e.status === "upcoming");
   const nextEvent = upcomingEvents[0];
 
-  // Live countdown for next event
-  const [countdown, setCountdown] = useState("");
+  // Live segmented countdown
+  const [cd, setCd] = useState({ d: 0, h: 0, m: 0, s: 0, active: false });
   useEffect(() => {
-    if (!nextEvent) { setCountdown(""); return; }
+    if (!nextEvent) {
+      setCd({ d: 0, h: 0, m: 0, s: 0, active: false });
+      return;
+    }
     const tick = () => {
       const diff = nextEvent.eventDate.getTime() - Date.now();
-      if (diff <= 0) { setCountdown("Starting now!"); return; }
-      const d = Math.floor(diff / 86400000);
-      const h = Math.floor((diff % 86400000) / 3600000);
-      const m = Math.floor((diff % 3600000) / 60000);
-      const s = Math.floor((diff % 60000) / 1000);
-      setCountdown(`${d}d ${h}h ${m}m ${s}s`);
+      if (diff <= 0) {
+        setCd({ d: 0, h: 0, m: 0, s: 0, active: true });
+        return;
+      }
+      setCd({
+        d: Math.floor(diff / 86400000),
+        h: Math.floor((diff % 86400000) / 3600000),
+        m: Math.floor((diff % 3600000) / 60000),
+        s: Math.floor((diff % 60000) / 1000),
+        active: true,
+      });
     };
     tick();
     const id = setInterval(tick, 1000);
@@ -79,26 +96,35 @@ const Dashboard = () => {
 
   const handleLogout = async () => {
     await signOut();
-    navigate('/');
+    navigate("/");
   };
 
   const quickActions = [
-    { icon: Car, label: "Add Car", onClick: () => navigate('/garage') },
-    { icon: Calendar, label: "New Event", onClick: () => navigate('/events') },
-    { icon: Settings, label: "New Setup", onClick: () => navigate('/setups') },
-    { icon: CheckSquare, label: "Checklists", onClick: () => navigate('/checklists') },
+    { icon: Car, label: "Garage", desc: "Manage cars", onClick: () => navigate("/garage") },
+    { icon: Calendar, label: "Events", desc: "Track schedule", onClick: () => navigate("/events") },
+    { icon: Gauge, label: "Setups", desc: "Car setups", onClick: () => navigate("/setups") },
+    { icon: CheckSquare, label: "Checklists", desc: "Prep lists", onClick: () => navigate("/checklists") },
   ];
 
   const stats = [
-    { label: "Cars", value: cars.length },
-    { label: "Events", value: events.length },
-    { label: "Setups", value: cars.reduce((sum, car) => sum + car.setups, 0) },
-    { label: "Checklists", value: `${completedChecklists}/${totalChecklists}` },
+    { label: "Cars", value: cars.length, icon: Car },
+    { label: "Events", value: events.length, icon: Calendar },
+    { label: "Setups", value: cars.reduce((sum, car) => sum + car.setups, 0), icon: Gauge },
+    { label: "Checklists", value: `${completedChecklists}/${totalChecklists}`, icon: CheckSquare },
   ];
+
+  const stagger = {
+    hidden: { opacity: 0 },
+    show: { opacity: 1, transition: { staggerChildren: 0.08 } },
+  };
+  const fadeUp = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-20 lg:pb-0">
-      {/* Nav — matches Landing */}
+      {/* Nav */}
       <motion.nav
         initial={{ y: -60, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -117,12 +143,7 @@ const Dashboard = () => {
               { label: "Organizer", path: "/event-organizer" },
               { label: "Settings", path: "/settings" },
             ].map((item) => (
-              <Button
-                key={item.path}
-                variant={location.pathname === item.path ? "default" : "ghost"}
-                size="sm"
-                asChild
-              >
+              <Button key={item.path} variant={location.pathname === item.path ? "default" : "ghost"} size="sm" asChild>
                 <Link to={item.path}>{item.label}</Link>
               </Button>
             ))}
@@ -133,7 +154,7 @@ const Dashboard = () => {
         </div>
       </motion.nav>
 
-      {/* Hero — matches Landing style */}
+      {/* Hero */}
       <section className="relative pt-0 lg:pt-20 overflow-hidden">
         <motion.div
           initial={{ scale: 1.1 }}
@@ -158,7 +179,7 @@ const Dashboard = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.3 }}
-            className="text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight mb-3 text-center lg:text-left text-primary md:text-5xl"
+            className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight leading-tight mb-3 text-center lg:text-left text-primary"
           >
             Welcome to Race Control
           </motion.h1>
@@ -173,19 +194,21 @@ const Dashboard = () => {
 
           {/* Stats row */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.7 }}
+            variants={stagger}
+            initial="hidden"
+            animate="show"
             className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4"
           >
-            {stats.map((stat, i) => (
-              <div
+            {stats.map((stat) => (
+              <motion.div
                 key={stat.label}
-                className="bg-card/60 backdrop-blur-md border border-border rounded-xl p-4 text-center hover:border-primary/50 transition-colors"
+                variants={fadeUp}
+                className="group bg-card/60 backdrop-blur-md border border-border rounded-xl p-4 text-center hover:border-primary/50 transition-all duration-300 hover:shadow-[0_0_24px_hsl(var(--primary)/0.12)]"
               >
-                <div className="text-2xl sm:text-3xl font-bold text-primary mb-1">{stat.value}</div>
-                <div className="text-xs sm:text-sm text-muted-foreground font-medium uppercase tracking-wide">{stat.label}</div>
-              </div>
+                <stat.icon size={16} className="text-primary/60 mx-auto mb-2 group-hover:text-primary transition-colors" />
+                <div className="text-2xl sm:text-3xl font-bold text-primary mb-0.5">{stat.value}</div>
+                <div className="text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-widest">{stat.label}</div>
+              </motion.div>
             ))}
           </motion.div>
         </div>
@@ -193,54 +216,87 @@ const Dashboard = () => {
 
       {/* Content */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6 sm:space-y-8">
-        {/* Next Event — above Quick Actions */}
+
+        {/* ─── Next Event ─── */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-40px" }}
           transition={{ duration: 0.5 }}
         >
-          <Card className="bg-card/80 backdrop-blur-md border-border hover:border-primary/50 transition-colors">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                <Calendar size={20} className="text-primary" />
-                Next Event
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {nextEvent ? (
-                <div className="space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div>
-                      <h3 className="font-bold text-lg">{nextEvent.name}</h3>
-                      <p className="text-muted-foreground text-sm">{nextEvent.track}</p>
-                      <p className="text-sm">{nextEvent.date} at {nextEvent.time}</p>
-                      <p className="text-sm text-muted-foreground">Car: {nextEvent.car}</p>
-                    </div>
-                    {countdown && (
-                      <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-lg px-4 py-3 self-start">
-                        <Timer size={18} className="text-primary" />
-                        <span className="text-xl font-bold text-foreground tracking-wide font-mono">{countdown}</span>
-                      </div>
-                    )}
+          {nextEvent ? (
+            <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-card/70 backdrop-blur-xl">
+              {/* Decorative accent stripe */}
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-primary/60 to-transparent" />
+              <div className="absolute -top-24 -right-24 w-64 h-64 rounded-full bg-primary/5 blur-3xl pointer-events-none" />
+
+              <div className="relative p-5 sm:p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
+                    <Flag size={16} className="text-primary" />
                   </div>
-                  <Button size="sm" onClick={() => navigate(`/events/${nextEvent.id}`)}>
-                    View Details <ChevronRight size={16} className="ml-1" />
-                  </Button>
+                  <span className="text-xs font-bold uppercase tracking-widest text-primary">Next Event</span>
                 </div>
-              ) : (
-                <div className="text-center py-4">
-                  <p className="text-muted-foreground mb-3">No upcoming events</p>
-                  <Button size="sm" onClick={() => navigate('/events')}>
-                    <Plus size={16} className="mr-2" /> Create Event
-                  </Button>
+
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+                  <div className="space-y-2">
+                    <h3 className="text-xl sm:text-2xl font-bold text-foreground">{nextEvent.name}</h3>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                      <span className="flex items-center gap-1.5">
+                        <MapPin size={14} className="text-primary/70" />
+                        {nextEvent.track}
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Clock size={14} className="text-primary/70" />
+                        {nextEvent.date} · {nextEvent.time}
+                      </span>
+                      {nextEvent.car && (
+                        <span className="flex items-center gap-1.5">
+                          <Car size={14} className="text-primary/70" />
+                          {nextEvent.car}
+                        </span>
+                      )}
+                    </div>
+                    <Button
+                      size="sm"
+                      className="mt-3"
+                      onClick={() => navigate(`/events/${nextEvent.id}`)}
+                    >
+                      View Details <ChevronRight size={16} className="ml-1" />
+                    </Button>
+                  </div>
+
+                  {/* Segmented countdown */}
+                  {cd.active && (
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <CountdownUnit value={String(cd.d).padStart(2, "0")} label="Days" />
+                      <span className="text-primary/40 text-xl font-bold -mt-5">:</span>
+                      <CountdownUnit value={String(cd.h).padStart(2, "0")} label="Hours" />
+                      <span className="text-primary/40 text-xl font-bold -mt-5">:</span>
+                      <CountdownUnit value={String(cd.m).padStart(2, "0")} label="Min" />
+                      <span className="text-primary/40 text-xl font-bold -mt-5">:</span>
+                      <CountdownUnit value={String(cd.s).padStart(2, "0")} label="Sec" />
+                    </div>
+                  )}
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </div>
+            </div>
+          ) : (
+            <Card className="bg-card/70 backdrop-blur-xl border-dashed border-border">
+              <CardContent className="flex flex-col items-center justify-center py-10 gap-3">
+                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Calendar size={24} className="text-primary" />
+                </div>
+                <p className="text-muted-foreground text-sm">No upcoming events scheduled</p>
+                <Button size="sm" onClick={() => navigate("/events")}>
+                  <Plus size={16} className="mr-2" /> Create Event
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </motion.div>
 
-        {/* Quick Actions */}
+        {/* ─── Quick Actions ─── */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -255,20 +311,24 @@ const Dashboard = () => {
             {quickActions.map((action, i) => (
               <motion.button
                 key={i}
-                whileHover={{ y: -3, transition: { duration: 0.2 } }}
+                whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                whileTap={{ scale: 0.97 }}
                 onClick={action.onClick}
-                className="bg-card/80 backdrop-blur-md border border-border rounded-xl p-4 sm:p-5 flex flex-col items-center gap-2 hover:border-primary/50 transition-colors"
+                className="group relative bg-card/80 backdrop-blur-md border border-border rounded-xl p-4 sm:p-5 flex flex-col items-center gap-2.5 hover:border-primary/40 transition-all duration-300 hover:shadow-[0_0_24px_hsl(var(--primary)/0.1)]"
               >
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <action.icon size={20} className="text-primary" />
+                <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                  <action.icon size={22} className="text-primary" />
                 </div>
-                <span className="text-xs sm:text-sm font-medium">{action.label}</span>
+                <div className="text-center">
+                  <span className="text-sm font-semibold block">{action.label}</span>
+                  <span className="text-[10px] text-muted-foreground">{action.desc}</span>
+                </div>
               </motion.button>
             ))}
           </div>
         </motion.div>
 
-        {/* Two column grid */}
+        {/* ─── Two column: Garage + Local Events ─── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* Garage */}
           <motion.div
@@ -277,34 +337,55 @@ const Dashboard = () => {
             viewport={{ once: true, margin: "-40px" }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            <Card className="bg-card/80 backdrop-blur-md border-border hover:border-primary/50 transition-colors">
+            <Card className="bg-card/80 backdrop-blur-md border-border hover:border-primary/40 transition-all duration-300 h-full">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                  <Car size={20} className="text-primary" />
-                  Your Garage
+                <CardTitle className="flex items-center justify-between">
+                  <span className="flex items-center gap-2 text-base sm:text-lg">
+                    <Car size={20} className="text-primary" />
+                    Your Garage
+                  </span>
+                  {cars.length > 0 && (
+                    <Button size="sm" variant="ghost" onClick={() => navigate("/garage")} className="text-xs">
+                      View All <ChevronRight size={14} className="ml-0.5" />
+                    </Button>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {cars.length > 0 ? (
-                  <div className="space-y-3">
-                    {cars.slice(0, 2).map((car) => (
-                      <div key={car.id} className="border border-border rounded-lg p-3 hover:border-primary/30 transition-colors">
-                        <h4 className="font-semibold">{car.name}</h4>
-                        <p className="text-sm text-muted-foreground">{car.year} {car.make} {car.model}</p>
-                        <p className="text-xs text-muted-foreground">{car.events} events • {car.setups} setups</p>
+                  <div className="space-y-2.5">
+                    {cars.slice(0, 3).map((car) => (
+                      <div
+                        key={car.id}
+                        className="group border border-border rounded-lg p-3 hover:border-primary/30 transition-all duration-200 cursor-pointer hover:bg-primary/5"
+                        onClick={() => navigate("/garage")}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-semibold text-sm">{car.name}</h4>
+                            <p className="text-xs text-muted-foreground">
+                              {car.year} {car.make} {car.model}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-muted-foreground">
+                              {car.events} events · {car.setups} setups
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     ))}
-                    {cars.length > 2 && (
-                      <p className="text-sm text-muted-foreground">+{cars.length - 2} more cars</p>
+                    {cars.length > 3 && (
+                      <p className="text-xs text-muted-foreground text-center">+{cars.length - 3} more</p>
                     )}
-                    <Button size="sm" variant="outline" onClick={() => navigate('/garage')}>
-                      View All Cars <ChevronRight size={16} className="ml-1" />
-                    </Button>
                   </div>
                 ) : (
-                  <div className="text-center py-4">
-                    <p className="text-muted-foreground mb-3">No cars in garage</p>
-                    <Button size="sm" onClick={() => navigate('/garage')}>
+                  <div className="text-center py-6">
+                    <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-3">
+                      <Car size={20} className="text-muted-foreground" />
+                    </div>
+                    <p className="text-muted-foreground text-sm mb-3">No cars in garage</p>
+                    <Button size="sm" onClick={() => navigate("/garage")}>
                       <Plus size={16} className="mr-2" /> Add Car
                     </Button>
                   </div>
@@ -312,58 +393,70 @@ const Dashboard = () => {
               </CardContent>
             </Card>
           </motion.div>
-        </div>
 
-
-        {/* Local Events */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-40px" }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
-          <Card className="bg-card/80 backdrop-blur-md border-border hover:border-primary/50 transition-colors">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span className="flex items-center gap-2 text-base sm:text-lg">
-                  <MapPin size={20} className="text-primary" />
-                  Local Events
-                </span>
-                <Button size="sm" variant="ghost" onClick={() => navigate('/local-events')}>
-                  View All <ChevronRight size={16} className="ml-1" />
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {localEventsLoading ? (
-                <p className="text-sm text-muted-foreground text-center py-4">Loading...</p>
-              ) : localEvents.length > 0 ? (
-                <div className="space-y-3">
-                  {localEvents.map((ev: any) => (
-                    <div key={ev.id} className="border border-border rounded-lg p-3 hover:border-primary/30 transition-colors">
-                      <h4 className="font-semibold text-sm">{ev.name}</h4>
-                      <p className="text-xs text-muted-foreground">
-                        {ev.track_name && `${ev.track_name} • `}
-                        {[ev.city, ev.state].filter(Boolean).join(', ')}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(ev.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                        {ev.entry_fee && ` • ${ev.entry_fee}`}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-4">
-                  <p className="text-muted-foreground text-sm mb-3">No events near you yet.</p>
-                  <Button size="sm" variant="outline" onClick={() => navigate('/local-events')}>
-                    Browse All Events <ChevronRight size={16} className="ml-1" />
+          {/* Local Events */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-40px" }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <Card className="bg-card/80 backdrop-blur-md border-border hover:border-primary/40 transition-all duration-300 h-full">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span className="flex items-center gap-2 text-base sm:text-lg">
+                    <MapPin size={20} className="text-primary" />
+                    Local Events
+                  </span>
+                  <Button size="sm" variant="ghost" onClick={() => navigate("/local-events")} className="text-xs">
+                    View All <ChevronRight size={14} className="ml-0.5" />
                   </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {localEventsLoading ? (
+                  <div className="flex flex-col items-center py-6 gap-2">
+                    <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                    <p className="text-xs text-muted-foreground">Finding events near you…</p>
+                  </div>
+                ) : localEvents.length > 0 ? (
+                  <div className="space-y-2.5">
+                    {localEvents.map((ev: any) => (
+                      <div
+                        key={ev.id}
+                        className="group border border-border rounded-lg p-3 hover:border-primary/30 transition-all duration-200 cursor-pointer hover:bg-primary/5"
+                        onClick={() => navigate("/local-events")}
+                      >
+                        <h4 className="font-semibold text-sm">{ev.name}</h4>
+                        <p className="text-xs text-muted-foreground">
+                          {ev.track_name && `${ev.track_name} · `}
+                          {[ev.city, ev.state].filter(Boolean).join(", ")}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(ev.date + "T00:00:00").toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                          })}
+                          {ev.entry_fee && ` · ${ev.entry_fee}`}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6">
+                    <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-3">
+                      <MapPin size={20} className="text-muted-foreground" />
+                    </div>
+                    <p className="text-muted-foreground text-sm mb-3">No events near you yet</p>
+                    <Button size="sm" variant="outline" onClick={() => navigate("/local-events")}>
+                      Browse All Events <ChevronRight size={16} className="ml-1" />
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
       </section>
 
       {/* Footer */}
