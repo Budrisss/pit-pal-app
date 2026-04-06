@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface OrganizerModeContextType {
   isOrganizer: boolean;
+  isApproved: boolean;
   isOrganizerMode: boolean;
   toggleMode: () => void;
   organizerProfileId: string | null;
