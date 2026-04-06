@@ -8,7 +8,7 @@ const DesktopNavigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut } = useAuth();
-  const { isOrganizer, isOrganizerMode, toggleMode } = useOrganizerMode();
+  const { isOrganizer, isApproved, isOrganizerMode, toggleMode } = useOrganizerMode();
 
   const handleLogout = async () => {
     await signOut();
