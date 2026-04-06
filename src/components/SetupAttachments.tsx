@@ -28,6 +28,7 @@ const SetupAttachments = ({ attachments, setupId, userId, onChanged, compact }: 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
+  const [previewFileName, setPreviewFileName] = useState<string | null>(null);
 
   // Generate signed URLs for all attachments
   useEffect(() => {
