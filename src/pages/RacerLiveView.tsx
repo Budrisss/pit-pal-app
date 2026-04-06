@@ -71,6 +71,7 @@ const RacerLiveView = () => {
   });
   const [regTypeName, setRegTypeName] = useState<string | null>(null);
   const [userCarNumber, setUserCarNumber] = useState<number | null>(null);
+  const [runGroupNames, setRunGroupNames] = useState<Record<string, string>>({});
 
   // Driver communication state
   const [personalEventId, setPersonalEventId] = useState<string | null>(null);
