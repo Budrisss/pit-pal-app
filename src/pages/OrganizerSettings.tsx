@@ -244,7 +244,9 @@ const OrganizerSettings = () => {
       return;
     }
     setSaving(true);
-    const { error } = await supabase
+
+    // Save profile and settings/defaults together
+    const profilePromise = supabase
       .from("organizer_profiles")
       .update({
         org_name: orgName.trim(),
@@ -254,11 +256,28 @@ const OrganizerSettings = () => {
         description: description.trim() || null,
       })
       .eq("id", organizerProfileId);
+
+    const settingsPayload = {
+      organizer_profile_id: organizerProfileId,
+      default_session_duration: parseInt(defaultDuration),
+      default_reg_types: defaultRegTypes,
+      default_sessions: defaultSessions,
+      notif_new_registration: notifNewReg,
+      notif_cancel_registration: notifCancelReg,
+      notif_session_reminder: notifSessionReminder,
+      notif_announcement_confirm: notifAnnouncement,
+    };
+    const settingsPromise = supabase
+      .from("organizer_settings" as any)
+      .upsert(settingsPayload as any, { onConflict: "organizer_profile_id" });
+
+    const [profileRes, settingsRes] = await Promise.all([profilePromise, settingsPromise]);
     setSaving(false);
-    if (error) {
-      toast({ title: "Failed to save", description: error.message, variant: "destructive" });
+
+    if (profileRes.error || settingsRes.error) {
+      toast({ title: "Failed to save", description: (profileRes.error || settingsRes.error)?.message, variant: "destructive" });
     } else {
-      toast({ title: "Profile updated!" });
+      toast({ title: "All settings saved!" });
     }
   };
 
