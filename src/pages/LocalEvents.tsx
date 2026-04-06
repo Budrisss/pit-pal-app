@@ -644,6 +644,8 @@ const LocalEvents = () => {
   const isOrganizerEvent = (event: PublicEvent) =>
     isOrganizerMode && organizerProfile && event.organizer_id === organizerProfile.id;
 
+  const uniqueTracks = Array.from(new Set(events.map(e => e.track_name).filter(Boolean))).sort() as string[];
+
   const filteredEvents = events.filter(ev => {
     const matchesSearch = !searchQuery ||
       ev.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -651,7 +653,8 @@ const LocalEvents = () => {
       ev.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       ev.state?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesState = stateFilter === 'all' || ev.state === stateFilter;
-    return matchesSearch && matchesState;
+    const matchesTrack = trackFilter === 'all' || ev.track_name === trackFilter;
+    return matchesSearch && matchesState && matchesTrack;
   });
 
   const openEditDialog = async (event: PublicEvent) => {
