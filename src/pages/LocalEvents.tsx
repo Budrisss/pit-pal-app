@@ -901,7 +901,7 @@ const LocalEvents = () => {
             <MapPin size={48} className="mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">No events found</h3>
             <p className="text-muted-foreground text-sm mb-4">
-              {viewMode === 'local' ? 'Try expanding your search to All US.' : 'Try adjusting your search or filters.'}
+              {searchLocation ? 'Try a larger radius or different ZIP code.' : 'Try adjusting your search or filters.'}
             </p>
           </motion.div>
         ) : (
