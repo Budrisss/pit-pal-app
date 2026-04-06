@@ -59,7 +59,7 @@ export const OrganizerModeProvider = ({ children }: { children: ReactNode }) => 
   };
 
   return (
-    <OrganizerModeContext.Provider value={{ isOrganizer, isOrganizerMode, toggleMode, organizerProfileId }}>
+    <OrganizerModeContext.Provider value={{ isOrganizer, isApproved, isOrganizerMode, toggleMode, organizerProfileId }}>
       {children}
     </OrganizerModeContext.Provider>
   );
