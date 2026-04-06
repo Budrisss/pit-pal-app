@@ -139,7 +139,7 @@ const Dashboard = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.3 }}
-            className="text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight mb-3 text-center lg:text-left md:text-4xl"
+            className="text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight mb-3 text-center lg:text-left md:text-4xl text-primary"
           >
             Your Command<br />
             <span className="text-primary">Center</span>
