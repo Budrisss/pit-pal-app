@@ -625,6 +625,16 @@ const EventOrganizer = () => {
     return { latitude: data.latitude, longitude: data.longitude, city: data.city, state: data.state };
   };
 
+  const detectAndSetTimezone = async (eventId: string, latitude: number, longitude: number) => {
+    try {
+      await supabase.functions.invoke('detect-timezone', {
+        body: { latitude, longitude, event_id: eventId },
+      });
+    } catch (err) {
+      console.error('Failed to detect timezone:', err);
+    }
+  };
+
   const saveRegistrationTypes = async (eventId: string, types: RegistrationType[], existingIds?: string[]) => {
     if (existingIds && existingIds.length > 0) {
       const keepIds = types.filter(t => t.id).map(t => t.id!);
@@ -738,6 +748,10 @@ const EventOrganizer = () => {
       if (data && newSessions.length > 0) {
         await saveSessions(data.id, newSessions, runGroupIdMap);
       }
+      // Auto-detect timezone from coordinates
+      if (data && lat && lng) {
+        detectAndSetTimezone(data.id, lat, lng);
+      }
       toast({ title: "Event created!", description: "Your event is now live." });
       setShowCreateDialog(false);
       setNewEvent({ name: '', date: '', time: '', description: '', track_name: '', address: '', city: '', state: '', zip_code: '', entry_fee: '', car_classes: '', registration_link: '' });
@@ -773,6 +787,10 @@ const EventOrganizer = () => {
         latitude: lat, longitude: lng,
       }).eq('id', ev.id);
       if (error) throw error;
+      // Auto-detect timezone from coordinates
+      if (lat && lng) {
+        detectAndSetTimezone(ev.id, lat, lng);
+      }
       const existingRegIds = (editingEvent.registration_types || []).filter(t => t.id).map(t => t.id!);
       await saveRegistrationTypes(ev.id, editRegTypes, existingRegIds);
       const runGroupIdMap = await saveRunGroups(ev.id, editRunGroups, originalEditRunGroupIds);
