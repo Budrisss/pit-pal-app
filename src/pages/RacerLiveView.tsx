@@ -358,23 +358,33 @@ const RacerLiveView = () => {
     return activeFlags.filter(f => f.flag_type === "blue" && (f.target_user_id === null || f.target_user_id === user?.id) && (now - new Date(f.created_at).getTime()) < BLUE_FLAG_TTL_MS);
   }, [activeFlags, user?.id]);
 
+  // Helper: does a session match the user's selected run groups (by ID or trimmed name)?
+  const sessionMatchesMyGroups = useCallback((s: { run_group_id: string | null; name: string }) => {
+    if (userRegTypeIds.size === 0) return true;
+    if (s.run_group_id && userRegTypeIds.has(s.run_group_id)) return true;
+    // Fallback: match session name against run group names (trimmed)
+    const groupNamesList = Object.values(runGroupNames);
+    if (groupNamesList.length > 0) {
+      return groupNamesList.some(gName => s.name.trim() === gName.trim());
+    }
+    return false;
+  }, [userRegTypeIds, runGroupNames]);
+
   // Non-yellow-turn, non-blue flags for priority display
   // Filter session-specific flags (green, checkered) by user's run groups
   const priorityFlags = useMemo(() => {
     const sessionRunGroupTypes = ["green", "checkered"];
     return activeFlags.filter(f => {
       if (f.flag_type === "yellow_turn" || f.flag_type === "blue") return false;
-      // If the user has run groups selected and the flag is session-specific (green/checkered),
-      // only show if the flag's session matches the user's groups
       if (userRegTypeIds.size > 0 && sessionRunGroupTypes.includes(f.flag_type) && f.session_id) {
         const flagSession = sessions.find(s => s.id === f.session_id);
-        if (flagSession?.run_group_id && !userRegTypeIds.has(flagSession.run_group_id)) {
+        if (flagSession && !sessionMatchesMyGroups(flagSession)) {
           return false; // This flag is for a different run group
         }
       }
       return true;
     });
-  }, [activeFlags, userRegTypeIds, sessions]);
+  }, [activeFlags, userRegTypeIds, sessions, sessionMatchesMyGroups]);
 
   // Track when targeted black flags first appear + vibrate
   useEffect(() => {
