@@ -35,6 +35,25 @@ Deno.serve(async (req) => {
 
     let actionsPerformed = 0;
 
+    // Deactivate checkered flags older than 2 minutes across all today's events
+    const twoMinAgo = new Date(now.getTime() - 2 * 60000).toISOString();
+    for (const event of events) {
+      const { data: staleCheckered } = await supabase
+        .from("event_flags")
+        .select("id")
+        .eq("event_id", event.id)
+        .eq("flag_type", "checkered")
+        .eq("is_active", true)
+        .lt("created_at", twoMinAgo);
+      if (staleCheckered && staleCheckered.length > 0) {
+        await supabase
+          .from("event_flags")
+          .update({ is_active: false })
+          .in("id", staleCheckered.map((f: any) => f.id));
+        actionsPerformed += staleCheckered.length;
+      }
+    }
+
     for (const event of events) {
       // Get sessions for this event
       const { data: sessions, error: sessErr } = await supabase

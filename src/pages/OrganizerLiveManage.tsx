@@ -610,6 +610,26 @@ const OrganizerLiveManage = () => {
     return () => timers.forEach(t => clearTimeout(t));
   }, [activeFlags]);
 
+  // Auto-deactivate checkered flags older than 2 minutes (reliable polling fallback)
+  const CHECKERED_TTL_MS = 120000;
+  useEffect(() => {
+    const checkeredFlags = activeFlags.filter(f => f.flag_type === "checkered");
+    if (checkeredFlags.length === 0) return;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    for (const f of checkeredFlags) {
+      const age = Date.now() - new Date(f.created_at).getTime();
+      const remaining = CHECKERED_TTL_MS - age;
+      if (remaining <= 0) {
+        supabase.from("event_flags").update({ is_active: false }).eq("id", f.id).then(() => {});
+      } else {
+        timers.push(setTimeout(() => {
+          supabase.from("event_flags").update({ is_active: false }).eq("id", f.id).then(() => {});
+        }, remaining));
+      }
+    }
+    return () => timers.forEach(t => clearTimeout(t));
+  }, [activeFlags]);
+
   const isBlueExpired = (f: EventFlag) => f.flag_type === "blue" && (Date.now() - new Date(f.created_at).getTime()) >= BLUE_FLAG_TTL_MS;
   const isLocalCaution = (f: EventFlag) => f.flag_type === "yellow_turn" || (f.flag_type === "blue" && !isBlueExpired(f)) || (f.flag_type === "black" && f.target_user_id);
 
@@ -731,15 +751,7 @@ const OrganizerLiveManage = () => {
           } else {
             toast({ title: "🏁 Checkered flag already sent (auto-sent by server)" });
           }
-          // Auto-deactivate checkered after 2 minutes so UI transitions to standby
-          setTimeout(async () => {
-            await supabase
-              .from("event_flags")
-              .update({ is_active: false })
-              .eq("event_id", eventId)
-              .eq("flag_type", "checkered")
-              .eq("is_active", true);
-          }, 120000);
+          // Checkered auto-deactivation is handled by the useEffect polling above
         }
       } catch (error) {
         console.error("Failed to sync session flags", error);
