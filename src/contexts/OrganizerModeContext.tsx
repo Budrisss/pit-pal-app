@@ -30,18 +30,20 @@ export const OrganizerModeProvider = ({ children }: { children: ReactNode }) => 
   useEffect(() => {
     if (!user) {
       setIsOrganizer(false);
+      setIsApproved(false);
       setOrganizerProfileId(null);
       return;
     }
     supabase
       .from("organizer_profiles")
-      .select("id")
+      .select("id, approved")
       .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => {
         setIsOrganizer(!!data);
+        setIsApproved(!!data?.approved);
         setOrganizerProfileId(data?.id || null);
-        if (!data) {
+        if (!data || !data.approved) {
           setIsOrganizerMode(false);
           localStorage.removeItem("organizerMode");
         }
