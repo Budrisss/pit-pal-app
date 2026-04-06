@@ -398,7 +398,7 @@ const SessionManagement = () => {
         if (s.runGroupId) return myRunGroups.has(s.runGroupId);
         return Array.from(myRunGroups).some(gId => {
           const grp = runGroups.find(rg => rg.id === gId);
-          return grp && s.referenceName === grp.name;
+          return grp && s.referenceName.trim() === grp.name.trim();
         });
       };
       const myActive = statedSessions.find(s => matchesFn(s) && s.state === "active");
