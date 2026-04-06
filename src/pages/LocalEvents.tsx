@@ -777,6 +777,16 @@ const LocalEvents = () => {
                   className="pl-9 bg-card/60 backdrop-blur-md border-border"
                 />
               </div>
+              <Select value={trackFilter} onValueChange={setTrackFilter}>
+                <SelectTrigger className="w-[130px] bg-card/60 backdrop-blur-md border-border">
+                  <Car size={14} className="mr-1" />
+                  <SelectValue placeholder="Track" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Tracks</SelectItem>
+                  {uniqueTracks.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                </SelectContent>
+              </Select>
               <Select value={stateFilter} onValueChange={setStateFilter}>
                 <SelectTrigger className="w-[120px] bg-card/60 backdrop-blur-md border-border">
                   <Filter size={14} className="mr-1" />
