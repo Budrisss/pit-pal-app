@@ -289,7 +289,7 @@ const LocalEvents = () => {
     } finally {
       setLoading(false);
     }
-  }, [viewMode, userLocation]);
+  }, [searchLocation, searchRadius]);
 
   // Fetch user's existing registrations (track regTypeId + carNumber combos)
   const fetchUserRegistrations = useCallback(async () => {
