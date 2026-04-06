@@ -6,7 +6,7 @@ import { useOrganizerMode } from "@/contexts/OrganizerModeContext";
 const Navigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isOrganizer, isOrganizerMode, toggleMode } = useOrganizerMode();
+  const { isOrganizer, isApproved, isOrganizerMode, toggleMode } = useOrganizerMode();
 
   const userNavItems = [
     { icon: Home, label: "Home", path: "/dashboard" },
