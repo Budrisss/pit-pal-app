@@ -474,10 +474,7 @@ const OrganizerSettings = () => {
               </DndContext>
             </div>
 
-            <Button onClick={handleSaveDefaults} variant="outline" className="w-full" disabled={savingSettings}>
-              <Save size={16} className="mr-2" />
-              {savingSettings ? "Saving..." : "Save Defaults & Notifications"}
-            </Button>
+            <p className="text-xs text-muted-foreground">Changes are saved when you click "Save Profile" above.</p>
           </CardContent>
         </Card>
 
