@@ -118,6 +118,8 @@ const SetupAttachments = ({ attachments, setupId, userId, onChanged, compact }: 
   const openPreview = (attId: string, type: string | null) => {
     const url = signedUrls[attId];
     if (!url) return;
+    const att = attachments.find(a => a.id === attId);
+    setPreviewFileName(att?.file_name || null);
     setPreviewType(isPdf(type) ? "pdf" : "image");
     setPreviewUrl(url);
   };
