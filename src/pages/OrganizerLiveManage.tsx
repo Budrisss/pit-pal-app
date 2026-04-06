@@ -666,18 +666,28 @@ const OrganizerLiveManage = () => {
       try {
         // Session changed directly from one run group to another (e.g. tab throttling skipped the gap)
         if (prevId && currentActiveId && prevId !== currentActiveId) {
-          await deactivateAllActiveFlags();
-          await insertSessionFlag({
-            flagType: "checkered",
-            sessionId: prevId,
-            message: "Session complete",
-            isActive: false,
-          });
-          await insertSessionFlag({
-            flagType: "green",
-            sessionId: currentActiveId,
-          });
-          toast({ title: "🟢 Green flag auto-sent — session changed" });
+          // Check if server already handled the checkered for prev session
+          const checkeredExists = await checkServerAlreadySent("checkered", prevId);
+          const greenExists = await checkServerAlreadySent("green", currentActiveId);
+
+          if (!checkeredExists) {
+            await deactivateAllActiveFlags();
+            await insertSessionFlag({
+              flagType: "checkered",
+              sessionId: prevId,
+              message: "Session complete",
+              isActive: false,
+            });
+          }
+          if (!greenExists) {
+            await insertSessionFlag({
+              flagType: "green",
+              sessionId: currentActiveId,
+            });
+            toast({ title: "🟢 Green flag auto-sent — session changed" });
+          } else {
+            toast({ title: "🟢 Green flag already active (auto-sent by server)" });
+          }
           return;
         }
 
@@ -688,11 +698,17 @@ const OrganizerLiveManage = () => {
           }
 
           if (!hasCurrentSessionTrackStatus) {
-            await insertSessionFlag({
-              flagType: "green",
-              sessionId: currentActiveId,
-            });
-            toast({ title: "🟢 Green flag auto-sent — session started" });
+            // Check if server already sent the green
+            const greenExists = await checkServerAlreadySent("green", currentActiveId);
+            if (!greenExists) {
+              await insertSessionFlag({
+                flagType: "green",
+                sessionId: currentActiveId,
+              });
+              toast({ title: "🟢 Green flag auto-sent — session started" });
+            } else {
+              toast({ title: "🟢 Green flag already active (auto-sent by server)" });
+            }
           }
 
           return;
@@ -700,13 +716,18 @@ const OrganizerLiveManage = () => {
 
         // Session just ended (had prev active → now none)
         if (prevId && !currentActiveId) {
-          await deactivateAllActiveFlags();
-          await insertSessionFlag({
-            flagType: "checkered",
-            sessionId: prevId,
-            message: "Session complete",
-          });
-          toast({ title: "🏁 Checkered flag auto-sent — session ended" });
+          const checkeredExists = await checkServerAlreadySent("checkered", prevId);
+          if (!checkeredExists) {
+            await deactivateAllActiveFlags();
+            await insertSessionFlag({
+              flagType: "checkered",
+              sessionId: prevId,
+              message: "Session complete",
+            });
+            toast({ title: "🏁 Checkered flag auto-sent — session ended" });
+          } else {
+            toast({ title: "🏁 Checkered flag already sent (auto-sent by server)" });
+          }
         }
       } catch (error) {
         console.error("Failed to sync session flags", error);
