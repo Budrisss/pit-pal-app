@@ -137,6 +137,7 @@ const LocalEvents = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [stateFilter, setStateFilter] = useState<string>('all');
+  const [trackFilter, setTrackFilter] = useState<string>('all');
   const [organizerProfile, setOrganizerProfile] = useState<OrganizerProfile | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -643,6 +644,8 @@ const LocalEvents = () => {
   const isOrganizerEvent = (event: PublicEvent) =>
     isOrganizerMode && organizerProfile && event.organizer_id === organizerProfile.id;
 
+  const uniqueTracks = Array.from(new Set(events.map(e => e.track_name).filter(Boolean))).sort() as string[];
+
   const filteredEvents = events.filter(ev => {
     const matchesSearch = !searchQuery ||
       ev.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -650,7 +653,8 @@ const LocalEvents = () => {
       ev.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       ev.state?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesState = stateFilter === 'all' || ev.state === stateFilter;
-    return matchesSearch && matchesState;
+    const matchesTrack = trackFilter === 'all' || ev.track_name === trackFilter;
+    return matchesSearch && matchesState && matchesTrack;
   });
 
   const openEditDialog = async (event: PublicEvent) => {
@@ -773,6 +777,16 @@ const LocalEvents = () => {
                   className="pl-9 bg-card/60 backdrop-blur-md border-border"
                 />
               </div>
+              <Select value={trackFilter} onValueChange={setTrackFilter}>
+                <SelectTrigger className="w-[130px] bg-card/60 backdrop-blur-md border-border">
+                  <Car size={14} className="mr-1" />
+                  <SelectValue placeholder="Track" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Tracks</SelectItem>
+                  {uniqueTracks.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                </SelectContent>
+              </Select>
               <Select value={stateFilter} onValueChange={setStateFilter}>
                 <SelectTrigger className="w-[120px] bg-card/60 backdrop-blur-md border-border">
                   <Filter size={14} className="mr-1" />
