@@ -359,7 +359,7 @@ const OrganizerSettings = () => {
             </div>
             <Button onClick={handleSaveProfile} disabled={saving} className="w-full">
               <Save size={16} className="mr-2" />
-              {saving ? "Saving..." : "Save Profile"}
+              {saving ? "Saving..." : "Save All Settings"}
             </Button>
           </CardContent>
         </Card>
