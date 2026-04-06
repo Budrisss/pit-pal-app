@@ -134,7 +134,7 @@ const EventCard = ({ id, name, track, date, time, countdown, status, car, addres
 
           {/* Actions */}
           <div className="flex gap-2 pt-1">
-            <Button variant="pulse" size="sm" className="flex-1" onClick={() => navigate(`/events/${id}`)}>
+            <Button variant="glass" size="sm" className="flex-1" onClick={() => navigate(`/events/${id}`)}>
               <Eye size={14} />
               Details
             </Button>
@@ -145,7 +145,7 @@ const EventCard = ({ id, name, track, date, time, countdown, status, car, addres
               </Button>
             )}
             {status === "completed" && (
-              <Button variant="pulse" size="sm" className="flex-1" onClick={() => navigate(`/session-management/${id}`)}>
+              <Button variant="glass" size="sm" className="flex-1" onClick={() => navigate(`/session-management/${id}`)}>
                 <Play size={14} />
                 Review
               </Button>
