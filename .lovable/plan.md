@@ -1,26 +1,39 @@
 
 
-## Plan: Clear Local Flags Between Sessions & Save Per Session
+## Plan: Improve Local Events Search UX with Inline ZIP + Radius Controls
 
-### Problem
-Local caution flags (`yellow_turn` and `blue`) are explicitly excluded from deactivation when sessions transition. This means a local yellow from Session 1 persists into Session 2 as an active flag, which is incorrect — each session should start clean.
+### What Changes
 
-### Changes
+Right now, users must go to Settings to save a ZIP code, and the radius is hardcoded at 100 miles. This plan adds an inline ZIP code input and a radius selector directly on the Local Events page, so users can search from any location at any distance without leaving the page.
 
-**File: `src/pages/OrganizerLiveManage.tsx`**
+### Steps
 
-1. **Auto-checkered (session ends)** — Remove the `.neq("flag_type", "yellow_turn").neq("flag_type", "blue")` exclusions from the deactivation query at ~line 606-612. This ensures ALL active flags (including local yellows and blues) are deactivated when a session ends.
+1. **Add search state for inline ZIP and radius**
+   - Add `searchZip`, `searchRadius` (default 50), and `searchLocation` state variables to `LocalEvents.tsx`
+   - Pre-populate `searchZip` from the user's saved `user_locations` ZIP if available
 
-2. **Auto-green (session starts)** — Same change at ~line 581-587. Remove the local-flag exclusions so the new session starts with a clean slate (only the new green flag active).
+2. **Replace the "Nearby / All US" toggle with an inline search bar**
+   - Remove the two-button `viewMode` toggle (Nearby / All US)
+   - Add a ZIP code input field (5-digit, inline) with a radius dropdown (25 / 50 / 100 / 200 / 500 miles)
+   - Add a "Search" button that geocodes the ZIP via the existing `geocode-zip` edge function and fetches events within the selected radius
+   - Keep the existing text search and state filter alongside
 
-3. **Manual checkered flag (`handleSendFlag("checkered")`)** — Update `handleSendFlag` at ~line 286 to also clear local flags when the flag type is `"checkered"`. Currently it always excludes `yellow_turn` and `blue` from deactivation. When sending a checkered flag, all flags should be deactivated.
+3. **Update `fetchEvents` to use dynamic radius**
+   - Pass `searchRadius` instead of the hardcoded `100` to the `events_within_radius` RPC call
+   - Use the inline search location coordinates (or fall back to saved user location)
 
-### What stays the same
-- Local flags are still excluded from deactivation for non-session-ending flag changes (e.g., sending a yellow or red flag should not clear local cautions — those are independent).
-- All flags already have `session_id` set via `activeSessionIdRef.current`, so the history per session is already saved correctly.
+4. **Update the "no location" prompt**
+   - Instead of redirecting to Settings, show an inline message: "Enter a ZIP code above to find events near you"
+   - Still show the "All US" fallback button for browsing without a ZIP
 
-### Summary of behavior after fix
-- Session ends → all flags (global + local) deactivated, checkered inserted
-- Session starts → all flags deactivated, green inserted
-- Mid-session flag change (e.g., yellow → green) → local flags still preserved (existing behavior)
+5. **Update hero subtitle text**
+   - Dynamically show "Showing events within X miles of ZIP XXXXX" when a search is active
+
+### Technical Details
+
+- **Files modified**: `src/pages/LocalEvents.tsx` only
+- **No database changes** needed -- the `events_within_radius` RPC already accepts a `radius_miles` parameter
+- **No new edge functions** -- reuses existing `geocode-zip`
+- **Radius options**: 25, 50, 100, 200, 500 miles via a `<Select>` dropdown
+- The ZIP input will validate for 5 digits before allowing search
 
