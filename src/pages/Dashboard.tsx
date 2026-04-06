@@ -59,6 +59,24 @@ const Dashboard = () => {
   const upcomingEvents = events.filter(e => e.status === "upcoming");
   const nextEvent = upcomingEvents[0];
 
+  // Live countdown for next event
+  const [countdown, setCountdown] = useState("");
+  useEffect(() => {
+    if (!nextEvent) { setCountdown(""); return; }
+    const tick = () => {
+      const diff = nextEvent.eventDate.getTime() - Date.now();
+      if (diff <= 0) { setCountdown("Starting now!"); return; }
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setCountdown(`${d}d ${h}h ${m}m ${s}s`);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [nextEvent]);
+
   const handleLogout = async () => {
     await signOut();
     navigate('/');
