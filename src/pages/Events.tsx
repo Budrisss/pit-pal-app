@@ -124,23 +124,40 @@ const Events = () => {
       <DesktopNavigation />
       <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex justify-between items-center pt-2">
-          <div className="flex items-center gap-3">
-            <Button variant="glass" size="icon" className="size-8" onClick={() => navigate('/dashboard')}>
-              <ArrowLeft size={18} />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                <Calendar className="text-primary" />
-                Track Events
-              </h1>
-              <p className="text-muted-foreground text-sm">Manage your motorsport schedule</p>
+        <div className="relative overflow-hidden rounded-xl border border-primary/10 bg-card/40 backdrop-blur-md p-5">
+          {/* Checkered pattern overlay */}
+          <div
+            className="absolute inset-0 opacity-[0.04]"
+            style={{
+              backgroundImage: `repeating-conic-gradient(hsl(var(--foreground)) 0% 25%, transparent 0% 50%)`,
+              backgroundSize: '20px 20px',
+            }}
+          />
+          {/* Fade mask so pattern fades toward edges */}
+          <div className="absolute inset-0 bg-gradient-to-r from-card/80 via-transparent to-card/80" />
+          {/* Animated speed lines */}
+          <div className="absolute top-1/4 h-px w-32 bg-gradient-to-r from-transparent via-primary/20 to-transparent animate-speed-line" />
+          <div className="absolute top-1/2 h-px w-24 bg-gradient-to-r from-transparent via-primary/15 to-transparent animate-speed-line" style={{ animationDelay: '0.7s' }} />
+          <div className="absolute top-3/4 h-px w-28 bg-gradient-to-r from-transparent via-primary/10 to-transparent animate-speed-line" style={{ animationDelay: '1.4s' }} />
+          {/* Header content */}
+          <div className="relative z-10 flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <Button variant="glass" size="icon" className="size-8" onClick={() => navigate('/dashboard')}>
+                <ArrowLeft size={18} />
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                  <Calendar className="text-primary" />
+                  Track Events
+                </h1>
+                <p className="text-muted-foreground text-sm">Manage your motorsport schedule</p>
+              </div>
             </div>
+            <Button variant="pulse" size="sm" onClick={handleNewEvent}>
+              <Plus size={16} />
+              New Event
+            </Button>
           </div>
-          <Button variant="pulse" size="sm" onClick={handleNewEvent}>
-            <Plus size={16} />
-            New Event
-          </Button>
         </div>
 
         {/* Next Event Countdown Card */}
