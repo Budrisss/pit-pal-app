@@ -176,29 +176,43 @@ const SetupAttachments = ({ attachments, setupId, userId, onChanged, compact }: 
         </div>
       )}
 
-      <Dialog open={!!previewUrl} onOpenChange={() => setPreviewUrl(null)}>
+      <Dialog open={!!previewUrl} onOpenChange={() => { setPreviewUrl(null); setPreviewFileName(null); }}>
         <DialogContent className="max-w-[95vw] max-h-[90vh] p-2">
           <DialogHeader>
             <DialogTitle>Setup Sheet</DialogTitle>
           </DialogHeader>
           {previewUrl && previewType === "image" && (
-            <img src={previewUrl} alt="Setup preview" className="w-full h-auto max-h-[75vh] object-contain rounded" />
+            <img src={previewUrl} alt="Setup preview" className="w-full h-auto max-h-[70vh] object-contain rounded" />
           )}
           {previewUrl && previewType === "pdf" && (
             <div className="flex flex-col gap-2">
               <iframe
                 src={previewUrl}
-                className="w-full h-[70vh] rounded border border-border/50"
+                className="w-full h-[65vh] rounded border border-border/50"
                 title="PDF Preview"
               />
+            </div>
+          )}
+          {previewUrl && (
+            <div className="flex items-center justify-center gap-3 pt-1">
               <a
                 href={previewUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-primary underline text-center"
+                download={previewFileName || "setup-sheet"}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
               >
-                Open PDF in new tab
+                <Download size={16} />
+                Download
               </a>
+              {previewType === "pdf" && (
+                <a
+                  href={previewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary underline"
+                >
+                  Open in new tab
+                </a>
+              )}
             </div>
           )}
         </DialogContent>
