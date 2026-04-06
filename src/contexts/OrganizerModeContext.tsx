@@ -21,6 +21,7 @@ export const useOrganizerMode = () => {
 export const OrganizerModeProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
   const [isOrganizer, setIsOrganizer] = useState(false);
+  const [isApproved, setIsApproved] = useState(false);
   const [organizerProfileId, setOrganizerProfileId] = useState<string | null>(null);
   const [isOrganizerMode, setIsOrganizerMode] = useState(() => {
     return localStorage.getItem("organizerMode") === "true";
