@@ -187,16 +187,20 @@ const LocalEvents = () => {
     fetchOrganizer();
   }, [user]);
 
-  // Fetch user location
+  // Fetch user location and pre-populate ZIP
   useEffect(() => {
     if (!user) return;
     const fetchLocation = async () => {
       const { data } = await supabase
         .from('user_locations')
-        .select('latitude, longitude')
+        .select('latitude, longitude, zip_code')
         .eq('user_id', user.id)
         .maybeSingle();
-      if (data) setUserLocation({ lat: Number(data.latitude), lng: Number(data.longitude) });
+      if (data) {
+        setUserLocation({ lat: Number(data.latitude), lng: Number(data.longitude) });
+        setSearchLocation({ lat: Number(data.latitude), lng: Number(data.longitude) });
+        if (data.zip_code) setSearchZip(data.zip_code);
+      }
     };
     fetchLocation();
   }, [user]);
