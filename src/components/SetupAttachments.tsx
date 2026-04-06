@@ -148,22 +148,22 @@ const SetupAttachments = ({ attachments, setupId, userId, onChanged, compact }: 
             <div key={att.id} className="relative group rounded-lg border border-border/50 overflow-hidden bg-muted/30">
               {isImage(att.file_type) ? (
                 <img
-                  src={att.file_url}
+                  src={signedUrls[att.id] || ""}
                   alt={att.file_name}
                   className="w-full h-24 object-cover cursor-pointer"
-                  onClick={() => openPreview(att.file_url, att.file_type)}
+                  onClick={() => openPreview(att.id, att.file_type)}
                 />
               ) : (
                 <div
                   className="w-full h-24 flex flex-col items-center justify-center cursor-pointer gap-1"
-                  onClick={() => openPreview(att.file_url, att.file_type)}
+                  onClick={() => openPreview(att.id, att.file_type)}
                 >
                   <FileText size={24} className="text-primary" />
                   <span className="text-[10px] text-muted-foreground truncate max-w-[90%] px-1">{att.file_name}</span>
                 </div>
               )}
               <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => openPreview(att.file_url, att.file_type)} className="bg-background/80 rounded-full p-1">
+                <button onClick={() => openPreview(att.id, att.file_type)} className="bg-background/80 rounded-full p-1">
                   <Eye size={12} className="text-foreground" />
                 </button>
                 <button onClick={() => handleDelete(att)} className="bg-destructive/80 rounded-full p-1">
