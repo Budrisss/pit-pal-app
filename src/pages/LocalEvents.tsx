@@ -141,7 +141,10 @@ const LocalEvents = () => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [creating, setCreating] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [viewMode, setViewMode] = useState<'local' | 'search'>('local');
+  const [searchZip, setSearchZip] = useState('');
+  const [searchRadius, setSearchRadius] = useState(50);
+  const [searchLocation, setSearchLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [searchingZip, setSearchingZip] = useState(false);
   const [editingEvent, setEditingEvent] = useState<PublicEvent | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
