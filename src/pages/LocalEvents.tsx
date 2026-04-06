@@ -137,6 +137,7 @@ const LocalEvents = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [stateFilter, setStateFilter] = useState<string>('all');
+  const [trackFilter, setTrackFilter] = useState<string>('all');
   const [organizerProfile, setOrganizerProfile] = useState<OrganizerProfile | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [creating, setCreating] = useState(false);
