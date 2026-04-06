@@ -6,6 +6,26 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+/** Convert a Date to a local date/time in a given IANA timezone */
+function toLocalTime(date: Date, timezone: string): { hours: number; minutes: number; dateStr: string } {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    hour: "numeric",
+    minute: "numeric",
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "0";
+  return {
+    hours: parseInt(get("hour"), 10),
+    minutes: parseInt(get("minute"), 10),
+    dateStr: `${get("year")}-${get("month")}-${get("day")}`,
+  };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -16,18 +36,30 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    const today = new Date().toISOString().slice(0, 10);
     const now = new Date();
 
-    // Get today's public events
+    // Get today's public events (check multiple possible "today" dates across timezones)
+    // We fetch upcoming events and filter by local date
     const { data: events, error: evErr } = await supabase
       .from("public_events")
-      .select("id, organizer_id, date")
-      .eq("date", today)
+      .select("id, organizer_id, date, timezone")
       .eq("status", "upcoming");
 
     if (evErr) throw evErr;
     if (!events || events.length === 0) {
+      return new Response(JSON.stringify({ message: "No upcoming events" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Filter to events where today's local date matches the event date
+    const todayEvents = events.filter((event) => {
+      const tz = event.timezone || "America/New_York"; // fallback
+      const local = toLocalTime(now, tz);
+      return local.dateStr === event.date;
+    });
+
+    if (todayEvents.length === 0) {
       return new Response(JSON.stringify({ message: "No events today" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -37,7 +69,7 @@ Deno.serve(async (req) => {
 
     // Deactivate checkered flags older than 2 minutes across all today's events
     const twoMinAgo = new Date(now.getTime() - 2 * 60000).toISOString();
-    for (const event of events) {
+    for (const event of todayEvents) {
       const { data: staleCheckered } = await supabase
         .from("event_flags")
         .select("id")
@@ -54,7 +86,12 @@ Deno.serve(async (req) => {
       }
     }
 
-    for (const event of events) {
+    for (const event of todayEvents) {
+      const tz = event.timezone || "America/New_York";
+      const localNow = toLocalTime(now, tz);
+      // Current time in minutes since midnight in the event's local timezone
+      const nowMinutes = localNow.hours * 60 + localNow.minutes;
+
       // Get sessions for this event
       const { data: sessions, error: sessErr } = await supabase
         .from("public_event_sessions")
@@ -77,20 +114,11 @@ Deno.serve(async (req) => {
         if (!session.start_time || !session.duration_minutes) continue;
 
         const [h, m] = session.start_time.split(":").map(Number);
-        const sessionStart = new Date(now);
-        sessionStart.setFullYear(
-          now.getFullYear(),
-          now.getMonth(),
-          now.getDate()
-        );
-        sessionStart.setHours(h, m, 0, 0);
+        const sessionStartMinutes = h * 60 + m;
+        const sessionEndMinutes = sessionStartMinutes + session.duration_minutes;
 
-        const sessionEnd = new Date(
-          sessionStart.getTime() + session.duration_minutes * 60000
-        );
-
-        const isActive = now >= sessionStart && now < sessionEnd;
-        const hasEnded = now >= sessionEnd;
+        const isActive = nowMinutes >= sessionStartMinutes && nowMinutes < sessionEndMinutes;
+        const hasEnded = nowMinutes >= sessionEndMinutes;
 
         // Session is active — ensure a green flag exists for it
         if (isActive) {
@@ -99,7 +127,6 @@ Deno.serve(async (req) => {
               f.session_id === session.id &&
               f.flag_type === "green"
           );
-          // Also check if there's any non-local active flag for this session (organizer may have sent yellow/red)
           const hasAnyGlobalFlag = currentActiveFlags.some(
             (f) =>
               f.session_id === session.id &&
@@ -136,7 +163,6 @@ Deno.serve(async (req) => {
 
         // Session has ended — check if checkered was already sent
         if (hasEnded) {
-          // Check if a checkered flag already exists for this session (active or inactive)
           const { data: existingCheckered } = await supabase
             .from("event_flags")
             .select("id")
@@ -146,14 +172,9 @@ Deno.serve(async (req) => {
             .limit(1);
 
           if (!existingCheckered || existingCheckered.length === 0) {
-            // Check if the NEXT session is already active (don't send checkered if we're past this)
-            const nextSession = sessions.find(
-              (s) => s.sort_order > session.sort_order
-            );
-            const isImmediatelyAfterEnd =
-              now.getTime() - sessionEnd.getTime() < 2 * 60000; // within 2 minutes of ending
-
-            if (isImmediatelyAfterEnd) {
+            // Only send checkered within 2 minutes of session end
+            const minutesPastEnd = nowMinutes - sessionEndMinutes;
+            if (minutesPastEnd >= 0 && minutesPastEnd < 2) {
               // Deactivate all active flags
               if (currentActiveFlags.length > 0) {
                 await supabase
@@ -180,7 +201,7 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        message: `Processed ${events.length} events, ${actionsPerformed} actions`,
+        message: `Processed ${todayEvents.length} events, ${actionsPerformed} actions`,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
