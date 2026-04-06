@@ -486,8 +486,8 @@ const RacerLiveView = () => {
   // Placed before primaryFlag so synthetic green can use it
   const myActiveSession = useMemo(() => {
     if (userRegTypeIds.size === 0) return null;
-    return sessionStates.find(s => s.state === "active" && s.run_group_id && userRegTypeIds.has(s.run_group_id)) || null;
-  }, [sessionStates, userRegTypeIds]);
+    return sessionStates.find(s => s.state === "active" && sessionMatchesMyGroups(s)) || null;
+  }, [sessionStates, userRegTypeIds, sessionMatchesMyGroups]);
 
   // Determine the highest-priority flag to display (excluding accepted targeted black flags)
   const priorityOrder = ["red", "black", "checkered", "yellow", "white", "green"];
