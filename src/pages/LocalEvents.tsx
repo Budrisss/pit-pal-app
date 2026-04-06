@@ -745,6 +745,7 @@ const LocalEvents = () => {
                   size="default"
                   onClick={handleZipSearch}
                   disabled={searchingZip || searchZip.length !== 5}
+                  className="px-8"
                 >
                   {searchingZip ? 'Searching…' : 'Search'}
                 </Button>
