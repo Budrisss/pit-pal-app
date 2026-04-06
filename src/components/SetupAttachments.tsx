@@ -27,6 +27,30 @@ const SetupAttachments = ({ attachments, setupId, userId, onChanged, compact }: 
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
+
+  // Generate signed URLs for all attachments
+  useEffect(() => {
+    const generateSignedUrls = async () => {
+      const urls: Record<string, string> = {};
+      for (const att of attachments) {
+        let storagePath = att.file_url;
+        if (storagePath.includes("/setup-attachments/")) {
+          storagePath = decodeURIComponent(storagePath.split("/setup-attachments/").pop()!);
+        }
+        const { data } = await supabase.storage
+          .from("setup-attachments")
+          .createSignedUrl(storagePath, 3600);
+        if (data?.signedUrl) {
+          urls[att.id] = data.signedUrl;
+        }
+      }
+      setSignedUrls(urls);
+    };
+    if (attachments.length > 0) {
+      generateSignedUrls();
+    }
+  }, [attachments]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -35,8 +59,8 @@ const SetupAttachments = ({ attachments, setupId, userId, onChanged, compact }: 
     setUploading(true);
     for (const file of Array.from(files)) {
       const isImage = file.type.startsWith("image/");
-      const isPdf = file.type === "application/pdf";
-      if (!isImage && !isPdf) {
+      const isPdfFile = file.type === "application/pdf";
+      if (!isImage && !isPdfFile) {
         toast({ title: "Invalid file", description: "Only images and PDFs are allowed", variant: "destructive" });
         continue;
       }
@@ -90,7 +114,9 @@ const SetupAttachments = ({ attachments, setupId, userId, onChanged, compact }: 
 
   const [previewType, setPreviewType] = useState<"image" | "pdf">("image");
 
-  const openPreview = (url: string, type: string | null) => {
+  const openPreview = (attId: string, type: string | null) => {
+    const url = signedUrls[attId];
+    if (!url) return;
     setPreviewType(isPdf(type) ? "pdf" : "image");
     setPreviewUrl(url);
   };
