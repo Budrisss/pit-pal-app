@@ -804,6 +804,7 @@ export type Database = {
           state: string | null
           status: string
           time: string | null
+          timezone: string | null
           track_name: string | null
           updated_at: string
           zip_code: string | null
@@ -825,6 +826,7 @@ export type Database = {
           state?: string | null
           status?: string
           time?: string | null
+          timezone?: string | null
           track_name?: string | null
           updated_at?: string
           zip_code?: string | null
@@ -846,6 +848,7 @@ export type Database = {
           state?: string | null
           status?: string
           time?: string | null
+          timezone?: string | null
           track_name?: string | null
           updated_at?: string
           zip_code?: string | null
@@ -1361,6 +1364,7 @@ export type Database = {
           state: string | null
           status: string
           time: string | null
+          timezone: string | null
           track_name: string | null
           updated_at: string
           zip_code: string | null
