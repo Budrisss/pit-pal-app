@@ -174,4 +174,10 @@
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--foreground) / 0.15) transparent;
   }
+  /* Make native date/time input icons visible on dark backgrounds */
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.8);
+    cursor: pointer;
+  }
 }
