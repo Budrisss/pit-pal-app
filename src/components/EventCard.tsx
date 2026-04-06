@@ -134,18 +134,30 @@ const EventCard = ({ id, name, track, date, time, countdown, status, car, addres
 
           {/* Actions */}
           <div className="flex gap-2 pt-1">
-            <Button variant="glass" size="sm" className="flex-1" onClick={() => navigate(`/events/${id}`)}>
+            <Button
+              size="sm"
+              className="flex-1 bg-gradient-to-r from-white/10 via-white/15 to-white/5 backdrop-blur-xl border border-white/20 text-foreground hover:from-white/15 hover:via-white/25 hover:to-white/10 hover:border-white/40 hover:shadow-[0_0_20px_rgba(255,255,255,0.08)] transition-all duration-300 hover:scale-[1.02]"
+              onClick={() => navigate(`/events/${id}`)}
+            >
               <Eye size={14} />
               Details
             </Button>
             {status === "upcoming" && (
-              <Button variant="orange" size="sm" className="flex-1" onClick={handleStartEvent}>
+              <Button
+                size="sm"
+                className="flex-1 bg-gradient-to-r from-f1-red via-f1-red-dark to-f1-red backdrop-blur-sm border border-f1-red/30 text-primary-foreground hover:shadow-[0_0_24px_rgba(220,38,38,0.4)] hover:border-f1-red/50 transition-all duration-300 hover:scale-[1.02]"
+                onClick={handleStartEvent}
+              >
                 <Play size={14} />
                 Start
               </Button>
             )}
             {status === "completed" && (
-              <Button variant="glass" size="sm" className="flex-1" onClick={() => navigate(`/session-management/${id}`)}>
+              <Button
+                size="sm"
+                className="flex-1 bg-gradient-to-r from-white/10 via-white/15 to-white/5 backdrop-blur-xl border border-white/20 text-foreground hover:from-white/15 hover:via-white/25 hover:to-white/10 hover:border-white/40 hover:shadow-[0_0_20px_rgba(255,255,255,0.08)] transition-all duration-300 hover:scale-[1.02]"
+                onClick={() => navigate(`/session-management/${id}`)}
+              >
                 <Play size={14} />
                 Enter
               </Button>
