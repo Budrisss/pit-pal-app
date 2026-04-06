@@ -205,16 +205,37 @@ const LocalEvents = () => {
     fetchLocation();
   }, [user]);
 
+  // Handle ZIP search
+  const handleZipSearch = async () => {
+    if (!/^\d{5}$/.test(searchZip)) {
+      toast({ title: "Invalid ZIP", description: "Enter a 5-digit US ZIP code.", variant: "destructive" });
+      return;
+    }
+    setSearchingZip(true);
+    try {
+      const geo = await geocodeZip(searchZip);
+      if (!geo) {
+        toast({ title: "ZIP not found", description: "Could not locate that ZIP code.", variant: "destructive" });
+        return;
+      }
+      setSearchLocation({ lat: geo.latitude, lng: geo.longitude });
+    } catch {
+      toast({ title: "Error", description: "Failed to look up ZIP code.", variant: "destructive" });
+    } finally {
+      setSearchingZip(false);
+    }
+  };
+
   // Fetch events with registration types
   const fetchEvents = useCallback(async () => {
     setLoading(true);
     try {
       let eventsData: PublicEvent[] = [];
-      if (viewMode === 'local' && userLocation) {
+      if (searchLocation) {
         const { data, error } = await supabase.rpc('events_within_radius', {
-          user_lat: userLocation.lat,
-          user_lng: userLocation.lng,
-          radius_miles: 100,
+          user_lat: searchLocation.lat,
+          user_lng: searchLocation.lng,
+          radius_miles: searchRadius,
         });
         if (error) throw error;
         eventsData = (data as PublicEvent[]) || [];
