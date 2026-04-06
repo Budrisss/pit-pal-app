@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect, useMemo } from "react";
-import { Upload, Image, FileText, X, Eye, Download } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Download, Eye, FileText, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,35 +22,71 @@ interface SetupAttachmentsProps {
   compact?: boolean;
 }
 
+const getStoragePath = (fileUrl: string) => {
+  if (fileUrl.includes("/setup-attachments/")) {
+    return decodeURIComponent(fileUrl.split("/setup-attachments/").pop()!.split("?")[0]);
+  }
+
+  if (fileUrl.includes("/object/sign/setup-attachments/")) {
+    return decodeURIComponent(fileUrl.split("/object/sign/setup-attachments/").pop()!.split("?")[0]);
+  }
+
+  return fileUrl;
+};
+
 const SetupAttachments = ({ attachments, setupId, userId, onChanged, compact }: SetupAttachmentsProps) => {
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
   const [previewFileName, setPreviewFileName] = useState<string | null>(null);
+  const [previewType, setPreviewType] = useState<"image" | "pdf">("image");
+  const [attachmentUrls, setAttachmentUrls] = useState<Record<string, string>>({});
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Generate signed URLs for all attachments
   useEffect(() => {
-    const generateSignedUrls = async () => {
-      const urls: Record<string, string> = {};
-      for (const att of attachments) {
-        let storagePath = att.file_url;
-        if (storagePath.includes("/setup-attachments/")) {
-          storagePath = decodeURIComponent(storagePath.split("/setup-attachments/").pop()!);
-        }
-        const { data } = await supabase.storage
-          .from("setup-attachments")
-          .createSignedUrl(storagePath, 3600);
-        if (data?.signedUrl) {
-          urls[att.id] = data.signedUrl;
-        }
+    let isMounted = true;
+    const createdUrls: string[] = [];
+
+    const loadAttachmentUrls = async () => {
+      if (attachments.length === 0) {
+        if (isMounted) setAttachmentUrls({});
+        return;
       }
-      setSignedUrls(urls);
+
+      const entries = await Promise.all(
+        attachments.map(async (att) => {
+          const storagePath = getStoragePath(att.file_url);
+          const { data, error } = await supabase.storage
+            .from("setup-attachments")
+            .download(storagePath);
+
+          if (error || !data) {
+            return null;
+          }
+
+          const objectUrl = URL.createObjectURL(data);
+
+          if (!isMounted) {
+            URL.revokeObjectURL(objectUrl);
+            return null;
+          }
+
+          createdUrls.push(objectUrl);
+          return [att.id, objectUrl] as [string, string];
+        })
+      );
+
+      if (isMounted) {
+        setAttachmentUrls(Object.fromEntries(entries.filter((entry): entry is [string, string] => entry !== null)));
+      }
     };
-    if (attachments.length > 0) {
-      generateSignedUrls();
-    }
+
+    void loadAttachmentUrls();
+
+    return () => {
+      isMounted = false;
+      createdUrls.forEach((url) => URL.revokeObjectURL(url));
+    };
   }, [attachments]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,12 +95,14 @@ const SetupAttachments = ({ attachments, setupId, userId, onChanged, compact }: 
 
     setUploading(true);
     for (const file of Array.from(files)) {
-      const isImage = file.type.startsWith("image/");
+      const isImageFile = file.type.startsWith("image/");
       const isPdfFile = file.type === "application/pdf";
-      if (!isImage && !isPdfFile) {
+
+      if (!isImageFile && !isPdfFile) {
         toast({ title: "Invalid file", description: "Only images and PDFs are allowed", variant: "destructive" });
         continue;
       }
+
       if (file.size > 10 * 1024 * 1024) {
         toast({ title: "File too large", description: "Max 10MB per file", variant: "destructive" });
         continue;
@@ -98,13 +136,12 @@ const SetupAttachments = ({ attachments, setupId, userId, onChanged, compact }: 
   };
 
   const handleDelete = async (att: Attachment) => {
-    let storagePath = att.file_url;
-    if (storagePath.includes("/setup-attachments/")) {
-      storagePath = decodeURIComponent(storagePath.split("/setup-attachments/").pop()!);
-    }
+    const storagePath = getStoragePath(att.file_url);
+
     if (storagePath) {
       await supabase.storage.from("setup-attachments").remove([storagePath]);
     }
+
     await (supabase as any).from("setup_attachments").delete().eq("id", att.id);
     onChanged();
     toast({ title: "Deleted", description: "Attachment removed" });
@@ -113,14 +150,16 @@ const SetupAttachments = ({ attachments, setupId, userId, onChanged, compact }: 
   const isImage = (type: string | null) => type?.startsWith("image/");
   const isPdf = (type: string | null) => type === "application/pdf";
 
-  const [previewType, setPreviewType] = useState<"image" | "pdf">("image");
+  const openPreview = (att: Attachment) => {
+    const url = attachmentUrls[att.id];
 
-  const openPreview = (attId: string, type: string | null) => {
-    const url = signedUrls[attId];
-    if (!url) return;
-    const att = attachments.find(a => a.id === attId);
-    setPreviewFileName(att?.file_name || null);
-    setPreviewType(isPdf(type) ? "pdf" : "image");
+    if (!url) {
+      toast({ title: "Preview unavailable", description: "Please try again in a moment.", variant: "destructive" });
+      return;
+    }
+
+    setPreviewFileName(att.file_name);
+    setPreviewType(isPdf(att.file_type) ? "pdf" : "image");
     setPreviewUrl(url);
   };
 
@@ -148,64 +187,70 @@ const SetupAttachments = ({ attachments, setupId, userId, onChanged, compact }: 
       {attachments.length > 0 && (
         <div className={`grid ${compact ? "grid-cols-3" : "grid-cols-2"} gap-2`}>
           {attachments.map((att) => (
-            <div key={att.id} className="relative group rounded-lg border border-border/50 overflow-hidden bg-muted/30">
+            <div key={att.id} className="relative group overflow-hidden rounded-lg border border-border/50 bg-muted/30">
               {isImage(att.file_type) ? (
                 <img
-                  src={signedUrls[att.id] || ""}
+                  src={attachmentUrls[att.id] || ""}
                   alt={att.file_name}
-                  className="w-full h-24 object-cover cursor-pointer"
-                  onClick={() => openPreview(att.id, att.file_type)}
+                  className="h-24 w-full cursor-pointer object-cover"
+                  onClick={() => openPreview(att)}
                 />
               ) : (
                 <div
-                  className="w-full h-24 flex flex-col items-center justify-center cursor-pointer gap-1"
-                  onClick={() => openPreview(att.id, att.file_type)}
+                  className="flex h-24 w-full cursor-pointer flex-col items-center justify-center gap-1"
+                  onClick={() => openPreview(att)}
                 >
                   <FileText size={24} className="text-primary" />
-                  <span className="text-[10px] text-muted-foreground truncate max-w-[90%] px-1">{att.file_name}</span>
+                  <span className="max-w-[90%] truncate px-1 text-[10px] text-muted-foreground">{att.file_name}</span>
                 </div>
               )}
-              <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => openPreview(att.id, att.file_type)} className="bg-background/80 rounded-full p-1">
+              <div className="absolute right-1 top-1 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                <button onClick={() => openPreview(att)} className="rounded-full bg-background/80 p-1">
                   <Eye size={12} className="text-foreground" />
                 </button>
-                <button onClick={() => handleDelete(att)} className="bg-destructive/80 rounded-full p-1">
+                <button onClick={() => handleDelete(att)} className="rounded-full bg-destructive/80 p-1">
                   <X size={12} className="text-destructive-foreground" />
                 </button>
               </div>
-              <p className="text-[9px] text-muted-foreground truncate px-1 py-0.5">{att.file_name}</p>
+              <p className="truncate px-1 py-0.5 text-[9px] text-muted-foreground">{att.file_name}</p>
             </div>
           ))}
         </div>
       )}
 
-      <Dialog open={!!previewUrl} onOpenChange={() => { setPreviewUrl(null); setPreviewFileName(null); }}>
-        <DialogContent className="max-w-[95vw] max-h-[90vh] p-2">
+      <Dialog
+        open={!!previewUrl}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPreviewUrl(null);
+            setPreviewFileName(null);
+          }
+        }}
+      >
+        <DialogContent className="max-h-[90vh] max-w-[95vw] p-2">
           <DialogHeader>
             <DialogTitle>Setup Sheet</DialogTitle>
           </DialogHeader>
+
           {previewUrl && previewType === "image" && (
-            <img src={previewUrl} alt="Setup preview" className="w-full h-auto max-h-[70vh] object-contain rounded" />
+            <img src={previewUrl} alt="Setup preview" className="h-auto max-h-[70vh] w-full rounded object-contain" />
           )}
+
           {previewUrl && previewType === "pdf" && (
-            <div className="flex flex-col gap-2">
-              <iframe
-                src={previewUrl}
-                className="w-full h-[65vh] rounded border border-border/50"
-                title="PDF Preview"
-              />
-            </div>
+            <iframe src={previewUrl} className="h-[65vh] w-full rounded border border-border/50" title="PDF Preview" />
           )}
+
           {previewUrl && (
             <div className="flex items-center justify-center gap-3 pt-1">
               <a
                 href={previewUrl}
                 download={previewFileName || "setup-sheet"}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
               >
                 <Download size={16} />
                 Download
               </a>
+
               {previewType === "pdf" && (
                 <a
                   href={previewUrl}
