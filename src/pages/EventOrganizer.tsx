@@ -787,6 +787,10 @@ const EventOrganizer = () => {
         latitude: lat, longitude: lng,
       }).eq('id', ev.id);
       if (error) throw error;
+      // Auto-detect timezone from coordinates
+      if (lat && lng) {
+        detectAndSetTimezone(ev.id, lat, lng);
+      }
       const existingRegIds = (editingEvent.registration_types || []).filter(t => t.id).map(t => t.id!);
       await saveRegistrationTypes(ev.id, editRegTypes, existingRegIds);
       const runGroupIdMap = await saveRunGroups(ev.id, editRunGroups, originalEditRunGroupIds);
