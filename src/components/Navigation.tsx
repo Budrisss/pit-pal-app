@@ -6,7 +6,7 @@ import { useOrganizerMode } from "@/contexts/OrganizerModeContext";
 const Navigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isOrganizer, isOrganizerMode, toggleMode } = useOrganizerMode();
+  const { isOrganizer, isApproved, isOrganizerMode, toggleMode } = useOrganizerMode();
 
   const userNavItems = [
     { icon: Home, label: "Home", path: "/dashboard" },
@@ -41,7 +41,7 @@ const Navigation = () => {
             <span className="text-[10px] sm:text-xs mt-1 font-medium truncate">{label}</span>
           </Link>
         ))}
-        {isOrganizer && (
+        {isOrganizer && isApproved && (
           <button
             onClick={() => {
               toggleMode();

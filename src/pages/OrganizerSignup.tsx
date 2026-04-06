@@ -50,10 +50,10 @@ const OrganizerSignup = () => {
       if (error) throw error;
 
       toast({
-        title: "You're registered!",
-        description: "You can now create and manage public events.",
+        title: "Application submitted!",
+        description: "Your organizer application is pending approval. You'll be able to create events once approved.",
       });
-      navigate('/local-events');
+      navigate('/dashboard');
     } catch (err: any) {
       if (err.code === '23505') {
         toast({

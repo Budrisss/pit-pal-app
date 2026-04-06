@@ -8,7 +8,7 @@ const DesktopNavigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut } = useAuth();
-  const { isOrganizer, isOrganizerMode, toggleMode } = useOrganizerMode();
+  const { isOrganizer, isApproved, isOrganizerMode, toggleMode } = useOrganizerMode();
 
   const handleLogout = async () => {
     await signOut();
@@ -56,7 +56,7 @@ const DesktopNavigation = () => {
               <span className="transform skew-x-6">{label}</span>
             </Link>
           ))}
-          {isOrganizer && (
+          {isOrganizer && isApproved && (
             <button
               onClick={() => {
                 toggleMode();

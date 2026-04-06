@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface OrganizerModeContextType {
   isOrganizer: boolean;
+  isApproved: boolean;
   isOrganizerMode: boolean;
   toggleMode: () => void;
   organizerProfileId: string | null;
@@ -20,6 +21,7 @@ export const useOrganizerMode = () => {
 export const OrganizerModeProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
   const [isOrganizer, setIsOrganizer] = useState(false);
+  const [isApproved, setIsApproved] = useState(false);
   const [organizerProfileId, setOrganizerProfileId] = useState<string | null>(null);
   const [isOrganizerMode, setIsOrganizerMode] = useState(() => {
     return localStorage.getItem("organizerMode") === "true";
@@ -28,18 +30,20 @@ export const OrganizerModeProvider = ({ children }: { children: ReactNode }) => 
   useEffect(() => {
     if (!user) {
       setIsOrganizer(false);
+      setIsApproved(false);
       setOrganizerProfileId(null);
       return;
     }
     supabase
       .from("organizer_profiles")
-      .select("id")
+      .select("id, approved")
       .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => {
         setIsOrganizer(!!data);
+        setIsApproved(!!data?.approved);
         setOrganizerProfileId(data?.id || null);
-        if (!data) {
+        if (!data || !data.approved) {
           setIsOrganizerMode(false);
           localStorage.removeItem("organizerMode");
         }
@@ -55,7 +59,7 @@ export const OrganizerModeProvider = ({ children }: { children: ReactNode }) => 
   };
 
   return (
-    <OrganizerModeContext.Provider value={{ isOrganizer, isOrganizerMode, toggleMode, organizerProfileId }}>
+    <OrganizerModeContext.Provider value={{ isOrganizer, isApproved, isOrganizerMode, toggleMode, organizerProfileId }}>
       {children}
     </OrganizerModeContext.Provider>
   );
