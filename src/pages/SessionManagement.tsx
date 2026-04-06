@@ -921,27 +921,41 @@ const SessionManagement = () => {
 
   const countdown = getCountdownToNext();
   const allStatedSessions = calculateSessionStates();
-  const currentActiveSession = allStatedSessions.find(s => s.state === "active");
+  
+  // Helper to check if a session matches any of the user's selected run groups
+  const sessionMatchesMyGroups = (s: Session) => {
+    if (myRunGroups.size === 0) return true;
+    if (s.runGroupId) return myRunGroups.has(s.runGroupId);
+    return Array.from(myRunGroups).some(gId => {
+      const grp = runGroups.find(rg => rg.id === gId);
+      return grp && s.referenceName === grp.name;
+    });
+  };
+  
+  const allActiveSessions = allStatedSessions.filter(s => s.state === "active");
+  // Prefer the user's run group active session; fall back to first active session
+  const myActiveSession = allActiveSessions.find(s => sessionMatchesMyGroups(s));
+  const currentActiveSession = myActiveSession || allActiveSessions[0] || undefined;
+  
   const activeSessionRemainingTime = getActiveSessionRemainingTime();
-  // Also compute remaining time for the banner's active session (ignoring run group filter)
+  // Also compute remaining time for the banner's active session
+  const bannerActiveSession = myActiveSession || currentActiveSession;
   const bannerRemainingTime = (() => {
-    if (!currentActiveSession) return null;
+    if (!bannerActiveSession) return null;
     const ed = parseISO(eventData.date + "T00:00:00");
-    const [h, m] = currentActiveSession.startTime.split(':').map(Number);
+    const [h, m] = bannerActiveSession.startTime.split(':').map(Number);
     const start = new Date(ed);
     start.setHours(h, m, 0, 0);
-    const end = addMinutes(start, currentActiveSession.duration);
+    const end = addMinutes(start, bannerActiveSession.duration);
     const diff = differenceInMilliseconds(end, currentTime);
     if (diff <= 0) return null;
-    const totalMs = currentActiveSession.duration * 60 * 1000;
+    const totalMs = bannerActiveSession.duration * 60 * 1000;
     const elapsedMs = totalMs - diff;
     const progress = Math.min(Math.max(elapsedMs / totalMs, 0), 1);
     return { minutes: Math.floor(diff / (1000 * 60)), seconds: Math.floor((diff % (1000 * 60)) / 1000), progress };
   })();
   // Check if the active session belongs to any of the user's selected run groups
-  const activeIsMyGroup = myRunGroups.size > 0 && currentActiveSession
-    ? (currentActiveSession.runGroupId ? myRunGroups.has(currentActiveSession.runGroupId) : Array.from(myRunGroups).some(gId => currentActiveSession.referenceName === runGroups.find(rg => rg.id === gId)?.name))
-    : myRunGroups.size === 0;
+  const activeIsMyGroup = myActiveSession != null || myRunGroups.size === 0;
   // Show "my next" countdown even when another group is active
   const showMyNextCountdown = myRunGroups.size > 0 && currentActiveSession && !activeIsMyGroup && countdown;
   const eventDate = parseISO(eventData.date + "T00:00:00");
@@ -1078,16 +1092,31 @@ const SessionManagement = () => {
         )}
 
         {/* Another group is active — show muted on-track indicator + your next session */}
-        {currentActiveSession && !activeIsMyGroup && myRunGroups.size > 0 && (
+        {(() => {
+          // Find the non-user active session for the muted banner
+          const otherActiveSession = allActiveSessions.find(s => !sessionMatchesMyGroups(s));
+          const otherBannerTime = (() => {
+            if (!otherActiveSession) return null;
+            const ed = parseISO(eventData.date + "T00:00:00");
+            const [h, m] = otherActiveSession.startTime.split(':').map(Number);
+            const start = new Date(ed);
+            start.setHours(h, m, 0, 0);
+            const end = addMinutes(start, otherActiveSession.duration);
+            const diff = differenceInMilliseconds(end, currentTime);
+            if (diff <= 0) return null;
+            return { minutes: Math.floor(diff / (1000 * 60)), seconds: Math.floor((diff % (1000 * 60)) / 1000) };
+          })();
+          if (!otherActiveSession || activeIsMyGroup) return null;
+          return (
           <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-4 sm:p-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-muted-foreground/40 animate-pulse" />
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">On Track: {currentActiveSession.referenceName}</p>
-                  {bannerRemainingTime && (
+                  <p className="text-sm font-medium text-muted-foreground">On Track: {otherActiveSession.referenceName}</p>
+                  {otherBannerTime && (
                     <p className="text-xs text-muted-foreground/60 tabular-nums">
-                      {bannerRemainingTime.minutes}:{bannerRemainingTime.seconds.toString().padStart(2, '0')} remaining
+                      {otherBannerTime.minutes}:{otherBannerTime.seconds.toString().padStart(2, '0')} remaining
                     </p>
                   )}
                 </div>
@@ -1101,7 +1130,8 @@ const SessionManagement = () => {
               )}
             </div>
           </div>
-        )}
+          );
+        })()}
 
         {/* Main Grid */}
         <div className="lg:grid lg:grid-cols-3 lg:gap-5 space-y-5 lg:space-y-0">
