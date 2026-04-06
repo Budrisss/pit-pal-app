@@ -217,8 +217,35 @@ const OrganizerLiveManage = () => {
     };
   }, [eventId]);
 
+  const syncClearedFlagsLocally = useCallback((flags: EventFlag[]) => {
+    if (flags.length === 0) return;
+
+    const clearedIds = new Set(flags.map((flag) => flag.id));
+
+    setActiveFlags((prev) => prev.filter((flag) => !clearedIds.has(flag.id)));
+
+    const sessionFlags = flags.filter((flag) => flag.session_id);
+    if (sessionFlags.length === 0) return;
+
+    setFlagHistory((prev) => {
+      const existingIds = new Set(prev.map((flag) => flag.id));
+      const additions = sessionFlags
+        .filter((flag) => !existingIds.has(flag.id))
+        .map((flag) => ({ ...flag, is_active: false }));
+
+      if (additions.length === 0) return prev;
+
+      return [...prev, ...additions].sort(
+        (a, b) =>
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+    });
+  }, []);
+
   const deactivateAllActiveFlags = useCallback(async () => {
     if (!eventId) return;
+
+    const flagsToClear = activeFlags;
 
     const { error } = await supabase
       .from("event_flags")
@@ -227,10 +254,14 @@ const OrganizerLiveManage = () => {
       .eq("is_active", true);
 
     if (error) throw error;
-  }, [eventId]);
+
+    syncClearedFlagsLocally(flagsToClear);
+  }, [activeFlags, eventId, syncClearedFlagsLocally]);
 
   const deactivateFlagsByIds = useCallback(async (flagIds: string[]) => {
     if (flagIds.length === 0) return;
+
+    const flagsToClear = activeFlags.filter((flag) => flagIds.includes(flag.id));
 
     const { error } = await supabase
       .from("event_flags")
@@ -238,7 +269,9 @@ const OrganizerLiveManage = () => {
       .in("id", flagIds);
 
     if (error) throw error;
-  }, []);
+
+    syncClearedFlagsLocally(flagsToClear);
+  }, [activeFlags, syncClearedFlagsLocally]);
 
   const insertSessionFlag = useCallback(async ({
     flagType,
@@ -430,7 +463,19 @@ const OrganizerLiveManage = () => {
 
   const handleClearSingleFlag = async (flagId: string) => {
     const flag = activeFlags.find(f => f.id === flagId);
-    await supabase.from("event_flags").update({ is_active: false }).eq("id", flagId);
+    const { error } = await supabase
+      .from("event_flags")
+      .update({ is_active: false })
+      .eq("id", flagId);
+
+    if (error) {
+      toast({ title: "Failed to clear flag", variant: "destructive" });
+      return;
+    }
+
+    if (flag) {
+      syncClearedFlagsLocally([flag]);
+    }
     
     // If clearing a global caution flag (yellow, red) during an active session, auto-restore green
     const globalCautionTypes = ["yellow", "red"];
@@ -620,15 +665,31 @@ const OrganizerLiveManage = () => {
       const age = Date.now() - new Date(f.created_at).getTime();
       const remaining = CHECKERED_TTL_MS - age;
       if (remaining <= 0) {
-        supabase.from("event_flags").update({ is_active: false }).eq("id", f.id).then(() => {});
+        supabase
+          .from("event_flags")
+          .update({ is_active: false })
+          .eq("id", f.id)
+          .then(({ error }) => {
+            if (!error) {
+              syncClearedFlagsLocally([f]);
+            }
+          });
       } else {
         timers.push(setTimeout(() => {
-          supabase.from("event_flags").update({ is_active: false }).eq("id", f.id).then(() => {});
+          supabase
+            .from("event_flags")
+            .update({ is_active: false })
+            .eq("id", f.id)
+            .then(({ error }) => {
+              if (!error) {
+                syncClearedFlagsLocally([f]);
+              }
+            });
         }, remaining));
       }
     }
     return () => timers.forEach(t => clearTimeout(t));
-  }, [activeFlags]);
+  }, [activeFlags, syncClearedFlagsLocally]);
 
   const isBlueExpired = (f: EventFlag) => f.flag_type === "blue" && (Date.now() - new Date(f.created_at).getTime()) >= BLUE_FLAG_TTL_MS;
   const isLocalCaution = (f: EventFlag) => f.flag_type === "yellow_turn" || (f.flag_type === "blue" && !isBlueExpired(f)) || (f.flag_type === "black" && f.target_user_id);
