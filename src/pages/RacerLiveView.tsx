@@ -602,9 +602,8 @@ const RacerLiveView = () => {
 
   const myNextSession = useMemo(() => {
     if (userRegTypeIds.size === 0) return null;
-    // First upcoming session by sort_order that matches the user's run group
-    return sessionStates.find(s => s.state === "upcoming" && s.run_group_id && userRegTypeIds.has(s.run_group_id)) || null;
-  }, [sessionStates, userRegTypeIds]);
+    return sessionStates.find(s => s.state === "upcoming" && sessionMatchesMyGroups(s)) || null;
+  }, [sessionStates, userRegTypeIds, sessionMatchesMyGroups]);
 
   const myNextCountdown = useMemo(() => {
     if (!myNextSession?.start_time || !eventDate) return null;
