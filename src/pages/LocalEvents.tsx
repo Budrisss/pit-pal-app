@@ -790,16 +790,13 @@ const LocalEvents = () => {
       {/* Content */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* No location warning */}
-        {viewMode === 'local' && !userLocation && (
+        {!searchLocation && !loading && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="bg-primary/10 border border-primary/30 rounded-xl p-4 mb-6 text-center"
           >
-            <p className="text-sm mb-2">Set your ZIP code to see events near you.</p>
-            <Button size="sm" onClick={() => navigate('/settings')}>
-              Go to Settings <ChevronRight size={16} className="ml-1" />
-            </Button>
+            <p className="text-sm">Enter a ZIP code above to find events near you. Currently showing all US events.</p>
           </motion.div>
         )}
 
