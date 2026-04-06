@@ -846,6 +846,27 @@ const OrganizerLiveManage = () => {
           </motion.div>
         )}
 
+        {/* Standby Banner — between sessions after a session has ended */}
+        {!activeSession && nextCountdown && sessionStates.some(s => s.state === "completed") && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-xl border-2 border-muted-foreground/30 bg-muted/20 backdrop-blur-sm p-5 sm:p-6 mb-4"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">🏁</span>
+                <div>
+                  <p className="text-lg font-bold text-foreground">Standby</p>
+                  <p className="text-sm text-muted-foreground">
+                    Session complete — waiting for next session
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {activeSession && nextCountdown && (
           <div className="flex items-center gap-3 my-3">
             <div className="h-px flex-1 bg-gradient-to-r from-transparent via-orange-500/40 to-transparent" />
