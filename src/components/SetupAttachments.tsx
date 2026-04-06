@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Upload, Image, FileText, X, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -27,6 +27,30 @@ const SetupAttachments = ({ attachments, setupId, userId, onChanged, compact }: 
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
+
+  // Generate signed URLs for all attachments
+  useEffect(() => {
+    const generateSignedUrls = async () => {
+      const urls: Record<string, string> = {};
+      for (const att of attachments) {
+        let storagePath = att.file_url;
+        if (storagePath.includes("/setup-attachments/")) {
+          storagePath = decodeURIComponent(storagePath.split("/setup-attachments/").pop()!);
+        }
+        const { data } = await supabase.storage
+          .from("setup-attachments")
+          .createSignedUrl(storagePath, 3600);
+        if (data?.signedUrl) {
+          urls[att.id] = data.signedUrl;
+        }
+      }
+      setSignedUrls(urls);
+    };
+    if (attachments.length > 0) {
+      generateSignedUrls();
+    }
+  }, [attachments]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -35,8 +59,8 @@ const SetupAttachments = ({ attachments, setupId, userId, onChanged, compact }: 
     setUploading(true);
     for (const file of Array.from(files)) {
       const isImage = file.type.startsWith("image/");
-      const isPdf = file.type === "application/pdf";
-      if (!isImage && !isPdf) {
+      const isPdfFile = file.type === "application/pdf";
+      if (!isImage && !isPdfFile) {
         toast({ title: "Invalid file", description: "Only images and PDFs are allowed", variant: "destructive" });
         continue;
       }
@@ -90,7 +114,9 @@ const SetupAttachments = ({ attachments, setupId, userId, onChanged, compact }: 
 
   const [previewType, setPreviewType] = useState<"image" | "pdf">("image");
 
-  const openPreview = (url: string, type: string | null) => {
+  const openPreview = (attId: string, type: string | null) => {
+    const url = signedUrls[attId];
+    if (!url) return;
     setPreviewType(isPdf(type) ? "pdf" : "image");
     setPreviewUrl(url);
   };
@@ -122,22 +148,22 @@ const SetupAttachments = ({ attachments, setupId, userId, onChanged, compact }: 
             <div key={att.id} className="relative group rounded-lg border border-border/50 overflow-hidden bg-muted/30">
               {isImage(att.file_type) ? (
                 <img
-                  src={att.file_url}
+                  src={signedUrls[att.id] || ""}
                   alt={att.file_name}
                   className="w-full h-24 object-cover cursor-pointer"
-                  onClick={() => openPreview(att.file_url, att.file_type)}
+                  onClick={() => openPreview(att.id, att.file_type)}
                 />
               ) : (
                 <div
                   className="w-full h-24 flex flex-col items-center justify-center cursor-pointer gap-1"
-                  onClick={() => openPreview(att.file_url, att.file_type)}
+                  onClick={() => openPreview(att.id, att.file_type)}
                 >
                   <FileText size={24} className="text-primary" />
                   <span className="text-[10px] text-muted-foreground truncate max-w-[90%] px-1">{att.file_name}</span>
                 </div>
               )}
               <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => openPreview(att.file_url, att.file_type)} className="bg-background/80 rounded-full p-1">
+                <button onClick={() => openPreview(att.id, att.file_type)} className="bg-background/80 rounded-full p-1">
                   <Eye size={12} className="text-foreground" />
                 </button>
                 <button onClick={() => handleDelete(att)} className="bg-destructive/80 rounded-full p-1">
