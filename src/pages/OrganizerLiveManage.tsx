@@ -731,7 +731,7 @@ const OrganizerLiveManage = () => {
           } else {
             toast({ title: "🏁 Checkered flag already sent (auto-sent by server)" });
           }
-          // Auto-deactivate checkered after 10 seconds so UI transitions to standby
+          // Auto-deactivate checkered after 2 minutes so UI transitions to standby
           setTimeout(async () => {
             await supabase
               .from("event_flags")
@@ -739,7 +739,7 @@ const OrganizerLiveManage = () => {
               .eq("event_id", eventId)
               .eq("flag_type", "checkered")
               .eq("is_active", true);
-          }, 10000);
+          }, 120000);
         }
       } catch (error) {
         console.error("Failed to sync session flags", error);
