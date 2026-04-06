@@ -708,9 +708,9 @@ const LocalEvents = () => {
             transition={{ duration: 0.6, delay: 0.55 }}
             className="text-muted-foreground max-w-xl mb-6 text-center lg:text-left mx-auto lg:mx-0"
           >
-            {viewMode === 'local' && userLocation
-              ? 'Showing events within 100 miles of your location.'
-              : 'Browse and search all events across the US.'}
+            {searchLocation && searchZip
+              ? `Showing events within ${searchRadius} miles of ${searchZip}.`
+              : 'Enter a ZIP code to find events near you, or browse all US events.'}
           </motion.p>
 
           {/* Search & Filters */}
