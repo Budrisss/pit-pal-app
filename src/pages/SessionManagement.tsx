@@ -1092,16 +1092,31 @@ const SessionManagement = () => {
         )}
 
         {/* Another group is active — show muted on-track indicator + your next session */}
-        {currentActiveSession && !activeIsMyGroup && myRunGroups.size > 0 && (
+        {(() => {
+          // Find the non-user active session for the muted banner
+          const otherActiveSession = allActiveSessions.find(s => !sessionMatchesMyGroups(s));
+          const otherBannerTime = (() => {
+            if (!otherActiveSession) return null;
+            const ed = parseISO(eventData.date + "T00:00:00");
+            const [h, m] = otherActiveSession.startTime.split(':').map(Number);
+            const start = new Date(ed);
+            start.setHours(h, m, 0, 0);
+            const end = addMinutes(start, otherActiveSession.duration);
+            const diff = differenceInMilliseconds(end, currentTime);
+            if (diff <= 0) return null;
+            return { minutes: Math.floor(diff / (1000 * 60)), seconds: Math.floor((diff % (1000 * 60)) / 1000) };
+          })();
+          if (!otherActiveSession || activeIsMyGroup) return null;
+          return (
           <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-4 sm:p-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-muted-foreground/40 animate-pulse" />
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">On Track: {currentActiveSession.referenceName}</p>
-                  {bannerRemainingTime && (
+                  <p className="text-sm font-medium text-muted-foreground">On Track: {otherActiveSession.referenceName}</p>
+                  {otherBannerTime && (
                     <p className="text-xs text-muted-foreground/60 tabular-nums">
-                      {bannerRemainingTime.minutes}:{bannerRemainingTime.seconds.toString().padStart(2, '0')} remaining
+                      {otherBannerTime.minutes}:{otherBannerTime.seconds.toString().padStart(2, '0')} remaining
                     </p>
                   )}
                 </div>
