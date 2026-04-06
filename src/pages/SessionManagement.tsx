@@ -1130,7 +1130,8 @@ const SessionManagement = () => {
               )}
             </div>
           </div>
-        )}
+          );
+        })()}
 
         {/* Main Grid */}
         <div className="lg:grid lg:grid-cols-3 lg:gap-5 space-y-5 lg:space-y-0">
