@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { Timer } from "lucide-react";
 import { Car, Calendar, CheckSquare, Settings, Plus, TrendingUp, LogOut, ChevronRight, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,6 +58,24 @@ const Dashboard = () => {
 
   const upcomingEvents = events.filter(e => e.status === "upcoming");
   const nextEvent = upcomingEvents[0];
+
+  // Live countdown for next event
+  const [countdown, setCountdown] = useState("");
+  useEffect(() => {
+    if (!nextEvent) { setCountdown(""); return; }
+    const tick = () => {
+      const diff = nextEvent.eventDate.getTime() - Date.now();
+      if (diff <= 0) { setCountdown("Starting now!"); return; }
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setCountdown(`${d}d ${h}h ${m}m ${s}s`);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [nextEvent]);
 
   const handleLogout = async () => {
     await signOut();
@@ -174,6 +193,53 @@ const Dashboard = () => {
 
       {/* Content */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6 sm:space-y-8">
+        {/* Next Event — above Quick Actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-40px" }}
+          transition={{ duration: 0.5 }}
+        >
+          <Card className="bg-card/80 backdrop-blur-md border-border hover:border-primary/50 transition-colors">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <Calendar size={20} className="text-primary" />
+                Next Event
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {nextEvent ? (
+                <div className="space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                      <h3 className="font-bold text-lg">{nextEvent.name}</h3>
+                      <p className="text-muted-foreground text-sm">{nextEvent.track}</p>
+                      <p className="text-sm">{nextEvent.date} at {nextEvent.time}</p>
+                      <p className="text-sm text-muted-foreground">Car: {nextEvent.car}</p>
+                    </div>
+                    {countdown && (
+                      <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-lg px-4 py-3 self-start">
+                        <Timer size={18} className="text-primary" />
+                        <span className="text-xl font-bold text-foreground tracking-wide font-mono">{countdown}</span>
+                      </div>
+                    )}
+                  </div>
+                  <Button size="sm" onClick={() => navigate(`/events/${nextEvent.id}`)}>
+                    View Details <ChevronRight size={16} className="ml-1" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-muted-foreground mb-3">No upcoming events</p>
+                  <Button size="sm" onClick={() => navigate('/events')}>
+                    <Plus size={16} className="mr-2" /> Create Event
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+
         {/* Quick Actions */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -204,49 +270,12 @@ const Dashboard = () => {
 
         {/* Two column grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-          {/* Next Event */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-40px" }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            <Card className="bg-card/80 backdrop-blur-md border-border hover:border-primary/50 transition-colors">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                  <Calendar size={20} className="text-primary" />
-                  Next Event
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {nextEvent ? (
-                  <div className="space-y-3">
-                    <h3 className="font-bold text-lg">{nextEvent.name}</h3>
-                    <p className="text-muted-foreground text-sm">{nextEvent.track}</p>
-                    <p className="text-sm">{nextEvent.date} at {nextEvent.time}</p>
-                    <p className="text-sm text-muted-foreground">Car: {nextEvent.car}</p>
-                    <Button size="sm" onClick={() => navigate(`/events/${nextEvent.id}`)}>
-                      View Details <ChevronRight size={16} className="ml-1" />
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="text-center py-4">
-                    <p className="text-muted-foreground mb-3">No upcoming events</p>
-                    <Button size="sm" onClick={() => navigate('/events')}>
-                      <Plus size={16} className="mr-2" /> Create Event
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
-
           {/* Garage */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-40px" }}
-            transition={{ duration: 0.5, delay: 0.2 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
           >
             <Card className="bg-card/80 backdrop-blur-md border-border hover:border-primary/50 transition-colors">
               <CardHeader>
