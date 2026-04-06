@@ -141,7 +141,10 @@ const LocalEvents = () => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [creating, setCreating] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [viewMode, setViewMode] = useState<'local' | 'search'>('local');
+  const [searchZip, setSearchZip] = useState('');
+  const [searchRadius, setSearchRadius] = useState(50);
+  const [searchLocation, setSearchLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [searchingZip, setSearchingZip] = useState(false);
   const [editingEvent, setEditingEvent] = useState<PublicEvent | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
@@ -184,30 +187,55 @@ const LocalEvents = () => {
     fetchOrganizer();
   }, [user]);
 
-  // Fetch user location
+  // Fetch user location and pre-populate ZIP
   useEffect(() => {
     if (!user) return;
     const fetchLocation = async () => {
       const { data } = await supabase
         .from('user_locations')
-        .select('latitude, longitude')
+        .select('latitude, longitude, zip_code')
         .eq('user_id', user.id)
         .maybeSingle();
-      if (data) setUserLocation({ lat: Number(data.latitude), lng: Number(data.longitude) });
+      if (data) {
+        setUserLocation({ lat: Number(data.latitude), lng: Number(data.longitude) });
+        setSearchLocation({ lat: Number(data.latitude), lng: Number(data.longitude) });
+        if (data.zip_code) setSearchZip(data.zip_code);
+      }
     };
     fetchLocation();
   }, [user]);
+
+  // Handle ZIP search
+  const handleZipSearch = async () => {
+    if (!/^\d{5}$/.test(searchZip)) {
+      toast({ title: "Invalid ZIP", description: "Enter a 5-digit US ZIP code.", variant: "destructive" });
+      return;
+    }
+    setSearchingZip(true);
+    try {
+      const geo = await geocodeZip(searchZip);
+      if (!geo) {
+        toast({ title: "ZIP not found", description: "Could not locate that ZIP code.", variant: "destructive" });
+        return;
+      }
+      setSearchLocation({ lat: geo.latitude, lng: geo.longitude });
+    } catch {
+      toast({ title: "Error", description: "Failed to look up ZIP code.", variant: "destructive" });
+    } finally {
+      setSearchingZip(false);
+    }
+  };
 
   // Fetch events with registration types
   const fetchEvents = useCallback(async () => {
     setLoading(true);
     try {
       let eventsData: PublicEvent[] = [];
-      if (viewMode === 'local' && userLocation) {
+      if (searchLocation) {
         const { data, error } = await supabase.rpc('events_within_radius', {
-          user_lat: userLocation.lat,
-          user_lng: userLocation.lng,
-          radius_miles: 100,
+          user_lat: searchLocation.lat,
+          user_lng: searchLocation.lng,
+          radius_miles: searchRadius,
         });
         if (error) throw error;
         eventsData = (data as PublicEvent[]) || [];
@@ -261,7 +289,7 @@ const LocalEvents = () => {
     } finally {
       setLoading(false);
     }
-  }, [viewMode, userLocation]);
+  }, [searchLocation, searchRadius]);
 
   // Fetch user's existing registrations (track regTypeId + carNumber combos)
   const fetchUserRegistrations = useCallback(async () => {
@@ -680,9 +708,9 @@ const LocalEvents = () => {
             transition={{ duration: 0.6, delay: 0.55 }}
             className="text-muted-foreground max-w-xl mb-6 text-center lg:text-left mx-auto lg:mx-0"
           >
-            {viewMode === 'local' && userLocation
-              ? 'Showing events within 100 miles of your location.'
-              : 'Browse and search all events across the US.'}
+            {searchLocation && searchZip
+              ? `Showing events within ${searchRadius} miles of ${searchZip}.`
+              : 'Enter a ZIP code to find events near you, or browse all US events.'}
           </motion.p>
 
           {/* Search & Filters */}
@@ -692,43 +720,68 @@ const LocalEvents = () => {
             transition={{ duration: 0.6, delay: 0.7 }}
             className="flex flex-col sm:flex-row gap-3"
           >
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-              <Input
-                placeholder="Search events, tracks, cities..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="pl-10 bg-card/60 backdrop-blur-md border-border"
-              />
+            {/* ZIP + Radius row */}
+            <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
+              <div className="flex gap-2 flex-1">
+                <Input
+                  placeholder="ZIP code"
+                  value={searchZip}
+                  onChange={e => setSearchZip(e.target.value.replace(/\D/g, '').slice(0, 5))}
+                  className="w-28 bg-card/60 backdrop-blur-md border-border"
+                  maxLength={5}
+                />
+                <Select value={String(searchRadius)} onValueChange={v => setSearchRadius(Number(v))}>
+                  <SelectTrigger className="w-32 bg-card/60 backdrop-blur-md border-border">
+                    <MapPin size={14} className="mr-1" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[25, 50, 100, 200, 500].map(m => (
+                      <SelectItem key={m} value={String(m)}>{m} miles</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="default"
+                  onClick={handleZipSearch}
+                  disabled={searchingZip || searchZip.length !== 5}
+                >
+                  {searchingZip ? 'Searching…' : 'Search'}
+                </Button>
+              </div>
+              {searchLocation && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => { setSearchLocation(null); setSearchZip(''); }}
+                  className="text-xs"
+                >
+                  <X size={14} className="mr-1" /> Show All US
+                </Button>
+              )}
             </div>
-            <Select value={stateFilter} onValueChange={setStateFilter}>
-              <SelectTrigger className="w-full sm:w-32 bg-card/60 backdrop-blur-md border-border">
-                <Filter size={16} className="mr-1" />
-                <SelectValue placeholder="State" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All States</SelectItem>
-                {US_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <div className="flex gap-2">
-              <Button
-                variant={viewMode === 'local' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('local')}
-                disabled={!userLocation}
-                className="flex-1 sm:flex-none"
-              >
-                <MapPin size={16} className="mr-1" /> Nearby
-              </Button>
-              <Button
-                variant={viewMode === 'search' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('search')}
-                className="flex-1 sm:flex-none"
-              >
-                <Search size={16} className="mr-1" /> All US
-              </Button>
+
+            {/* Text search + state filter row */}
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                <Input
+                  placeholder="Search events, tracks, cities..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="pl-10 bg-card/60 backdrop-blur-md border-border"
+                />
+              </div>
+              <Select value={stateFilter} onValueChange={setStateFilter}>
+                <SelectTrigger className="w-full sm:w-32 bg-card/60 backdrop-blur-md border-border">
+                  <Filter size={16} className="mr-1" />
+                  <SelectValue placeholder="State" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All States</SelectItem>
+                  {US_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
           </motion.div>
         </div>
@@ -737,16 +790,13 @@ const LocalEvents = () => {
       {/* Content */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* No location warning */}
-        {viewMode === 'local' && !userLocation && (
+        {!searchLocation && !loading && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="bg-primary/10 border border-primary/30 rounded-xl p-4 mb-6 text-center"
           >
-            <p className="text-sm mb-2">Set your ZIP code to see events near you.</p>
-            <Button size="sm" onClick={() => navigate('/settings')}>
-              Go to Settings <ChevronRight size={16} className="ml-1" />
-            </Button>
+            <p className="text-sm">Enter a ZIP code above to find events near you. Currently showing all US events.</p>
           </motion.div>
         )}
 
@@ -851,7 +901,7 @@ const LocalEvents = () => {
             <MapPin size={48} className="mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">No events found</h3>
             <p className="text-muted-foreground text-sm mb-4">
-              {viewMode === 'local' ? 'Try expanding your search to All US.' : 'Try adjusting your search or filters.'}
+              {searchLocation ? 'Try a larger radius or different ZIP code.' : 'Try adjusting your search or filters.'}
             </p>
           </motion.div>
         ) : (
