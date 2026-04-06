@@ -147,7 +147,7 @@ const EventCard = ({ id, name, track, date, time, countdown, status, car, addres
             {status === "completed" && (
               <Button variant="glass" size="sm" className="flex-1" onClick={() => navigate(`/session-management/${id}`)}>
                 <Play size={14} />
-                Review
+                Enter
               </Button>
             )}
           </div>
