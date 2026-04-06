@@ -676,8 +676,11 @@ const OrganizerLiveManage = () => {
               flagType: "checkered",
               sessionId: prevId,
               message: "Session complete",
-              isActive: false,
+              isActive: true,
             });
+            toast({ title: "🏁 Checkered flag — session complete" });
+            // Brief delay so checkered is visible before green
+            await new Promise(r => setTimeout(r, 3000));
           }
           if (!greenExists) {
             await insertSessionFlag({
