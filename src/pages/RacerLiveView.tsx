@@ -71,6 +71,7 @@ const RacerLiveView = () => {
   });
   const [regTypeName, setRegTypeName] = useState<string | null>(null);
   const [userCarNumber, setUserCarNumber] = useState<number | null>(null);
+  const [runGroupNames, setRunGroupNames] = useState<Record<string, string>>({});
 
   // Driver communication state
   const [personalEventId, setPersonalEventId] = useState<string | null>(null);
@@ -188,8 +189,14 @@ const RacerLiveView = () => {
 
     // Set display name from first selected group
     if (effectiveIds.length > 0) {
-      const { data: rtData } = await (supabase as any).from("run_groups").select("name").eq("id", effectiveIds[0]).single();
-      if (rtData) setRegTypeName(rtData.name);
+      const { data: rgData } = await (supabase as any).from("run_groups").select("id, name").in("id", effectiveIds);
+      if (rgData) {
+        const nameMap: Record<string, string> = {};
+        (rgData as any[]).forEach((rg: any) => { nameMap[rg.id] = rg.name; });
+        setRunGroupNames(nameMap);
+        const firstName = (rgData as any[])[0]?.name || null;
+        if (firstName) setRegTypeName(firstName);
+      }
     }
 
     setLoading(false);
@@ -351,23 +358,33 @@ const RacerLiveView = () => {
     return activeFlags.filter(f => f.flag_type === "blue" && (f.target_user_id === null || f.target_user_id === user?.id) && (now - new Date(f.created_at).getTime()) < BLUE_FLAG_TTL_MS);
   }, [activeFlags, user?.id]);
 
+  // Helper: does a session match the user's selected run groups (by ID or trimmed name)?
+  const sessionMatchesMyGroups = useCallback((s: { run_group_id: string | null; name: string }) => {
+    if (userRegTypeIds.size === 0) return true;
+    if (s.run_group_id && userRegTypeIds.has(s.run_group_id)) return true;
+    // Fallback: match session name against run group names (trimmed)
+    const groupNamesList = Object.values(runGroupNames);
+    if (groupNamesList.length > 0) {
+      return groupNamesList.some(gName => s.name.trim() === gName.trim());
+    }
+    return false;
+  }, [userRegTypeIds, runGroupNames]);
+
   // Non-yellow-turn, non-blue flags for priority display
   // Filter session-specific flags (green, checkered) by user's run groups
   const priorityFlags = useMemo(() => {
     const sessionRunGroupTypes = ["green", "checkered"];
     return activeFlags.filter(f => {
       if (f.flag_type === "yellow_turn" || f.flag_type === "blue") return false;
-      // If the user has run groups selected and the flag is session-specific (green/checkered),
-      // only show if the flag's session matches the user's groups
       if (userRegTypeIds.size > 0 && sessionRunGroupTypes.includes(f.flag_type) && f.session_id) {
         const flagSession = sessions.find(s => s.id === f.session_id);
-        if (flagSession?.run_group_id && !userRegTypeIds.has(flagSession.run_group_id)) {
+        if (flagSession && !sessionMatchesMyGroups(flagSession)) {
           return false; // This flag is for a different run group
         }
       }
       return true;
     });
-  }, [activeFlags, userRegTypeIds, sessions]);
+  }, [activeFlags, userRegTypeIds, sessions, sessionMatchesMyGroups]);
 
   // Track when targeted black flags first appear + vibrate
   useEffect(() => {
@@ -469,8 +486,8 @@ const RacerLiveView = () => {
   // Placed before primaryFlag so synthetic green can use it
   const myActiveSession = useMemo(() => {
     if (userRegTypeIds.size === 0) return null;
-    return sessionStates.find(s => s.state === "active" && s.run_group_id && userRegTypeIds.has(s.run_group_id)) || null;
-  }, [sessionStates, userRegTypeIds]);
+    return sessionStates.find(s => s.state === "active" && sessionMatchesMyGroups(s)) || null;
+  }, [sessionStates, userRegTypeIds, sessionMatchesMyGroups]);
 
   // Determine the highest-priority flag to display (excluding accepted targeted black flags)
   const priorityOrder = ["red", "black", "checkered", "yellow", "white", "green"];
@@ -585,9 +602,8 @@ const RacerLiveView = () => {
 
   const myNextSession = useMemo(() => {
     if (userRegTypeIds.size === 0) return null;
-    // First upcoming session by sort_order that matches the user's run group
-    return sessionStates.find(s => s.state === "upcoming" && s.run_group_id && userRegTypeIds.has(s.run_group_id)) || null;
-  }, [sessionStates, userRegTypeIds]);
+    return sessionStates.find(s => s.state === "upcoming" && sessionMatchesMyGroups(s)) || null;
+  }, [sessionStates, userRegTypeIds, sessionMatchesMyGroups]);
 
   const myNextCountdown = useMemo(() => {
     if (!myNextSession?.start_time || !eventDate) return null;
