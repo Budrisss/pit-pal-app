@@ -748,6 +748,10 @@ const EventOrganizer = () => {
       if (data && newSessions.length > 0) {
         await saveSessions(data.id, newSessions, runGroupIdMap);
       }
+      // Auto-detect timezone from coordinates
+      if (data && lat && lng) {
+        detectAndSetTimezone(data.id, lat, lng);
+      }
       toast({ title: "Event created!", description: "Your event is now live." });
       setShowCreateDialog(false);
       setNewEvent({ name: '', date: '', time: '', description: '', track_name: '', address: '', city: '', state: '', zip_code: '', entry_fee: '', car_classes: '', registration_link: '' });
