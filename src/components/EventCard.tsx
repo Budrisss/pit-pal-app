@@ -59,7 +59,7 @@ const EventCard = ({ id, name, track, date, time, countdown, status, car, addres
 
   return (
     <>
-      <Card className={`bg-card/60 backdrop-blur-sm border border-border/50 hover:border-primary/30 transition-all duration-300 hover:shadow-racing h-full border-l-4 ${getBorderColor()}`}>
+      <Card className={`bg-card border border-border/50 hover:border-primary/30 transition-colors duration-300 h-full border-l-4 ${getBorderColor()}`}>
         <CardContent className="p-4 sm:p-5 space-y-3">
           {/* Header: Title + Menu */}
           <div className="flex items-start gap-2">
@@ -138,7 +138,7 @@ const EventCard = ({ id, name, track, date, time, countdown, status, car, addres
           <div className="flex gap-2 pt-1">
             <Button
               size="sm"
-              className="flex-1 bg-primary/15 backdrop-blur-xl border border-primary/25 text-primary hover:bg-primary/25 hover:border-primary/40 hover:shadow-[0_0_20px_hsl(var(--primary)/0.15)] transition-all duration-300"
+                className="flex-1 bg-primary/15 border border-primary/25 text-primary hover:bg-primary/25 hover:border-primary/40 transition-colors duration-200"
               onClick={() => navigate(`/events/${id}`)}
             >
               <Eye size={14} />
@@ -147,7 +147,7 @@ const EventCard = ({ id, name, track, date, time, countdown, status, car, addres
             {status === "upcoming" && (
               <Button
                 size="sm"
-                className="flex-1 bg-primary/20 backdrop-blur-xl border border-primary/30 text-primary hover:bg-primary/30 hover:border-primary/50 hover:shadow-[0_0_24px_hsl(var(--primary)/0.25)] transition-all duration-300"
+                className="flex-1 bg-primary/20 border border-primary/30 text-primary hover:bg-primary/30 hover:border-primary/50 transition-colors duration-200"
                 onClick={handleStartEvent}
               >
                 <Play size={14} />
@@ -157,7 +157,7 @@ const EventCard = ({ id, name, track, date, time, countdown, status, car, addres
             {status === "completed" && (
               <Button
                 size="sm"
-                className="flex-1 bg-primary/15 backdrop-blur-xl border border-primary/25 text-primary hover:bg-primary/25 hover:border-primary/40 hover:shadow-[0_0_20px_hsl(var(--primary)/0.15)] transition-all duration-300"
+                className="flex-1 bg-primary/15 border border-primary/25 text-primary hover:bg-primary/25 hover:border-primary/40 transition-colors duration-200"
                 onClick={() => navigate(`/session-management/${id}`)}
               >
                 <Play size={14} />
