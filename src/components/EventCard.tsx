@@ -59,7 +59,7 @@ const EventCard = ({ id, name, track, date, time, countdown, status, car, addres
 
   return (
     <>
-      <Card className={`bg-card/60 backdrop-blur-sm border border-border/50 hover:border-primary/30 transition-all duration-300 hover:shadow-racing h-full border-l-4 ${getBorderColor()}`}>
+      <Card className={`bg-card border border-border/50 hover:border-primary/30 transition-colors duration-300 h-full border-l-4 ${getBorderColor()}`}>
         <CardContent className="p-4 sm:p-5 space-y-3">
           {/* Header: Title + Menu */}
           <div className="flex items-start gap-2">
