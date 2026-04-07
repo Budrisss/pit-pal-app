@@ -270,7 +270,14 @@ const EventDetails = () => {
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3 pt-4">
-          <Button variant="outline" className="flex-1">
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => {
+              const query = encodeURIComponent(event.address || event.track);
+              window.open(`https://www.google.com/maps/dir/?api=1&destination=${query}`, '_blank');
+            }}
+          >
             <NavigationIcon size={16} />
             Get Directions
           </Button>
