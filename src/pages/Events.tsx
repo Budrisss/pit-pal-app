@@ -146,8 +146,7 @@ const Events = () => {
                 <ArrowLeft size={18} />
               </Button>
               <div>
-                <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                  <Calendar className="text-primary" />
+                <h1 className="text-2xl font-bold text-foreground">
                   Track Events
                 </h1>
                 <p className="text-muted-foreground text-sm">Manage your motorsport schedule</p>
