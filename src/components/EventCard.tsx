@@ -77,16 +77,18 @@ const EventCard = ({ id, name, track, date, time, countdown, status, car, addres
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={onEdit}>
-                  <Edit size={14} className="mr-2" />
-                  Edit
-                </DropdownMenuItem>
+                {!publicEventId && (
+                  <DropdownMenuItem onClick={onEdit}>
+                    <Edit size={14} className="mr-2" />
+                    Edit
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
                   onClick={() => setIsDeleteDialogOpen(true)}
                 >
                   <Trash2 size={14} className="mr-2" />
-                  Delete
+                  {publicEventId ? "Unregister" : "Delete"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -170,24 +172,19 @@ const EventCard = ({ id, name, track, date, time, countdown, status, car, addres
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Event</AlertDialogTitle>
+            <AlertDialogTitle>{publicEventId ? "Unregister from Event" : "Delete Event"}</AlertDialogTitle>
             <AlertDialogDescription>
               {publicEventId
-                ? `Are you sure you want to delete "${name}"? This event is linked to a registration.`
+                ? `Are you sure you want to unregister from "${name}"? This will cancel your registration and remove it from your schedule.`
                 : `Are you sure you want to delete "${name}"? This action cannot be undone.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className={publicEventId ? "flex-col sm:flex-row gap-2" : ""}>
+          <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             {publicEventId ? (
-              <>
-                <AlertDialogAction onClick={() => handleDelete(false)} className="bg-muted text-foreground hover:bg-muted/80">
-                  Delete Only
-                </AlertDialogAction>
-                <AlertDialogAction onClick={() => handleDelete(true)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                  Delete & Cancel Registration
-                </AlertDialogAction>
-              </>
+              <AlertDialogAction onClick={() => handleDelete(true)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Unregister
+              </AlertDialogAction>
             ) : (
               <AlertDialogAction onClick={() => handleDelete(false)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                 Delete
