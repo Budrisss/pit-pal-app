@@ -274,37 +274,34 @@ const EventDetails = () => {
             <NavigationIcon size={16} />
             Get Directions
           </Button>
-          <Button variant="outline" className="flex-1" onClick={handleEdit}>
-            <Edit size={16} />
-            Edit Event
-          </Button>
+          {!event.publicEventId && (
+            <Button variant="outline" className="flex-1" onClick={handleEdit}>
+              <Edit size={16} />
+              Edit Event
+            </Button>
+          )}
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="outline" className="flex-1">
                 <Trash2 size={16} />
-                Delete Event
+                {event.publicEventId ? "Unregister" : "Delete Event"}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Delete Event</AlertDialogTitle>
+                <AlertDialogTitle>{event.publicEventId ? "Unregister from Event" : "Delete Event"}</AlertDialogTitle>
                 <AlertDialogDescription>
                   {event.publicEventId
-                    ? `Are you sure you want to delete "${event.name}"? This event is linked to a registration.`
+                    ? `Are you sure you want to unregister from "${event.name}"? This will cancel your registration and remove it from your schedule.`
                     : `Are you sure you want to delete "${event.name}"? This action cannot be undone.`}
                 </AlertDialogDescription>
               </AlertDialogHeader>
-              <AlertDialogFooter className={event.publicEventId ? "flex-col sm:flex-row gap-2" : ""}>
+              <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 {event.publicEventId ? (
-                  <>
-                    <AlertDialogAction onClick={() => handleDelete(false)} className="bg-muted text-foreground hover:bg-muted/80">
-                      Delete Only
-                    </AlertDialogAction>
-                    <AlertDialogAction onClick={() => handleDelete(true)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                      Delete & Cancel Registration
-                    </AlertDialogAction>
-                  </>
+                  <AlertDialogAction onClick={() => handleDelete(true)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Unregister
+                  </AlertDialogAction>
                 ) : (
                   <AlertDialogAction onClick={() => handleDelete(false)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                     Delete
