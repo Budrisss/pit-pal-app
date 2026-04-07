@@ -124,21 +124,7 @@ const Events = () => {
       <DesktopNavigation />
       <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-6xl mx-auto">
         {/* Header */}
-        <div className="relative overflow-hidden rounded-xl border border-primary/10 bg-card/40 backdrop-blur-md p-5">
-          {/* Checkered pattern overlay */}
-          <div
-            className="absolute inset-0 opacity-[0.04]"
-            style={{
-              backgroundImage: `repeating-conic-gradient(hsl(var(--foreground)) 0% 25%, transparent 0% 50%)`,
-              backgroundSize: '20px 20px',
-            }}
-          />
-          {/* Fade mask so pattern fades toward edges */}
-          <div className="absolute inset-0 bg-gradient-to-r from-card/80 via-transparent to-card/80" />
-          {/* Animated speed lines */}
-          <div className="absolute top-1/4 h-px w-32 bg-gradient-to-r from-transparent via-primary/20 to-transparent animate-speed-line" />
-          <div className="absolute top-1/2 h-px w-24 bg-gradient-to-r from-transparent via-primary/15 to-transparent animate-speed-line" style={{ animationDelay: '0.7s' }} />
-          <div className="absolute top-3/4 h-px w-28 bg-gradient-to-r from-transparent via-primary/10 to-transparent animate-speed-line" style={{ animationDelay: '1.4s' }} />
+        <div className="relative overflow-hidden rounded-xl border border-primary/10 bg-card p-5">
           {/* Header content */}
           <div className="relative z-10 flex justify-between items-center">
             <div className="flex items-center gap-3">
