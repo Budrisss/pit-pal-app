@@ -1,26 +1,18 @@
 
 
-## Make "Get Directions" Button Work
+## Make Dashboard Logo Bigger
+
+The logo at line 175 uses `h-20` (80px). On a 390px-wide mobile viewport, that looks small relative to the hero heading and page content.
 
 ### Change
 
-**File: `src/pages/EventDetails.tsx`**
+**File: `src/pages/Dashboard.tsx`** — line 175
 
-Update the "Get Directions" button's `onClick` to open Google Maps directions using the event's address:
+Change the logo class from `h-20` to `h-32 sm:h-36` so it's roughly double the current size and scales up slightly on larger phones.
 
 ```tsx
-<Button
-  variant="outline"
-  className="flex-1"
-  onClick={() => {
-    const query = encodeURIComponent(event.address || event.track);
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${query}`, '_blank');
-  }}
->
-  <NavigationIcon size={16} />
-  Get Directions
-</Button>
+<img src={tracksideLogo} alt="Track Side Ops" className="h-32 sm:h-36 w-auto invert" />
 ```
 
-This opens Google Maps in a new tab with the event's address (or track name as fallback) as the destination, letting the user's current location be the origin automatically.
+Single line change, no other files affected.
 
