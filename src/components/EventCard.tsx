@@ -147,7 +147,7 @@ const EventCard = ({ id, name, track, date, time, countdown, status, car, addres
             {status === "upcoming" && (
               <Button
                 size="sm"
-                className="flex-1 bg-primary/20 backdrop-blur-xl border border-primary/30 text-primary hover:bg-primary/30 hover:border-primary/50 hover:shadow-[0_0_24px_hsl(var(--primary)/0.25)] transition-all duration-300"
+                className="flex-1 bg-primary/20 border border-primary/30 text-primary hover:bg-primary/30 hover:border-primary/50 transition-colors duration-200"
                 onClick={handleStartEvent}
               >
                 <Play size={14} />
