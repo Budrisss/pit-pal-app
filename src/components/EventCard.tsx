@@ -77,16 +77,18 @@ const EventCard = ({ id, name, track, date, time, countdown, status, car, addres
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={onEdit}>
-                  <Edit size={14} className="mr-2" />
-                  Edit
-                </DropdownMenuItem>
+                {!publicEventId && (
+                  <DropdownMenuItem onClick={onEdit}>
+                    <Edit size={14} className="mr-2" />
+                    Edit
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
                   onClick={() => setIsDeleteDialogOpen(true)}
                 >
                   <Trash2 size={14} className="mr-2" />
-                  Delete
+                  {publicEventId ? "Unregister" : "Delete"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
