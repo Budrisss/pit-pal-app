@@ -1,24 +1,26 @@
 
 
-## Conditional Edit/Delete for Event Details
+## Make "Get Directions" Button Work
 
-### Problem
-Currently, all events show "Edit Event" and "Delete Event" buttons regardless of whether the event is a personal event or a registered public event. Users should only edit/delete their own personal events. Registered events should show "Unregister" instead.
+### Change
 
-### Changes
+**File: `src/pages/EventDetails.tsx`**
 
-**File: `src/pages/EventDetails.tsx`** (lines 272-315)
+Update the "Get Directions" button's `onClick` to open Google Maps directions using the event's address:
 
-1. **Hide "Edit Event" button** when `event.publicEventId` exists (registered event)
-2. **Change "Delete Event" to "Unregister"** when `event.publicEventId` exists
-3. For registered events, simplify the delete dialog: title becomes "Unregister from Event", description explains it will cancel registration and remove from their schedule, single confirm button says "Unregister"
-4. For personal events (no `publicEventId`), keep current Edit and Delete behavior unchanged
+```tsx
+<Button
+  variant="outline"
+  className="flex-1"
+  onClick={() => {
+    const query = encodeURIComponent(event.address || event.track);
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${query}`, '_blank');
+  }}
+>
+  <NavigationIcon size={16} />
+  Get Directions
+</Button>
+```
 
-**Also update `src/components/EventCard.tsx`**:
-- Hide the "Edit" dropdown option when `publicEventId` exists
-- Change "Delete" to "Unregister" in the dropdown for registered events
-
-### Result
-- Personal events: Edit + Delete (as-is)
-- Registered public events: no Edit, "Unregister" button that cancels registration and removes the event copy
+This opens Google Maps in a new tab with the event's address (or track name as fallback) as the destination, letting the user's current location be the origin automatically.
 
