@@ -157,7 +157,7 @@ const EventCard = ({ id, name, track, date, time, countdown, status, car, addres
             {status === "completed" && (
               <Button
                 size="sm"
-                className="flex-1 bg-primary/15 backdrop-blur-xl border border-primary/25 text-primary hover:bg-primary/25 hover:border-primary/40 hover:shadow-[0_0_20px_hsl(var(--primary)/0.15)] transition-all duration-300"
+                className="flex-1 bg-primary/15 border border-primary/25 text-primary hover:bg-primary/25 hover:border-primary/40 transition-colors duration-200"
                 onClick={() => navigate(`/session-management/${id}`)}
               >
                 <Play size={14} />

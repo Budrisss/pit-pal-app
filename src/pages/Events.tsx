@@ -147,7 +147,7 @@ const Events = () => {
 
         {/* Next Event Countdown Card */}
         {nextUpcomingEvent && countdown && (
-          <div className="relative overflow-hidden rounded-xl border border-primary/20 bg-card/60 backdrop-blur-md p-5">
+          <div className="relative overflow-hidden rounded-xl border border-primary/20 bg-card p-5">
             <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-racing-orange/10" />
             <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1">
