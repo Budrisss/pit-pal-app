@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Calendar, Settings, Star, Car, Pencil, Trash2, Camera, X, Wrench } from "lucide-react";
+import ProGate from "@/components/ProGate";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
