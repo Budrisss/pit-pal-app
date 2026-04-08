@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Settings, Calendar, Car, Home, MapPin, LogOut, ClipboardList, Repeat } from "lucide-react";
+import { Settings, Calendar, Car, Home, MapPin, LogOut, ClipboardList, Repeat, IdCard, Stamp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrganizerMode } from "@/contexts/OrganizerModeContext";
@@ -18,6 +18,7 @@ const DesktopNavigation = () => {
   const userNavItems = [
     { icon: Home, label: "Home", path: "/dashboard" },
     { icon: Car, label: "Garage", path: "/garage" },
+    { icon: IdCard, label: "GridID", path: "/grid-id" },
     { icon: MapPin, label: "Local Events", path: "/local-events" },
     { icon: Calendar, label: "Events", path: "/events" },
     { icon: Settings, label: "Settings", path: "/settings" },
@@ -25,6 +26,7 @@ const DesktopNavigation = () => {
 
   const organizerNavItems = [
     { icon: ClipboardList, label: "Organizer", path: "/event-organizer" },
+    { icon: Stamp, label: "Stamps", path: "/organizer-stamp" },
     { icon: Settings, label: "Settings", path: "/settings" },
   ];
 
