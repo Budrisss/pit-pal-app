@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Calendar, Settings, Star, Car, Pencil, Trash2, Camera, X, Wrench } from "lucide-react";
+import ProGate from "@/components/ProGate";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -234,14 +235,18 @@ const CarCard = ({
                   <Calendar size={14} className="sm:size-4" />
                   <span className="ml-1 sm:ml-2">Events</span>
                 </Button>
-                <Button variant="outline" size="sm" className="flex-1 rounded-full border-2 hover:shadow-pulse text-xs sm:text-sm" onClick={() => navigate('/setups')}>
-                  <Settings size={14} className="sm:size-4" />
-                  <span className="ml-1 sm:ml-2">Setups</span>
-                </Button>
-                <Button variant="outline" size="sm" className="flex-1 rounded-full border-2 hover:shadow-pulse text-xs sm:text-sm" onClick={() => navigate(`/maintenance/${id}`)}>
-                  <Wrench size={14} className="sm:size-4" />
-                  <span className="ml-1 sm:ml-2">Maint.</span>
-                </Button>
+                <ProGate>
+                  <Button variant="outline" size="sm" className="flex-1 rounded-full border-2 hover:shadow-pulse text-xs sm:text-sm" onClick={() => navigate('/setups')}>
+                    <Settings size={14} className="sm:size-4" />
+                    <span className="ml-1 sm:ml-2">Setups</span>
+                  </Button>
+                </ProGate>
+                <ProGate>
+                  <Button variant="outline" size="sm" className="flex-1 rounded-full border-2 hover:shadow-pulse text-xs sm:text-sm" onClick={() => navigate(`/maintenance/${id}`)}>
+                    <Wrench size={14} className="sm:size-4" />
+                    <span className="ml-1 sm:ml-2">Maint.</span>
+                  </Button>
+                </ProGate>
               </div>
             </CardContent>
           </Card>

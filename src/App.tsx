@@ -8,6 +8,7 @@ import { OrganizerModeProvider } from "@/contexts/OrganizerModeContext";
 import { CarsProvider } from "@/contexts/CarsContext";
 import { EventsProvider } from "@/contexts/EventsContext";
 import { ChecklistsProvider } from "@/contexts/ChecklistsContext";
+import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
@@ -43,6 +44,7 @@ const App = () => (
     <TooltipProvider>
       <AuthProvider>
         <OrganizerModeProvider>
+        <SubscriptionProvider>
         <CarsProvider>
           <EventsProvider>
           <ChecklistsProvider>
@@ -81,6 +83,7 @@ const App = () => (
           </ChecklistsProvider>
           </EventsProvider>
         </CarsProvider>
+        </SubscriptionProvider>
         </OrganizerModeProvider>
       </AuthProvider>
     </TooltipProvider>

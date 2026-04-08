@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ArrowLeft, Calendar, MapPin, DollarSign, Car, Clock, Tag, UserCheck, ExternalLink, Users, Building2, Megaphone, Bell, Radio, Copy } from "lucide-react";
+import ProGate from "@/components/ProGate";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrganizerMode } from "@/contexts/OrganizerModeContext";
@@ -523,12 +524,16 @@ const PublicEventPreview = () => {
                       </Button>
                       {crewEnabled && personalEventId && (
                         <>
-                          <Button variant="outline" className="w-full" size="lg" onClick={() => navigate(`/crew-live/${personalEventId}`)}>
-                            <Users size={18} className="mr-2" /> Crew View
-                          </Button>
-                          <Button variant="outline" className="w-full sm:col-span-2" size="lg" onClick={copyCrewLink}>
-                            <Copy size={18} className="mr-2" /> Copy Crew Link
-                          </Button>
+                          <ProGate>
+                            <Button variant="outline" className="w-full" size="lg" onClick={() => navigate(`/crew-live/${personalEventId}`)}>
+                              <Users size={18} className="mr-2" /> Crew View
+                            </Button>
+                          </ProGate>
+                          <ProGate>
+                            <Button variant="outline" className="w-full sm:col-span-2" size="lg" onClick={copyCrewLink}>
+                              <Copy size={18} className="mr-2" /> Copy Crew Link
+                            </Button>
+                          </ProGate>
                         </>
                       )}
                     </div>

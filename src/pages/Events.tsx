@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Plus, Calendar, Timer, MapPin, Clock, Flag, ArrowLeft } from "lucide-react";
+import ProGate from "@/components/ProGate";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -138,10 +139,12 @@ const Events = () => {
                 <p className="text-muted-foreground text-sm">Manage your motorsport schedule</p>
               </div>
             </div>
-            <Button variant="pulse" size="sm" onClick={handleNewEvent}>
-              <Plus size={16} />
-              New Event
-            </Button>
+            <ProGate>
+              <Button variant="pulse" size="sm" onClick={handleNewEvent}>
+                <Plus size={16} />
+                New Event
+              </Button>
+            </ProGate>
           </div>
         </div>
 

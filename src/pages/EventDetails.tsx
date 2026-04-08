@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Calendar, Clock, MapPin, Car, Navigation as NavigationIcon, Thermometer, Wind, Eye, Edit, Trash2, Radio, CheckSquare, Users, Copy } from "lucide-react";
+import ProGate from "@/components/ProGate";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -324,15 +325,19 @@ const EventDetails = () => {
             </Button>
           )}
           {!event.publicEventId && (
-            <Button variant="outline" className="flex-1" onClick={() => navigate(`/crew-live/${event.id}`)}>
-              <Users size={16} />
-              Crew View
-            </Button>
+            <ProGate>
+              <Button variant="outline" className="flex-1" onClick={() => navigate(`/crew-live/${event.id}`)}>
+                <Users size={16} />
+                Crew View
+              </Button>
+            </ProGate>
           )}
           {!event.publicEventId && (
-            <Button variant="outline" size="icon" onClick={copyCrewLink} title="Copy crew link">
-              <Copy size={16} />
-            </Button>
+            <ProGate>
+              <Button variant="outline" size="icon" onClick={copyCrewLink} title="Copy crew link">
+                <Copy size={16} />
+              </Button>
+            </ProGate>
           )}
           {event.publicEventId && (
             <Button variant="outline" className="flex-1" onClick={() => navigate(`/race-live/${event.publicEventId}`)}>
@@ -341,15 +346,19 @@ const EventDetails = () => {
             </Button>
           )}
           {event.publicEventId && crewEnabled && (
-            <Button variant="outline" className="flex-1" onClick={() => navigate(`/crew-live/${event.id}`)}>
-              <Users size={16} />
-              Crew View
-            </Button>
+            <ProGate>
+              <Button variant="outline" className="flex-1" onClick={() => navigate(`/crew-live/${event.id}`)}>
+                <Users size={16} />
+                Crew View
+              </Button>
+            </ProGate>
           )}
           {event.publicEventId && crewEnabled && (
-            <Button variant="outline" size="icon" onClick={copyCrewLink} title="Copy crew link">
-              <Copy size={16} />
-            </Button>
+            <ProGate>
+              <Button variant="outline" size="icon" onClick={copyCrewLink} title="Copy crew link">
+                <Copy size={16} />
+              </Button>
+            </ProGate>
           )}
         </div>
       </div>
