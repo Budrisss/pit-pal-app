@@ -524,12 +524,16 @@ const PublicEventPreview = () => {
                       </Button>
                       {crewEnabled && personalEventId && (
                         <>
-                          <Button variant="outline" className="w-full" size="lg" onClick={() => navigate(`/crew-live/${personalEventId}`)}>
-                            <Users size={18} className="mr-2" /> Crew View
-                          </Button>
-                          <Button variant="outline" className="w-full sm:col-span-2" size="lg" onClick={copyCrewLink}>
-                            <Copy size={18} className="mr-2" /> Copy Crew Link
-                          </Button>
+                          <ProGate>
+                            <Button variant="outline" className="w-full" size="lg" onClick={() => navigate(`/crew-live/${personalEventId}`)}>
+                              <Users size={18} className="mr-2" /> Crew View
+                            </Button>
+                          </ProGate>
+                          <ProGate>
+                            <Button variant="outline" className="w-full sm:col-span-2" size="lg" onClick={copyCrewLink}>
+                              <Copy size={18} className="mr-2" /> Copy Crew Link
+                            </Button>
+                          </ProGate>
                         </>
                       )}
                     </div>
