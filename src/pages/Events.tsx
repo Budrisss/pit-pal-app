@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Plus, Calendar, Timer, MapPin, Clock, Flag, ArrowLeft } from "lucide-react";
+import ProGate from "@/components/ProGate";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
