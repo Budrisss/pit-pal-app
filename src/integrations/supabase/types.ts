@@ -511,6 +511,45 @@ export type Database = {
           },
         ]
       }
+      grid_stamps: {
+        Row: {
+          comments: string | null
+          created_at: string
+          date: string
+          group_level: string | null
+          hours: number
+          id: string
+          organizer_id: string
+          racer_id: string
+          rating: number | null
+          track_name: string
+        }
+        Insert: {
+          comments?: string | null
+          created_at?: string
+          date?: string
+          group_level?: string | null
+          hours?: number
+          id?: string
+          organizer_id: string
+          racer_id: string
+          rating?: number | null
+          track_name: string
+        }
+        Update: {
+          comments?: string | null
+          created_at?: string
+          date?: string
+          group_level?: string | null
+          hours?: number
+          id?: string
+          organizer_id?: string
+          racer_id?: string
+          rating?: number | null
+          track_name?: string
+        }
+        Relationships: []
+      }
       maintenance_attachments: {
         Row: {
           created_at: string
@@ -869,6 +908,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      racer_profiles: {
+        Row: {
+          bio: string | null
+          created_at: string
+          display_name: string
+          id: string
+          total_track_hours: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          total_track_hours?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          total_track_hours?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       registration_types: {
         Row: {
