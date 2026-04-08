@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Settings, Calendar, Car, Home, MapPin, ClipboardList, Users, Repeat } from "lucide-react";
+import { Settings, Calendar, Car, Home, MapPin, ClipboardList, Users, Repeat, IdCard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useOrganizerMode } from "@/contexts/OrganizerModeContext";
 
