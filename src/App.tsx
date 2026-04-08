@@ -83,6 +83,7 @@ const App = () => (
           </ChecklistsProvider>
           </EventsProvider>
         </CarsProvider>
+        </SubscriptionProvider>
         </OrganizerModeProvider>
       </AuthProvider>
     </TooltipProvider>
