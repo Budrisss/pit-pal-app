@@ -346,15 +346,19 @@ const EventDetails = () => {
             </Button>
           )}
           {event.publicEventId && crewEnabled && (
-            <Button variant="outline" className="flex-1" onClick={() => navigate(`/crew-live/${event.id}`)}>
-              <Users size={16} />
-              Crew View
-            </Button>
+            <ProGate>
+              <Button variant="outline" className="flex-1" onClick={() => navigate(`/crew-live/${event.id}`)}>
+                <Users size={16} />
+                Crew View
+              </Button>
+            </ProGate>
           )}
           {event.publicEventId && crewEnabled && (
-            <Button variant="outline" size="icon" onClick={copyCrewLink} title="Copy crew link">
-              <Copy size={16} />
-            </Button>
+            <ProGate>
+              <Button variant="outline" size="icon" onClick={copyCrewLink} title="Copy crew link">
+                <Copy size={16} />
+              </Button>
+            </ProGate>
           )}
         </div>
       </div>
