@@ -299,9 +299,10 @@ const OrganizerLiveManage = () => {
   }, [eventId, organizerProfileId]);
 
   const handleUpdateSession = async (sessionId: string, field: string, value: any) => {
+    const updatePayload: Record<string, any> = { [field]: value };
     const { error } = await supabase
       .from("public_event_sessions")
-      .update({ [field]: value })
+      .update(updatePayload as any)
       .eq("id", sessionId);
     if (error) {
       toast({ title: "Failed to update session", variant: "destructive" });
