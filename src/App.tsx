@@ -31,6 +31,9 @@ import RacerLiveView from "./pages/RacerLiveView";
 import DriverLiveView from "./pages/DriverLiveView";
 import CrewLiveView from "./pages/CrewLiveView";
 import MaintenanceLog from "./pages/MaintenanceLog";
+import GridID from "./pages/GridID";
+import GridManifest from "./pages/GridManifest";
+import OrganizerStampPortal from "./pages/OrganizerStampPortal";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
