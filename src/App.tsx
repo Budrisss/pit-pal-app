@@ -44,6 +44,7 @@ const App = () => (
     <TooltipProvider>
       <AuthProvider>
         <OrganizerModeProvider>
+        <SubscriptionProvider>
         <CarsProvider>
           <EventsProvider>
           <ChecklistsProvider>
