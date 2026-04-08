@@ -72,6 +72,9 @@ const App = () => (
                 <Route path="/driver-live/:eventId" element={<ProtectedRoute><DriverLiveView /></ProtectedRoute>} />
                 <Route path="/crew-live/:eventId" element={<ProtectedRoute><CrewLiveView /></ProtectedRoute>} />
                 <Route path="/maintenance/:carId" element={<ProtectedRoute><MaintenanceLog /></ProtectedRoute>} />
+                <Route path="/grid-id" element={<ProtectedRoute><GridID /></ProtectedRoute>} />
+                <Route path="/grid-manifest/:userId" element={<ProtectedRoute><GridManifest /></ProtectedRoute>} />
+                <Route path="/organizer-stamp" element={<ProtectedRoute><OrganizerStampPortal /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>

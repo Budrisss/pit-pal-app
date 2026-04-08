@@ -11,6 +11,7 @@ const Navigation = () => {
   const userNavItems = [
     { icon: Home, label: "Home", path: "/dashboard" },
     { icon: Car, label: "Garage", path: "/garage" },
+    { icon: IdCard, label: "GridID", path: "/grid-id" },
     { icon: MapPin, label: "Local", path: "/local-events" },
     { icon: Calendar, label: "Events", path: "/events" },
     { icon: Settings, label: "Settings", path: "/settings" },
