@@ -139,10 +139,12 @@ const Events = () => {
                 <p className="text-muted-foreground text-sm">Manage your motorsport schedule</p>
               </div>
             </div>
-            <Button variant="pulse" size="sm" onClick={handleNewEvent}>
-              <Plus size={16} />
-              New Event
-            </Button>
+            <ProGate>
+              <Button variant="pulse" size="sm" onClick={handleNewEvent}>
+                <Plus size={16} />
+                New Event
+              </Button>
+            </ProGate>
           </div>
         </div>
 
