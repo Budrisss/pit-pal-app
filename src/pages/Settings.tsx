@@ -89,6 +89,10 @@ const Settings = () => {
       <div className="p-4 space-y-6">
         {/* Header */}
         <div className="pt-2">
+          <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="mb-2 -ml-2">
+            <ArrowLeft size={18} />
+            Back
+          </Button>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <SettingsIcon className="text-primary" />
             Settings
