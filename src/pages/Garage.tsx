@@ -12,6 +12,7 @@ import CarCard from "@/components/CarCard";
 import Navigation from "@/components/Navigation";
 import DesktopNavigation from "@/components/DesktopNavigation";
 import { useCars } from "@/contexts/CarsContext";
+import ProGate from "@/components/ProGate";
 
 const Garage = () => {
   const navigate = useNavigate();
