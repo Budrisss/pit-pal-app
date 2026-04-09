@@ -687,7 +687,7 @@ const RacerLiveView = () => {
               variant="glass"
               size="icon"
               className="text-white/60 hover:text-white h-8 w-8"
-              onClick={() => setCrewDialogOpen(true)}
+              onClick={() => window.open(`/crew-live/${personalEventId}`, '_blank')}
               title="Crew View"
             >
               <Users size={14} />
