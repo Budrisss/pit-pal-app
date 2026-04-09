@@ -81,6 +81,10 @@ const RacerLiveView = () => {
   const [trackNotes, setTrackNotes] = useState("");
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [notesDraft, setNotesDraft] = useState("");
+  const [rightCard, setRightCard] = useState<'gap' | 'map' | 'lap'>(() => {
+    const saved = localStorage.getItem(`right-card-${eventId}`);
+    return (saved === 'gap' || saved === 'map' || saved === 'lap') ? saved : 'gap';
+  });
   const feedEndRef = useRef<HTMLDivElement>(null);
   
 
