@@ -20,7 +20,7 @@ const ProGate = ({ children, fallbackMessage = "This feature is only available f
 
   return (
     <div
-      className="relative opacity-50 cursor-not-allowed w-full h-full flex-1 min-w-0"
+      className="relative opacity-50 cursor-not-allowed w-full h-full"
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
