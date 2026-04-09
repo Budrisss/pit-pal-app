@@ -996,29 +996,6 @@ const RacerLiveView = () => {
           </div>
         )}
 
-        {/* Announcements */}
-        {announcements.length > 0 && (
-          <div className="bg-gray-950 border-t border-white/10 px-4 py-3 shrink-0 max-h-40 overflow-y-auto">
-            <p className="text-[10px] text-white/30 uppercase tracking-wider mb-2 flex items-center gap-1">
-              <Volume2 size={10} /> Announcements
-            </p>
-            <div className="space-y-1.5">
-              {announcements.slice(0, 5).map(a => (
-                <motion.div
-                  key={a.id}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="text-sm text-white/70 bg-white/5 rounded px-3 py-1.5"
-                >
-                  {a.message}
-                  <span className="text-[10px] text-white/30 ml-2">
-                    {new Date(a.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                  </span>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Driver Communication Panels */}
         {personalEventId && crewEnabled && (
