@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Send, Clock, TrendingUp, MessageSquare, Flag } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { addMinutes, differenceInMilliseconds, format } from "date-fns";
