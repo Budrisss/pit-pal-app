@@ -33,7 +33,8 @@ const JUST_ENDED_WINDOW_MS = 60_000;
 const CrewLiveView = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const { user, loading } = useAuth();
   const { getEventById } = useEvents();
   const { toast } = useToast();
 
