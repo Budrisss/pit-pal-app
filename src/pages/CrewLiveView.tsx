@@ -239,7 +239,7 @@ const CrewLiveView = () => {
 
   // Load existing messages + subscribe to realtime
   useEffect(() => {
-    if (!eventId || !user) return;
+    if (!eventId || !user || loading) return;
 
     const loadMessages = async () => {
       const { data } = await supabase
@@ -263,7 +263,7 @@ const CrewLiveView = () => {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [eventId, user]);
+  }, [eventId, user, loading]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
