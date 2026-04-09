@@ -660,12 +660,13 @@ const RacerLiveView = () => {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col select-none">
-      {/* Top bar */}
-      <div className="flex items-center justify-between px-4 py-2 bg-black/80 border-b border-white/10 shrink-0">
+      {/* Top bar — glassy with subtle red accent line */}
+      <div className="relative flex items-center justify-between px-4 py-2.5 bg-gradient-to-r from-black/90 via-gray-950/90 to-black/90 backdrop-blur-md border-b border-white/5 shrink-0">
+        <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
         <Button variant="glass" size="icon" className="text-white/60 hover:text-white h-8 w-8" onClick={() => navigate(-1)}>
           <ArrowLeft size={18} />
         </Button>
-        <span className="text-sm font-semibold truncate max-w-[40%]">{eventName}</span>
+        <span className="text-sm font-bold tracking-wide truncate max-w-[40%] text-white/90">{eventName}</span>
         <div className="flex items-center gap-2">
           {personalEventId && crewEnabled && (
             <Button
@@ -694,11 +695,11 @@ const RacerLiveView = () => {
             </Button>
           )}
           {userCarNumber && (
-            <Badge className="bg-primary text-primary-foreground font-mono font-bold text-sm px-2 py-0.5">
+            <Badge className="bg-primary/90 text-primary-foreground font-mono font-bold text-sm px-2.5 py-0.5 shadow-lg shadow-primary/30">
               #{userCarNumber}
             </Badge>
           )}
-          <span className="text-sm font-mono text-white/60">
+          <span className="text-sm font-mono text-white/50 tabular-nums">
             {currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
           </span>
         </div>
@@ -710,10 +711,14 @@ const RacerLiveView = () => {
           initial={{ height: 0, opacity: 0 }}
           animate={{ height: "auto", opacity: 1 }}
           exit={{ height: 0, opacity: 0 }}
-          className="bg-black border-b-2 border-red-600 px-4 py-2.5 shrink-0 flex items-center justify-between"
+          className="bg-gradient-to-r from-black via-red-950/40 to-black border-b-2 border-red-600 px-4 py-3 shrink-0 flex items-center justify-between"
         >
           <div className="flex items-center gap-2">
-            <span className="text-lg">⚫</span>
+            <motion.span
+              animate={{ opacity: [1, 0.4, 1] }}
+              transition={{ repeat: Infinity, duration: 1 }}
+              className="text-lg"
+            >⚫</motion.span>
             <div>
               <p className="text-sm font-black text-red-500 uppercase tracking-wider">
                 BLACK FLAG ACTIVE — PIT IN IMMEDIATELY
@@ -726,7 +731,7 @@ const RacerLiveView = () => {
           <div className="flex items-center gap-2">
             <span className="text-xs font-mono text-white/40">{bannerTimeRemaining}s</span>
             {userCarNumber && (
-              <Badge className="bg-red-600 text-white font-mono font-bold text-sm">
+              <Badge className="bg-red-600 text-white font-mono font-bold text-sm shadow-lg shadow-red-600/40">
                 #{userCarNumber}
               </Badge>
             )}
@@ -734,7 +739,7 @@ const RacerLiveView = () => {
         </motion.div>
       )}
 
-      {/* Yellow by Turn banners - shown alongside current flag */}
+      {/* Yellow by Turn banners */}
       {yellowTurnFlags.length > 0 && (
         <div className="shrink-0">
           {yellowTurnFlags.map(f => (
@@ -742,12 +747,12 @@ const RacerLiveView = () => {
               key={f.id}
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
-              className="bg-yellow-400 border-b border-yellow-600 px-4 py-2 flex items-center justify-between"
+              className="bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400 border-b border-yellow-600 px-4 py-2.5 flex items-center justify-between"
             >
               <div className="flex items-center gap-2">
                 <motion.span
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ repeat: Infinity, duration: 1.5 }}
+                  animate={{ scale: [1, 1.3, 1], rotate: [0, -5, 5, 0] }}
+                  transition={{ repeat: Infinity, duration: 1.2 }}
                   className="text-lg"
                 >
                   ⚠️
@@ -761,7 +766,7 @@ const RacerLiveView = () => {
                   )}
                 </div>
               </div>
-              <Badge className="bg-black/20 text-black font-bold text-xs border-0">
+              <Badge className="bg-black/20 text-black font-bold text-xs border-0 backdrop-blur">
                 CAUTION
               </Badge>
             </motion.div>
@@ -769,7 +774,7 @@ const RacerLiveView = () => {
         </div>
       )}
 
-      {/* Blue flag banners - shown alongside current flag */}
+      {/* Blue flag banners */}
       {blueFlags.length > 0 && (
         <div className="shrink-0">
           {blueFlags.map(f => (
@@ -777,7 +782,7 @@ const RacerLiveView = () => {
               key={f.id}
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
-              className="bg-blue-600 border-b border-blue-800 px-4 py-2 flex items-center justify-between"
+              className="bg-gradient-to-r from-blue-700 via-blue-600 to-blue-700 border-b border-blue-800 px-4 py-2.5 flex items-center justify-between"
             >
               <div className="flex items-center gap-2">
                 <motion.span
@@ -796,7 +801,7 @@ const RacerLiveView = () => {
                   )}
                 </div>
               </div>
-              <Badge className="bg-white/20 text-white font-bold text-xs border-0">
+              <Badge className="bg-white/20 text-white font-bold text-xs border-0 backdrop-blur">
                 YIELD
               </Badge>
             </motion.div>
@@ -804,15 +809,16 @@ const RacerLiveView = () => {
         </div>
       )}
 
-      {/* Flag Zone - dominant area */}
+      {/* Flag Zone — dominant area */}
       <div className="flex-1 flex flex-col">
         <AnimatePresence mode="wait">
           {effectivePrimaryFlag && flagConfig ? (
             <motion.div
               key={effectivePrimaryFlag.id + effectivePrimaryFlag.flag_type}
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
               className={`flex-1 flex flex-col items-center justify-center p-6 ${flagConfig.bg} ${flagConfig.textColor} relative overflow-hidden`}
               style={isCheckered ? {
                 backgroundImage: "repeating-conic-gradient(#000 0% 25%, #fff 0% 50%)",
@@ -820,29 +826,35 @@ const RacerLiveView = () => {
               } : undefined}
             >
               {isCheckered && <div className="absolute inset-0 bg-black/40" />}
+              
+              {/* Subtle radial glow behind flag text */}
+              {!isCheckered && effectivePrimaryFlag.flag_type !== "white" && (
+                <div className="absolute inset-0 bg-gradient-to-b from-white/5 via-transparent to-black/20 pointer-events-none" />
+              )}
+              
               <div className="relative z-10 text-center">
                 {effectivePrimaryFlag.flag_type === "red" || effectivePrimaryFlag.flag_type === "black" ? (
                   <motion.div
-                    animate={{ scale: [1, 1.05, 1] }}
-                    transition={{ repeat: Infinity, duration: 1.2 }}
+                    animate={{ scale: [1, 1.06, 1] }}
+                    transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
                   >
-                    <p className="text-5xl sm:text-7xl font-black tracking-widest mb-2">
+                    <p className="text-6xl sm:text-8xl font-black tracking-widest mb-3 drop-shadow-lg">
                       {flagConfig.text}
                     </p>
                   </motion.div>
                 ) : (
-                  <p className="text-5xl sm:text-7xl font-black tracking-widest mb-2">
+                  <p className="text-6xl sm:text-8xl font-black tracking-widest mb-3 drop-shadow-lg">
                     {flagConfig.text}
                   </p>
                 )}
-                <p className="text-xl sm:text-3xl font-bold uppercase tracking-wide">
+                <p className="text-xl sm:text-3xl font-bold uppercase tracking-wider opacity-90">
                   {flagConfig.label}
                 </p>
                 {effectivePrimaryFlag.message && (
                   <motion.p
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-lg sm:text-2xl mt-4 font-medium bg-black/30 rounded-lg px-4 py-2 inline-block"
+                    className="text-lg sm:text-2xl mt-5 font-medium bg-black/30 backdrop-blur-sm rounded-xl px-5 py-2.5 inline-block shadow-lg"
                   >
                     {effectivePrimaryFlag.message}
                   </motion.p>
@@ -858,7 +870,7 @@ const RacerLiveView = () => {
                       >
                         <Button
                           onClick={handleAcceptBlackFlag}
-                          className="bg-red-600 hover:bg-red-700 text-white text-lg sm:text-xl font-black px-8 py-6 h-auto uppercase tracking-wider shadow-lg shadow-red-600/50"
+                          className="bg-red-600 hover:bg-red-700 text-white text-lg sm:text-xl font-black px-8 py-6 h-auto uppercase tracking-wider shadow-2xl shadow-red-600/50 rounded-xl"
                         >
                           ACKNOWLEDGE — PIT IN
                         </Button>
@@ -866,7 +878,7 @@ const RacerLiveView = () => {
                     ) : acceptCountdown !== null ? (
                       <Button
                         disabled
-                        className="bg-white/10 text-white/40 text-lg sm:text-xl font-bold px-8 py-6 h-auto uppercase tracking-wider cursor-not-allowed"
+                        className="bg-white/10 text-white/40 text-lg sm:text-xl font-bold px-8 py-6 h-auto uppercase tracking-wider cursor-not-allowed rounded-xl"
                       >
                         Accept in {acceptCountdown}s...
                       </Button>
@@ -874,7 +886,7 @@ const RacerLiveView = () => {
                   </div>
                 )}
 
-                {/* Global black flag: no accept, explicit message */}
+                {/* Global black flag */}
                 {isGlobalBlackFlag && (
                   <p className="text-sm sm:text-lg mt-6 text-white/60 uppercase tracking-widest">
                     ALL DRIVERS — CANNOT BE DISMISSED
@@ -887,97 +899,123 @@ const RacerLiveView = () => {
               key="no-flag"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="flex-1 flex flex-col items-center justify-center bg-gray-900 p-6"
+              className="flex-1 flex flex-col items-center justify-center bg-gradient-to-b from-gray-900 via-gray-900 to-gray-950 p-6 relative overflow-hidden"
             >
-              {myNextSession ? (
-                <>
-                  <p className="text-sm text-white/40 uppercase tracking-widest mb-2">Your Next Session</p>
-                  <p className="text-2xl sm:text-3xl font-bold text-white/80">{myNextSession.name}</p>
-                  {regTypeName && <p className="text-xs text-white/40 mt-1">{regTypeName}</p>}
-                  {myNextCountdown ? (
-                    <div className="mt-4 text-center">
-                      <p className="text-4xl sm:text-5xl font-mono font-black text-blue-400">
-                        {myNextCountdown.minutes}:{myNextCountdown.seconds.toString().padStart(2, "0")}
-                      </p>
-                      <p className="text-xs text-blue-300/60 uppercase tracking-wider mt-1">until start</p>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-white/30 mt-3">Starting soon...</p>
-                  )}
-                </>
-              ) : userRegTypeIds.size > 0 && sessionStates.every(s => s.state === "completed") ? (
-                <>
-                  <p className="text-2xl sm:text-4xl font-bold text-white/30 uppercase tracking-widest">
-                    🏁 All Sessions Complete
-                  </p>
-                  <p className="text-sm text-white/20 mt-2">Great day on track!</p>
-                </>
-              ) : (
-                <>
-                  <p className="text-2xl sm:text-4xl font-bold text-white/30 uppercase tracking-widest">
-                    Standby
-                  </p>
-                  <p className="text-sm text-white/20 mt-2">Waiting for flag updates...</p>
-                </>
-              )}
+              {/* Subtle racing texture on standby */}
+              <div className="absolute inset-0 opacity-[0.03]" style={{
+                backgroundImage: "repeating-linear-gradient(45deg, transparent, transparent 20px, white 20px, white 21px)"
+              }} />
+              
+              <div className="relative z-10 flex flex-col items-center">
+                {myNextSession ? (
+                  <>
+                    <p className="text-xs text-primary/60 uppercase tracking-[0.2em] font-bold mb-3">Your Next Session</p>
+                    <p className="text-2xl sm:text-3xl font-black text-white/90 tracking-tight">{myNextSession.name}</p>
+                    {regTypeName && <p className="text-xs text-white/30 mt-1 tracking-wide">{regTypeName}</p>}
+                    {myNextCountdown ? (
+                      <div className="mt-6 text-center">
+                        <motion.p
+                          className="text-5xl sm:text-6xl font-mono font-black text-blue-400 tabular-nums"
+                          animate={myNextCountdown.minutes < 5 ? { textShadow: ["0 0 20px rgba(96,165,250,0.3)", "0 0 40px rgba(96,165,250,0.5)", "0 0 20px rgba(96,165,250,0.3)"] } : {}}
+                          transition={{ repeat: Infinity, duration: 2 }}
+                        >
+                          {myNextCountdown.minutes}:{myNextCountdown.seconds.toString().padStart(2, "0")}
+                        </motion.p>
+                        <p className="text-xs text-blue-300/50 uppercase tracking-[0.15em] mt-2 font-medium">until start</p>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-white/30 mt-4">Starting soon...</p>
+                    )}
+                  </>
+                ) : userRegTypeIds.size > 0 && sessionStates.every(s => s.state === "completed") ? (
+                  <>
+                    <motion.p
+                      className="text-3xl sm:text-5xl font-black text-white/20 uppercase tracking-widest"
+                      initial={{ scale: 0.9, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      🏁 All Sessions Complete
+                    </motion.p>
+                    <p className="text-sm text-white/15 mt-3 tracking-wide">Great day on track!</p>
+                  </>
+                ) : (
+                  <>
+                    <motion.div
+                      animate={{ opacity: [0.2, 0.4, 0.2] }}
+                      transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+                      className="w-16 h-16 rounded-full border-2 border-white/10 flex items-center justify-center mb-4"
+                    >
+                      <div className="w-3 h-3 rounded-full bg-white/20" />
+                    </motion.div>
+                    <p className="text-2xl sm:text-4xl font-black text-white/20 uppercase tracking-widest">
+                      Standby
+                    </p>
+                    <p className="text-sm text-white/15 mt-2 tracking-wide">Waiting for flag updates...</p>
+                  </>
+                )}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Your Session Banner - personalized to racer's run group */}
+        {/* Your Session Banner — personalized to racer's run group */}
         {userRegTypeIds.size > 0 && (myActiveSession || myNextSession) && (
-          <div className={`border-t border-white/10 px-4 py-3 shrink-0 ${myActiveSession ? 'bg-green-900/60' : 'bg-blue-900/40'}`}>
-            {myActiveSession && myActiveRemaining ? (
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[10px] text-green-300 uppercase tracking-widest font-bold flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse inline-block" />
-                    YOUR SESSION — ON TRACK
-                  </p>
-                  <p className="text-sm font-bold text-white mt-0.5">{myActiveSession.name}</p>
-                  {regTypeName && <p className="text-[10px] text-white/50">{regTypeName}</p>}
+          <div className={`border-t shrink-0 ${myActiveSession ? 'bg-gradient-to-r from-green-950/80 via-green-900/60 to-green-950/80 border-green-500/20' : 'bg-gradient-to-r from-blue-950/60 via-blue-900/40 to-blue-950/60 border-blue-500/15'}`}>
+            <div className="px-4 py-3">
+              {myActiveSession && myActiveRemaining ? (
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] text-green-400 uppercase tracking-[0.15em] font-bold flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse inline-block shadow-lg shadow-green-400/50" />
+                      YOUR SESSION — ON TRACK
+                    </p>
+                    <p className="text-sm font-bold text-white mt-1">{myActiveSession.name}</p>
+                    {regTypeName && <p className="text-[10px] text-white/40 mt-0.5">{regTypeName}</p>}
+                  </div>
+                  <div className="text-right">
+                    <motion.p
+                      key={myActiveRemaining.minutes}
+                      className="text-4xl font-mono font-black text-green-400 tabular-nums"
+                      style={{ textShadow: "0 0 20px rgba(74,222,128,0.3)" }}
+                      animate={myActiveRemaining.minutes < 2 ? { scale: [1, 1.05, 1] } : {}}
+                      transition={{ repeat: Infinity, duration: 1 }}
+                    >
+                      {myActiveRemaining.minutes}:{myActiveRemaining.seconds.toString().padStart(2, "0")}
+                    </motion.p>
+                    <p className="text-[10px] text-green-400/50 uppercase tracking-wider">remaining</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <motion.p
-                    key={myActiveRemaining.minutes}
-                    className="text-4xl font-mono font-black text-green-400"
-                    animate={myActiveRemaining.minutes < 2 ? { scale: [1, 1.05, 1] } : {}}
-                    transition={{ repeat: Infinity, duration: 1 }}
-                  >
-                    {myActiveRemaining.minutes}:{myActiveRemaining.seconds.toString().padStart(2, "0")}
-                  </motion.p>
-                  <p className="text-[10px] text-green-300/60 uppercase tracking-wider">remaining</p>
+              ) : myNextSession && myNextCountdown ? (
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] text-blue-300 uppercase tracking-[0.15em] font-bold">YOUR NEXT SESSION</p>
+                    <p className="text-sm font-bold text-white mt-1">{myNextSession.name}</p>
+                    {regTypeName && <p className="text-[10px] text-white/40 mt-0.5">{regTypeName}</p>}
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-mono font-bold text-blue-400 tabular-nums">
+                      {myNextCountdown.minutes}:{myNextCountdown.seconds.toString().padStart(2, "0")}
+                    </p>
+                    <p className="text-[10px] text-blue-300/50 uppercase tracking-wider">until start</p>
+                  </div>
                 </div>
-              </div>
-            ) : myNextSession && myNextCountdown ? (
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[10px] text-blue-300 uppercase tracking-widest font-bold">YOUR NEXT SESSION</p>
-                  <p className="text-sm font-bold text-white mt-0.5">{myNextSession.name}</p>
-                  {regTypeName && <p className="text-[10px] text-white/50">{regTypeName}</p>}
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-mono font-bold text-blue-400">
-                    {myNextCountdown.minutes}:{myNextCountdown.seconds.toString().padStart(2, "0")}
-                  </p>
-                  <p className="text-[10px] text-blue-300/60 uppercase tracking-wider">until start</p>
-                </div>
-              </div>
-            ) : null}
+              ) : null}
+            </div>
           </div>
         )}
 
-        {/* Global Session Info Bar - hidden when user has a run group selected */}
+        {/* Global Session Info Bar */}
         {userRegTypeIds.size === 0 && (
-          <div className="bg-gray-900 border-t border-white/10 px-4 py-2.5 shrink-0">
+          <div className="bg-gradient-to-r from-gray-900 via-gray-900/95 to-gray-900 border-t border-white/5 px-4 py-3 shrink-0">
             {activeSession ? (
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] text-white/40 uppercase tracking-wider">Current Track Session</p>
-                  <p className="text-sm font-bold">{activeSession.name}</p>
+                  <p className="text-[10px] text-white/30 uppercase tracking-[0.15em]">Current Track Session</p>
+                  <p className="text-sm font-bold mt-0.5">{activeSession.name}</p>
                 </div>
                 {activeRemaining && (
-                  <p className="text-xl font-mono font-bold text-green-400">
+                  <p className="text-xl font-mono font-bold text-green-400 tabular-nums" style={{ textShadow: "0 0 15px rgba(74,222,128,0.2)" }}>
                     {activeRemaining.minutes}:{activeRemaining.seconds.toString().padStart(2, "0")}
                   </p>
                 )}
@@ -985,13 +1023,13 @@ const RacerLiveView = () => {
             ) : nextSession ? (
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] text-white/40 uppercase tracking-wider">Up Next</p>
-                  <p className="text-sm font-bold">{nextSession.name}</p>
+                  <p className="text-[10px] text-white/30 uppercase tracking-[0.15em]">Up Next</p>
+                  <p className="text-sm font-bold mt-0.5">{nextSession.name}</p>
                 </div>
                 <p className="text-sm text-white/40">Starts at {nextSession.start_time}</p>
               </div>
             ) : (
-              <p className="text-sm text-white/40 text-center">No active sessions</p>
+              <p className="text-sm text-white/30 text-center">No active sessions</p>
             )}
           </div>
         )}
@@ -999,18 +1037,18 @@ const RacerLiveView = () => {
 
         {/* Driver Communication Panels */}
         {personalEventId && crewEnabled && (
-          <div className="bg-gray-950 border-t border-white/10 shrink-0">
+          <div className="bg-gradient-to-b from-gray-950 to-black border-t border-white/5 shrink-0">
             {/* Track Notes + Gap Ahead */}
             <div className="grid grid-cols-2 gap-3 p-3">
               {/* Track Notes */}
-              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-5 min-h-[35vh] flex flex-col">
-                <div className="flex items-center justify-between mb-2">
+              <div className="rounded-2xl border border-amber-500/20 bg-gradient-to-b from-amber-500/10 to-amber-900/5 p-5 min-h-[35vh] flex flex-col shadow-lg shadow-amber-900/10">
+                <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-1.5">
-                    <StickyNote size={18} className="text-amber-500" />
-                    <p className="text-xs uppercase tracking-widest text-white/50 font-medium">Track Notes</p>
+                    <StickyNote size={18} className="text-amber-400" />
+                    <p className="text-xs uppercase tracking-[0.15em] text-amber-300/60 font-bold">Track Notes</p>
                   </div>
                   {!isEditingNotes && (
-                    <button className="text-white/30 hover:text-white/60" onClick={() => { setNotesDraft(trackNotes); setIsEditingNotes(true); }}>
+                    <button className="text-white/20 hover:text-amber-400 transition-colors" onClick={() => { setNotesDraft(trackNotes); setIsEditingNotes(true); }}>
                       <Pencil size={14} />
                     </button>
                   )}
@@ -1021,56 +1059,56 @@ const RacerLiveView = () => {
                       autoFocus
                       value={notesDraft}
                       onChange={(e) => setNotesDraft(e.target.value)}
-                      className="w-full flex-1 bg-black/40 border border-white/10 rounded p-2 text-base text-white resize-none focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+                      className="w-full flex-1 bg-black/50 border border-amber-500/20 rounded-xl p-3 text-base text-white resize-none focus:outline-none focus:ring-1 focus:ring-amber-500/40 placeholder:text-white/20"
                       rows={5}
                       placeholder="Braking points, turn notes..."
                     />
                     <div className="flex gap-2 justify-end">
-                      <button className="text-white/40 hover:text-white/60" onClick={() => setIsEditingNotes(false)}><X size={16} /></button>
-                      <button className="text-green-400 hover:text-green-300" onClick={saveTrackNotes}><Check size={16} /></button>
+                      <button className="text-white/30 hover:text-white/60 transition-colors" onClick={() => setIsEditingNotes(false)}><X size={16} /></button>
+                      <button className="text-green-400 hover:text-green-300 transition-colors" onClick={saveTrackNotes}><Check size={16} /></button>
                     </div>
                   </div>
                 ) : (
                   <p className="text-base sm:text-lg text-white/70 whitespace-pre-wrap leading-relaxed flex-1">
-                    {trackNotes || <span className="text-white/30 italic">Tap edit to add...</span>}
+                    {trackNotes || <span className="text-white/20 italic">Tap edit to add...</span>}
                   </p>
                 )}
               </div>
 
               {/* Gap Ahead */}
-              <div className="rounded-xl border border-primary/30 bg-primary/10 p-5 min-h-[35vh] text-center flex flex-col items-center justify-center">
-                <TrendingUp size={28} className="text-primary mb-2" />
-                <p className="text-6xl sm:text-7xl font-black text-white tabular-nums tracking-tight">
+              <div className="rounded-2xl border border-primary/20 bg-gradient-to-b from-primary/10 to-primary/5 p-5 min-h-[35vh] text-center flex flex-col items-center justify-center shadow-lg shadow-primary/10">
+                <TrendingUp size={28} className="text-primary/70 mb-3" />
+                <p className="text-6xl sm:text-7xl font-black text-white tabular-nums tracking-tight" style={{ textShadow: latestGap ? "0 0 30px hsl(var(--primary) / 0.3)" : "none" }}>
                   {latestGap || "—"}
                 </p>
-                <p className="text-xs uppercase tracking-widest text-white/40 mt-2">Gap Ahead</p>
+                <p className="text-xs uppercase tracking-[0.15em] text-white/30 mt-3 font-medium">Gap Ahead</p>
               </div>
             </div>
 
             {/* Latest Crew Message */}
             {latestCrewMessage && (
-              <div className="mx-3 mb-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
-                <p className="text-[10px] uppercase tracking-widest text-primary font-semibold mb-0.5">Latest from Crew</p>
+              <div className="mx-3 mb-2 rounded-xl border border-primary/15 bg-gradient-to-r from-primary/5 to-primary/10 px-4 py-2.5 shadow-sm">
+                <p className="text-[10px] uppercase tracking-[0.15em] text-primary/70 font-bold mb-0.5">Latest from Crew</p>
                 <p className="text-sm font-semibold text-white">{latestCrewMessage}</p>
               </div>
             )}
 
             {/* Crew Updates Feed */}
             {crewMessages.length > 0 && (
-              <div className="mx-3 mb-3 rounded-lg border border-white/10 bg-white/5 overflow-hidden">
-                <div className="px-3 py-2 border-b border-white/10 flex items-center gap-1.5">
-                  <MessageSquare size={12} className="text-primary" />
-                  <span className="text-xs font-bold text-white/70">Crew Updates</span>
-                  <Badge className="text-[10px] ml-auto bg-white/10 text-white/50 border-0">{crewMessages.length}</Badge>
+              <div className="mx-3 mb-3 rounded-xl border border-white/5 bg-white/[0.02] overflow-hidden">
+                <div className="px-3 py-2.5 border-b border-white/5 flex items-center gap-1.5">
+                  <MessageSquare size={12} className="text-primary/70" />
+                  <span className="text-xs font-bold text-white/60 tracking-wide">Crew Updates</span>
+                  <Badge className="text-[10px] ml-auto bg-white/5 text-white/40 border-0">{crewMessages.length}</Badge>
                 </div>
                 <div className="max-h-[200px] overflow-y-auto p-2 space-y-1.5">
                   {crewMessages.map(msg => (
-                    <div key={msg.id} className="p-2 rounded bg-white/5 border border-white/5">
+                    <div key={msg.id} className="p-2.5 rounded-lg bg-white/[0.03] border border-white/5 transition-colors hover:bg-white/[0.05]">
                       <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-                        <span className="text-[10px] text-white/30">{formatCrewTime(msg.created_at)}</span>
-                        {msg.gap_ahead && <Badge className="text-[10px] bg-primary/20 text-primary border-0 py-0 px-1">Gap: {msg.gap_ahead}</Badge>}
+                        <span className="text-[10px] text-white/25 font-mono">{formatCrewTime(msg.created_at)}</span>
+                        {msg.gap_ahead && <Badge className="text-[10px] bg-primary/15 text-primary/80 border-0 py-0 px-1.5">Gap: {msg.gap_ahead}</Badge>}
                       </div>
-                      {msg.message && <p className="text-xs text-white/70">{msg.message}</p>}
+                      {msg.message && <p className="text-xs text-white/60">{msg.message}</p>}
                     </div>
                   ))}
                   <div ref={feedEndRef} />
