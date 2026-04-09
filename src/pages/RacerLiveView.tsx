@@ -928,7 +928,7 @@ const RacerLiveView = () => {
                     )}
                   </>
                 ) : userRegTypeIds.size > 0 && sessionStates.every(s => s.state === "completed") ? (
-                  <>
+                  <div className="flex flex-col items-center justify-center text-center w-full">
                     <motion.p
                       className="text-3xl sm:text-5xl font-black text-white/20 uppercase tracking-widest"
                       initial={{ scale: 0.9, opacity: 0 }}
@@ -938,7 +938,7 @@ const RacerLiveView = () => {
                       🏁 All Sessions Complete
                     </motion.p>
                     <p className="text-sm text-white/15 mt-3 tracking-wide">Great day on track!</p>
-                  </>
+                  </div>
                 ) : (
                   <>
                     <motion.div
