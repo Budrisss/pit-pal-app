@@ -82,6 +82,7 @@ const RacerLiveView = () => {
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [notesDraft, setNotesDraft] = useState("");
   const feedEndRef = useRef<HTMLDivElement>(null);
+  const [crewDialogOpen, setCrewDialogOpen] = useState(false);
 
   // Black flag accept state
   const [blackFlagAccepted, setBlackFlagAccepted] = useState<string | null>(null);
