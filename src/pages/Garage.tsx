@@ -345,7 +345,7 @@ const Garage = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 max-w-4xl mx-auto">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:gap-6 max-w-4xl mx-auto">
           <Button variant="outline" className="h-16 sm:h-20 lg:h-24 flex-col gap-1 sm:gap-2 rounded-xl lg:rounded-2xl border-2 hover:shadow-pulse" onClick={handleNewEvent}>
             <Calendar size={20} className="sm:size-6 lg:size-8 text-pulse-purple" />
             <span className="text-xs sm:text-sm lg:text-base font-medium">New Event</span>
