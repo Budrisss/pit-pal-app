@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { parseISO, addMinutes, differenceInMilliseconds, isAfter, isBefore, format } from "date-fns";
-import { ArrowLeft, Volume2, StickyNote, Pencil, Check, X, TrendingUp, MessageSquare, Clock, Users, Copy } from "lucide-react";
+import { ArrowLeft, Volume2, StickyNote, Pencil, Check, X, TrendingUp, MessageSquare, Clock, Users, Copy, Map, Timer } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -81,6 +81,10 @@ const RacerLiveView = () => {
   const [trackNotes, setTrackNotes] = useState("");
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [notesDraft, setNotesDraft] = useState("");
+  const [rightCard, setRightCard] = useState<'gap' | 'map' | 'lap'>(() => {
+    const saved = localStorage.getItem(`right-card-${eventId}`);
+    return (saved === 'gap' || saved === 'map' || saved === 'lap') ? saved : 'gap';
+  });
   const feedEndRef = useRef<HTMLDivElement>(null);
   
 
@@ -1075,13 +1079,57 @@ const RacerLiveView = () => {
                 )}
               </div>
 
-              {/* Gap Ahead */}
-              <div className="rounded-2xl border border-primary/20 bg-gradient-to-b from-primary/10 to-primary/5 p-5 min-h-[35vh] text-center flex flex-col items-center justify-center shadow-lg shadow-primary/10">
-                <TrendingUp size={28} className="text-primary/70 mb-3" />
-                <p className="text-6xl sm:text-7xl font-black text-white tabular-nums tracking-tight" style={{ textShadow: latestGap ? "0 0 30px hsl(var(--primary) / 0.3)" : "none" }}>
-                  {latestGap || "—"}
-                </p>
-                <p className="text-xs uppercase tracking-[0.15em] text-white/30 mt-3 font-medium">Gap Ahead</p>
+              {/* Interchangeable Right Card */}
+              <div className="rounded-2xl border border-primary/20 bg-gradient-to-b from-primary/10 to-primary/5 p-5 min-h-[35vh] flex flex-col items-center justify-center shadow-lg shadow-primary/10 relative">
+                {/* Card Switcher */}
+                <div className="absolute top-3 right-3 flex gap-1">
+                  {([
+                    { key: 'gap' as const, icon: TrendingUp },
+                    { key: 'map' as const, icon: Map },
+                    { key: 'lap' as const, icon: Timer },
+                  ]).map(({ key, icon: Icon }) => (
+                    <button
+                      key={key}
+                      onClick={() => { setRightCard(key); localStorage.setItem(`right-card-${eventId}`, key); }}
+                      className={`p-1.5 rounded-lg transition-all ${rightCard === key ? 'bg-primary/30 text-primary' : 'text-white/20 hover:text-white/40'}`}
+                    >
+                      <Icon size={14} />
+                    </button>
+                  ))}
+                </div>
+
+                {/* Gap Ahead */}
+                {rightCard === 'gap' && (
+                  <>
+                    <TrendingUp size={28} className="text-primary/70 mb-3" />
+                    <p className="text-6xl sm:text-7xl font-black text-white tabular-nums tracking-tight" style={{ textShadow: latestGap ? "0 0 30px hsl(var(--primary) / 0.3)" : "none" }}>
+                      {latestGap || "—"}
+                    </p>
+                    <p className="text-xs uppercase tracking-[0.15em] text-white/30 mt-3 font-medium">Gap Ahead</p>
+                  </>
+                )}
+
+                {/* Track Map */}
+                {rightCard === 'map' && (
+                  <div className="flex flex-col items-center justify-center flex-1 w-full">
+                    <Map size={28} className="text-primary/70 mb-3" />
+                    <div className="w-full flex-1 min-h-[20vh] rounded-xl border-2 border-dashed border-white/10 flex items-center justify-center">
+                      <p className="text-sm text-white/20 italic">No track map added</p>
+                    </div>
+                    <p className="text-xs uppercase tracking-[0.15em] text-white/30 mt-3 font-medium">Track Map</p>
+                  </div>
+                )}
+
+                {/* Fastest Lap */}
+                {rightCard === 'lap' && (
+                  <>
+                    <Timer size={28} className="text-primary/70 mb-3" />
+                    <p className="text-6xl sm:text-7xl font-black text-white tabular-nums tracking-tight">
+                      —
+                    </p>
+                    <p className="text-xs uppercase tracking-[0.15em] text-white/30 mt-3 font-medium">Fastest Lap</p>
+                  </>
+                )}
               </div>
             </div>
 
