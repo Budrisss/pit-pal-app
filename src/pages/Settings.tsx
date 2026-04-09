@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Settings as SettingsIcon, User, Bell, Car, Database, Camera, LogOut, MapPin } from "lucide-react";
+import { Settings as SettingsIcon, User, Bell, Car, Database, Camera, LogOut, MapPin, ArrowLeft } from "lucide-react";
 import { useOrganizerMode } from "@/contexts/OrganizerModeContext";
 import OrganizerSettings from "@/pages/OrganizerSettings";
 import { useAuth } from "@/contexts/AuthContext";
