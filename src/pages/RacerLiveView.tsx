@@ -702,7 +702,7 @@ const RacerLiveView = () => {
                   url.searchParams.set("handoff", "1");
                 }
 
-                window.open(url.toString(), "_blank", "noopener,noreferrer");
+                window.open(url.toString(), "_blank");
               }}
               title="Crew View"
             >
