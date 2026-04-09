@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { parseISO, addMinutes, differenceInMilliseconds, isAfter, isBefore, format } from "date-fns";
 import { ArrowLeft, Volume2, StickyNote, Pencil, Check, X, TrendingUp, MessageSquare, Clock, Users, Copy } from "lucide-react";
-import CrewViewDialog from "@/components/CrewViewDialog";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
@@ -82,7 +82,7 @@ const RacerLiveView = () => {
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [notesDraft, setNotesDraft] = useState("");
   const feedEndRef = useRef<HTMLDivElement>(null);
-  const [crewDialogOpen, setCrewDialogOpen] = useState(false);
+  
 
   // Black flag accept state
   const [blackFlagAccepted, setBlackFlagAccepted] = useState<string | null>(null);
@@ -687,7 +687,7 @@ const RacerLiveView = () => {
               variant="glass"
               size="icon"
               className="text-white/60 hover:text-white h-8 w-8"
-              onClick={() => setCrewDialogOpen(true)}
+              onClick={() => window.open(`/crew-live/${personalEventId}`, '_blank')}
               title="Crew View"
             >
               <Users size={14} />
@@ -1103,13 +1103,6 @@ const RacerLiveView = () => {
           </div>
         )}
       </div>
-      {personalEventId && (
-        <CrewViewDialog
-          open={crewDialogOpen}
-          onOpenChange={setCrewDialogOpen}
-          eventId={personalEventId}
-        />
-      )}
     </div>
   );
 };
