@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { MapPin, Search, Calendar, DollarSign, Car, ExternalLink, Plus, ChevronRight, Filter, Building2, Pencil, Trash2, MoreVertical, X, Users, Tag, UserCheck, ClipboardList, Eye } from 'lucide-react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { MapPin, Search, Calendar, DollarSign, Car, ExternalLink, Plus, ChevronRight, Filter, Building2, Pencil, Trash2, MoreVertical, X, Users, Tag, UserCheck, ClipboardList, Eye, LogOut } from 'lucide-react';
 import { ParticipantListDialog } from "@/components/ParticipantListDialog";
 import { useOrganizerMode } from '@/contexts/OrganizerModeContext';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
 import Navigation from '@/components/Navigation';
-import DesktopNavigation from '@/components/DesktopNavigation';
+
 import { useCars } from '@/contexts/CarsContext';
 
 import dashboardHero from '@/assets/dashboard-hero.jpg';
