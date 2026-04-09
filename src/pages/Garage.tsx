@@ -12,6 +12,7 @@ import CarCard from "@/components/CarCard";
 import Navigation from "@/components/Navigation";
 import DesktopNavigation from "@/components/DesktopNavigation";
 import { useCars } from "@/contexts/CarsContext";
+import ProGate from "@/components/ProGate";
 
 const Garage = () => {
   const navigate = useNavigate();
@@ -349,10 +350,12 @@ const Garage = () => {
             <Calendar size={20} className="sm:size-6 lg:size-8 text-pulse-purple" />
             <span className="text-xs sm:text-sm lg:text-base font-medium">New Event</span>
           </Button>
-          <Button variant="outline" className="h-16 sm:h-20 lg:h-24 flex-col gap-1 sm:gap-2 rounded-xl lg:rounded-2xl border-2 hover:shadow-pulse" onClick={handleNewSetup}>
-            <Settings size={20} className="sm:size-6 lg:size-8 text-pulse-orange" />
-            <span className="text-xs sm:text-sm lg:text-base font-medium">New Setup</span>
-          </Button>
+          <ProGate>
+            <Button variant="outline" className="h-16 sm:h-20 lg:h-24 flex-col gap-1 sm:gap-2 rounded-xl lg:rounded-2xl border-2 hover:shadow-pulse" onClick={handleNewSetup}>
+              <Settings size={20} className="sm:size-6 lg:size-8 text-pulse-orange" />
+              <span className="text-xs sm:text-sm lg:text-base font-medium">New Setup</span>
+            </Button>
+          </ProGate>
         </div>
 
         {/* Cars Grid */}
