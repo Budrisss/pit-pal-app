@@ -231,22 +231,28 @@ const CarCard = ({
 
               {/* Actions */}
               <div className="flex gap-2 sm:gap-3">
-                <Button variant="outline" size="sm" className="flex-1 rounded-full border-2 hover:shadow-pulse text-xs sm:text-sm" onClick={() => navigate('/events')}>
-                  <Calendar size={14} className="sm:size-4" />
-                  <span className="ml-1 sm:ml-2">Events</span>
-                </Button>
-                <ProGate>
-                  <Button variant="outline" size="sm" className="flex-1 rounded-full border-2 hover:shadow-pulse text-xs sm:text-sm" onClick={() => navigate('/setups')}>
-                    <Settings size={14} className="sm:size-4" />
-                    <span className="ml-1 sm:ml-2">Setups</span>
+                <div className="flex-1 min-w-0">
+                  <Button variant="outline" size="sm" className="w-full rounded-full border-2 hover:shadow-pulse text-xs sm:text-sm" onClick={() => navigate('/events')}>
+                    <Calendar size={14} className="sm:size-4" />
+                    <span className="ml-1 sm:ml-2">Events</span>
                   </Button>
-                </ProGate>
-                <ProGate>
-                  <Button variant="outline" size="sm" className="flex-1 rounded-full border-2 hover:shadow-pulse text-xs sm:text-sm" onClick={() => navigate(`/maintenance/${id}`)}>
-                    <Wrench size={14} className="sm:size-4" />
-                    <span className="ml-1 sm:ml-2">Maint.</span>
-                  </Button>
-                </ProGate>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <ProGate>
+                    <Button variant="outline" size="sm" className="w-full rounded-full border-2 hover:shadow-pulse text-xs sm:text-sm" onClick={() => navigate('/setups')}>
+                      <Settings size={14} className="sm:size-4" />
+                      <span className="ml-1 sm:ml-2">Setups</span>
+                    </Button>
+                  </ProGate>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <ProGate>
+                    <Button variant="outline" size="sm" className="w-full rounded-full border-2 hover:shadow-pulse text-xs sm:text-sm" onClick={() => navigate(`/maintenance/${id}`)}>
+                      <Wrench size={14} className="sm:size-4" />
+                      <span className="ml-1 sm:ml-2">Maint.</span>
+                    </Button>
+                  </ProGate>
+                </div>
               </div>
             </CardContent>
           </Card>
