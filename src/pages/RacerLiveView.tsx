@@ -1093,28 +1093,6 @@ const RacerLiveView = () => {
               </div>
             )}
 
-            {/* Crew Updates Feed */}
-            {crewMessages.length > 0 && (
-              <div className="mx-3 mb-3 rounded-xl border border-white/5 bg-white/[0.02] overflow-hidden">
-                <div className="px-3 py-2.5 border-b border-white/5 flex items-center gap-1.5">
-                  <MessageSquare size={12} className="text-primary/70" />
-                  <span className="text-xs font-bold text-white/60 tracking-wide">Crew Updates</span>
-                  <Badge className="text-[10px] ml-auto bg-white/5 text-white/40 border-0">{crewMessages.length}</Badge>
-                </div>
-                <div className="max-h-[200px] overflow-y-auto p-2 space-y-1.5">
-                  {crewMessages.map(msg => (
-                    <div key={msg.id} className="p-2.5 rounded-lg bg-white/[0.03] border border-white/5 transition-colors hover:bg-white/[0.05]">
-                      <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-                        <span className="text-[10px] text-white/25 font-mono">{formatCrewTime(msg.created_at)}</span>
-                        {msg.gap_ahead && <Badge className="text-[10px] bg-primary/15 text-primary/80 border-0 py-0 px-1.5">Gap: {msg.gap_ahead}</Badge>}
-                      </div>
-                      {msg.message && <p className="text-xs text-white/60">{msg.message}</p>}
-                    </div>
-                  ))}
-                  <div ref={feedEndRef} />
-                </div>
-              </div>
-            )}
           </div>
         )}
       </div>
