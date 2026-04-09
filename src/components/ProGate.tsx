@@ -20,14 +20,15 @@ const ProGate = ({ children, fallbackMessage = "This feature is only available f
 
   return (
     <div
-      className="relative opacity-50 cursor-not-allowed"
+      className="relative opacity-50 cursor-not-allowed contents-wrapper"
+      style={{ display: "contents" }}
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
         toast.info(fallbackMessage);
       }}
     >
-      <div className="pointer-events-none">
+      <div className="pointer-events-none contents" style={{ display: "contents" }}>
         {children}
       </div>
     </div>
