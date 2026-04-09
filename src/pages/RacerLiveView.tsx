@@ -1103,13 +1103,6 @@ const RacerLiveView = () => {
           </div>
         )}
       </div>
-      {personalEventId && (
-        <CrewViewDialog
-          open={crewDialogOpen}
-          onOpenChange={setCrewDialogOpen}
-          eventId={personalEventId}
-        />
-      )}
     </div>
   );
 };
