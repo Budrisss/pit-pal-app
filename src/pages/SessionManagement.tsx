@@ -1223,6 +1223,28 @@ const SessionManagement = () => {
               </Card>
             </div>
 
+            {/* Live Announcements */}
+            {publicEventId && announcements.length > 0 && (
+              <Card className="bg-card/60 backdrop-blur-sm border-border/50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                    <Megaphone size={14} className="text-primary" />
+                    Announcements
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 max-h-60 overflow-y-auto">
+                  {announcements.map((ann) => (
+                    <div key={ann.id} className="p-2.5 rounded-lg bg-primary/5 border border-primary/10">
+                      <p className="text-sm text-foreground">{ann.message}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        {format(new Date(ann.created_at), "MMM d, h:mm a")}
+                      </p>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
         {/* My Run Group Selector */}
             {sessions.length > 0 && publicEventId && (
               <Card className="bg-card/60 backdrop-blur-sm border-border/50">
@@ -1295,28 +1317,6 @@ const SessionManagement = () => {
               <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-5 text-center">
                 <p className="text-sm text-muted-foreground">🏁 No more sessions today</p>
               </div>
-            )}
-
-            {/* Live Announcements */}
-            {publicEventId && announcements.length > 0 && (
-              <Card className="bg-card/60 backdrop-blur-sm border-border/50">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                    <Megaphone size={14} className="text-primary" />
-                    Announcements
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 max-h-60 overflow-y-auto">
-                  {announcements.map((ann) => (
-                    <div key={ann.id} className="p-2.5 rounded-lg bg-primary/5 border border-primary/10">
-                      <p className="text-sm text-foreground">{ann.message}</p>
-                      <p className="text-[10px] text-muted-foreground mt-1">
-                        {format(new Date(ann.created_at), "MMM d, h:mm a")}
-                      </p>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
             )}
           </div>
 
