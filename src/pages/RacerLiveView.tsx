@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { parseISO, addMinutes, differenceInMilliseconds, isAfter, isBefore, format } from "date-fns";
 import { ArrowLeft, Volume2, StickyNote, Pencil, Check, X, TrendingUp, MessageSquare, Clock, Users, Copy } from "lucide-react";
+import CrewViewDialog from "@/components/CrewViewDialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
