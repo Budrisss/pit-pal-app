@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Send, Clock, TrendingUp, MessageSquare, Flag } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { addMinutes, differenceInMilliseconds, format } from "date-fns";
@@ -33,7 +33,8 @@ const JUST_ENDED_WINDOW_MS = 60_000;
 const CrewLiveView = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const { user, loading } = useAuth();
   const { getEventById } = useEvents();
   const { toast } = useToast();
 
@@ -70,9 +71,38 @@ const CrewLiveView = () => {
     return null;
   }, []);
 
+  useEffect(() => {
+    const hasHandoff = searchParams.get("handoff") === "1";
+
+    if (!hasHandoff || user) return;
+
+    const openerSession = window.opener?.sessionStorage.getItem("crew-view-auth-handoff");
+    if (!openerSession) return;
+
+    let handoffTokens: { access_token: string; refresh_token: string } | null = null;
+
+    try {
+      handoffTokens = JSON.parse(openerSession);
+    } catch {
+      return;
+    }
+
+    if (!handoffTokens?.access_token || !handoffTokens?.refresh_token) return;
+
+    void supabase.auth.setSession(handoffTokens).then(({ error }) => {
+      window.opener?.sessionStorage.removeItem("crew-view-auth-handoff");
+
+      if (error) return;
+
+      const nextUrl = new URL(window.location.href);
+      nextUrl.searchParams.delete("handoff");
+      window.history.replaceState({}, "", nextUrl.toString());
+    });
+  }, [searchParams, user]);
+
   // Load sessions + check crew_enabled using RPC (works for any authenticated user)
   useEffect(() => {
-    if (!eventId || !user) return;
+    if (!eventId || !user || loading) return;
     const loadSessions = async () => {
       // Use security definer function to get event info (bypasses events RLS)
       const { data: rpcData } = await supabase.rpc('get_crew_event_info', { p_event_id: eventId });
@@ -115,7 +145,7 @@ const CrewLiveView = () => {
       }
     };
     loadSessions();
-  }, [eventId, user, parseLocalSessions]);
+  }, [eventId, user, loading, parseLocalSessions]);
 
   // Listen for localStorage changes (cross-tab + same-tab polling)
   useEffect(() => {
@@ -209,7 +239,7 @@ const CrewLiveView = () => {
 
   // Load existing messages + subscribe to realtime
   useEffect(() => {
-    if (!eventId || !user) return;
+    if (!eventId || !user || loading) return;
 
     const loadMessages = async () => {
       const { data } = await supabase
@@ -233,7 +263,7 @@ const CrewLiveView = () => {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [eventId, user]);
+  }, [eventId, user, loading]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });

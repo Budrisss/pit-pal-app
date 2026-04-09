@@ -687,7 +687,23 @@ const RacerLiveView = () => {
               variant="glass"
               size="icon"
               className="text-white/60 hover:text-white h-8 w-8"
-              onClick={() => window.open(`/crew-live/${personalEventId}`, '_blank')}
+              onClick={async () => {
+                const { data: { session } } = await supabase.auth.getSession();
+                const url = new URL(`/crew-live/${personalEventId}`, window.location.origin);
+
+                if (session?.access_token && session?.refresh_token) {
+                  sessionStorage.setItem(
+                    "crew-view-auth-handoff",
+                    JSON.stringify({
+                      access_token: session.access_token,
+                      refresh_token: session.refresh_token,
+                    })
+                  );
+                  url.searchParams.set("handoff", "1");
+                }
+
+                window.open(url.toString(), "_blank");
+              }}
               title="Crew View"
             >
               <Users size={14} />
