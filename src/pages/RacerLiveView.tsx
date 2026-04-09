@@ -268,7 +268,7 @@ const RacerLiveView = () => {
     const findPersonalEvent = async () => {
       const { data } = await supabase
         .from("events")
-        .select("id")
+        .select("id, track_map_url")
         .eq("public_event_id", eventId)
         .eq("user_id", user.id)
         .maybeSingle();
@@ -276,6 +276,13 @@ const RacerLiveView = () => {
         setPersonalEventId(data.id);
         const savedNotes = localStorage.getItem(`track-notes-${data.id}`);
         if (savedNotes) setTrackNotes(savedNotes);
+        if (data.track_map_url) {
+          // Get signed URL for the track map
+          const { data: signedData } = await supabase.storage
+            .from("track-maps")
+            .createSignedUrl(data.track_map_url, 3600);
+          if (signedData?.signedUrl) setTrackMapUrl(signedData.signedUrl);
+        }
       }
     };
     findPersonalEvent();
