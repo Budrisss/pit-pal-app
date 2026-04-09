@@ -37,8 +37,24 @@ interface EventsContextType {
 const EventsContext = createContext<EventsContextType | undefined>(undefined);
 
 // Map DB row to Event interface
+// Parse 12h ("8:00 AM") or 24h ("08:00") time strings to "HH:mm"
+const normalizeTime = (t: string | null): string => {
+  if (!t) return "00:00";
+  const match12 = t.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (match12) {
+    let h = parseInt(match12[1], 10);
+    const m = match12[2];
+    const period = match12[3].toUpperCase();
+    if (period === "PM" && h !== 12) h += 12;
+    if (period === "AM" && h === 12) h = 0;
+    return `${String(h).padStart(2, "0")}:${m}`;
+  }
+  return t;
+};
+
 const mapDbRowToEvent = (row: any): Event => {
-  const eventDate = new Date(`${row.date}T${row.time || "00:00"}`);
+  const time24 = normalizeTime(row.time);
+  const eventDate = new Date(`${row.date}T${time24}`);
   return {
     id: row.id,
     name: row.name,
