@@ -1,26 +1,38 @@
 
 
-## Interchangeable Right-Side Card in Race Live View
+## Restyle Garage Page Banner to Match Dashboard
 
 ### What Changes
-Replace the static "Gap Ahead" card with a swappable card system. The user taps a small toggle at the top of the right card to cycle between three views: **Gap Ahead**, **Track Map**, and **Fastest Lap**.
+Replace the Garage page's current gradient hero banner and quick-action buttons with the Dashboard's sleek style: a hero image background with overlay, animated heading, glassmorphic stat cards, and motion-enhanced quick action buttons.
 
 ### Implementation
 
-**File: `src/pages/RacerLiveView.tsx`**
+**File: `src/pages/Garage.tsx`**
 
-1. **Add state**: `const [rightCard, setRightCard] = useState<'gap' | 'map' | 'lap'>('gap')` — persisted in localStorage so the choice survives refreshes.
+1. **Replace DesktopNavigation with Dashboard-style nav** — Use the same fixed `bg-background/80 backdrop-blur-md` top nav from Dashboard (or keep DesktopNavigation if it's used site-wide, but ensure `lg:pt-20` stays).
 
-2. **Card switcher**: Add a small row of 3 icon-buttons at the top of the right card area (TrendingUp, Map, Timer icons). The active one gets a highlighted style. Tapping cycles/selects the card type.
+2. **Hero section overhaul** — Replace the `bg-gradient-hero` banner with a section matching Dashboard:
+   - Background image with `bg-cover bg-center` and gradient overlay (`from-background/80 via-background/70 to-background`)
+   - Import `dashboardHero` image (same as Dashboard) or use the same asset
+   - Animated heading using `motion.h1`: "My Garage" in `text-foreground` + a primary-colored subtitle with drop-shadow glow
+   - Subtitle text: "Manage your racing collection"
+   - "Add Car" button positioned alongside the heading
+   - Import and use `framer-motion` for entrance animations
 
-3. **Gap Ahead card** (existing): Wrap current gap content in a conditional `rightCard === 'gap'` block — no changes to its visuals.
+3. **Stats row** — Replace the current `grid-cols-3` stats box with Dashboard-style glassmorphic stat cards:
+   - `bg-card/60 backdrop-blur-md border border-border rounded-xl` with hover glow effect
+   - Icon above value, uppercase tracking-widest label below
+   - Staggered `motion.div` entrance animation
+   - Keep the same 3 stats: Cars, Events, Setups
 
-4. **Track Map card** (`rightCard === 'map'`): Display the track map image if one is saved for the event (from event data or a future upload). If no map is available, show a placeholder with "No track map added" and a subtle dashed border. Same `min-h-[35vh]` and rounded-2xl styling.
+4. **Quick Actions** — Replace the current 2-col button grid with Dashboard-style motion buttons:
+   - `bg-card/80 backdrop-blur-md border border-border rounded-xl` cards
+   - `whileHover={{ y: -4 }}` and `whileTap={{ scale: 0.97 }}` animations
+   - Icon in a `bg-primary/10` rounded container + label + description
+   - "New Event" and "New Setup" actions (keep ProGate wrapper on Setup)
 
-5. **Fastest Lap card** (`rightCard === 'lap'`): Show the user's best lap time from `session_participants` data (already available in the component's context). Display a large time value (e.g., `1:42.3`) with a "Fastest Lap" label, matching the visual weight of the gap card. If no lap data exists, show "—".
+5. **Move content below hero** — The "Your Vehicles" section and car grid remain in a `max-w-6xl mx-auto` content section below the hero, matching Dashboard's content layout pattern.
 
-6. **Consistent styling**: All three cards share the same container: `rounded-2xl border border-primary/20 bg-gradient-to-b from-primary/10 to-primary/5 p-5 min-h-[35vh] flex flex-col items-center justify-center`.
-
-### Result
-The right half of the driver comm panel becomes a multi-purpose card the driver can quickly switch between gap, track map, or fastest lap — all with large, glanceable text/visuals.
+### Files Modified
+- `src/pages/Garage.tsx` — Hero, stats, and quick actions restyled; add `framer-motion` and `dashboardHero` imports
 
