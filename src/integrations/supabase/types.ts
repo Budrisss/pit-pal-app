@@ -457,6 +457,7 @@ export type Database = {
           status: string | null
           time: string | null
           track_id: string | null
+          track_map_url: string | null
           updated_at: string
           user_id: string
         }
@@ -474,6 +475,7 @@ export type Database = {
           status?: string | null
           time?: string | null
           track_id?: string | null
+          track_map_url?: string | null
           updated_at?: string
           user_id: string
         }
@@ -491,6 +493,7 @@ export type Database = {
           status?: string | null
           time?: string | null
           track_id?: string | null
+          track_map_url?: string | null
           updated_at?: string
           user_id?: string
         }
