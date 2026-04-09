@@ -326,6 +326,31 @@ const RacerLiveView = () => {
     setIsEditingNotes(false);
   };
 
+  const handleTrackMapUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user?.id || !personalEventId) return;
+    setTrackMapUploading(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `${user.id}/${personalEventId}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("track-maps")
+        .upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
+      await (supabase as any).from("events").update({ track_map_url: path }).eq("id", personalEventId).eq("user_id", user.id);
+      const { data: signedData } = await supabase.storage
+        .from("track-maps")
+        .createSignedUrl(path, 3600);
+      if (signedData?.signedUrl) setTrackMapUrl(signedData.signedUrl);
+      toast({ title: "Track map uploaded" });
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    } finally {
+      setTrackMapUploading(false);
+      if (trackMapInputRef.current) trackMapInputRef.current.value = "";
+    }
+  };
+
   const latestGap = useMemo(() => {
     return [...crewMessages].reverse().find(m => m.gap_ahead)?.gap_ahead || null;
   }, [crewMessages]);
