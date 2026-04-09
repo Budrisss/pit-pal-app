@@ -132,7 +132,9 @@ const Garage = () => {
             {[
               { label: "Home", path: "/dashboard" },
               { label: "Garage", path: "/garage" },
+              { label: "GridID", path: "/grid-id" },
               { label: "Events", path: "/events" },
+              { label: "Local Events", path: "/local-events" },
               { label: "Organizer", path: "/event-organizer" },
               { label: "Settings", path: "/settings" },
             ].map((item) => (
