@@ -1147,10 +1147,33 @@ const RacerLiveView = () => {
                 {/* Track Map */}
                 {rightCard === 'map' && (
                   <div className="flex flex-col items-center justify-center flex-1 w-full">
-                    <Map size={28} className="text-primary/70 mb-3" />
-                    <div className="w-full flex-1 min-h-[20vh] rounded-xl border-2 border-dashed border-white/10 flex items-center justify-center">
-                      <p className="text-sm text-white/20 italic">No track map added</p>
-                    </div>
+                    <input ref={trackMapInputRef} type="file" accept="image/*" className="hidden" onChange={handleTrackMapUpload} />
+                    {trackMapUrl ? (
+                      <>
+                        <img src={trackMapUrl} alt="Track map" className="w-full flex-1 min-h-[20vh] max-h-[30vh] object-contain rounded-xl" />
+                        <button
+                          onClick={() => trackMapInputRef.current?.click()}
+                          className="text-[10px] text-white/30 hover:text-white/50 mt-2 transition-colors"
+                        >
+                          Replace map
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => trackMapInputRef.current?.click()}
+                        disabled={trackMapUploading}
+                        className="w-full flex-1 min-h-[20vh] rounded-xl border-2 border-dashed border-white/10 hover:border-white/20 flex flex-col items-center justify-center gap-2 transition-colors"
+                      >
+                        {trackMapUploading ? (
+                          <Loader2 size={24} className="text-white/30 animate-spin" />
+                        ) : (
+                          <>
+                            <Upload size={24} className="text-white/20" />
+                            <p className="text-sm text-white/20 italic">Tap to upload track map</p>
+                          </>
+                        )}
+                      </button>
+                    )}
                     <p className="text-xs uppercase tracking-[0.15em] text-white/30 mt-3 font-medium">Track Map</p>
                   </div>
                 )}
