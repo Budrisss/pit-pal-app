@@ -1154,7 +1154,7 @@ const SessionManagement = () => {
                   </div>
                   <div>
                     <p className="text-[10px] text-muted-foreground">Date</p>
-                    <p className="font-medium text-foreground">{format(parseISO(eventData.date + "T00:00:00"), "MMM d, yyyy")}</p>
+                    <p className="font-medium text-foreground">{(() => { try { return format(parseISO(eventData.date + "T00:00:00"), "MMM d, yyyy"); } catch { return eventData.date; } })()}</p>
                   </div>
                   <div>
                     <p className="text-[10px] text-muted-foreground">Vehicle</p>
