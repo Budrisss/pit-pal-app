@@ -85,6 +85,9 @@ const RacerLiveView = () => {
     const saved = localStorage.getItem(`right-card-${eventId}`);
     return (saved === 'gap' || saved === 'map' || saved === 'lap') ? saved : 'gap';
   });
+  const [trackMapUrl, setTrackMapUrl] = useState<string | null>(null);
+  const [trackMapUploading, setTrackMapUploading] = useState(false);
+  const trackMapInputRef = useRef<HTMLInputElement>(null);
   const feedEndRef = useRef<HTMLDivElement>(null);
   
 
