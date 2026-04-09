@@ -1,4 +1,4 @@
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Send, Clock, TrendingUp, MessageSquare, Flag } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { addMinutes, differenceInMilliseconds, format } from "date-fns";
@@ -33,7 +33,6 @@ const JUST_ENDED_WINDOW_MS = 60_000;
 const CrewLiveView = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const { user, loading } = useAuth();
   const { getEventById } = useEvents();
   const { toast } = useToast();
@@ -70,35 +69,6 @@ const CrewLiveView = () => {
     }
     return null;
   }, []);
-
-  useEffect(() => {
-    const hasHandoff = searchParams.get("handoff") === "1";
-
-    if (!hasHandoff || user) return;
-
-    const openerSession = window.opener?.sessionStorage.getItem("crew-view-auth-handoff");
-    if (!openerSession) return;
-
-    let handoffTokens: { access_token: string; refresh_token: string } | null = null;
-
-    try {
-      handoffTokens = JSON.parse(openerSession);
-    } catch {
-      return;
-    }
-
-    if (!handoffTokens?.access_token || !handoffTokens?.refresh_token) return;
-
-    void supabase.auth.setSession(handoffTokens).then(({ error }) => {
-      window.opener?.sessionStorage.removeItem("crew-view-auth-handoff");
-
-      if (error) return;
-
-      const nextUrl = new URL(window.location.href);
-      nextUrl.searchParams.delete("handoff");
-      window.history.replaceState({}, "", nextUrl.toString());
-    });
-  }, [searchParams, user]);
 
   // Load sessions + check crew_enabled using RPC (works for any authenticated user)
   useEffect(() => {
