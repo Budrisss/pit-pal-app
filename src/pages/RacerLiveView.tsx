@@ -1026,47 +1026,47 @@ const RacerLiveView = () => {
             {/* Track Notes + Gap Ahead */}
             <div className="grid grid-cols-2 gap-3 p-3">
               {/* Track Notes */}
-              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-1">
-                    <StickyNote size={12} className="text-amber-500" />
-                    <p className="text-[10px] uppercase tracking-widest text-white/50 font-medium">Track Notes</p>
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-5 min-h-[35vh] flex flex-col">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <StickyNote size={18} className="text-amber-500" />
+                    <p className="text-xs uppercase tracking-widest text-white/50 font-medium">Track Notes</p>
                   </div>
                   {!isEditingNotes && (
                     <button className="text-white/30 hover:text-white/60" onClick={() => { setNotesDraft(trackNotes); setIsEditingNotes(true); }}>
-                      <Pencil size={10} />
+                      <Pencil size={14} />
                     </button>
                   )}
                 </div>
                 {isEditingNotes ? (
-                  <div className="space-y-1.5">
+                  <div className="space-y-2 flex-1 flex flex-col">
                     <textarea
                       autoFocus
                       value={notesDraft}
                       onChange={(e) => setNotesDraft(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded p-1.5 text-xs text-white resize-none focus:outline-none focus:ring-1 focus:ring-amber-500/50"
-                      rows={3}
+                      className="w-full flex-1 bg-black/40 border border-white/10 rounded p-2 text-base text-white resize-none focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+                      rows={5}
                       placeholder="Braking points, turn notes..."
                     />
-                    <div className="flex gap-1 justify-end">
-                      <button className="text-white/40 hover:text-white/60" onClick={() => setIsEditingNotes(false)}><X size={12} /></button>
-                      <button className="text-green-400 hover:text-green-300" onClick={saveTrackNotes}><Check size={12} /></button>
+                    <div className="flex gap-2 justify-end">
+                      <button className="text-white/40 hover:text-white/60" onClick={() => setIsEditingNotes(false)}><X size={16} /></button>
+                      <button className="text-green-400 hover:text-green-300" onClick={saveTrackNotes}><Check size={16} /></button>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-xs text-white/70 whitespace-pre-wrap leading-relaxed min-h-[40px]">
+                  <p className="text-base sm:text-lg text-white/70 whitespace-pre-wrap leading-relaxed flex-1">
                     {trackNotes || <span className="text-white/30 italic">Tap edit to add...</span>}
                   </p>
                 )}
               </div>
 
               {/* Gap Ahead */}
-              <div className="rounded-xl border border-primary/30 bg-primary/10 p-3 text-center flex flex-col items-center justify-center">
-                <TrendingUp size={16} className="text-primary mb-1" />
-                <p className="text-3xl sm:text-4xl font-black text-white tabular-nums tracking-tight">
+              <div className="rounded-xl border border-primary/30 bg-primary/10 p-5 min-h-[35vh] text-center flex flex-col items-center justify-center">
+                <TrendingUp size={28} className="text-primary mb-2" />
+                <p className="text-6xl sm:text-7xl font-black text-white tabular-nums tracking-tight">
                   {latestGap || "—"}
                 </p>
-                <p className="text-[10px] uppercase tracking-widest text-white/40 mt-1">Gap Ahead</p>
+                <p className="text-xs uppercase tracking-widest text-white/40 mt-2">Gap Ahead</p>
               </div>
             </div>
 
