@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import Navigation from "@/components/Navigation";
-import DesktopNavigation from "@/components/DesktopNavigation";
 import GridPassportCard from "@/components/GridPassportCard";
 import StampCard from "@/components/StampCard";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,12 +12,17 @@ import { useCars } from "@/contexts/CarsContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { Shield, Edit, Save, X } from "lucide-react";
+import { Shield, Edit, Save, X, LogOut, Award, Clock } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+
+import dashboardHero from "@/assets/dashboard-hero.jpg";
+import tracksideLogo from "@/assets/trackside-logo-v2.png";
 
 const GridID = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { cars } = useCars();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
   const [stamps, setStamps] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,7 +34,6 @@ const GridID = () => {
     if (!user) return;
     const fetchData = async () => {
       setLoading(true);
-      // Fetch or create racer profile
       let { data: rp } = await supabase
         .from("racer_profiles")
         .select("*")
@@ -50,7 +53,6 @@ const GridID = () => {
       setDisplayName(rp?.display_name || "");
       setBio(rp?.bio || "");
 
-      // Fetch stamps
       const { data: st } = await supabase
         .from("grid_stamps")
         .select("*")
@@ -78,6 +80,26 @@ const GridID = () => {
     }
   };
 
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/");
+  };
+
+  const stats = [
+    { label: "Track Hours", value: profile?.total_track_hours || 0, icon: Clock },
+    { label: "Cars", value: cars.length, icon: Shield },
+    { label: "Stamps", value: stamps.length, icon: Award },
+  ];
+
+  const stagger = {
+    hidden: { opacity: 0 },
+    show: { opacity: 1, transition: { staggerChildren: 0.08 } },
+  };
+  const fadeUp = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -87,15 +109,102 @@ const GridID = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24 lg:pb-8">
-      <DesktopNavigation />
-      <div className="max-w-2xl mx-auto px-4 pt-6 lg:pt-24 space-y-6">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-          <div className="flex items-center gap-2 mb-4">
-            <Shield className="size-6 text-primary" />
-            <h1 className="text-2xl font-bold text-foreground uppercase tracking-wide">GridID</h1>
+    <div className="min-h-screen bg-background text-foreground pb-20 lg:pb-0">
+      {/* Nav */}
+      <motion.nav
+        initial={{ y: -60, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="fixed top-0 inset-x-0 z-50 bg-background/80 backdrop-blur-md border-b border-border hidden lg:block"
+      >
+        <div className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 h-20">
+          <Link to="/dashboard" className="flex items-center h-full py-1">
+            <img src={tracksideLogo} alt="Track Side Ops" className="h-full w-auto object-contain invert" />
+          </Link>
+          <div className="flex items-center gap-1">
+            {[
+              { label: "Home", path: "/dashboard" },
+              { label: "Garage", path: "/garage" },
+              { label: "Events", path: "/events" },
+              { label: "Organizer", path: "/event-organizer" },
+              { label: "Settings", path: "/settings" },
+            ].map((item) => (
+              <Button key={item.path} variant={location.pathname === item.path ? "default" : "ghost"} size="sm" asChild>
+                <Link to={item.path}>{item.label}</Link>
+              </Button>
+            ))}
+            <Button variant="ghost" size="sm" onClick={handleLogout} className="text-destructive hover:text-destructive">
+              <LogOut size={16} className="mr-1" /> Logout
+            </Button>
           </div>
+        </div>
+      </motion.nav>
 
+      {/* Hero */}
+      <section className="relative pt-0 lg:pt-20 overflow-hidden">
+        <motion.div
+          initial={{ scale: 1.1 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 1.2, ease: "easeOut" }}
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: `url(${dashboardHero})` }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/70 to-background" />
+        <div className="relative z-10 max-w-6xl mx-auto px-5 sm:px-6 py-16 sm:py-20 lg:py-24">
+          {/* Mobile logo */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="flex justify-center mb-6 lg:hidden"
+          >
+            <img src={tracksideLogo} alt="Track Side Ops" className="h-32 sm:h-36 w-auto invert" />
+          </motion.div>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.3 }}
+            className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tighter leading-none mb-3 text-center lg:text-left uppercase"
+          >
+            <span className="text-foreground">Grid</span>
+            <br />
+            <span className="text-primary drop-shadow-[0_0_25px_hsl(var(--primary)/0.5)]">ID</span>
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.55 }}
+            className="text-base sm:text-lg text-muted-foreground max-w-xl mb-8 text-center lg:text-left mx-auto lg:mx-0"
+          >
+            Your verified racer passport & track history
+          </motion.p>
+
+          {/* Stats row */}
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            animate="show"
+            className="grid grid-cols-3 gap-3 sm:gap-4"
+          >
+            {stats.map((stat) => (
+              <motion.div
+                key={stat.label}
+                variants={fadeUp}
+                className="group bg-card/60 backdrop-blur-md border border-border rounded-xl p-4 text-center hover:border-primary/50 transition-all duration-300 hover:shadow-[0_0_24px_hsl(var(--primary)/0.12)]"
+              >
+                <stat.icon size={16} className="text-primary/60 mx-auto mb-2 group-hover:text-primary transition-colors" />
+                <div className="text-2xl sm:text-3xl font-bold text-primary mb-0.5">{stat.value}</div>
+                <div className="text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-widest">{stat.label}</div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Content */}
+      <section className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
           <GridPassportCard
             displayName={profile?.display_name || "Racer"}
             totalHours={profile?.total_track_hours || 0}
@@ -174,7 +283,7 @@ const GridID = () => {
             </div>
           )}
         </motion.div>
-      </div>
+      </section>
       <Navigation />
     </div>
   );
