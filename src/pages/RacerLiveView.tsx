@@ -1080,7 +1080,7 @@ const RacerLiveView = () => {
             {/* Track Notes + Gap Ahead */}
             <div className="grid grid-cols-2 gap-3 p-3">
               {/* Track Notes */}
-              <div className="rounded-2xl border border-amber-500/20 bg-gradient-to-b from-amber-500/10 to-amber-900/5 p-5 min-h-[35vh] flex flex-col shadow-lg shadow-amber-900/10">
+              <div className="rounded-2xl border border-amber-500/20 bg-gradient-to-b from-amber-500/10 to-amber-900/5 p-5 h-[35vh] flex flex-col shadow-lg shadow-amber-900/10 overflow-hidden">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-1.5">
                     <StickyNote size={18} className="text-amber-400" />
