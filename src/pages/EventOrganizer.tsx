@@ -1115,6 +1115,7 @@ const EventOrganizer = () => {
         ) : (
           <div className="space-y-4">
             {filteredEvents.map((event, i) => (
+              <motion.div
                 key={event.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
