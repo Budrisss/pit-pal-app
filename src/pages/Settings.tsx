@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Settings as SettingsIcon, User, Bell, Car, Database, Camera, LogOut, MapPin, ArrowLeft } from "lucide-react";
+import { Settings as SettingsIcon, User, Bell, Car, Database, Camera, LogOut, MapPin, ArrowLeft, Crown } from "lucide-react";
+import { useSubscription } from "@/contexts/SubscriptionContext";
+import { Badge } from "@/components/ui/badge";
 import { useOrganizerMode } from "@/contexts/OrganizerModeContext";
 import OrganizerSettings from "@/pages/OrganizerSettings";
 import { useAuth } from "@/contexts/AuthContext";
@@ -99,6 +101,19 @@ const Settings = () => {
           </h1>
           <p className="text-muted-foreground text-sm">Customize your motorsport app</p>
         </div>
+
+        {/* Subscription */}
+        <Card className="bg-gradient-dark border-border/50 cursor-pointer hover:border-yellow-500/30 transition-colors" onClick={() => navigate('/subscription')}>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Crown className="text-yellow-400" size={20} />
+              <span className="text-foreground font-medium">Subscription</span>
+            </div>
+            <Badge variant={isPro ? "default" : "secondary"} className={isPro ? "bg-yellow-500 text-black" : ""}>
+              {isPro ? "Pro" : "Free"}
+            </Badge>
+          </CardContent>
+        </Card>
 
         {/* Profile Section */}
         <Card className="bg-gradient-dark border-border/50">
