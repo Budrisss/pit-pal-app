@@ -1,19 +1,40 @@
 
 
-## Plan: Constrain Track Notes and Right Card to Fixed Height with Scroll
+## Plan: Add Pro Subscription Page (Free Beta)
 
-### Problem
-Currently, the Track Notes and right-side card (Track Map, Gap Ahead, Fastest Lap) use `min-h-[35vh]` with `flex-1`, allowing them to grow unbounded when content is long. Long notes push the layout and there's no scroll.
+Since you want Pro to be free for now with a paywall added later, the plan is to create a subscription upgrade page where users can activate Pro for free, and add a visible entry point to it.
 
 ### Changes
 
-**File: `src/pages/RacerLiveView.tsx`**
+**1. New page: `src/pages/Subscription.tsx`**
+- A "Trackside Pro" upgrade page showing a comparison of Free vs Pro features
+- A single "Activate Pro (Free Beta)" button that updates the user's `user_subscriptions` row to `tier = 'pro'`
+- Shows current tier status (badge: Free or Pro)
+- If already Pro, shows a confirmation message instead of the upgrade button
+- Matches the app's existing dark racing aesthetic with glassmorphic cards
 
-1. **Track Notes card (line 1083)**: Change from `min-h-[35vh] flex flex-col` to `h-[35vh] flex flex-col` so it has a fixed height. Wrap the notes content (line 1111) in an `overflow-y-auto` scrollable container instead of letting it grow with `flex-1`.
+**2. Database migration: Allow users to update their own subscription tier**
+- Currently `user_subscriptions` has no UPDATE policy — users can't change their tier
+- Add an RLS UPDATE policy: `auth.uid() = user_id` (no restriction on tier value for now since it's free beta)
+- When you add real payments later, this policy will be replaced with server-side-only updates
 
-2. **Track Notes edit mode (line 1096–1109)**: The textarea container already uses `flex-1` — add `overflow-hidden` so it stays within the fixed card height, and ensure the textarea scrolls internally.
+**3. Update `src/components/ProGate.tsx`**
+- When a free user clicks a gated feature, instead of just showing a toast, also include a link/button to navigate to `/subscription`
 
-3. **Right card (line 1118)**: Change from `min-h-[35vh]` to `h-[35vh]` to cap its height. Add `overflow-hidden` to prevent content from expanding the card. For the track map image, ensure it stays within bounds with `object-contain` (already present).
+**4. Add route in `src/App.tsx`**
+- Add `/subscription` as a protected route pointing to the new page
 
-These are small CSS-only changes — no logic changes needed.
+**5. Add navigation entry in Settings page**
+- Add a "Subscription" card/link in `src/pages/Settings.tsx` showing current tier and linking to `/subscription`
+
+### Technical Details
+
+- The upgrade button calls: `supabase.from('user_subscriptions').update({ tier: 'pro' }).eq('user_id', user.id)`
+- The `SubscriptionContext` will automatically reflect the change on next fetch
+- After upgrading, we call `fetchSubscription()` or simply set the local state to `'pro'`
+- No payment integration needed now — the button directly flips the tier
+
+### Feature comparison displayed on the page
+- **Free**: Basic garage (limited cars), event viewing, session tracking
+- **Pro**: Unlimited setups, maintenance logs, personal events, crew messaging, crew view
 
