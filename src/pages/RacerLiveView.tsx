@@ -1093,7 +1093,7 @@ const RacerLiveView = () => {
                   )}
                 </div>
                 {isEditingNotes ? (
-                  <div className="space-y-2 flex-1 flex flex-col">
+                  <div className="space-y-2 flex-1 flex flex-col overflow-hidden">
                     <textarea
                       autoFocus
                       value={notesDraft}
@@ -1108,14 +1108,14 @@ const RacerLiveView = () => {
                     </div>
                   </div>
                 ) : (
-                  <p className="text-base sm:text-lg text-white/70 whitespace-pre-wrap leading-relaxed flex-1">
+                  <div className="text-base sm:text-lg text-white/70 whitespace-pre-wrap leading-relaxed flex-1 overflow-y-auto">
                     {trackNotes || <span className="text-white/20 italic">Tap edit to add...</span>}
-                  </p>
+                  </div>
                 )}
               </div>
 
               {/* Interchangeable Right Card */}
-              <div className="rounded-2xl border border-primary/20 bg-gradient-to-b from-primary/10 to-primary/5 p-5 min-h-[35vh] flex flex-col items-center justify-center shadow-lg shadow-primary/10 relative">
+              <div className="rounded-2xl border border-primary/20 bg-gradient-to-b from-primary/10 to-primary/5 p-5 h-[35vh] flex flex-col items-center justify-center shadow-lg shadow-primary/10 relative overflow-hidden">
                 {/* Card Switcher */}
                 <div className="absolute top-3 right-3 flex gap-1">
                   {([
