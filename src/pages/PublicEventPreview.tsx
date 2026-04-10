@@ -329,7 +329,7 @@ const PublicEventPreview = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background text-foreground pb-20 lg:pb-0">
-        <DesktopNavigation />
+        <motion.nav initial={{ y: -60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5, ease: "easeOut" }} className="fixed top-0 inset-x-0 z-50 bg-background/80 backdrop-blur-md border-b border-border hidden lg:block"><div className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 h-20"><Link to="/dashboard" className="flex items-center h-full py-1"><img src={tracksideLogo} alt="Track Side Ops" className="h-full w-auto object-contain invert" /></Link><div className="flex items-center gap-1">{[{ label: "Home", path: "/dashboard" }, { label: "Garage", path: "/garage" }, { label: "GridID", path: "/grid-id" }, { label: "Events", path: "/events" }, { label: "Local Events", path: "/local-events" }, { label: "Organizer", path: "/event-organizer" }, { label: "Settings", path: "/settings" }].map((item) => (<Button key={item.path} variant={location.pathname === item.path ? "default" : "ghost"} size="sm" asChild><Link to={item.path}>{item.label}</Link></Button>))}<Button variant="ghost" size="sm" onClick={async () => { await signOut(); navigate("/"); }} className="text-destructive hover:text-destructive"><LogOut size={16} className="mr-1" /> Logout</Button></div></div></motion.nav>
         <div className="pt-0 lg:pt-20 flex justify-center items-center min-h-[60vh]">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
@@ -341,7 +341,7 @@ const PublicEventPreview = () => {
   if (!event) {
     return (
       <div className="min-h-screen bg-background text-foreground pb-20 lg:pb-0">
-        <DesktopNavigation />
+        <motion.nav initial={{ y: -60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5, ease: "easeOut" }} className="fixed top-0 inset-x-0 z-50 bg-background/80 backdrop-blur-md border-b border-border hidden lg:block"><div className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 h-20"><Link to="/dashboard" className="flex items-center h-full py-1"><img src={tracksideLogo} alt="Track Side Ops" className="h-full w-auto object-contain invert" /></Link><div className="flex items-center gap-1">{[{ label: "Home", path: "/dashboard" }, { label: "Garage", path: "/garage" }, { label: "GridID", path: "/grid-id" }, { label: "Events", path: "/events" }, { label: "Local Events", path: "/local-events" }, { label: "Organizer", path: "/event-organizer" }, { label: "Settings", path: "/settings" }].map((item) => (<Button key={item.path} variant={location.pathname === item.path ? "default" : "ghost"} size="sm" asChild><Link to={item.path}>{item.label}</Link></Button>))}<Button variant="ghost" size="sm" onClick={async () => { await signOut(); navigate("/"); }} className="text-destructive hover:text-destructive"><LogOut size={16} className="mr-1" /> Logout</Button></div></div></motion.nav>
         <div className="pt-0 lg:pt-20 flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <h2 className="text-xl font-bold mb-2">Event not found</h2>
@@ -364,7 +364,7 @@ const PublicEventPreview = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-20 lg:pb-0">
-      <DesktopNavigation />
+      <motion.nav initial={{ y: -60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5, ease: "easeOut" }} className="fixed top-0 inset-x-0 z-50 bg-background/80 backdrop-blur-md border-b border-border hidden lg:block"><div className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 h-20"><Link to="/dashboard" className="flex items-center h-full py-1"><img src={tracksideLogo} alt="Track Side Ops" className="h-full w-auto object-contain invert" /></Link><div className="flex items-center gap-1">{[{ label: "Home", path: "/dashboard" }, { label: "Garage", path: "/garage" }, { label: "GridID", path: "/grid-id" }, { label: "Events", path: "/events" }, { label: "Local Events", path: "/local-events" }, { label: "Organizer", path: "/event-organizer" }, { label: "Settings", path: "/settings" }].map((item) => (<Button key={item.path} variant={location.pathname === item.path ? "default" : "ghost"} size="sm" asChild><Link to={item.path}>{item.label}</Link></Button>))}<Button variant="ghost" size="sm" onClick={async () => { await signOut(); navigate("/"); }} className="text-destructive hover:text-destructive"><LogOut size={16} className="mr-1" /> Logout</Button></div></div></motion.nav>
 
       <div className="pt-0 lg:pt-20 max-w-3xl mx-auto px-4 sm:px-6 py-8">
         {/* Preview Banner - only for organizers viewing their own event */}
