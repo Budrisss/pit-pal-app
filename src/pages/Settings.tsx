@@ -20,6 +20,7 @@ import MyRegistrations from "@/components/MyRegistrations";
 
 const Settings = () => {
   const { isOrganizerMode } = useOrganizerMode();
+  const { isPro } = useSubscription();
   const [showGallery, setShowGallery] = useState(false);
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
