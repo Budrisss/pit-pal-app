@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus, Users, Calendar, MapPin, Pencil, Trash2, Tag, X, ClipboardList, MoreVertical, Building2, Clock, Eye, Radio, LogOut } from "lucide-react";
+import { Plus, Users, Calendar, MapPin, Pencil, Trash2, Tag, X, ClipboardList, MoreVertical, Building2, Clock, Eye, Radio, LogOut, Search, ArrowUpDown } from "lucide-react";
 import { ParticipantListDialog } from "@/components/ParticipantListDialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
@@ -502,6 +502,11 @@ const EventOrganizer = () => {
   const [participantEvent, setParticipantEvent] = useState<PublicEvent | null>(null);
   const [participants, setParticipants] = useState<EventRegistration[]>([]);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
+
+  // Filter/search/sort state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("date-desc");
 
 
   const [presetTracks, setPresetTracks] = useState<PresetTrack[]>([]);
