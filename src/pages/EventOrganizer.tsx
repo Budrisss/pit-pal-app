@@ -471,7 +471,8 @@ const EventFormFields = ({ values, onChange, isEdit = false, presetTracks = [], 
 
 const EventOrganizer = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const location = useLocation();
+  const { user, signOut } = useAuth();
   const { organizerProfileId } = useOrganizerMode();
   const { toast } = useToast();
 
