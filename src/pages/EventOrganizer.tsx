@@ -1035,25 +1035,86 @@ const EventOrganizer = () => {
           </Card>
         </motion.div>
 
+        {/* Search & Filter Bar */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="flex flex-col sm:flex-row gap-3 mb-6"
+        >
+          <div className="relative flex-1">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search events..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-[150px]">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="upcoming">Upcoming</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <ArrowUpDown size={14} className="mr-1" />
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="date-desc">Date (Newest)</SelectItem>
+              <SelectItem value="date-asc">Date (Oldest)</SelectItem>
+              <SelectItem value="name-asc">Name (A–Z)</SelectItem>
+              <SelectItem value="name-desc">Name (Z–A)</SelectItem>
+              <SelectItem value="registrations">Most Registrations</SelectItem>
+            </SelectContent>
+          </Select>
+        </motion.div>
+
         {/* Events List */}
-        {loading ? (
+        {(() => {
+          const filteredEvents = events
+            .filter((e) => {
+              const q = searchQuery.toLowerCase();
+              const matchesSearch = !q || e.name.toLowerCase().includes(q) || (e.track_name || "").toLowerCase().includes(q) || (e.city || "").toLowerCase().includes(q) || (e.state || "").toLowerCase().includes(q);
+              const matchesStatus = statusFilter === "all" || e.status === statusFilter;
+              return matchesSearch && matchesStatus;
+            })
+            .sort((a, b) => {
+              switch (sortBy) {
+                case "date-asc": return a.date.localeCompare(b.date);
+                case "name-asc": return a.name.localeCompare(b.name);
+                case "name-desc": return b.name.localeCompare(a.name);
+                case "registrations": return (registrationCounts[b.id] || 0) - (registrationCounts[a.id] || 0);
+                default: return b.date.localeCompare(a.date);
+              }
+            });
+
+          return loading ? (
           <div className="flex justify-center py-16">
             <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : events.length === 0 ? (
+        ) : filteredEvents.length === 0 ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="text-center py-16"
           >
             <Calendar size={48} className="mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No events yet</h3>
-            <p className="text-muted-foreground text-sm mb-4">Create your first event to get started.</p>
+            <h3 className="text-lg font-semibold mb-2">{events.length === 0 ? "No events yet" : "No matching events"}</h3>
+            <p className="text-muted-foreground text-sm mb-4">
+              {events.length === 0 ? "Create your first event to get started." : "Try adjusting your search or filters."}
+            </p>
           </motion.div>
         ) : (
           <div className="space-y-4">
-            {events.map((event, i) => (
-              <motion.div
+            {filteredEvents.map((event, i) => (
                 key={event.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
