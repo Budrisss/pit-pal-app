@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Settings as SettingsIcon, User, Bell, Car, Database, Camera, LogOut, MapPin, ArrowLeft, Crown } from "lucide-react";
+import { Settings as SettingsIcon, User, Bell, Car, Database, Camera, LogOut, MapPin, ArrowLeft, Crown, Shield } from "lucide-react";
+import { useAdmin } from "@/hooks/useAdmin";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { Badge } from "@/components/ui/badge";
 import { useOrganizerMode } from "@/contexts/OrganizerModeContext";
@@ -21,6 +22,7 @@ import MyRegistrations from "@/components/MyRegistrations";
 const Settings = () => {
   const { isOrganizerMode } = useOrganizerMode();
   const { isPro } = useSubscription();
+  const { isAdmin } = useAdmin();
   const [showGallery, setShowGallery] = useState(false);
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
@@ -102,6 +104,19 @@ const Settings = () => {
           </h1>
           <p className="text-muted-foreground text-sm">Customize your motorsport app</p>
         </div>
+
+        {/* Admin Panel - only visible to admins */}
+        {isAdmin && (
+          <Card className="bg-gradient-dark border-border/50 cursor-pointer hover:border-red-500/30 transition-colors" onClick={() => navigate('/admin')}>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Shield className="text-red-400" size={20} />
+                <span className="text-foreground font-medium">Admin Panel</span>
+              </div>
+              <Badge variant="destructive">Admin</Badge>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Subscription */}
         <Card className="bg-gradient-dark border-border/50 cursor-pointer hover:border-yellow-500/30 transition-colors" onClick={() => navigate('/subscription')}>
