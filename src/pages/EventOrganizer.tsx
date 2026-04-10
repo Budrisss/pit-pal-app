@@ -1198,7 +1198,8 @@ const EventOrganizer = () => {
               </motion.div>
             ))}
           </div>
-        )}
+        );
+        })()}
       </div>
 
       {/* Edit Dialog */}
