@@ -67,7 +67,8 @@ interface EventRegistrationWithCar {
 const OrganizerLiveManage = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
+  const location = useLocation();
   const { organizerProfileId } = useOrganizerMode();
   const { toast } = useToast();
 
