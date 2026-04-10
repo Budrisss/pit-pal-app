@@ -1,40 +1,50 @@
 
 
-## Plan: Add Pro Subscription Page (Free Beta)
+## Plan: Add Admin Page with Role-Based Access
 
-Since you want Pro to be free for now with a paywall added later, the plan is to create a subscription upgrade page where users can activate Pro for free, and add a visible entry point to it.
+### Overview
+Create a secure admin dashboard accessible only to users with an `admin` role. This follows the security best practice of storing roles in a separate `user_roles` table (never on profiles or user tables) and using a `SECURITY DEFINER` function to check roles without recursive RLS issues.
 
-### Changes
+### Database Changes
 
-**1. New page: `src/pages/Subscription.tsx`**
-- A "Trackside Pro" upgrade page showing a comparison of Free vs Pro features
-- A single "Activate Pro (Free Beta)" button that updates the user's `user_subscriptions` row to `tier = 'pro'`
-- Shows current tier status (badge: Free or Pro)
-- If already Pro, shows a confirmation message instead of the upgrade button
-- Matches the app's existing dark racing aesthetic with glassmorphic cards
+**1. Migration: Create role system**
+- Create enum `app_role` with values `admin`, `user`
+- Create `user_roles` table (user_id, role) with RLS enabled
+- RLS policy: only admins can SELECT all rows; users can see their own
+- Create `has_role(uuid, app_role)` SECURITY DEFINER function for safe role checks in RLS and client code
 
-**2. Database migration: Allow users to update their own subscription tier**
-- Currently `user_subscriptions` has no UPDATE policy — users can't change their tier
-- Add an RLS UPDATE policy: `auth.uid() = user_id` (no restriction on tier value for now since it's free beta)
-- When you add real payments later, this policy will be replaced with server-side-only updates
+**2. Seed your admin user**
+- Use the insert tool to add your user ID to `user_roles` with role `admin`
+- You'll need to provide your user ID (visible in Settings or we can query it)
 
-**3. Update `src/components/ProGate.tsx`**
-- When a free user clicks a gated feature, instead of just showing a toast, also include a link/button to navigate to `/subscription`
+### Frontend Changes
 
-**4. Add route in `src/App.tsx`**
-- Add `/subscription` as a protected route pointing to the new page
+**3. New file: `src/hooks/useAdmin.ts`**
+- Hook that queries `user_roles` to check if the current user has the `admin` role
+- Returns `{ isAdmin, loading }`
 
-**5. Add navigation entry in Settings page**
-- Add a "Subscription" card/link in `src/pages/Settings.tsx` showing current tier and linking to `/subscription`
+**4. New file: `src/pages/Admin.tsx`**
+- Protected page that checks `isAdmin` and redirects non-admins
+- Tabs/sections for:
+  - **Organizer Approvals**: List pending organizer profiles (`approved = false`), approve/reject buttons
+  - **User Management**: List users with subscriptions, ability to remove/ban
+  - **Organizer Management**: List approved organizers, ability to revoke approval
+- Uses existing table components and the app's dark racing aesthetic
+
+**5. Update `src/App.tsx`**
+- Add `/admin` as a protected route
+
+**6. Update `src/pages/Settings.tsx`**
+- Show an "Admin Panel" link only when `isAdmin` is true
+
+### Security Model
+- The admin page is NOT in any navigation menu — only accessible via Settings link or direct URL
+- The `has_role` function is `SECURITY DEFINER`, preventing RLS recursion
+- All admin actions (approve organizer, update subscriptions) go through the backend with RLS policies that check `has_role(auth.uid(), 'admin')`
+- No client-side role storage — role is always verified server-side via the `user_roles` table
 
 ### Technical Details
-
-- The upgrade button calls: `supabase.from('user_subscriptions').update({ tier: 'pro' }).eq('user_id', user.id)`
-- The `SubscriptionContext` will automatically reflect the change on next fetch
-- After upgrading, we call `fetchSubscription()` or simply set the local state to `'pro'`
-- No payment integration needed now — the button directly flips the tier
-
-### Feature comparison displayed on the page
-- **Free**: Basic garage (limited cars), event viewing, session tracking
-- **Pro**: Unlimited setups, maintenance logs, personal events, crew messaging, crew view
+- Admin approves organizers by updating `organizer_profiles.approved` — requires a new RLS policy allowing admins to update that table
+- Admin can delete users' subscription rows or set tiers — requires admin UPDATE policy on `user_subscriptions`
+- Admin can view all `organizer_profiles` — requires admin SELECT policy
 
