@@ -18,6 +18,7 @@ import Navigation from "@/components/Navigation";
 import RacingGallery from "@/components/RacingGallery";
 import SavedTracksManager from "@/components/SavedTracksManager";
 import MyRegistrations from "@/components/MyRegistrations";
+import LoRaPairingCard from "@/components/LoRaPairingCard";
 
 const Settings = () => {
   const { isOrganizerMode } = useOrganizerMode();
@@ -188,6 +189,8 @@ const Settings = () => {
         {/* Saved Tracks */}
         <SavedTracksManager />
 
+        {/* LoRa Hardware (native only) */}
+        <LoRaPairingCard />
 
         <Card className="bg-gradient-dark border-border/50">
           <CardHeader>
