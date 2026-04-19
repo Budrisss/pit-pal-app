@@ -37,6 +37,7 @@ import GridManifest from "./pages/GridManifest";
 import OrganizerStampPortal from "./pages/OrganizerStampPortal";
 import Subscription from "./pages/Subscription";
 import Admin from "./pages/Admin";
+import AdminLoraSim from "./pages/AdminLoraSim";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -81,6 +82,7 @@ const App = () => (
                 <Route path="/organizer-stamp" element={<ProtectedRoute><OrganizerStampPortal /></ProtectedRoute>} />
                 <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
                 <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+                <Route path="/admin/lora-sim" element={<ProtectedRoute><AdminLoraSim /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>

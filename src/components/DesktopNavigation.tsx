@@ -3,6 +3,7 @@ import { Settings, Calendar, Car, Home, MapPin, LogOut, ClipboardList, Repeat, I
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrganizerMode } from "@/contexts/OrganizerModeContext";
+import LoraStatusIndicator from "@/components/LoraStatusIndicator";
 
 const DesktopNavigation = () => {
   const location = useLocation();
@@ -42,7 +43,9 @@ const DesktopNavigation = () => {
           <h1 className="text-xl font-bold text-white uppercase tracking-wider">Trackside Setup</h1>
         </div>
         
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-3">
+          <LoraStatusIndicator />
+          <div className="flex items-center gap-1">
           {navItems.map(({ icon: Icon, label, path }) => (
             <Link
               key={path}
@@ -77,6 +80,7 @@ const DesktopNavigation = () => {
             <LogOut size={18} className="transform skew-x-6" />
             <span className="transform skew-x-6">Logout</span>
           </button>
+          </div>
         </div>
       </div>
     </nav>

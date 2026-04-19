@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Send, Clock, TrendingUp, MessageSquare, Flag } from "lucide-react";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { ArrowLeft, Send, Clock, TrendingUp, MessageSquare, Flag, Radio } from "lucide-react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { addMinutes, differenceInMilliseconds, format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,6 +15,8 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Navigation from "@/components/Navigation";
 import DesktopNavigation from "@/components/DesktopNavigation";
+import { getCrewTransport, FailoverTransport, type Transport } from "@/lib/transport";
+import { useSimConfig } from "@/hooks/useSimStore";
 
 interface CrewMessage {
   id: string;
@@ -239,6 +241,27 @@ const CrewLiveView = () => {
     scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   }, [messages.length]);
 
+  // Transport: created lazily per (eventId, userId). Falls back to direct Supabase when sim flag off.
+  const { enabled: simEnabled } = useSimConfig();
+  const transportRef = useRef<Transport | null>(null);
+  const [activeLeg, setActiveLeg] = useState<"supabase" | "lora-sim" | null>(null);
+
+  useEffect(() => {
+    if (!eventId || !user) return;
+    transportRef.current?.destroy?.();
+    const t = getCrewTransport({ eventId, userId: user.id });
+    transportRef.current = t;
+    if (t instanceof FailoverTransport) {
+      const update = () => setActiveLeg(t.getActive() as "supabase" | "lora-sim");
+      update();
+      const off = t.onStatusChange(update);
+      return () => { off(); t.destroy?.(); transportRef.current = null; };
+    } else {
+      setActiveLeg(null);
+      return () => { t.destroy?.(); transportRef.current = null; };
+    }
+  }, [eventId, user, simEnabled]);
+
   const sendStructured = async () => {
     if (!eventId || !user) return;
     if (!gapAhead) {
@@ -246,15 +269,11 @@ const CrewLiveView = () => {
       return;
     }
     setSending(true);
-    const { error } = await supabase.from("crew_messages").insert({
-      event_id: eventId,
-      user_id: user.id,
-      gap_ahead: gapAhead || null,
-    });
-    if (error) {
-      toast({ title: "Failed to send", description: error.message, variant: "destructive" });
-    } else {
+    try {
+      await transportRef.current!.send({ t: "gap", v: gapAhead, ts: Date.now(), from: user.id });
       setGapAhead("");
+    } catch (error) {
+      toast({ title: "Failed to send", description: (error as Error).message, variant: "destructive" });
     }
     setSending(false);
   };
@@ -262,15 +281,11 @@ const CrewLiveView = () => {
   const sendFreeText = async () => {
     if (!eventId || !user || !freeText.trim()) return;
     setSending(true);
-    const { error } = await supabase.from("crew_messages").insert({
-      event_id: eventId,
-      user_id: user.id,
-      message: freeText.trim(),
-    });
-    if (error) {
-      toast({ title: "Failed to send", description: error.message, variant: "destructive" });
-    } else {
+    try {
+      await transportRef.current!.send({ t: "msg", v: freeText.trim(), ts: Date.now(), from: user.id });
       setFreeText("");
+    } catch (error) {
+      toast({ title: "Failed to send", description: (error as Error).message, variant: "destructive" });
     }
     setSending(false);
   };
@@ -292,6 +307,11 @@ const CrewLiveView = () => {
             <h1 className="text-xl font-bold text-foreground truncate">Crew View</h1>
             <p className="text-sm text-muted-foreground truncate">{resolvedEventName || "Event"}</p>
           </div>
+          {simEnabled && activeLeg === "lora-sim" && (
+            <Badge variant="outline" className="text-xs px-2 py-1 border-yellow-500/60 text-yellow-400 font-semibold">
+              <Radio size={11} className="mr-1" /> LoRa
+            </Badge>
+          )}
           <Badge variant="outline" className="text-sm px-3 py-1 animate-pulse border-green-500 text-green-500 font-semibold">
             ● LIVE
           </Badge>
