@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Settings, Calendar, Car, Home, MapPin, ClipboardList, Users, Repeat, IdCard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useOrganizerMode } from "@/contexts/OrganizerModeContext";
+import LoraStatusIndicator from "@/components/LoraStatusIndicator";
 
 const Navigation = () => {
   const location = useLocation();
@@ -26,6 +27,9 @@ const Navigation = () => {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 backdrop-blur-sm lg:hidden">
+      <div className="absolute -top-7 right-2">
+        <LoraStatusIndicator />
+      </div>
       <div className="flex justify-around items-center py-2 sm:py-3 px-2">
         {navItems.map(({ icon: Icon, label, path }) => (
           <Link
