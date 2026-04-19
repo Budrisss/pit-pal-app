@@ -22,6 +22,8 @@ import Navigation from "@/components/Navigation";
 import { Link, useLocation } from "react-router-dom";
 import { LogOut } from "lucide-react";
 import tracksideLogo from "@/assets/trackside-logo-v2.png";
+import { FailoverTransport, encodeFlagPayload, simStore, type Transport } from "@/lib/transport";
+import { useSimConfig } from "@/hooks/useSimStore";
 
 interface EventSession {
   id?: string;
