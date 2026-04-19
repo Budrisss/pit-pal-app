@@ -591,6 +591,7 @@ export type Database = {
           ble_device_id: string
           created_at: string
           device_name: string | null
+          event_registration_id: string | null
           id: string
           last_seen_at: string | null
           meshtastic_node_id: string | null
@@ -601,6 +602,7 @@ export type Database = {
           ble_device_id: string
           created_at?: string
           device_name?: string | null
+          event_registration_id?: string | null
           id?: string
           last_seen_at?: string | null
           meshtastic_node_id?: string | null
@@ -611,6 +613,7 @@ export type Database = {
           ble_device_id?: string
           created_at?: string
           device_name?: string | null
+          event_registration_id?: string | null
           id?: string
           last_seen_at?: string | null
           meshtastic_node_id?: string | null
