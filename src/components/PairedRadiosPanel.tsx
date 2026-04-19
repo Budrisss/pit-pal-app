@@ -57,22 +57,48 @@ function StatusDot({ s }: { s: "live" | "stale" | "none" }) {
   return <span className={`inline-block h-2 w-2 rounded-full ${cls}`} />;
 }
 
+const SIM_NAMES = ["John Smith", "Jane Doe", "Mike Chen", "Carlos Ruiz", "Sam Patel"];
+const SIM_NODES = ["!a3b1c9d8", "!b8d4e2f1", "!c1f7e44a", "!d2e5a9b3", "!e9c0d77f"];
+
 const PairedRadiosPanel = ({ participants, runGroups }: PairedRadiosPanelProps) => {
   const [hideUnpaired, setHideUnpaired] = useState(false);
+  const [simulate, setSimulate] = useState(false);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+
+  const effectiveParticipants = useMemo<PairedRegistration[]>(() => {
+    if (!simulate) return participants;
+    const firstGroupId = runGroups[0]?.id ?? null;
+    const now = Date.now();
+    const fakes: PairedRegistration[] = SIM_NAMES.map((name, i) => ({
+      id: `sim-${i}`,
+      user_name: name,
+      car_number: [42, 17, 8, 23, 99][i],
+      run_group_id: i < 3 ? firstGroupId : (runGroups[1]?.id ?? firstGroupId),
+      radio_node_id: SIM_NODES[i],
+      // mix of fresh, stale, and one missing-last-seen
+      radio_last_seen:
+        i === 0 ? new Date(now - 30_000).toISOString()
+        : i === 1 ? new Date(now - 4 * 60_000).toISOString()
+        : i === 2 ? new Date(now - 18 * 60_000).toISOString()
+        : i === 3 ? new Date(now - 2 * 60_000).toISOString()
+        : new Date(now - 45 * 60_000).toISOString(),
+    }));
+    return [...participants, ...fakes];
+  }, [simulate, participants, runGroups]);
 
   const grouped = useMemo(() => {
     const buckets = new Map<string, PairedRegistration[]>();
     runGroups.forEach((g) => buckets.set(g.id, []));
     buckets.set("__none__", []);
-    participants.forEach((p) => {
+    effectiveParticipants.forEach((p) => {
       const key = p.run_group_id && buckets.has(p.run_group_id) ? p.run_group_id : "__none__";
       buckets.get(key)!.push(p);
     });
     return buckets;
-  }, [participants, runGroups]);
+  }, [effectiveParticipants, runGroups]);
 
-  const totalPaired = participants.filter((p) => !!p.radio_node_id).length;
+  const totalPaired = effectiveParticipants.filter((p) => !!p.radio_node_id).length;
+
 
   const isOpen = (id: string) => openGroups[id] !== false; // default open
 
@@ -154,22 +180,30 @@ const PairedRadiosPanel = ({ participants, runGroups }: PairedRadiosPanelProps) 
             <Radio size={16} className="text-primary" /> Paired Radios
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {totalPaired}/{participants.length} drivers have a radio assigned to this event.
+            {totalPaired}/{effectiveParticipants.length} drivers have a radio assigned to this event.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Label htmlFor="hide-unpaired" className="text-xs text-muted-foreground cursor-pointer">
-            Hide drivers without radio
-          </Label>
-          <Switch
-            id="hide-unpaired"
-            checked={hideUnpaired}
-            onCheckedChange={setHideUnpaired}
-          />
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Label htmlFor="sim-radios" className="text-xs text-muted-foreground cursor-pointer">
+              Simulate 5 radios
+            </Label>
+            <Switch id="sim-radios" checked={simulate} onCheckedChange={setSimulate} />
+          </div>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="hide-unpaired" className="text-xs text-muted-foreground cursor-pointer">
+              Hide drivers without radio
+            </Label>
+            <Switch
+              id="hide-unpaired"
+              checked={hideUnpaired}
+              onCheckedChange={setHideUnpaired}
+            />
+          </div>
         </div>
       </div>
 
-      {participants.length === 0 ? (
+      {effectiveParticipants.length === 0 ? (
         <p className="text-sm text-muted-foreground italic">No registrations yet.</p>
       ) : totalPaired === 0 ? (
         <div className="rounded-md border border-dashed border-border/60 p-4 text-center text-xs text-muted-foreground">
