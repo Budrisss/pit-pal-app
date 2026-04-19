@@ -558,6 +558,7 @@ export type Database = {
           channel_name: string
           created_at: string
           event_id: string
+          gateway_url: string | null
           hmac_secret: string
           id: string
           organizer_user_id: string
@@ -567,6 +568,7 @@ export type Database = {
           channel_name: string
           created_at?: string
           event_id: string
+          gateway_url?: string | null
           hmac_secret: string
           id?: string
           organizer_user_id: string
@@ -576,6 +578,7 @@ export type Database = {
           channel_name?: string
           created_at?: string
           event_id?: string
+          gateway_url?: string | null
           hmac_secret?: string
           id?: string
           organizer_user_id?: string
