@@ -57,22 +57,48 @@ function StatusDot({ s }: { s: "live" | "stale" | "none" }) {
   return <span className={`inline-block h-2 w-2 rounded-full ${cls}`} />;
 }
 
+const SIM_NAMES = ["John Smith", "Jane Doe", "Mike Chen", "Carlos Ruiz", "Sam Patel"];
+const SIM_NODES = ["!a3b1c9d8", "!b8d4e2f1", "!c1f7e44a", "!d2e5a9b3", "!e9c0d77f"];
+
 const PairedRadiosPanel = ({ participants, runGroups }: PairedRadiosPanelProps) => {
   const [hideUnpaired, setHideUnpaired] = useState(false);
+  const [simulate, setSimulate] = useState(false);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+
+  const effectiveParticipants = useMemo<PairedRegistration[]>(() => {
+    if (!simulate) return participants;
+    const firstGroupId = runGroups[0]?.id ?? null;
+    const now = Date.now();
+    const fakes: PairedRegistration[] = SIM_NAMES.map((name, i) => ({
+      id: `sim-${i}`,
+      user_name: name,
+      car_number: [42, 17, 8, 23, 99][i],
+      run_group_id: i < 3 ? firstGroupId : (runGroups[1]?.id ?? firstGroupId),
+      radio_node_id: SIM_NODES[i],
+      // mix of fresh, stale, and one missing-last-seen
+      radio_last_seen:
+        i === 0 ? new Date(now - 30_000).toISOString()
+        : i === 1 ? new Date(now - 4 * 60_000).toISOString()
+        : i === 2 ? new Date(now - 18 * 60_000).toISOString()
+        : i === 3 ? new Date(now - 2 * 60_000).toISOString()
+        : new Date(now - 45 * 60_000).toISOString(),
+    }));
+    return [...participants, ...fakes];
+  }, [simulate, participants, runGroups]);
 
   const grouped = useMemo(() => {
     const buckets = new Map<string, PairedRegistration[]>();
     runGroups.forEach((g) => buckets.set(g.id, []));
     buckets.set("__none__", []);
-    participants.forEach((p) => {
+    effectiveParticipants.forEach((p) => {
       const key = p.run_group_id && buckets.has(p.run_group_id) ? p.run_group_id : "__none__";
       buckets.get(key)!.push(p);
     });
     return buckets;
-  }, [participants, runGroups]);
+  }, [effectiveParticipants, runGroups]);
 
-  const totalPaired = participants.filter((p) => !!p.radio_node_id).length;
+  const totalPaired = effectiveParticipants.filter((p) => !!p.radio_node_id).length;
+
 
   const isOpen = (id: string) => openGroups[id] !== false; // default open
 
