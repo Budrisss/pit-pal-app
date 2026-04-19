@@ -24,6 +24,7 @@ import { LogOut } from "lucide-react";
 import tracksideLogo from "@/assets/trackside-logo-v2.png";
 import { FailoverTransport, encodeFlagPayload } from "@/lib/transport";
 import { useSimConfig } from "@/hooks/useSimStore";
+import PairedRadiosPanel from "@/components/PairedRadiosPanel";
 
 interface EventSession {
   id?: string;
@@ -1303,6 +1304,17 @@ const OrganizerLiveManage = () => {
               ))}
             </div>
           )}
+        </motion.div>
+
+        {/* Paired Radios by Run Group */}
+        <Separator className="mb-6" />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.12 }}
+          className="mb-6"
+        >
+          <PairedRadiosPanel participants={registrations} runGroups={registrationTypes} />
         </motion.div>
 
         {/* Participants — Crew Messaging Toggle */}
