@@ -89,10 +89,11 @@ export default function LoRaChannelCard() {
     (async () => {
       const { data } = await supabase
         .from("lora_event_channels")
-        .select("id, event_id, channel_name, hmac_secret, updated_at")
+        .select("id, event_id, channel_name, hmac_secret, gateway_url, updated_at")
         .eq("event_id", selectedEventId)
         .maybeSingle();
       setMapping(data ?? null);
+      setGatewayUrlInput(data?.gateway_url ?? "");
     })();
   }, [selectedEventId]);
 
@@ -112,7 +113,7 @@ export default function LoRaChannelCard() {
         channel_name,
         hmac_secret,
       })
-      .select("id, event_id, channel_name, hmac_secret, updated_at")
+      .select("id, event_id, channel_name, hmac_secret, gateway_url, updated_at")
       .single();
     setLoading(false);
     if (error) {
@@ -132,7 +133,7 @@ export default function LoRaChannelCard() {
       .from("lora_event_channels")
       .update({ hmac_secret: new_secret, updated_at: new Date().toISOString() })
       .eq("id", mapping.id)
-      .select("id, event_id, channel_name, hmac_secret, updated_at")
+      .select("id, event_id, channel_name, hmac_secret, gateway_url, updated_at")
       .single();
     setLoading(false);
     if (error) {
