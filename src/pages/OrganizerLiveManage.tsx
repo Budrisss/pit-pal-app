@@ -1306,6 +1306,17 @@ const OrganizerLiveManage = () => {
           )}
         </motion.div>
 
+        {/* Paired Radios by Run Group */}
+        <Separator className="mb-6" />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.12 }}
+          className="mb-6"
+        >
+          <PairedRadiosPanel participants={registrations} runGroups={registrationTypes} />
+        </motion.div>
+
         {/* Participants — Crew Messaging Toggle */}
         <Separator className="mb-6" />
         <motion.div
