@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { parseISO, addMinutes, differenceInMilliseconds, isAfter, isBefore, format } from "date-fns";
-import { ArrowLeft, Volume2, StickyNote, Pencil, Check, X, TrendingUp, MessageSquare, Clock, Users, Copy, Map, Timer, Upload, Loader2 } from "lucide-react";
+import { ArrowLeft, Volume2, StickyNote, Pencil, Check, X, TrendingUp, MessageSquare, Clock, Users, Copy, Map, Timer, Upload, Loader2, Radio } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
+import { getCrewTransport, FailoverTransport, type Transport, type IncomingMessage } from "@/lib/transport";
+import { useSimConfig } from "@/hooks/useSimStore";
 
 interface EventFlag {
   id: string;
@@ -288,9 +290,16 @@ const RacerLiveView = () => {
     findPersonalEvent();
   }, [eventId, user?.id]);
 
-  // Load & subscribe to crew messages for the personal event
+  // Transport for inbound crew messages — uses FailoverTransport when sim flag is on,
+  // otherwise direct Supabase subscribe. Sim-only packets (cell down) reach the driver via LoRa leg.
+  const { enabled: simEnabled } = useSimConfig();
+  const transportRef = useRef<Transport | null>(null);
+  const [activeLeg, setActiveLeg] = useState<"supabase" | "lora-sim" | null>(null);
+
   useEffect(() => {
-    if (!personalEventId) return;
+    if (!personalEventId || !user?.id) return;
+
+    // Initial backfill from DB (LoRa-only packets won't be here, but cell history will)
     const loadMessages = async () => {
       const { data } = await supabase
         .from("crew_messages")
@@ -301,18 +310,50 @@ const RacerLiveView = () => {
     };
     loadMessages();
 
-    const channel = supabase
-      .channel(`racer-crew-${personalEventId}`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "crew_messages", filter: `event_id=eq.${personalEventId}` },
-        (payload) => {
-          setCrewMessages(prev => [...prev, payload.new as any]);
-        }
-      )
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [personalEventId]);
+    // Tear down any existing transport
+    transportRef.current?.destroy?.();
+    const t = getCrewTransport({ eventId: personalEventId, userId: user.id });
+    transportRef.current = t;
+
+    // Track active leg for badge (only when failover is in use)
+    let offStatus: (() => void) | null = null;
+    if (t instanceof FailoverTransport) {
+      const update = () => setActiveLeg(t.getActive() as "supabase" | "lora-sim");
+      update();
+      offStatus = t.onStatusChange(update);
+    } else {
+      setActiveLeg(null);
+    }
+
+    // Inbound — append messages from either leg, dedupe by id
+    const seenIds = new Set<string>();
+    setCrewMessages(prev => {
+      prev.forEach(m => seenIds.add(m.id));
+      return prev;
+    });
+    const unsub = t.subscribe((msg: IncomingMessage) => {
+      if (seenIds.has(msg.id)) return;
+      seenIds.add(msg.id);
+      setCrewMessages(prev => {
+        if (prev.some(m => m.id === msg.id)) return prev;
+        return [...prev, {
+          id: msg.id,
+          gap_ahead: msg.payload.t === "gap" ? msg.payload.v : null,
+          message: msg.payload.t === "gap" ? null : msg.payload.v,
+          created_at: new Date(msg.payload.ts).toISOString(),
+          position: null,
+          time_remaining: null,
+        }];
+      });
+    });
+
+    return () => {
+      unsub();
+      offStatus?.();
+      t.destroy?.();
+      transportRef.current = null;
+    };
+  }, [personalEventId, user?.id, simEnabled]);
 
   // Auto-scroll crew feed
   useEffect(() => {
@@ -736,6 +777,11 @@ const RacerLiveView = () => {
           {userCarNumber && (
             <Badge className="bg-primary/90 text-primary-foreground font-mono font-bold text-sm px-2.5 py-0.5 shadow-lg shadow-primary/30">
               #{userCarNumber}
+            </Badge>
+          )}
+          {simEnabled && activeLeg === "lora-sim" && (
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 border-yellow-500/60 text-yellow-400 font-semibold">
+              <Radio size={10} className="mr-0.5" /> LoRa
             </Badge>
           )}
           <span className="text-sm font-mono text-white/50 tabular-nums">
