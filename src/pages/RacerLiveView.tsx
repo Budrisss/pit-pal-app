@@ -9,7 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { getCrewTransport, FailoverTransport, type Transport, type IncomingMessage } from "@/lib/transport";
+import { getCrewTransport, FailoverTransport, decodeFlagPayload, simStore, type Transport, type IncomingMessage } from "@/lib/transport";
 import { useSimConfig } from "@/hooks/useSimStore";
 
 interface EventFlag {
