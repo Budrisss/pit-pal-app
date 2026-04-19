@@ -49,6 +49,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
+import LoRaChannelCard from "@/components/LoRaChannelCard";
 
 interface OrganizerProfile {
   id: string;
@@ -486,7 +487,8 @@ const OrganizerSettings = () => {
           </CardContent>
         </Card>
 
-        {/* Notification Preferences */}
+        {/* LoRa Channel Management */}
+        <LoRaChannelCard />
         <Card className="bg-gradient-dark border-border/50">
           <CardHeader>
             <CardTitle className="text-lg text-foreground flex items-center gap-2">
