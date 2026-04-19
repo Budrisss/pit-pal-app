@@ -779,6 +779,11 @@ const RacerLiveView = () => {
               #{userCarNumber}
             </Badge>
           )}
+          {simEnabled && activeLeg === "lora-sim" && (
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 border-yellow-500/60 text-yellow-400 font-semibold">
+              <Radio size={10} className="mr-0.5" /> LoRa
+            </Badge>
+          )}
           <span className="text-sm font-mono text-white/50 tabular-nums">
             {currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
           </span>
