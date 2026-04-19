@@ -266,6 +266,30 @@ MQTT_TOPIC=msh/+/+/+/+`
               </p>
             </div>
 
+            <div className="space-y-2 border-t border-border/30 pt-4">
+              <Label className="text-xs">Gateway URL (RAK bridge endpoint)</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={gatewayUrlInput}
+                  onChange={(e) => setGatewayUrlInput(e.target.value)}
+                  placeholder="https://gateway.example.com/downlink"
+                  className="font-mono text-sm"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleSaveGatewayUrl}
+                  disabled={savingGw || gatewayUrlInput.trim() === (mapping.gateway_url ?? "")}
+                >
+                  {savingGw ? "Saving…" : "Save"}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                When set, flag broadcasts are auto-forwarded to this URL (HMAC-signed).
+                {mapping.gateway_url ? " Status: Active." : " Status: Disabled (radio downlink off)."}
+              </p>
+            </div>
+
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="text-xs">Gateway Env Block</Label>
