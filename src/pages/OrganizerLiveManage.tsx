@@ -64,6 +64,8 @@ interface EventRegistrationWithCar {
   registration_type_id: string;
   run_group_id: string | null;
   crew_enabled: boolean;
+  radio_node_id?: string | null;
+  radio_last_seen?: string | null;
 }
 
 const OrganizerLiveManage = () => {
@@ -186,7 +188,29 @@ const OrganizerLiveManage = () => {
       setRegistrationTypes((regTypesRes.data as RegistrationType[]) || []);
       setAnnouncements((annRes.data as Announcement[]) || []);
       setTotalRegistrations(regsRes.data?.length || 0);
-      setRegistrations((regsRes.data as EventRegistrationWithCar[]) || []);
+
+      // Join paired LoRa radios for this event's registrations
+      const regs = (regsRes.data as EventRegistrationWithCar[]) || [];
+      if (regs.length > 0) {
+        const regIds = regs.map((r) => r.id);
+        const { data: pairedRows } = await (supabase as any)
+          .from("lora_paired_devices")
+          .select("event_registration_id, meshtastic_node_id, last_seen_at")
+          .in("event_registration_id", regIds);
+        const pairedMap = new Map<string, { node: string | null; lastSeen: string | null }>();
+        (pairedRows || []).forEach((p: any) => {
+          pairedMap.set(p.event_registration_id, {
+            node: p.meshtastic_node_id,
+            lastSeen: p.last_seen_at,
+          });
+        });
+        setRegistrations(regs.map((r) => {
+          const p = pairedMap.get(r.id);
+          return { ...r, radio_node_id: p?.node ?? null, radio_last_seen: p?.lastSeen ?? null };
+        }));
+      } else {
+        setRegistrations(regs);
+      }
       setActiveFlags((flagsRes.data as EventFlag[]) || []);
       setFlagHistory((flagHistoryRes.data as EventFlag[]) || []);
     } catch (err) {
@@ -1309,6 +1333,20 @@ const OrganizerLiveManage = () => {
                       <div className="flex items-center gap-2 min-w-0">
                         {r.car_number && <Badge variant="outline" className="font-mono text-[10px] shrink-0">#{r.car_number}</Badge>}
                         <span className="text-sm truncate">{r.user_name}</span>
+                        {(() => {
+                          if (!r.radio_node_id) {
+                            return <span title="No radio paired" className="text-muted-foreground text-[10px]">⚫</span>;
+                          }
+                          const stale = !r.radio_last_seen || (Date.now() - new Date(r.radio_last_seen).getTime() > 10 * 60 * 1000);
+                          return (
+                            <span
+                              title={`Radio ${r.radio_node_id}${r.radio_last_seen ? ` · last seen ${new Date(r.radio_last_seen).toLocaleTimeString()}` : ""}`}
+                              className={stale ? "text-yellow-400 text-[10px]" : "text-green-400 text-[10px]"}
+                            >
+                              {stale ? "🟡" : "🟢"} <span className="font-mono">{r.radio_node_id}</span>
+                            </span>
+                          );
+                        })()}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="text-[10px] text-muted-foreground">{r.crew_enabled ? "On" : "Off"}</span>
