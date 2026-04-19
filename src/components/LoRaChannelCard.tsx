@@ -57,6 +57,8 @@ export default function LoRaChannelCard() {
   const [mapping, setMapping] = useState<ChannelMapping | null>(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
+  const [gatewayUrlInput, setGatewayUrlInput] = useState("");
+  const [savingGw, setSavingGw] = useState(false);
 
   // Load events organized by this user
   useEffect(() => {
