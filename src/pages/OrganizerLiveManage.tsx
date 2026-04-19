@@ -94,12 +94,26 @@ const OrganizerLiveManage = () => {
 
   const mirrorFlagOverLoRa = useCallback((flagType: string, message: string | null) => {
     if (!simEnabled || !user?.id || !flagTransportRef.current) return;
-    const payload = encodeFlagPayload({ flagType, message, organizerUserId: user.id });
-    // Fire-and-forget — we don't block the UI on radio delivery
-    flagTransportRef.current.send(payload).catch((err) => {
-      console.warn("[lora-sim] flag mirror failed:", err);
-    });
-  }, [simEnabled, user?.id]);
+    try {
+      const payload = encodeFlagPayload({ flagType, message, organizerUserId: user.id });
+      // Fire-and-forget — we don't block the UI on radio delivery
+      flagTransportRef.current.send(payload).catch((err) => {
+        console.warn("[lora-sim] flag mirror send failed:", err);
+        toast({
+          title: "LoRa mirror failed",
+          description: (err as Error)?.message ?? "Radio leg dropped this packet.",
+          variant: "destructive",
+        });
+      });
+    } catch (err) {
+      console.warn("[lora-sim] flag encode failed:", err);
+      toast({
+        title: "LoRa encode failed",
+        description: (err as Error)?.message ?? "Payload exceeded byte budget.",
+        variant: "destructive",
+      });
+    }
+  }, [simEnabled, user?.id, toast]);
 
   const [eventName, setEventName] = useState("");
   const [eventDate, setEventDate] = useState("");
