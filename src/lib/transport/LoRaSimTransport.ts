@@ -1,4 +1,5 @@
 import { byteSize, encode, decode } from "./encoder";
+import { bypassesDutyCycle, priorityFor } from "./priority";
 import { simStore } from "./simStore";
 import type {
   IncomingMessage,
@@ -116,8 +117,8 @@ export class LoRaSimTransport implements Transport {
       throw new Error(`Node ${node.label} out of range`);
     }
 
-    // Duty cycle exceeded?
-    if (!checkDutyCycle(this.ctx.userId)) {
+    // Duty cycle exceeded? (life-safety flags bypass)
+    if (!bypassesDutyCycle(payload) && !checkDutyCycle(this.ctx.userId)) {
       simStore.logPacket({
         id, ts: Date.now(), from: this.ctx.userId.slice(0, 8), to: "broadcast",
         type: payload.t, bytes, latencyMs: null, via: "lora-sim",
@@ -140,9 +141,11 @@ export class LoRaSimTransport implements Transport {
     // Drain a tick of battery
     if (node) simStore.updateNode(node.id, { battery: Math.max(0, node.battery - 0.05) });
 
-    // Schedule delivery with latency + jitter
+    // Schedule delivery with latency + jitter; high-priority packets cut latency
+    const prio = priorityFor(payload);
+    const priorityMultiplier = prio <= 2 ? 0.25 : prio <= 4 ? 0.6 : 1.0;
     const jitter = (Math.random() - 0.5) * 0.6 * cfg.latencyMs;
-    const latencyMs = Math.max(50, Math.round(cfg.latencyMs + jitter));
+    const latencyMs = Math.max(50, Math.round((cfg.latencyMs + jitter) * priorityMultiplier));
     const emittedAt = Date.now();
 
     setTimeout(() => {

@@ -9,7 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { getCrewTransport, FailoverTransport, type Transport, type IncomingMessage } from "@/lib/transport";
+import { getCrewTransport, FailoverTransport, decodeFlagPayload, simStore, type Transport, type IncomingMessage } from "@/lib/transport";
 import { useSimConfig } from "@/hooks/useSimStore";
 
 interface EventFlag {
@@ -354,6 +354,64 @@ const RacerLiveView = () => {
       transportRef.current = null;
     };
   }, [personalEventId, user?.id, simEnabled]);
+
+  // --- LoRa-only flag receive path ---
+  // When the sim is on and cell is "down", organizer flags are mirrored over the
+  // failover transport so racers without cell can still see them. We inject any
+  // sim-only flag packets we hear into the local `flags` array as synthetic entries.
+  const flagTransportRef = useRef<Transport | null>(null);
+  const [hasLoraFlag, setHasLoraFlag] = useState(false);
+
+  useEffect(() => {
+    if (!simEnabled || !eventId || !user?.id) {
+      flagTransportRef.current?.destroy?.();
+      flagTransportRef.current = null;
+      setHasLoraFlag(false);
+      return;
+    }
+
+    const t = new FailoverTransport({ eventId, userId: user.id });
+    flagTransportRef.current = t;
+
+    const seen = new Set<string>();
+    const unsub = t.subscribe((msg: IncomingMessage) => {
+      if (msg.payload.t !== "flag") return;
+      const decoded = decodeFlagPayload(msg.payload);
+      if (!decoded) return;
+      const dedupeKey = `${msg.payload.from}-${msg.payload.ts}-${decoded.flagType}`;
+      if (seen.has(dedupeKey)) return;
+      seen.add(dedupeKey);
+
+      const synthId = `lora-${msg.id}`;
+      setHasLoraFlag(true);
+      setFlags((prev) => {
+        if (prev.some((f) => f.id === synthId)) return prev;
+        // For exclusive flag types (red/checkered/yellow/green), drop other lora-* flags of same type
+        const filtered = prev.filter(
+          (f) => !(f.id.startsWith("lora-") && f.flag_type === decoded.flagType)
+        );
+        return [
+          ...filtered,
+          {
+            id: synthId,
+            flag_type: decoded.flagType,
+            message: decoded.message,
+            target_user_id: null,
+            is_active: true,
+            created_at: new Date(msg.payload.ts).toISOString(),
+            session_id: null,
+          } as EventFlag,
+        ];
+      });
+    });
+
+    return () => {
+      unsub();
+      t.destroy?.();
+      flagTransportRef.current = null;
+      setHasLoraFlag(false);
+    };
+  }, [simEnabled, eventId, user?.id]);
 
   // Auto-scroll crew feed
   useEffect(() => {
@@ -779,9 +837,9 @@ const RacerLiveView = () => {
               #{userCarNumber}
             </Badge>
           )}
-          {simEnabled && activeLeg === "lora-sim" && (
+          {simEnabled && (activeLeg === "lora-sim" || hasLoraFlag) && (
             <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 border-yellow-500/60 text-yellow-400 font-semibold">
-              <Radio size={10} className="mr-0.5" /> LoRa
+              <Radio size={10} className="mr-0.5" /> LoRa{hasLoraFlag ? " 🏁" : ""}
             </Badge>
           )}
           <span className="text-sm font-mono text-white/50 tabular-nums">

@@ -22,6 +22,8 @@ import Navigation from "@/components/Navigation";
 import { Link, useLocation } from "react-router-dom";
 import { LogOut } from "lucide-react";
 import tracksideLogo from "@/assets/trackside-logo-v2.png";
+import { FailoverTransport, encodeFlagPayload } from "@/lib/transport";
+import { useSimConfig } from "@/hooks/useSimStore";
 
 interface EventSession {
   id?: string;
@@ -71,6 +73,33 @@ const OrganizerLiveManage = () => {
   const location = useLocation();
   const { organizerProfileId } = useOrganizerMode();
   const { toast } = useToast();
+  const { enabled: simEnabled } = useSimConfig();
+  const flagTransportRef = useRef<FailoverTransport | null>(null);
+
+  // Spin up a failover transport for mirroring race-control flags over LoRa
+  // when the sim is on. Inserts to event_flags still happen normally; this is
+  // an additional "radio" broadcast so racers without cell can hear flags.
+  useEffect(() => {
+    if (!simEnabled || !eventId || !user?.id) {
+      flagTransportRef.current?.destroy?.();
+      flagTransportRef.current = null;
+      return;
+    }
+    flagTransportRef.current = new FailoverTransport({ eventId, userId: user.id });
+    return () => {
+      flagTransportRef.current?.destroy?.();
+      flagTransportRef.current = null;
+    };
+  }, [simEnabled, eventId, user?.id]);
+
+  const mirrorFlagOverLoRa = useCallback((flagType: string, message: string | null) => {
+    if (!simEnabled || !user?.id || !flagTransportRef.current) return;
+    const payload = encodeFlagPayload({ flagType, message, organizerUserId: user.id });
+    // Fire-and-forget — we don't block the UI on radio delivery
+    flagTransportRef.current.send(payload).catch((err) => {
+      console.warn("[lora-sim] flag mirror failed:", err);
+    });
+  }, [simEnabled, user?.id]);
 
   const [eventName, setEventName] = useState("");
   const [eventDate, setEventDate] = useState("");
@@ -410,6 +439,7 @@ const OrganizerLiveManage = () => {
     if (error) {
       toast({ title: "Failed to send flag", variant: "destructive" });
     } else {
+      mirrorFlagOverLoRa(flagType, flagMessage.trim() || null);
       setFlagMessage("");
       toast({ title: `${flagType.toUpperCase()} flag sent!` });
     }
@@ -430,6 +460,7 @@ const OrganizerLiveManage = () => {
     if (error) {
       toast({ title: "Failed to send yellow flag", variant: "destructive" });
     } else {
+      mirrorFlagOverLoRa("yellow_turn", fullMessage);
       toast({ title: `⚠️ Yellow flag sent for Turn ${yellowFlagTurns.trim()}` });
       setShowYellowFlagDialog(false);
       setYellowFlagTurns("");
@@ -456,6 +487,7 @@ const OrganizerLiveManage = () => {
     if (error) {
       toast({ title: "Failed to send blue flag", variant: "destructive" });
     } else {
+      mirrorFlagOverLoRa("blue", fullMessage);
       toast({ title: reg?.car_number ? `🔵 Blue flag sent to Car #${reg.car_number}` : `🔵 Blue flag sent!` });
       setShowBlueFlagDialog(false);
       setBlueFlagTarget("all");
@@ -538,6 +570,7 @@ const OrganizerLiveManage = () => {
     if (error) {
       toast({ title: "Failed to send black flag", variant: "destructive" });
     } else {
+      mirrorFlagOverLoRa("black", fullMessage);
       toast({ title: reg?.car_number ? `🏴 Black flag sent to Car #${reg.car_number}` : "🏴 Black flag sent to all drivers" });
       setShowBlackFlagDialog(false);
       setBlackFlagTarget("all");

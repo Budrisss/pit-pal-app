@@ -19,6 +19,13 @@ export class SupabaseTransport implements Transport {
   constructor(private ctx: TransportContext) {}
 
   async send(payload: LoRaPayload): Promise<string> {
+    // Flag payloads are written to event_flags directly by the organizer UI;
+    // the transport layer just acks them so the failover wrapper can mirror to LoRa.
+    if (payload.t === "flag") {
+      this.status = "connected";
+      return `cell-flag-${Date.now()}`;
+    }
+
     const insert = {
       event_id: this.ctx.eventId,
       user_id: this.ctx.userId,
