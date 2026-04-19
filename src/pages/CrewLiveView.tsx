@@ -307,6 +307,11 @@ const CrewLiveView = () => {
             <h1 className="text-xl font-bold text-foreground truncate">Crew View</h1>
             <p className="text-sm text-muted-foreground truncate">{resolvedEventName || "Event"}</p>
           </div>
+          {simEnabled && activeLeg === "lora-sim" && (
+            <Badge variant="outline" className="text-xs px-2 py-1 border-yellow-500/60 text-yellow-400 font-semibold">
+              <Radio size={11} className="mr-1" /> LoRa
+            </Badge>
+          )}
           <Badge variant="outline" className="text-sm px-3 py-1 animate-pulse border-green-500 text-green-500 font-semibold">
             ● LIVE
           </Badge>
