@@ -29,9 +29,6 @@ const LoRaPairingCard = () => {
   const [scanning, setScanning] = useState(false);
   const [testing, setTesting] = useState(false);
 
-  // Hide entire card on web — BLE only works in Capacitor native
-  if (!isHardwareCapable()) return null;
-
   useEffect(() => {
     if (!user || !pairedId) return;
     supabase
@@ -44,6 +41,9 @@ const LoRaPairingCard = () => {
         if (data?.device_name) setPairedName(data.device_name);
       });
   }, [user, pairedId]);
+
+  // Hide entire card on web — BLE only works in Capacitor native
+  if (!isHardwareCapable()) return null;
 
   const handleScan = async () => {
     setScanning(true);
