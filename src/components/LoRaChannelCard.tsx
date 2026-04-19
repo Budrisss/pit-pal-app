@@ -146,6 +146,29 @@ export default function LoRaChannelCard() {
     toast({ title: "Secret rotated", description: "Update the RAK gateway env var ASAP." });
   };
 
+  const handleSaveGatewayUrl = async () => {
+    if (!mapping) return;
+    const url = gatewayUrlInput.trim();
+    if (url && !/^https?:\/\//i.test(url)) {
+      toast({ title: "Invalid URL", description: "Must start with http:// or https://", variant: "destructive" });
+      return;
+    }
+    setSavingGw(true);
+    const { data, error } = await supabase
+      .from("lora_event_channels")
+      .update({ gateway_url: url || null })
+      .eq("id", mapping.id)
+      .select("id, event_id, channel_name, hmac_secret, gateway_url, updated_at")
+      .single();
+    setSavingGw(false);
+    if (error) {
+      toast({ title: "Failed to save", description: error.message, variant: "destructive" });
+      return;
+    }
+    setMapping(data);
+    toast({ title: "Gateway URL saved", description: url ? "Flag broadcasts will be forwarded." : "Gateway disabled." });
+  };
+
   const copy = async (key: string, value: string) => {
     try {
       await navigator.clipboard.writeText(value);
