@@ -837,9 +837,9 @@ const RacerLiveView = () => {
               #{userCarNumber}
             </Badge>
           )}
-          {simEnabled && activeLeg === "lora-sim" && (
+          {simEnabled && (activeLeg === "lora-sim" || hasLoraFlag) && (
             <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 border-yellow-500/60 text-yellow-400 font-semibold">
-              <Radio size={10} className="mr-0.5" /> LoRa
+              <Radio size={10} className="mr-0.5" /> LoRa{hasLoraFlag ? " 🏁" : ""}
             </Badge>
           )}
           <span className="text-sm font-mono text-white/50 tabular-nums">
