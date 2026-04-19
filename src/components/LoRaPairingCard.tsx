@@ -135,9 +135,10 @@ const LoRaPairingCard = () => {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-muted-foreground text-sm">
-          Pair a Meshtastic-firmware T1000-E radio for cell-loss fallback at the track.
-          When cell drops mid-session, flags and crew messages route through your paired
-          radio over the mesh.
+          This is your <strong>default radio</strong> — used when you don't have a per-event
+          radio assigned. For race day, assign a radio to each car you've registered from{" "}
+          <strong>My Registrations</strong> on the Dashboard so organizers know which node
+          belongs to which car.
         </p>
 
         {pairedId ? (

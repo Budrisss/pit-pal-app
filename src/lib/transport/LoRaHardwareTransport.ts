@@ -1,7 +1,7 @@
 import { BleClient } from "@capacitor-community/bluetooth-le";
 import { Capacitor } from "@capacitor/core";
 import { decode, encode } from "./encoder";
-import { decodeFromRadioPacket, encodeToRadioPacket } from "./meshtastic/protobuf";
+import { decodeFromRadioPacket, decodeMyNodeInfo, encodeToRadioPacket } from "./meshtastic/protobuf";
 import type {
   IncomingMessage,
   LoRaPayload,
@@ -15,11 +15,6 @@ import type {
  *
  * Wraps our existing JSON-encoded LoRaPayload in a Meshtastic TEXT_MESSAGE_APP
  * payload so the gateway can transparently bridge it to MQTT → our edge function.
- *
- * Service / characteristic UUIDs are Meshtastic standard (stable since v1.x):
- *   service:  6ba1b218-15a8-461f-9fa8-5dcae273eafd
- *   TORADIO   f75c76d2-129e-4dad-a1dd-7866124401e7  (write)
- *   FROMRADIO 2c55e69e-4993-11ed-b878-0242ac120002  (read+notify)
  */
 
 const MESHTASTIC_SERVICE = "6ba1b218-15a8-461f-9fa8-5dcae273eafd";
@@ -61,10 +56,17 @@ export class LoRaHardwareTransport implements Transport {
   private status: TransportStatus = "down";
   private connected = false;
   private subscribers = new Set<(msg: IncomingMessage) => void>();
+  private nodeInfoListeners = new Set<(nodeIdHex: string) => void>();
   private connecting: Promise<void> | null = null;
 
-  constructor(private ctx: TransportContext) {
-    this.deviceId = getPairedDeviceId();
+  constructor(private ctx: TransportContext, overrideDeviceId?: string | null) {
+    this.deviceId = overrideDeviceId ?? getPairedDeviceId();
+  }
+
+  /** Subscribe to MyNodeInfo events (fires on first connect with the radio's hex node id). */
+  onNodeInfo(handler: (nodeIdHex: string) => void): () => void {
+    this.nodeInfoListeners.add(handler);
+    return () => this.nodeInfoListeners.delete(handler);
   }
 
   private async ensureConnected(): Promise<void> {
@@ -97,6 +99,15 @@ export class LoRaHardwareTransport implements Transport {
   }
 
   private onIncoming(buf: Uint8Array) {
+    // Try MyNodeInfo first (fires once on connect)
+    try {
+      const info = decodeMyNodeInfo(buf);
+      if (info) {
+        this.nodeInfoListeners.forEach((h) => h(info.nodeIdHex));
+        return;
+      }
+    } catch { /* ignore */ }
+
     try {
       const decoded = decodeFromRadioPacket(buf);
       if (!decoded) return;
@@ -134,6 +145,7 @@ export class LoRaHardwareTransport implements Transport {
 
   destroy() {
     this.subscribers.clear();
+    this.nodeInfoListeners.clear();
     if (this.deviceId && this.connected) {
       BleClient.stopNotifications(this.deviceId, MESHTASTIC_SERVICE, FROMRADIO_CHAR).catch(() => {});
       BleClient.disconnect(this.deviceId).catch(() => {});
