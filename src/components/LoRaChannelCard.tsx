@@ -27,6 +27,7 @@ interface ChannelMapping {
   event_id: string;
   channel_name: string;
   hmac_secret: string;
+  gateway_url: string | null;
   updated_at: string;
 }
 
@@ -56,6 +57,8 @@ export default function LoRaChannelCard() {
   const [mapping, setMapping] = useState<ChannelMapping | null>(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
+  const [gatewayUrlInput, setGatewayUrlInput] = useState("");
+  const [savingGw, setSavingGw] = useState(false);
 
   // Load events organized by this user
   useEffect(() => {
@@ -88,10 +91,11 @@ export default function LoRaChannelCard() {
     (async () => {
       const { data } = await supabase
         .from("lora_event_channels")
-        .select("id, event_id, channel_name, hmac_secret, updated_at")
+        .select("id, event_id, channel_name, hmac_secret, gateway_url, updated_at")
         .eq("event_id", selectedEventId)
         .maybeSingle();
       setMapping(data ?? null);
+      setGatewayUrlInput(data?.gateway_url ?? "");
     })();
   }, [selectedEventId]);
 
@@ -111,7 +115,7 @@ export default function LoRaChannelCard() {
         channel_name,
         hmac_secret,
       })
-      .select("id, event_id, channel_name, hmac_secret, updated_at")
+      .select("id, event_id, channel_name, hmac_secret, gateway_url, updated_at")
       .single();
     setLoading(false);
     if (error) {
@@ -131,7 +135,7 @@ export default function LoRaChannelCard() {
       .from("lora_event_channels")
       .update({ hmac_secret: new_secret, updated_at: new Date().toISOString() })
       .eq("id", mapping.id)
-      .select("id, event_id, channel_name, hmac_secret, updated_at")
+      .select("id, event_id, channel_name, hmac_secret, gateway_url, updated_at")
       .single();
     setLoading(false);
     if (error) {
@@ -140,6 +144,29 @@ export default function LoRaChannelCard() {
     }
     setMapping(data);
     toast({ title: "Secret rotated", description: "Update the RAK gateway env var ASAP." });
+  };
+
+  const handleSaveGatewayUrl = async () => {
+    if (!mapping) return;
+    const url = gatewayUrlInput.trim();
+    if (url && !/^https?:\/\//i.test(url)) {
+      toast({ title: "Invalid URL", description: "Must start with http:// or https://", variant: "destructive" });
+      return;
+    }
+    setSavingGw(true);
+    const { data, error } = await supabase
+      .from("lora_event_channels")
+      .update({ gateway_url: url || null })
+      .eq("id", mapping.id)
+      .select("id, event_id, channel_name, hmac_secret, gateway_url, updated_at")
+      .single();
+    setSavingGw(false);
+    if (error) {
+      toast({ title: "Failed to save", description: error.message, variant: "destructive" });
+      return;
+    }
+    setMapping(data);
+    toast({ title: "Gateway URL saved", description: url ? "Flag broadcasts will be forwarded." : "Gateway disabled." });
   };
 
   const copy = async (key: string, value: string) => {
@@ -236,6 +263,30 @@ MQTT_TOPIC=msh/+/+/+/+`
               </div>
               <p className="text-xs text-muted-foreground">
                 Last updated: {new Date(mapping.updated_at).toLocaleString()}
+              </p>
+            </div>
+
+            <div className="space-y-2 border-t border-border/30 pt-4">
+              <Label className="text-xs">Gateway URL (RAK bridge endpoint)</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={gatewayUrlInput}
+                  onChange={(e) => setGatewayUrlInput(e.target.value)}
+                  placeholder="https://gateway.example.com/downlink"
+                  className="font-mono text-sm"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleSaveGatewayUrl}
+                  disabled={savingGw || gatewayUrlInput.trim() === (mapping.gateway_url ?? "")}
+                >
+                  {savingGw ? "Saving…" : "Save"}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                When set, flag broadcasts are auto-forwarded to this URL (HMAC-signed).
+                {mapping.gateway_url ? " Status: Active." : " Status: Disabled (radio downlink off)."}
               </p>
             </div>
 
