@@ -18,6 +18,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import RegistrationRadioPairing from "@/components/RegistrationRadioPairing";
 
 interface Registration {
   id: string;
@@ -186,6 +187,11 @@ const MyRegistrations = () => {
                         🚗 {reg.car.year} {reg.car.make} {reg.car.model}
                       </p>
                     )}
+                    <RegistrationRadioPairing
+                      registrationId={reg.id}
+                      eventId={reg.event_id}
+                      carNumber={reg.car_number}
+                    />
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <AlertDialog>

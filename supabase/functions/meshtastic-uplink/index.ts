@@ -9,20 +9,15 @@ const corsHeaders = {
  * Receives HMAC-signed POSTs from the gateway-side MQTT bridge script and
  * routes each Meshtastic packet into either crew_messages or event_flags.
  *
- * Wire format from the bridge:
- *   POST /meshtastic-uplink
- *   Headers: X-Channel: <channel_name>, X-Signature: <hex sha256>
- *   Body (raw JSON, signed as-is):
- *     { "channel": "...", "from": "...", "rssi": -82, "snr": 7,
- *       "received_at": 1234567890123, "text": "<our LoRaPayload JSON>" }
- *
- * The "text" field is our existing encoded LoRaPayload (see encoder.ts):
- *   { t: "flag" | "msg" | "gap", v, ts, f }
+ * Sender verification: each uplink is keyed by the radio's Meshtastic node id
+ * (bridge `from` field, hex like "!a3b1c9d8"). We look that up in
+ * lora_paired_devices to (1) reject unknown radios and (2) enrich crew messages
+ * with the registration's car number.
  */
 
 interface BridgePayload {
   channel: string;
-  from: string;
+  from: string;       // Meshtastic node id, e.g. "!a3b1c9d8"
   rssi?: number;
   snr?: number;
   received_at: number;
@@ -48,7 +43,6 @@ async function verifyHmac(secret: string, body: string, signature: string): Prom
   );
   const sig = await crypto.subtle.sign("HMAC", key, enc.encode(body));
   const hex = Array.from(new Uint8Array(sig)).map((b) => b.toString(16).padStart(2, "0")).join("");
-  // constant-time compare
   if (hex.length !== signature.length) return false;
   let diff = 0;
   for (let i = 0; i < hex.length; i++) diff |= hex.charCodeAt(i) ^ signature.charCodeAt(i);
@@ -115,9 +109,28 @@ Deno.serve(async (req) => {
     });
   }
 
-  const senderId = inner.from ?? inner.f ?? bridge.from;
+  // Resolve sender node → paired device → registration
+  // Crew messages from unknown radios are dropped silently (security).
+  const nodeId = bridge.from?.startsWith("!") ? bridge.from : `!${bridge.from ?? ""}`;
+  const { data: paired } = await supabase
+    .from("lora_paired_devices")
+    .select("user_id, event_registration_id")
+    .eq("meshtastic_node_id", nodeId)
+    .maybeSingle();
+
+  // Bump last_seen_at for any known node so organizers see liveness
+  if (paired) {
+    await supabase
+      .from("lora_paired_devices")
+      .update({ last_seen_at: new Date().toISOString() })
+      .eq("meshtastic_node_id", nodeId);
+  }
+
+  const senderId = paired?.user_id ?? inner.from ?? inner.f ?? bridge.from;
 
   if (inner.t === "flag") {
+    // Flags coming back over uplink are typically organizer rebroadcasts —
+    // we trust the channel HMAC + organizer mapping for these.
     const [flagType, ...rest] = inner.v.split("|");
     const message = rest.length > 0 ? rest.join("|") : null;
     const { error } = await supabase.from("event_flags").insert({
@@ -134,11 +147,30 @@ Deno.serve(async (req) => {
       });
     }
   } else if (inner.t === "msg" || inner.t === "gap") {
+    if (!paired) {
+      console.warn("[meshtastic-uplink] dropping msg from unknown node", nodeId);
+      return new Response(JSON.stringify({ ok: false, reason: "unknown_node" }), {
+        status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Enrich with car number if we can resolve the registration
+    let position: string | null = null;
+    if (paired.event_registration_id) {
+      const { data: reg } = await supabase
+        .from("event_registrations")
+        .select("car_number")
+        .eq("id", paired.event_registration_id)
+        .maybeSingle();
+      if (reg?.car_number != null) position = `#${reg.car_number}`;
+    }
+
     const { error } = await supabase.from("crew_messages").insert({
       event_id: mapping.event_id,
       user_id: senderId,
       message: inner.t === "msg" ? inner.v : null,
       gap_ahead: inner.t === "gap" ? inner.v : null,
+      position,
     });
     if (error) {
       console.error("[meshtastic-uplink] crew msg insert failed", error);

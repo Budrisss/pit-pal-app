@@ -211,6 +211,54 @@ function decodeData(buf: Uint8Array): { portnum: number; payload: Uint8Array } |
   return { portnum, payload };
 }
 
+// ---------- MyNodeInfo decode ----------
+//
+// FromRadio.my_info is field 3 in the FromRadio union and contains a MyNodeInfo
+// message. The only field we care about is `my_node_num` (field 1, varint) — the
+// 32-bit node id that becomes the `!hex` identifier the gateway/MQTT bridge sees.
+
+export interface MyNodeInfo {
+  myNodeNum: number;
+  /** Convenience hex form, e.g. "!a3b1c9d8" */
+  nodeIdHex: string;
+}
+
+/** Decode MyNodeInfo if this FromRadio buffer contains a my_info message. */
+export function decodeMyNodeInfo(buf: Uint8Array): MyNodeInfo | null {
+  let pos = 0;
+  while (pos < buf.length) {
+    const { value: tag, pos: p1 } = readVarint(buf, pos);
+    pos = p1;
+    const fieldNumber = tag >>> 3;
+    const wireType = tag & 0x7;
+
+    if (fieldNumber === 3 /* my_info */ && wireType === LEN) {
+      const { value: len, pos: p2 } = readVarint(buf, pos);
+      pos = p2;
+      const inner = buf.subarray(pos, pos + len);
+      pos += len;
+      // Inside MyNodeInfo, field 1 is my_node_num (varint)
+      let inPos = 0;
+      while (inPos < inner.length) {
+        const { value: itag, pos: ip1 } = readVarint(inner, inPos);
+        inPos = ip1;
+        const ifield = itag >>> 3;
+        const iwire = itag & 0x7;
+        if (ifield === 1 && iwire === VARINT) {
+          const r = readVarint(inner, inPos);
+          const num = r.value >>> 0;
+          const hex = num.toString(16).padStart(8, "0");
+          return { myNodeNum: num, nodeIdHex: `!${hex}` };
+        }
+        inPos = skipField(inner, inPos, iwire);
+      }
+      return null;
+    }
+    pos = skipField(buf, pos, wireType);
+  }
+  return null;
+}
+
 function skipField(buf: Uint8Array, pos: number, wireType: number): number {
   if (wireType === VARINT) {
     return readVarint(buf, pos).pos;

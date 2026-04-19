@@ -31,6 +31,8 @@ export type TransportStatus = "connected" | "degraded" | "down";
 export interface TransportContext {
   eventId: string;
   userId: string;
+  /** Optional registration id — used to resolve a per-registration paired radio. */
+  registrationId?: string;
 }
 
 export interface Transport {
