@@ -439,6 +439,7 @@ const OrganizerLiveManage = () => {
     if (error) {
       toast({ title: "Failed to send flag", variant: "destructive" });
     } else {
+      mirrorFlagOverLoRa(flagType, flagMessage.trim() || null);
       setFlagMessage("");
       toast({ title: `${flagType.toUpperCase()} flag sent!` });
     }
@@ -459,6 +460,7 @@ const OrganizerLiveManage = () => {
     if (error) {
       toast({ title: "Failed to send yellow flag", variant: "destructive" });
     } else {
+      mirrorFlagOverLoRa("yellow_turn", fullMessage);
       toast({ title: `⚠️ Yellow flag sent for Turn ${yellowFlagTurns.trim()}` });
       setShowYellowFlagDialog(false);
       setYellowFlagTurns("");
@@ -485,6 +487,7 @@ const OrganizerLiveManage = () => {
     if (error) {
       toast({ title: "Failed to send blue flag", variant: "destructive" });
     } else {
+      mirrorFlagOverLoRa("blue", fullMessage);
       toast({ title: reg?.car_number ? `🔵 Blue flag sent to Car #${reg.car_number}` : `🔵 Blue flag sent!` });
       setShowBlueFlagDialog(false);
       setBlueFlagTarget("all");
@@ -567,6 +570,7 @@ const OrganizerLiveManage = () => {
     if (error) {
       toast({ title: "Failed to send black flag", variant: "destructive" });
     } else {
+      mirrorFlagOverLoRa("black", fullMessage);
       toast({ title: reg?.car_number ? `🏴 Black flag sent to Car #${reg.car_number}` : "🏴 Black flag sent to all drivers" });
       setShowBlackFlagDialog(false);
       setBlackFlagTarget("all");
