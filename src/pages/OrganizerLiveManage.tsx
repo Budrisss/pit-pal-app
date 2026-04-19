@@ -24,6 +24,7 @@ import { LogOut } from "lucide-react";
 import tracksideLogo from "@/assets/trackside-logo-v2.png";
 import { FailoverTransport, encodeFlagPayload } from "@/lib/transport";
 import { useSimConfig } from "@/hooks/useSimStore";
+import PairedRadiosPanel from "@/components/PairedRadiosPanel";
 
 interface EventSession {
   id?: string;
