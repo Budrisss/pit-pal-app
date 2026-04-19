@@ -180,22 +180,30 @@ const PairedRadiosPanel = ({ participants, runGroups }: PairedRadiosPanelProps) 
             <Radio size={16} className="text-primary" /> Paired Radios
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {totalPaired}/{participants.length} drivers have a radio assigned to this event.
+            {totalPaired}/{effectiveParticipants.length} drivers have a radio assigned to this event.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Label htmlFor="hide-unpaired" className="text-xs text-muted-foreground cursor-pointer">
-            Hide drivers without radio
-          </Label>
-          <Switch
-            id="hide-unpaired"
-            checked={hideUnpaired}
-            onCheckedChange={setHideUnpaired}
-          />
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Label htmlFor="sim-radios" className="text-xs text-muted-foreground cursor-pointer">
+              Simulate 5 radios
+            </Label>
+            <Switch id="sim-radios" checked={simulate} onCheckedChange={setSimulate} />
+          </div>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="hide-unpaired" className="text-xs text-muted-foreground cursor-pointer">
+              Hide drivers without radio
+            </Label>
+            <Switch
+              id="hide-unpaired"
+              checked={hideUnpaired}
+              onCheckedChange={setHideUnpaired}
+            />
+          </div>
         </div>
       </div>
 
-      {participants.length === 0 ? (
+      {effectiveParticipants.length === 0 ? (
         <p className="text-sm text-muted-foreground italic">No registrations yet.</p>
       ) : totalPaired === 0 ? (
         <div className="rounded-md border border-dashed border-border/60 p-4 text-center text-xs text-muted-foreground">
