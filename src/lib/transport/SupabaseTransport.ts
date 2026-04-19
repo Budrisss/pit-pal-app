@@ -19,13 +19,12 @@ export class SupabaseTransport implements Transport {
   constructor(private ctx: TransportContext) {}
 
   async send(payload: LoRaPayload): Promise<string> {
-    const insert: Record<string, unknown> = {
+    const insert = {
       event_id: this.ctx.eventId,
       user_id: this.ctx.userId,
+      gap_ahead: payload.t === "gap" ? payload.v : null,
+      message: payload.t === "gap" ? null : payload.v,
     };
-    if (payload.t === "gap") insert.gap_ahead = payload.v;
-    else if (payload.t === "msg") insert.message = payload.v;
-    else insert.message = payload.v; // flag/ack ride as message body for now
 
     const { data, error } = await supabase
       .from("crew_messages")
