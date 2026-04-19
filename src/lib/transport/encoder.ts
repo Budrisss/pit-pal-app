@@ -1,7 +1,7 @@
 import type { LoRaPayload } from "./types";
 
-/** LoRaWAN typical max payload at SF7 in EU868/US915 — keep messages tiny. */
-export const MAX_LORA_BYTES = 50;
+/** LoRaWAN max application payload at SF7 US915 — realistic hardware ceiling. */
+export const MAX_LORA_BYTES = 222;
 
 /**
  * Encode payload to a compact JSON string and enforce the byte cap.
