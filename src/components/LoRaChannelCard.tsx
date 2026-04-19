@@ -27,6 +27,7 @@ interface ChannelMapping {
   event_id: string;
   channel_name: string;
   hmac_secret: string;
+  gateway_url: string | null;
   updated_at: string;
 }
 
