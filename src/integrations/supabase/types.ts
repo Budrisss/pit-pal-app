@@ -553,6 +553,69 @@ export type Database = {
         }
         Relationships: []
       }
+      lora_event_channels: {
+        Row: {
+          channel_name: string
+          created_at: string
+          event_id: string
+          hmac_secret: string
+          id: string
+          organizer_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          channel_name: string
+          created_at?: string
+          event_id: string
+          hmac_secret: string
+          id?: string
+          organizer_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          channel_name?: string
+          created_at?: string
+          event_id?: string
+          hmac_secret?: string
+          id?: string
+          organizer_user_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      lora_paired_devices: {
+        Row: {
+          ble_device_id: string
+          created_at: string
+          device_name: string | null
+          id: string
+          last_seen_at: string | null
+          meshtastic_node_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ble_device_id: string
+          created_at?: string
+          device_name?: string | null
+          id?: string
+          last_seen_at?: string | null
+          meshtastic_node_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ble_device_id?: string
+          created_at?: string
+          device_name?: string | null
+          id?: string
+          last_seen_at?: string | null
+          meshtastic_node_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       maintenance_attachments: {
         Row: {
           created_at: string

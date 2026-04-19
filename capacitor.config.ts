@@ -7,7 +7,22 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://fdc2b783-5bb9-413f-8a02-2185add13ee4.lovableproject.com?forceHideBadge=true',
     cleartext: true
-  }
+  },
+  plugins: {
+    BluetoothLe: {
+      displayStrings: {
+        scanning: 'Scanning for radios…',
+        cancel: 'Cancel',
+        availableDevices: 'Nearby radios',
+        noDeviceFound: 'No Meshtastic radios found nearby',
+      },
+    },
+  },
+  ios: {
+    // Background BLE so paired radio stays connected briefly when app backgrounds.
+    // Add NSBluetoothAlwaysUsageDescription + UIBackgroundModes=bluetooth-central
+    // to Info.plist after `npx cap add ios` (handled by user's native project).
+  },
 };
 
 export default config;

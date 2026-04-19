@@ -22,15 +22,15 @@ const HYSTERESIS_THRESHOLD = 3; // consecutive primary successes needed to switc
 export class FailoverTransport implements Transport {
   readonly name = "failover" as const;
   private primary: SupabaseTransport;
-  private fallback: LoRaSimTransport;
+  private fallback: Transport;
   private active: TransportName = "supabase";
   private consecutivePrimarySuccesses = 0;
   private dedupe = new Set<string>();
   private statusListeners = new Set<() => void>();
 
-  constructor(ctx: TransportContext) {
+  constructor(ctx: TransportContext, fallbackFactory?: () => Transport) {
     this.primary = new SupabaseTransport(ctx);
-    this.fallback = new LoRaSimTransport(ctx);
+    this.fallback = (fallbackFactory ? fallbackFactory() : new LoRaSimTransport(ctx)) as LoRaSimTransport;
   }
 
   /** Currently-active leg used for last successful send (for the UI badge). */
