@@ -1,1 +1,4 @@
 project_id = "fkkemgtdxbsqvtsidhvu"
+
+[functions.flag-downlink-broadcast]
+verify_jwt = false
