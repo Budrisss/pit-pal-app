@@ -73,6 +73,33 @@ const OrganizerLiveManage = () => {
   const location = useLocation();
   const { organizerProfileId } = useOrganizerMode();
   const { toast } = useToast();
+  const { enabled: simEnabled } = useSimConfig();
+  const flagTransportRef = useRef<FailoverTransport | null>(null);
+
+  // Spin up a failover transport for mirroring race-control flags over LoRa
+  // when the sim is on. Inserts to event_flags still happen normally; this is
+  // an additional "radio" broadcast so racers without cell can hear flags.
+  useEffect(() => {
+    if (!simEnabled || !eventId || !user?.id) {
+      flagTransportRef.current?.destroy?.();
+      flagTransportRef.current = null;
+      return;
+    }
+    flagTransportRef.current = new FailoverTransport({ eventId, userId: user.id });
+    return () => {
+      flagTransportRef.current?.destroy?.();
+      flagTransportRef.current = null;
+    };
+  }, [simEnabled, eventId, user?.id]);
+
+  const mirrorFlagOverLoRa = useCallback((flagType: string, message: string | null) => {
+    if (!simEnabled || !user?.id || !flagTransportRef.current) return;
+    const payload = encodeFlagPayload({ flagType, message, organizerUserId: user.id });
+    // Fire-and-forget — we don't block the UI on radio delivery
+    flagTransportRef.current.send(payload).catch((err) => {
+      console.warn("[lora-sim] flag mirror failed:", err);
+    });
+  }, [simEnabled, user?.id]);
 
   const [eventName, setEventName] = useState("");
   const [eventDate, setEventDate] = useState("");
