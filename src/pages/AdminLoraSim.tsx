@@ -17,6 +17,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useSimConfig, useSimLog } from "@/hooks/useSimStore";
 import { simStore, FEATURE_FLAG_KEY } from "@/lib/transport/simStore";
 import { byteSize } from "@/lib/transport/encoder";
+import {
+  HARDWARE_FLAG_KEY,
+  getPairedDeviceId,
+  isHardwareCapable,
+  isHardwareEnabled,
+  setHardwareEnabled,
+} from "@/lib/transport";
 import { FailoverTransport } from "@/lib/transport/FailoverTransport";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -104,18 +111,37 @@ const AdminLoraSim = () => {
 
       {/* Feature flag */}
       <Card className="bg-card/60 backdrop-blur-sm border-border/50">
-        <CardContent className="p-4 flex items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-semibold text-foreground">Failover Transport</p>
-            <p className="text-xs text-muted-foreground">
-              When ON, crew→driver messages route through the failover wrapper. OFF = production
-              path (Supabase only). Stored in localStorage as <code>{FEATURE_FLAG_KEY}</code>.
-            </p>
+        <CardContent className="p-4 space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-foreground">Sim Mode (in-memory)</p>
+              <p className="text-xs text-muted-foreground">
+                When ON, crew→driver messages route through the failover wrapper using the
+                in-memory sim radio. OFF = production path. Stored as <code>{FEATURE_FLAG_KEY}</code>.
+              </p>
+            </div>
+            <Switch
+              checked={enabled}
+              onCheckedChange={(v) => simStore.setEnabled(v)}
+            />
           </div>
-          <Switch
-            checked={enabled}
-            onCheckedChange={(v) => simStore.setEnabled(v)}
-          />
+          <div className="flex items-center justify-between gap-4 pt-3 border-t border-border/50">
+            <div>
+              <p className="text-sm font-semibold text-foreground">Hardware Mode (real radio)</p>
+              <p className="text-xs text-muted-foreground">
+                {isHardwareCapable()
+                  ? getPairedDeviceId()
+                    ? <>Uses your paired BLE radio. Stored as <code>{HARDWARE_FLAG_KEY}</code>. Takes precedence over Sim.</>
+                    : "Pair a radio in Settings → LoRa Radio first."
+                  : "Native-only — open the app on iOS/Android to use real hardware."}
+              </p>
+            </div>
+            <Switch
+              checked={isHardwareEnabled()}
+              disabled={!isHardwareCapable() || !getPairedDeviceId()}
+              onCheckedChange={(v) => { setHardwareEnabled(v); /* trigger rerender */ navigate(0 as any); }}
+            />
+          </div>
         </CardContent>
       </Card>
 
