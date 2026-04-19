@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Shield, ArrowLeft, CheckCircle, XCircle, Users, Building2, CreditCard } from "lucide-react";
+import { Shield, ArrowLeft, CheckCircle, XCircle, Users, Building2, CreditCard, RadioTower } from "lucide-react";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -116,6 +116,22 @@ const Admin = () => {
         </h1>
         <p className="text-muted-foreground text-sm">Manage organizers, users, and subscriptions</p>
       </div>
+
+      {/* Dev tools */}
+      <Card className="bg-card/60 backdrop-blur-sm border-border/50">
+        <CardContent className="p-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-md bg-primary/10 border border-primary/30 flex items-center justify-center">
+              <RadioTower className="text-primary" size={20} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">LoRa Sim</p>
+              <p className="text-xs text-muted-foreground">Test failover before LoRaWAN hardware arrives</p>
+            </div>
+          </div>
+          <Button size="sm" onClick={() => navigate("/admin/lora-sim")}>Open</Button>
+        </CardContent>
+      </Card>
 
       <Tabs defaultValue="pending" className="space-y-4">
         <TabsList className="w-full grid grid-cols-3">
