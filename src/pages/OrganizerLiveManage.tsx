@@ -137,6 +137,13 @@ const OrganizerLiveManage = () => {
   const [blackFlagTarget, setBlackFlagTarget] = useState<string>("all");
   const [blackFlagMessage, setBlackFlagMessage] = useState("");
   const [registrations, setRegistrations] = useState<EventRegistrationWithCar[]>([]);
+  const [showLiveMap, setShowLiveMap] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem("liveManage.showLiveMap") !== "false";
+  });
+  useEffect(() => {
+    localStorage.setItem("liveManage.showLiveMap", String(showLiveMap));
+  }, [showLiveMap]);
   const [blackFlagSearch, setBlackFlagSearch] = useState("");
   const [blackFlagGroupFilter, setBlackFlagGroupFilter] = useState<"active" | "all">("active");
   const [showYellowFlagDialog, setShowYellowFlagDialog] = useState(false);
