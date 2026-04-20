@@ -855,6 +855,7 @@ export type Database = {
           longitude: number | null
           name: string
           state: string | null
+          track_geojson: Json | null
           track_type: string | null
         }
         Insert: {
@@ -866,6 +867,7 @@ export type Database = {
           longitude?: number | null
           name: string
           state?: string | null
+          track_geojson?: Json | null
           track_type?: string | null
         }
         Update: {
@@ -877,6 +879,7 @@ export type Database = {
           longitude?: number | null
           name?: string
           state?: string | null
+          track_geojson?: Json | null
           track_type?: string | null
         }
         Relationships: []
@@ -1619,6 +1622,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      upsert_track_geojson: {
+        Args: { _geojson: Json; _track_id: string }
+        Returns: undefined
       }
     }
     Enums: {
