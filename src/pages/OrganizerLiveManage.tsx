@@ -1079,8 +1079,8 @@ const OrganizerLiveManage = () => {
         )}
 
         {/* 2-column race-control grid: action surface (left) + situational awareness (right, sticky) */}
-        <div className="lg:grid lg:grid-cols-3 lg:gap-6 lg:items-start">
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
+        <div className="space-y-6">
         {/* Flag Control Panel */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -1538,7 +1538,7 @@ const OrganizerLiveManage = () => {
         )}
         </div>
         {/* Right column — situational awareness panels (sticky on widescreen) */}
-        <div className="lg:col-span-1 space-y-6 mt-6 lg:mt-0 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
+        <div className="space-y-6 mt-6 lg:mt-0 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
           {/* Live Track Map */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
