@@ -115,8 +115,8 @@ const LiveTrackMapFullscreen = () => {
       </div>
 
       {/* Fullscreen map — fills entire viewport */}
-      <div className="w-full h-full [&_.leaflet-container]:!h-full [&>div]:!h-full [&_.relative]:!h-full">
-        <LiveTrackMap eventId={eventId} participants={participants} />
+      <div className="absolute inset-0">
+        <LiveTrackMap eventId={eventId} participants={participants} fullscreen />
       </div>
     </div>
   );
