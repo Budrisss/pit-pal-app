@@ -34,6 +34,7 @@ interface ParticipantInfo {
 interface LiveTrackMapProps {
   eventId: string;
   participants: ParticipantInfo[];
+  fullscreen?: boolean;
 }
 
 interface TrackInfo {
@@ -163,7 +164,7 @@ function polylineLengthMi(coords: [number, number][]): number {
   return m / 1609.344;
 }
 
-const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
+const LiveTrackMap = ({ eventId, participants, fullscreen = false }: LiveTrackMapProps) => {
   const [open, setOpen] = useState(true);
   const [fixes, setFixes] = useState<Map<string, PositionFix>>(new Map());
   const [eventTrackId, setEventTrackId] = useState<string | null>(null);
@@ -375,25 +376,27 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
   }, [followLeader, visibleFixes]);
 
   return (
-    <Card className="bg-card border-border/60 overflow-hidden">
-      <Collapsible open={open} onOpenChange={setOpen}>
-        <CollapsibleTrigger asChild>
-          <button className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors border-b border-border/60">
-            <div className="flex items-center gap-3 min-w-0">
-              <Radio size={16} className="text-primary shrink-0" />
-              <span className="font-bold text-sm tracking-wider uppercase">Live Track Map</span>
-              <div className="flex items-center gap-2 ml-2">
-                <span className="live-pulse-dot" />
-                <span className="text-[10px] font-bold tracking-widest text-primary">LIVE</span>
+    <Card className={cn("bg-card border-border/60 overflow-hidden", fullscreen && "h-full w-full border-0 rounded-none flex flex-col")}>
+      <Collapsible open={fullscreen ? true : open} onOpenChange={fullscreen ? undefined : setOpen} className={cn(fullscreen && "flex-1 flex flex-col min-h-0")}>
+        {!fullscreen && (
+          <CollapsibleTrigger asChild>
+            <button className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors border-b border-border/60">
+              <div className="flex items-center gap-3 min-w-0">
+                <Radio size={16} className="text-primary shrink-0" />
+                <span className="font-bold text-sm tracking-wider uppercase">Live Track Map</span>
+                <div className="flex items-center gap-2 ml-2">
+                  <span className="live-pulse-dot" />
+                  <span className="text-[10px] font-bold tracking-widest text-primary">LIVE</span>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-3 text-[11px] font-mono text-muted-foreground">
-              <span><span className="text-foreground font-bold">{liveCount}</span>/{totalCars} cars</span>
-              {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-            </div>
-          </button>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
+              <div className="flex items-center gap-3 text-[11px] font-mono text-muted-foreground">
+                <span><span className="text-foreground font-bold">{liveCount}</span>/{totalCars} cars</span>
+                {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+              </div>
+            </button>
+          </CollapsibleTrigger>
+        )}
+        <CollapsibleContent className={cn(fullscreen && "flex-1 flex flex-col min-h-0 data-[state=open]:!animate-none")} forceMount={fullscreen ? true : undefined}>
           {/* Race-control header strip */}
           <div className="px-4 py-2 bg-gradient-to-r from-background via-card to-background border-b border-border/60 flex items-center justify-between gap-3 text-[11px] flex-wrap">
             <div className="flex items-center gap-3 min-w-0 font-mono">
@@ -492,7 +495,7 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
           </div>
 
           {/* Map */}
-          <div className="live-track-map relative" style={{ height: 520 }}>
+          <div className={cn("live-track-map relative", fullscreen && "flex-1 min-h-0")} style={fullscreen ? undefined : { height: 520 }}>
             <MapContainer
               center={mapCenter}
               zoom={initialZoom}
