@@ -622,6 +622,51 @@ export type Database = {
         }
         Relationships: []
       }
+      lora_position_fixes: {
+        Row: {
+          altitude_m: number | null
+          event_id: string
+          event_registration_id: string | null
+          fix_time: string | null
+          heading_deg: number | null
+          id: string
+          latitude: number
+          longitude: number
+          meshtastic_node_id: string | null
+          received_at: string
+          speed_mps: number | null
+          user_id: string | null
+        }
+        Insert: {
+          altitude_m?: number | null
+          event_id: string
+          event_registration_id?: string | null
+          fix_time?: string | null
+          heading_deg?: number | null
+          id?: string
+          latitude: number
+          longitude: number
+          meshtastic_node_id?: string | null
+          received_at?: string
+          speed_mps?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          altitude_m?: number | null
+          event_id?: string
+          event_registration_id?: string | null
+          fix_time?: string | null
+          heading_deg?: number | null
+          id?: string
+          latitude?: number
+          longitude?: number
+          meshtastic_node_id?: string | null
+          received_at?: string
+          speed_mps?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       maintenance_attachments: {
         Row: {
           created_at: string

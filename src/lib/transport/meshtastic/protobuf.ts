@@ -259,6 +259,97 @@ export function decodeMyNodeInfo(buf: Uint8Array): MyNodeInfo | null {
   return null;
 }
 
+// ---------- Position decode ----------
+//
+// POSITION_APP = portnum 3. Inside the Data.payload is a Position message:
+//   field 1: latitude_i  (sfixed32, 1e-7 deg)   [wire type 5]
+//   field 2: longitude_i (sfixed32, 1e-7 deg)   [wire type 5]
+//   field 3: altitude    (int32 meters)          [varint]
+//   field 4: time        (fixed32 unix seconds)  [wire type 5]
+//   field 8: ground_speed (uint32, m/s)          [varint]
+//   field 9: ground_track (uint32, deg * 1e-5 in some FW; int deg in others) [varint]
+//
+// We're permissive — fields are optional and we just take what we get.
+
+export const PORTNUM_POSITION_APP = 3;
+
+export interface DecodedPosition {
+  latitude: number;     // degrees
+  longitude: number;    // degrees
+  altitudeM?: number;   // meters
+  fixTime?: Date;       // GPS fix time
+  speedMps?: number;    // m/s
+  headingDeg?: number;  // 0..360
+}
+
+function readSFixed32(buf: Uint8Array, pos: number): { value: number; pos: number } {
+  if (pos + 4 > buf.length) throw new Error("Truncated sfixed32");
+  const dv = new DataView(buf.buffer, buf.byteOffset + pos, 4);
+  return { value: dv.getInt32(0, true), pos: pos + 4 };
+}
+
+function readFixed32(buf: Uint8Array, pos: number): { value: number; pos: number } {
+  if (pos + 4 > buf.length) throw new Error("Truncated fixed32");
+  const dv = new DataView(buf.buffer, buf.byteOffset + pos, 4);
+  return { value: dv.getUint32(0, true), pos: pos + 4 };
+}
+
+/** Decode a Position payload (the inner Data.payload bytes when portnum=POSITION_APP). */
+export function decodePositionPayload(buf: Uint8Array): DecodedPosition | null {
+  let pos = 0;
+  let latI: number | undefined;
+  let lonI: number | undefined;
+  let alt: number | undefined;
+  let timeSec: number | undefined;
+  let speed: number | undefined;
+  let heading: number | undefined;
+
+  while (pos < buf.length) {
+    const { value: tag, pos: p1 } = readVarint(buf, pos);
+    pos = p1;
+    const fieldNumber = tag >>> 3;
+    const wireType = tag & 0x7;
+
+    try {
+      if (fieldNumber === 1 && wireType === 5) {
+        const r = readSFixed32(buf, pos); latI = r.value; pos = r.pos;
+      } else if (fieldNumber === 2 && wireType === 5) {
+        const r = readSFixed32(buf, pos); lonI = r.value; pos = r.pos;
+      } else if (fieldNumber === 3 && wireType === VARINT) {
+        const r = readVarint(buf, pos); alt = r.value | 0; pos = r.pos;
+      } else if (fieldNumber === 4 && wireType === 5) {
+        const r = readFixed32(buf, pos); timeSec = r.value; pos = r.pos;
+      } else if (fieldNumber === 8 && wireType === VARINT) {
+        const r = readVarint(buf, pos); speed = r.value; pos = r.pos;
+      } else if (fieldNumber === 9 && wireType === VARINT) {
+        const r = readVarint(buf, pos); heading = r.value; pos = r.pos;
+      } else {
+        pos = skipField(buf, pos, wireType);
+      }
+    } catch {
+      return null;
+    }
+  }
+
+  if (latI === undefined || lonI === undefined) return null;
+  return {
+    latitude: latI * 1e-7,
+    longitude: lonI * 1e-7,
+    altitudeM: alt,
+    fixTime: timeSec ? new Date(timeSec * 1000) : undefined,
+    speedMps: speed,
+    headingDeg: heading,
+  };
+}
+
+/**
+ * Convenience: given a decoded MeshPacket, return a Position if the portnum matches.
+ */
+export function decodePositionFromPacket(packet: { portnum: number; payload: Uint8Array }): DecodedPosition | null {
+  if (packet.portnum !== PORTNUM_POSITION_APP) return null;
+  return decodePositionPayload(packet.payload);
+}
+
 function skipField(buf: Uint8Array, pos: number, wireType: number): number {
   if (wireType === VARINT) {
     return readVarint(buf, pos).pos;

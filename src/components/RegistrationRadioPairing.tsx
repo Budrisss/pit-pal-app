@@ -3,6 +3,8 @@ import { BleClient, type BleDevice } from "@capacitor-community/bluetooth-le";
 import { Bluetooth, BluetoothConnected, Loader2, Send, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +12,7 @@ import {
   isHardwareCapable,
   LoRaHardwareTransport,
 } from "@/lib/transport";
+import { POSITION_SHARE_KEY } from "@/lib/transport/LoRaHardwareTransport";
 
 const MESHTASTIC_SERVICE = "6ba1b218-15a8-461f-9fa8-5dcae273eafd";
 
@@ -33,6 +36,12 @@ const RegistrationRadioPairing = ({ registrationId, eventId, carNumber }: Regist
   const [scanning, setScanning] = useState(false);
   const [testing, setTesting] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [sharePos, setSharePos] = useState<boolean>(() => {
+    try {
+      const v = localStorage.getItem(POSITION_SHARE_KEY);
+      return v === null ? true : v === "true";
+    } catch { return true; }
+  });
 
   // Hide entire UI on web — BLE only works in Capacitor native
   const supported = isHardwareCapable();
@@ -175,6 +184,20 @@ const RegistrationRadioPairing = ({ registrationId, eventId, carNumber }: Regist
             <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive" onClick={handleUnassign}>
               <Trash2 size={12} /> Unassign
             </Button>
+          </div>
+          <div className="flex items-center justify-between gap-2 pt-1.5 mt-1 border-t border-border/40">
+            <Label htmlFor={`share-pos-${registrationId}`} className="text-[10px] text-muted-foreground cursor-pointer">
+              Share position with race control
+            </Label>
+            <Switch
+              id={`share-pos-${registrationId}`}
+              checked={sharePos}
+              onCheckedChange={(checked) => {
+                setSharePos(checked);
+                try { localStorage.setItem(POSITION_SHARE_KEY, String(checked)); } catch { /* ignore */ }
+              }}
+              className="scale-75"
+            />
           </div>
         </div>
       ) : (
