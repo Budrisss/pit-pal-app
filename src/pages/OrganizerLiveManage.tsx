@@ -1538,7 +1538,7 @@ const OrganizerLiveManage = () => {
         )}
         </div>
         {/* Right column — situational awareness panels (sticky on widescreen) */}
-        <div className="xl:col-span-1 space-y-6 mt-6 xl:mt-0 xl:sticky xl:top-24 xl:self-start xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto">
+        <div className="lg:col-span-1 space-y-6 mt-6 lg:mt-0 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
           {/* Live Track Map */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
