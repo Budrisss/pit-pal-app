@@ -1533,6 +1533,101 @@ const OrganizerLiveManage = () => {
             </motion.div>
           </>
         )}
+        </div>
+        {/* Right column — situational awareness panels (sticky on widescreen) */}
+        <div className="xl:col-span-1 space-y-6 mt-6 xl:mt-0 xl:sticky xl:top-24 xl:self-start xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto">
+          {/* Live Track Map */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.13 }}
+          >
+            <LiveTrackMap
+              eventId={eventId!}
+              participants={registrations.map((r) => ({
+                id: r.id,
+                user_name: r.user_name,
+                car_number: r.car_number,
+                run_group_id: r.run_group_id,
+              }))}
+            />
+          </motion.div>
+
+          {/* Connectivity Check */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <ConnectivityCheckPanel eventId={eventId!} />
+          </motion.div>
+
+          {/* Paired Radios by Run Group */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.12 }}
+          >
+            <PairedRadiosPanel participants={registrations} runGroups={registrationTypes} />
+          </motion.div>
+
+          {/* Participants — Crew Messaging Toggle */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+          >
+            <h2 className="font-semibold flex items-center gap-2 mb-3">
+              <MessageSquare size={16} className="text-primary" /> Crew Messaging
+            </h2>
+            <p className="text-xs text-muted-foreground mb-3">
+              Enable crew messaging per driver so their pit crew can send real-time updates.
+            </p>
+            {registrations.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic">No registrations yet.</p>
+            ) : (
+              <div className="space-y-1.5 max-h-[300px] overflow-y-auto">
+                {Object.entries(groupRegistrationsByType(registrations)).map(([groupName, groupRegs]) => (
+                  <div key={groupName}>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1 mt-2">{groupName}</p>
+                    {groupRegs
+                      .sort((a, b) => (a.car_number || 0) - (b.car_number || 0))
+                      .map(r => (
+                      <div key={r.id} className="flex items-center justify-between gap-2 p-2 rounded-lg border border-border/50 bg-card/60">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {r.car_number && <Badge variant="outline" className="font-mono text-[10px] shrink-0">#{r.car_number}</Badge>}
+                          <span className="text-sm truncate">{r.user_name}</span>
+                          {(() => {
+                            if (!r.radio_node_id) {
+                              return <span title="No radio paired" className="text-muted-foreground text-[10px]">⚫</span>;
+                            }
+                            const stale = !r.radio_last_seen || (Date.now() - new Date(r.radio_last_seen).getTime() > 10 * 60 * 1000);
+                            return (
+                              <span
+                                title={`Radio ${r.radio_node_id}${r.radio_last_seen ? ` · last seen ${new Date(r.radio_last_seen).toLocaleTimeString()}` : ""}`}
+                                className={stale ? "text-yellow-400 text-[10px]" : "text-green-400 text-[10px]"}
+                              >
+                                {stale ? "🟡" : "🟢"} <span className="font-mono">{r.radio_node_id}</span>
+                              </span>
+                            );
+                          })()}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-[10px] text-muted-foreground">{r.crew_enabled ? "On" : "Off"}</span>
+                          <Switch
+                            checked={r.crew_enabled}
+                            onCheckedChange={() => handleToggleCrewEnabled(r.id, r.crew_enabled)}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        </div>
+        </div>
       </div>
 
       {/* Delete Session Confirmation */}
