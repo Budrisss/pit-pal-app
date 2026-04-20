@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams, Navigate } from "react-router-dom";
+import { Maximize2, Minimize2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 import LiveTrackMap from "@/components/LiveTrackMap";
 
 interface ParticipantInfo {
