@@ -1079,8 +1079,8 @@ const OrganizerLiveManage = () => {
         )}
 
         {/* 2-column race-control grid: action surface (left) + situational awareness (right, sticky) */}
-        <div className="xl:grid xl:grid-cols-3 xl:gap-6 xl:items-start">
-        <div className="xl:col-span-2 space-y-6">
+        <div className="lg:grid lg:grid-cols-3 lg:gap-6 lg:items-start">
+        <div className="lg:col-span-2 space-y-6">
         {/* Flag Control Panel */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
