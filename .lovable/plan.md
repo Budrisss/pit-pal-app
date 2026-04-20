@@ -1,49 +1,45 @@
 
 
-## Wide-screen layout for Live Manage
+## Pop-out Live Track Map to a dedicated tab
 
-Currently `OrganizerLiveManage.tsx` wraps everything in `max-w-4xl mx-auto` and stacks all panels vertically — wasted space on a 1280px+ monitor with lots of scrolling. Goal: a 2-column "race control" layout that keeps the critical, time-sensitive panels visible together.
+Add a "Pop out" button on the Live Track Map header in `OrganizerLiveManage` that opens a new browser tab showing only the map for the current event — full-screen, no chrome — so an organizer can throw it on a second monitor while keeping the existing map in the Live Manage view.
 
-### Layout
+### New route
 
-Bump container to `max-w-7xl` at `xl:` and split into a 2-column grid (`xl:grid-cols-3`) below the header:
+`/live-map/:eventId` → new page `src/pages/LiveTrackMapFullscreen.tsx`
 
-```text
-┌───────────────────────────────────────────────────────────────┐
-│ Header (event name • clock • registration count)              │
-├───────────────────────────────────────────────────────────────┤
-│ Active Session / Standby / Next Session Countdown (full row)  │
-├───────────────────────────────┬───────────────────────────────┤
-│ LEFT COLUMN (xl:col-span-2)   │ RIGHT COLUMN (xl:col-span-1)  │
-│                               │ — sticky on xl                │
-│ • Flag Control Panel          │ • Live Track Map              │
-│ • Live Track Map (mobile)     │ • Connectivity Check          │
-│ • Sessions list               │ • Paired Radios               │
-│ • Flag History                │ • Participants / Crew toggle  │
-└───────────────────────────────┴───────────────────────────────┘
+- No nav, no header, no padding — map fills the entire viewport (`w-screen h-screen`)
+- Uses the existing `<LiveTrackMap />` component (same realtime car positions, same basemap toggle, same start/finish marker)
+- Loads event + selected track the same way `OrganizerLiveManage` does (fetch event by id, resolve track)
+- Small floating overlay top-left: event name + live participant count + tiny "LIVE" pulse dot, so the second-monitor view still has context
+- Protected by `<ProtectedRoute>` and gated to organizers of that event (same access check pattern as Live Manage)
+
+### Pop-out button
+
+In `OrganizerLiveManage.tsx`, on the Live Track Map card header (right column), add a small `ghost` icon button (lucide `ExternalLink`) next to the existing controls:
+
+```tsx
+<Button
+  variant="ghost" size="icon"
+  onClick={() => window.open(`/live-map/${eventId}`, '_blank', 'noopener,noreferrer')}
+  title="Pop out map to new tab"
+>
+  <ExternalLink className="h-4 w-4" />
+</Button>
 ```
 
-Reasoning for split:
-- **Left = action surface**: flag controls (largest, most-used) + session timeline + history review. These need width for buttons and lists.
-- **Right = situational awareness**: map, radio health, participant roster. Naturally narrower, and useful to keep visible while operating flags. Wrap in `xl:sticky xl:top-24 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto` so it stays on-screen as the left column scrolls.
+The in-page map stays exactly as it is. Both windows subscribe independently to the same Supabase realtime channel, so positions stay in sync automatically — no extra plumbing needed.
 
-Below `xl` (≤1279px), the grid collapses to single-column and order/layout is unchanged from today — mobile/tablet behavior preserved.
+### Files touched
 
-### Implementation
-
-Single file: `src/pages/OrganizerLiveManage.tsx`
-
-1. Change container `max-w-4xl` → `max-w-4xl xl:max-w-7xl` on the main wrapper (line ~950).
-2. Keep Header + Active/Standby/Next Session Countdown blocks as full-width above the grid.
-3. Wrap the remaining sections in `<div className="xl:grid xl:grid-cols-3 xl:gap-6">`:
-   - Left wrapper: `xl:col-span-2 space-y-6` containing Flag Control Panel, Sessions list, Flag History.
-   - Right wrapper: `xl:col-span-1 space-y-6 xl:sticky xl:top-24 xl:self-start xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto` containing Live Track Map, Connectivity Check, Paired Radios, Participants.
-4. Internal panel content unchanged — only the outer grid + container width change. Dialogs (Black/Yellow/Blue Flag, Delete) stay outside the grid.
+- `src/pages/LiveTrackMapFullscreen.tsx` — **new**, fullscreen map page
+- `src/App.tsx` — register `/live-map/:eventId` route
+- `src/pages/OrganizerLiveManage.tsx` — add pop-out button on the map card header
 
 ### Out of scope
 
-- Resizable panels / user-saved layout
-- Reordering panels via drag
-- Compact "race control" theme restyle
-- Changes to mobile/tablet layout
+- BroadcastChannel sync between the two windows (not needed — both use Supabase realtime)
+- Multi-track / multi-event picker on the popped-out view (always tied to the eventId in the URL)
+- Saving window position/size
+- A public/shareable spectator version of the fullscreen map
 
