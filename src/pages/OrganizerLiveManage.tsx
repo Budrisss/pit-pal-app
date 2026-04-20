@@ -947,7 +947,7 @@ const OrganizerLiveManage = () => {
     <div className="min-h-screen bg-background text-foreground pb-20 lg:pb-0">
       <motion.nav initial={{ y: -60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5, ease: "easeOut" }} className="fixed top-0 inset-x-0 z-50 bg-background/80 backdrop-blur-md border-b border-border hidden lg:block"><div className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 h-20"><Link to="/dashboard" className="flex items-center h-full py-1"><img src={tracksideLogo} alt="Track Side Ops" className="h-full w-auto object-contain invert" /></Link><div className="flex items-center gap-1">{[{ label: "Home", path: "/dashboard" }, { label: "Garage", path: "/garage" }, { label: "GridID", path: "/grid-id" }, { label: "Events", path: "/events" }, { label: "Local Events", path: "/local-events" }, { label: "Organizer", path: "/event-organizer" }, { label: "Settings", path: "/settings" }].map((item) => (<Button key={item.path} variant={location.pathname === item.path ? "default" : "ghost"} size="sm" asChild><Link to={item.path}>{item.label}</Link></Button>))}<Button variant="ghost" size="sm" onClick={async () => { await signOut(); navigate("/"); }} className="text-destructive hover:text-destructive"><LogOut size={16} className="mr-1" /> Logout</Button></div></div></motion.nav>
 
-      <div className="pt-0 lg:pt-20 max-w-4xl lg:max-w-7xl mx-auto px-4 sm:px-6 py-6">
+      <div className="pt-0 lg:pt-20 max-w-4xl md:max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -1079,7 +1079,7 @@ const OrganizerLiveManage = () => {
         )}
 
         {/* 2-column race-control grid: action surface (left) + situational awareness (right, sticky) */}
-        <div className="lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
+        <div className="md:grid md:grid-cols-2 md:gap-6 md:items-start">
         <div className="space-y-6">
         {/* Flag Control Panel */}
         <motion.div
@@ -1538,7 +1538,7 @@ const OrganizerLiveManage = () => {
         )}
         </div>
         {/* Right column — situational awareness panels (sticky on widescreen) */}
-        <div className="space-y-6 mt-6 lg:mt-0 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
+        <div className="space-y-6 mt-6 md:mt-0 md:sticky md:top-24 md:self-start md:max-h-[calc(100vh-7rem)] md:overflow-y-auto">
           {/* Live Track Map */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
