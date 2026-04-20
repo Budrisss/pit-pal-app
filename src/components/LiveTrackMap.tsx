@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, LayersControl } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Check, ChevronDown, ChevronRight, ChevronsUpDown, Crosshair, Minus, Plus, Radio, Target, Flag } from "lucide-react";
@@ -94,22 +94,26 @@ function startFinishIcon() {
   return L.divIcon({ html, className: "live-car-marker", iconSize: [14, 14], iconAnchor: [7, 7] });
 }
 
-function FitBounds({ trigger, points }: { trigger: number; points: [number, number][] }) {
+function FitBounds({ trigger, points, trackId, framedRef }: { trigger: number; points: [number, number][]; trackId: string | null; framedRef: React.MutableRefObject<string | null> }) {
   const map = useMap();
   useEffect(() => {
     if (trigger === 0 || points.length === 0) return;
+    if (trackId && framedRef.current === trackId) return;
     if (points.length === 1) map.setView(points[0], 16);
     else map.fitBounds(L.latLngBounds(points), { padding: [40, 40], maxZoom: 17 });
-  }, [trigger, points, map]);
+    if (trackId) framedRef.current = trackId;
+  }, [trigger, points, map, trackId, framedRef]);
   return null;
 }
 
-function RecenterOnTrack({ trackId, center }: { trackId: string | null; center: [number, number] | null }) {
+function RecenterOnTrack({ trackId, center, framedRef }: { trackId: string | null; center: [number, number] | null; framedRef: React.MutableRefObject<string | null> }) {
   const map = useMap();
   useEffect(() => {
     if (!trackId || !center) return;
+    if (framedRef.current === trackId) return;
     map.setView(center, 15, { animate: true });
-  }, [trackId, center, map]);
+    framedRef.current = trackId;
+  }, [trackId, center, map, framedRef]);
   return null;
 }
 
@@ -173,6 +177,7 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
   const [trackPickerOpen, setTrackPickerOpen] = useState(false);
   const [, forceTick] = useState(0);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const framedTrackRef = useRef<string | null>(null);
 
   useEffect(() => {
     const id = setInterval(() => forceTick((n) => n + 1), 5000);
@@ -495,12 +500,23 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
               zoomControl={false}
               style={{ height: "100%", width: "100%" }}
             >
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                subdomains="abcd"
-                maxZoom={20}
-              />
+              <LayersControl position="topright">
+                <LayersControl.BaseLayer checked name="Streets">
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    subdomains="abcd"
+                    maxZoom={20}
+                  />
+                </LayersControl.BaseLayer>
+                <LayersControl.BaseLayer name="Satellite">
+                  <TileLayer
+                    attribution='Tiles &copy; Esri — Source: Esri, Maxar, Earthstar Geographics'
+                    url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                    maxZoom={19}
+                  />
+                </LayersControl.BaseLayer>
+              </LayersControl>
               {trackCoords.length > 1 && (
                 <>
                   {/* Dark shadow halo — separates track from surrounding roads */}
@@ -545,8 +561,9 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
               <RecenterOnTrack
                 trackId={track?.id ?? null}
                 center={track ? [track.latitude, track.longitude] : null}
+                framedRef={framedTrackRef}
               />
-              <FitBounds trigger={fitTrigger} points={fitTarget} />
+              <FitBounds trigger={fitTrigger} points={fitTarget} trackId={track?.id ?? null} framedRef={framedTrackRef} />
               <FollowLeader enabled={followLeader} point={leaderPoint} />
               <ZoomControls />
               {visibleFixes.map(({ fix, participant, ageMs }) => {
