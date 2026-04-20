@@ -158,3 +158,55 @@ Before greens fly, walk the perimeter with a paired phone in airplane mode:
 - Meshtastic mesh latency: 1-3s per hop, typically 1-2 hops at a track. Fine for flags, marginal for tight gap data.
 - The bridge script runs as root in the example above; tighten permissions for production.
 - The HMAC secret rotation is manual today — automate it if you run frequent events.
+
+## Live position tracking (NEW)
+
+The T1000-E is a GPS tracker first, mesh radio second — it broadcasts a
+Meshtastic `POSITION_APP` packet (portnum 3) every ~30s out of the box. The
+Trackside Ops app captures these on two paths:
+
+1. **BLE path** — driver's phone is paired and in range; phone decodes the
+   position packet and writes directly to `lora_position_fixes`.
+2. **Uplink path** — out-of-BLE-range packets ride the mesh to the bridge
+   node, MQTT, and arrive at the `meshtastic-uplink` edge function.
+
+### Bridge script update
+
+The MQTT bridge Python script must subscribe to the `position` topic too and
+forward both shapes to the edge function. Example payload it should POST
+(HMAC-signed in `X-Signature` exactly like text messages):
+
+```json
+{
+  "channel": "vir-may-25",
+  "from": "!a3b1c9d8",
+  "received_at": 1734567890,
+  "position": {
+    "latitude": 36.5614,
+    "longitude": -79.2049,
+    "altitude_m": 312,
+    "heading_deg": 87,
+    "speed_mps": 41.2,
+    "fix_time": 1734567888
+  }
+}
+```
+
+A single packet may include both `text` (crew message) AND `position` — the
+edge function handles both branches independently.
+
+### What organizers see
+
+- **OrganizerLiveManage → Live Track Map** card renders a Leaflet map
+  centered on the track (auto-resolved from `public_events.track_name` →
+  `preset_tracks` lat/lon).
+- One car-numbered marker per active registration; color-coded by run group;
+  arrow indicates heading.
+- Markers fade after 30s without an update, hide after 2min.
+- "Fit all cars" button auto-zooms to current field.
+
+### Driver privacy
+
+Drivers can toggle **Share my position with race control** (default: on) on
+their `RegistrationRadioPairing` row. When off, the BLE path stops writing —
+but the LoRa uplink path is unaffected (it's a "best effort" privacy hint).

@@ -1,14 +1,16 @@
 ---
 name: LoRa Hardware Integration
-description: T1000-E Meshtastic radios over BLE, RAK7289v2 gateway, MQTT-bridged uplink edge function, paired-device storage, per-registration radio assignment
+description: T1000-E Meshtastic radios over BLE, RAK7289v2 gateway, MQTT-bridged uplink edge function, paired-device storage, per-registration radio assignment, live GPS position tracking
 type: feature
 ---
 - App pairs to one Seeed T1000-E (Meshtastic firmware) per user via BLE GATT (`@capacitor-community/bluetooth-le`). Service UUID `6ba1b218-15a8-461f-9fa8-5dcae273eafd`.
 - Three transports in priority order: hardware (BLE radio) → sim (in-memory) → Supabase only. `getCrewTransport()` in `src/lib/transport/index.ts` picks based on `lora_hardware_enabled` + `lora_sim_enabled` localStorage flags.
 - Hardware transport only available on Capacitor native. `LoRaPairingCard` and `RegistrationRadioPairing` return null on web.
-- Wire format: our existing JSON LoRaPayload wrapped in Meshtastic `TEXT_MESSAGE_APP` (portnum 1) via hand-rolled minimal protobuf encoder at `src/lib/transport/meshtastic/protobuf.ts`. Also exports `decodeMyNodeInfo` to capture the radio's hex node id (e.g. `!a3b1c9d8`) on first connect.
-- Gateway-side: RAK7289v2 runs Mosquitto + Python bridge that POSTs to `meshtastic-uplink` edge function with HMAC-SHA256 signature in `X-Signature` header and channel name in `X-Channel`. Bridge `from` field carries the hex node id.
+- Wire format: our existing JSON LoRaPayload wrapped in Meshtastic `TEXT_MESSAGE_APP` (portnum 1) via hand-rolled minimal protobuf encoder at `src/lib/transport/meshtastic/protobuf.ts`. Also exports `decodeMyNodeInfo` (radio's hex node id on first connect) and `decodePositionPayload`/`decodePositionFromPacket` for `POSITION_APP` (portnum 3) packets.
+- Gateway-side: RAK7289v2 runs Mosquitto + Python bridge that POSTs to `meshtastic-uplink` edge function with HMAC-SHA256 signature in `X-Signature` header and channel name in `X-Channel`. Bridge `from` field carries the hex node id. Bridge payload may include `text` (crew msg/flag) and/or `position` (GPS fix) — edge function handles both branches.
 - Per-registration pairing: `lora_paired_devices` has `event_registration_id` (nullable = global default). `RegistrationRadioPairing` component lives inside each row of `MyRegistrations`. Uplink edge function resolves sender node → registration → enriches `crew_messages` with `position` (#car_number); messages from unknown nodes are dropped.
-- Tables: `lora_event_channels` (channel_name unique → event_id + hmac_secret + gateway_url, organizer-only RLS) and `lora_paired_devices` (user-only RLS; partial unique on user_id where event_registration_id IS NULL for the default slot, plus unique (user_id, event_registration_id) for per-reg slots).
-- Organizer view: `OrganizerLiveManage` participants list shows 🟢/🟡/⚫ radio status per registration based on `last_seen_at` (10-min freshness window).
-- Setup guide lives at `docs/hardware-setup.md`.
+- Tables: `lora_event_channels` (channel_name unique → event_id + hmac_secret + gateway_url, organizer-only RLS), `lora_paired_devices` (user-only RLS; partial unique on user_id where event_registration_id IS NULL for the default slot, plus unique (user_id, event_registration_id) for per-reg slots), `lora_position_fixes` (append-only GPS fixes; driver SELECTs own + event owner SELECTs all; realtime publication enabled; index on (event_id, received_at desc)).
+- Live position tracking: BLE path inserts fixes directly via `LoRaHardwareTransport.handlePositionPacket()` (10s throttle). Uplink path inserts via edge function `bridge.position` branch. `LiveTrackMap` component (Leaflet + react-leaflet + OSM tiles) on `OrganizerLiveManage` subscribes to realtime, renders one car-number marker per registration, fades >30s, hides >2min. Map center auto-resolved from `events.public_event_id` → `public_events.latitude/longitude` → `preset_tracks` lookup by name.
+- Driver privacy: `POSITION_SHARE_KEY` localStorage toggle in `RegistrationRadioPairing` ("Share my position with race control", default on). When off, BLE path skips inserts; LoRa uplink path is unaffected.
+- Organizer view: `OrganizerLiveManage` participants list shows 🟢/🟡/⚫ radio status per registration based on `last_seen_at` (10-min freshness window). New `LiveTrackMap` card sits between `PairedRadiosPanel` and the Participants section.
+- Setup guide lives at `docs/hardware-setup.md` (includes "Live position tracking" section with bridge payload shape).
