@@ -161,6 +161,7 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
   const [fitTrigger, setFitTrigger] = useState(0);
   const [followLeader, setFollowLeader] = useState(false);
   const [hasAutoFit, setHasAutoFit] = useState(false);
+  const [trackPickerOpen, setTrackPickerOpen] = useState(false);
   const [, forceTick] = useState(0);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
