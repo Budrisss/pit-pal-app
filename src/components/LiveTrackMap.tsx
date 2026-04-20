@@ -6,6 +6,7 @@ import { ChevronDown, ChevronRight, Crosshair, Minus, Plus, Radio, Target, Flag 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 
 interface PositionFix {
@@ -150,10 +151,14 @@ function polylineLengthMi(coords: [number, number][]): number {
 const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
   const [open, setOpen] = useState(true);
   const [fixes, setFixes] = useState<Map<string, PositionFix>>(new Map());
+  const [eventTrackId, setEventTrackId] = useState<string | null>(null);
+  const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
   const [track, setTrack] = useState<TrackInfo | null>(null);
   const [trackCoords, setTrackCoords] = useState<[number, number][]>([]);
+  const [presets, setPresets] = useState<{ id: string; name: string }[]>([]);
   const [fitTrigger, setFitTrigger] = useState(0);
   const [followLeader, setFollowLeader] = useState(false);
+  const [hasAutoFit, setHasAutoFit] = useState(false);
   const [, forceTick] = useState(0);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
@@ -162,7 +167,18 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
     return () => clearInterval(id);
   }, []);
 
-  // Resolve track + cached geojson
+  // Load preset tracks list once
+  useEffect(() => {
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("preset_tracks")
+        .select("id, name")
+        .order("name", { ascending: true });
+      if (data) setPresets(data);
+    })();
+  }, []);
+
+  // Resolve event's default track id
   useEffect(() => {
     if (!eventId) return;
     let cancelled = false;
@@ -175,14 +191,31 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
       if (!ev?.public_event_id) return;
       const { data: pe } = await supabase
         .from("public_events")
-        .select("latitude, longitude, track_name")
+        .select("track_name")
         .eq("id", ev.public_event_id)
         .maybeSingle();
       if (!pe?.track_name) return;
       const { data: presetTrack } = await (supabase as any)
         .from("preset_tracks")
-        .select("id, name, latitude, longitude, track_geojson")
+        .select("id")
         .ilike("name", pe.track_name)
+        .maybeSingle();
+      if (cancelled || !presetTrack?.id) return;
+      setEventTrackId(presetTrack.id);
+      setSelectedTrackId((cur) => cur ?? presetTrack.id);
+    })();
+    return () => { cancelled = true; };
+  }, [eventId]);
+
+  // Load track info + geojson whenever selected track changes
+  useEffect(() => {
+    if (!selectedTrackId) return;
+    let cancelled = false;
+    (async () => {
+      const { data: presetTrack } = await (supabase as any)
+        .from("preset_tracks")
+        .select("id, name, latitude, longitude, track_geojson")
+        .eq("id", selectedTrackId)
         .maybeSingle();
       if (cancelled || !presetTrack?.latitude || !presetTrack?.longitude) return;
       const info: TrackInfo = {
@@ -193,8 +226,9 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
         geojson: presetTrack.track_geojson ?? null,
       };
       setTrack(info);
+      setTrackCoords([]);
+      setHasAutoFit(false);
 
-      // Use cached or fetch from Overpass
       if (info.geojson?.coords?.length) {
         setTrackCoords(info.geojson.coords);
       } else {
@@ -205,7 +239,6 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
             body: query,
           });
           const json = await res.json();
-          // Pick the longest way (avoids pit lane fragments)
           let best: [number, number][] = [];
           for (const el of json.elements ?? []) {
             if (el.type === "way" && Array.isArray(el.geometry)) {
@@ -222,12 +255,12 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
             }).then(() => {});
           }
         } catch {
-          // Overpass failure — silent; track outline just won't render
+          // silent
         }
       }
     })();
     return () => { cancelled = true; };
-  }, [eventId]);
+  }, [selectedTrackId]);
 
   // Initial load + realtime subscription
   useEffect(() => {
@@ -305,8 +338,7 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
     : (points[0] ?? [39.8283, -98.5795]);
   const initialZoom = track ? 16 : (points.length ? 15 : 4);
 
-  // Auto-fit to track on first load
-  const [hasAutoFit, setHasAutoFit] = useState(false);
+  // Auto-fit to track when coords first arrive
   useEffect(() => {
     if (!hasAutoFit && trackCoords.length > 1) {
       setFitTrigger((n) => n + 1);
@@ -346,7 +378,7 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
         </CollapsibleTrigger>
         <CollapsibleContent>
           {/* Race-control header strip */}
-          <div className="px-4 py-2 bg-gradient-to-r from-background via-card to-background border-b border-border/60 flex items-center justify-between gap-3 text-[11px]">
+          <div className="px-4 py-2 bg-gradient-to-r from-background via-card to-background border-b border-border/60 flex items-center justify-between gap-3 text-[11px] flex-wrap">
             <div className="flex items-center gap-3 min-w-0 font-mono">
               <span className="font-bold text-foreground truncate uppercase tracking-wider">
                 {track?.name ?? "Track location pending"}
@@ -356,8 +388,31 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
                   · <span className="text-foreground">{trackLengthMi.toFixed(2)}</span> mi
                 </span>
               )}
+              {selectedTrackId && eventTrackId && selectedTrackId !== eventTrackId && (
+                <button
+                  onClick={() => setSelectedTrackId(eventTrackId)}
+                  className="text-[10px] font-mono uppercase tracking-wider text-primary hover:underline shrink-0"
+                >
+                  ↺ Reset to event track
+                </button>
+              )}
             </div>
             <div className="flex items-center gap-1 shrink-0">
+              <Select
+                value={selectedTrackId ?? undefined}
+                onValueChange={(v) => setSelectedTrackId(v)}
+              >
+                <SelectTrigger className="h-7 w-[200px] text-[10px] font-mono uppercase tracking-wider">
+                  <SelectValue placeholder="Select track…" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  {presets.map((p) => (
+                    <SelectItem key={p.id} value={p.id} className="text-xs font-mono">
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Button
                 variant="outline"
                 size="sm"
@@ -396,24 +451,35 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
               />
               {trackCoords.length > 1 && (
                 <>
-                  {/* Glow halo */}
+                  {/* Soft white halo (asphalt glow) */}
                   <Polyline
                     positions={trackCoords}
                     pathOptions={{
-                      color: "hsl(0, 91%, 59%)",
-                      weight: 10,
-                      opacity: 0.25,
+                      color: "#ffffff",
+                      weight: 14,
+                      opacity: 0.35,
                       lineCap: "round",
                       lineJoin: "round",
                     }}
                   />
-                  {/* Solid core */}
+                  {/* Solid white asphalt */}
+                  <Polyline
+                    positions={trackCoords}
+                    pathOptions={{
+                      color: "#ffffff",
+                      weight: 5,
+                      opacity: 1,
+                      lineCap: "round",
+                      lineJoin: "round",
+                    }}
+                  />
+                  {/* Red racing-line accent */}
                   <Polyline
                     positions={trackCoords}
                     pathOptions={{
                       color: "hsl(0, 91%, 59%)",
-                      weight: 3,
-                      opacity: 0.95,
+                      weight: 1,
+                      opacity: 0.9,
                       lineCap: "round",
                       lineJoin: "round",
                     }}
