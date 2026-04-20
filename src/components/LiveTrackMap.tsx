@@ -164,7 +164,7 @@ function polylineLengthMi(coords: [number, number][]): number {
   return m / 1609.344;
 }
 
-const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
+const LiveTrackMap = ({ eventId, participants, fullscreen = false }: LiveTrackMapProps) => {
   const [open, setOpen] = useState(true);
   const [fixes, setFixes] = useState<Map<string, PositionFix>>(new Map());
   const [eventTrackId, setEventTrackId] = useState<string | null>(null);
