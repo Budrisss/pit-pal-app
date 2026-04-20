@@ -1,34 +1,27 @@
 
 
-## Disable auto-recenter + add satellite layer toggle
+## Remove the red track ribbon overlay
 
-Two changes to `src/components/LiveTrackMap.tsx`:
+User wants the triple-layered red polyline removed from `LiveTrackMap.tsx` because the underlying `track_geojson` data is inaccurate for some tracks, causing the highlight ribbon to render in the wrong place / wrong shape and look broken.
 
-### 1. Stop the map from auto-moving
+### Change
 
-Currently `RecenterOnTrack` calls `map.setView` whenever the selected track changes, and `FitBounds` re-fits when track geometry loads. Both fight the organizer when they pan/zoom.
+In `src/components/LiveTrackMap.tsx`, delete the three `<Polyline>` layers (black halo / red core / white centerline) that draw the track ribbon. Keep everything else:
 
-Fix: only auto-frame **once per track selection**, then leave the map alone.
-- Track the last "framed" trackId in a ref
-- `RecenterOnTrack` and `FitBounds` both early-return if `trackId === lastFramedRef.current`
-- Update the ref after the initial frame
+- Basemap `<LayersControl>` (Streets + Satellite)
+- One-time auto-frame on track selection
+- Live car markers
+- `FitBounds` logic (still useful for initial framing if geometry exists)
 
-This means: pick a track → map snaps + fits once → organizer can pan/zoom freely → map never jumps again until they pick a different track.
-
-### 2. Add detailed satellite view toggle
-
-Use Leaflet's `<LayersControl>` with two `BaseLayer`s:
-- **Streets**: current OSM tiles (default)
-- **Satellite**: Esri World Imagery — `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}` — high-resolution aerial up to ~zoom 19, free, no API key. Attribution: `Tiles &copy; Esri`.
-
-Leaflet renders a small layers icon top-right that flips between the two. The red track ribbon stays on top of either basemap (already pops on both light streets and dark satellite).
+The track will now just be visible via the actual map tiles (clearly visible on satellite, and labeled on streets). No fake overlay misleading the organizer.
 
 ### Files touched
 
-- `src/components/LiveTrackMap.tsx` — add `lastFramedRef` gate in `RecenterOnTrack` + `FitBounds`; replace single `<TileLayer>` with `<LayersControl>` containing Streets + Satellite base layers
+- `src/components/LiveTrackMap.tsx` — remove the three `<Polyline>` elements that render the red ribbon
 
 ### Out of scope
 
-- A "recenter to track" button (can add later if organizers ask)
-- Hybrid satellite-with-labels layer
+- Fixing the underlying `track_geojson` data accuracy
+- Replacing the ribbon with a different visual (pin, circle, etc.)
+- Admin UI to edit track geometry
 
