@@ -1,27 +1,49 @@
 
 
-## Remove the red track ribbon overlay
+## Wide-screen layout for Live Manage
 
-User wants the triple-layered red polyline removed from `LiveTrackMap.tsx` because the underlying `track_geojson` data is inaccurate for some tracks, causing the highlight ribbon to render in the wrong place / wrong shape and look broken.
+Currently `OrganizerLiveManage.tsx` wraps everything in `max-w-4xl mx-auto` and stacks all panels vertically — wasted space on a 1280px+ monitor with lots of scrolling. Goal: a 2-column "race control" layout that keeps the critical, time-sensitive panels visible together.
 
-### Change
+### Layout
 
-In `src/components/LiveTrackMap.tsx`, delete the three `<Polyline>` layers (black halo / red core / white centerline) that draw the track ribbon. Keep everything else:
+Bump container to `max-w-7xl` at `xl:` and split into a 2-column grid (`xl:grid-cols-3`) below the header:
 
-- Basemap `<LayersControl>` (Streets + Satellite)
-- One-time auto-frame on track selection
-- Live car markers
-- `FitBounds` logic (still useful for initial framing if geometry exists)
+```text
+┌───────────────────────────────────────────────────────────────┐
+│ Header (event name • clock • registration count)              │
+├───────────────────────────────────────────────────────────────┤
+│ Active Session / Standby / Next Session Countdown (full row)  │
+├───────────────────────────────┬───────────────────────────────┤
+│ LEFT COLUMN (xl:col-span-2)   │ RIGHT COLUMN (xl:col-span-1)  │
+│                               │ — sticky on xl                │
+│ • Flag Control Panel          │ • Live Track Map              │
+│ • Live Track Map (mobile)     │ • Connectivity Check          │
+│ • Sessions list               │ • Paired Radios               │
+│ • Flag History                │ • Participants / Crew toggle  │
+└───────────────────────────────┴───────────────────────────────┘
+```
 
-The track will now just be visible via the actual map tiles (clearly visible on satellite, and labeled on streets). No fake overlay misleading the organizer.
+Reasoning for split:
+- **Left = action surface**: flag controls (largest, most-used) + session timeline + history review. These need width for buttons and lists.
+- **Right = situational awareness**: map, radio health, participant roster. Naturally narrower, and useful to keep visible while operating flags. Wrap in `xl:sticky xl:top-24 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto` so it stays on-screen as the left column scrolls.
 
-### Files touched
+Below `xl` (≤1279px), the grid collapses to single-column and order/layout is unchanged from today — mobile/tablet behavior preserved.
 
-- `src/components/LiveTrackMap.tsx` — remove the three `<Polyline>` elements that render the red ribbon
+### Implementation
+
+Single file: `src/pages/OrganizerLiveManage.tsx`
+
+1. Change container `max-w-4xl` → `max-w-4xl xl:max-w-7xl` on the main wrapper (line ~950).
+2. Keep Header + Active/Standby/Next Session Countdown blocks as full-width above the grid.
+3. Wrap the remaining sections in `<div className="xl:grid xl:grid-cols-3 xl:gap-6">`:
+   - Left wrapper: `xl:col-span-2 space-y-6` containing Flag Control Panel, Sessions list, Flag History.
+   - Right wrapper: `xl:col-span-1 space-y-6 xl:sticky xl:top-24 xl:self-start xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto` containing Live Track Map, Connectivity Check, Paired Radios, Participants.
+4. Internal panel content unchanged — only the outer grid + container width change. Dialogs (Black/Yellow/Blue Flag, Delete) stay outside the grid.
 
 ### Out of scope
 
-- Fixing the underlying `track_geojson` data accuracy
-- Replacing the ribbon with a different visual (pin, circle, etc.)
-- Admin UI to edit track geometry
+- Resizable panels / user-saved layout
+- Reordering panels via drag
+- Compact "race control" theme restyle
+- Changes to mobile/tablet layout
 
