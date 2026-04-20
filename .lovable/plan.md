@@ -1,45 +1,21 @@
 
 
-## Pop-out Live Track Map to a dedicated tab
+## Add fullscreen mode to the popped-out Live Track Map
 
-Add a "Pop out" button on the Live Track Map header in `OrganizerLiveManage` that opens a new browser tab showing only the map for the current event — full-screen, no chrome — so an organizer can throw it on a second monitor while keeping the existing map in the Live Manage view.
+Add a fullscreen toggle button to `LiveTrackMapFullscreen.tsx` (the pop-out tab) using the browser's Fullscreen API. The in-page map inside Live Manage stays unchanged — only the dedicated pop-out view gets the fullscreen control.
 
-### New route
+### Changes
 
-`/live-map/:eventId` → new page `src/pages/LiveTrackMapFullscreen.tsx`
-
-- No nav, no header, no padding — map fills the entire viewport (`w-screen h-screen`)
-- Uses the existing `<LiveTrackMap />` component (same realtime car positions, same basemap toggle, same start/finish marker)
-- Loads event + selected track the same way `OrganizerLiveManage` does (fetch event by id, resolve track)
-- Small floating overlay top-left: event name + live participant count + tiny "LIVE" pulse dot, so the second-monitor view still has context
-- Protected by `<ProtectedRoute>` and gated to organizers of that event (same access check pattern as Live Manage)
-
-### Pop-out button
-
-In `OrganizerLiveManage.tsx`, on the Live Track Map card header (right column), add a small `ghost` icon button (lucide `ExternalLink`) next to the existing controls:
-
-```tsx
-<Button
-  variant="ghost" size="icon"
-  onClick={() => window.open(`/live-map/${eventId}`, '_blank', 'noopener,noreferrer')}
-  title="Pop out map to new tab"
->
-  <ExternalLink className="h-4 w-4" />
-</Button>
-```
-
-The in-page map stays exactly as it is. Both windows subscribe independently to the same Supabase realtime channel, so positions stay in sync automatically — no extra plumbing needed.
-
-### Files touched
-
-- `src/pages/LiveTrackMapFullscreen.tsx` — **new**, fullscreen map page
-- `src/App.tsx` — register `/live-map/:eventId` route
-- `src/pages/OrganizerLiveManage.tsx` — add pop-out button on the map card header
+**`src/pages/LiveTrackMapFullscreen.tsx`**
+- Add a floating button top-right mirroring the LIVE overlay top-left.
+- Icon: `Maximize2` when windowed, `Minimize2` when in fullscreen.
+- Click handler calls `document.documentElement.requestFullscreen()` / `document.exitFullscreen()`.
+- Track state with a `fullscreen` boolean kept in sync via the `fullscreenchange` event so pressing Esc updates the icon.
+- Style to match the LIVE overlay: `bg-card/90 backdrop-blur-md border border-border rounded-lg shadow-lg`, `pointer-events-auto`.
 
 ### Out of scope
 
-- BroadcastChannel sync between the two windows (not needed — both use Supabase realtime)
-- Multi-track / multi-event picker on the popped-out view (always tied to the eventId in the URL)
-- Saving window position/size
-- A public/shareable spectator version of the fullscreen map
+- Adding fullscreen to the in-page map inside Live Manage.
+- Auto-hiding the LIVE overlay after inactivity.
+- Keyboard shortcut (Esc already exits via the browser API).
 
