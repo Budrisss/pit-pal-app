@@ -34,6 +34,7 @@ interface ParticipantInfo {
 interface LiveTrackMapProps {
   eventId: string;
   participants: ParticipantInfo[];
+  fullscreen?: boolean;
 }
 
 interface TrackInfo {
