@@ -338,8 +338,7 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
     : (points[0] ?? [39.8283, -98.5795]);
   const initialZoom = track ? 16 : (points.length ? 15 : 4);
 
-  // Auto-fit to track on first load
-  const [hasAutoFit, setHasAutoFit] = useState(false);
+  // Auto-fit to track when coords first arrive
   useEffect(() => {
     if (!hasAutoFit && trackCoords.length > 1) {
       setFitTrigger((n) => n + 1);
