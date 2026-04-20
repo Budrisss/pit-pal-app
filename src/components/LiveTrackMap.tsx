@@ -104,6 +104,15 @@ function FitBounds({ trigger, points }: { trigger: number; points: [number, numb
   return null;
 }
 
+function RecenterOnTrack({ trackId, center }: { trackId: string | null; center: [number, number] | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!trackId || !center) return;
+    map.setView(center, 15, { animate: true });
+  }, [trackId, center, map]);
+  return null;
+}
+
 function FollowLeader({ enabled, point }: { enabled: boolean; point: [number, number] | null }) {
   const map = useMap();
   useEffect(() => {
@@ -533,6 +542,10 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
                   </Marker>
                 </>
               )}
+              <RecenterOnTrack
+                trackId={track?.id ?? null}
+                center={track ? [track.latitude, track.longitude] : null}
+              />
               <FitBounds trigger={fitTrigger} points={fitTarget} />
               <FollowLeader enabled={followLeader} point={leaderPoint} />
               <ZoomControls />
