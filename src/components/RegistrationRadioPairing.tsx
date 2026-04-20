@@ -179,6 +179,20 @@ const RegistrationRadioPairing = ({ registrationId, eventId, carNumber }: Regist
               <Trash2 size={12} /> Unassign
             </Button>
           </div>
+          <div className="flex items-center justify-between gap-2 pt-1.5 mt-1 border-t border-border/40">
+            <Label htmlFor={`share-pos-${registrationId}`} className="text-[10px] text-muted-foreground cursor-pointer">
+              Share position with race control
+            </Label>
+            <Switch
+              id={`share-pos-${registrationId}`}
+              checked={sharePos}
+              onCheckedChange={(checked) => {
+                setSharePos(checked);
+                try { localStorage.setItem(POSITION_SHARE_KEY, String(checked)); } catch { /* ignore */ }
+              }}
+              className="scale-75"
+            />
+          </div>
         </div>
       ) : (
         <Button variant="outline" size="sm" className="h-7 w-full text-xs" onClick={handleAssign} disabled={scanning}>

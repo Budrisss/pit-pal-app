@@ -31,7 +31,6 @@ interface ParticipantInfo {
 
 interface LiveTrackMapProps {
   eventId: string;
-  publicEventId: string | null;
   participants: ParticipantInfo[];
 }
 
@@ -84,7 +83,7 @@ function FitBounds({ trigger, points }: { trigger: number; points: [number, numb
   return null;
 }
 
-const LiveTrackMap = ({ eventId, publicEventId, participants }: LiveTrackMapProps) => {
+const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
   const [open, setOpen] = useState(true);
   const [fixes, setFixes] = useState<Map<string, PositionFix>>(new Map());
   const [center, setCenter] = useState<[number, number] | null>(null);
@@ -98,14 +97,20 @@ const LiveTrackMap = ({ eventId, publicEventId, participants }: LiveTrackMapProp
     return () => clearInterval(id);
   }, []);
 
-  // Resolve track center from public_events.track_name → preset_tracks
+  // Resolve track center: events.public_event_id → public_events → preset_tracks
   useEffect(() => {
-    if (!publicEventId) return;
+    if (!eventId) return;
     (async () => {
+      const { data: ev } = await supabase
+        .from("events")
+        .select("public_event_id, address")
+        .eq("id", eventId)
+        .maybeSingle();
+      if (!ev?.public_event_id) return;
       const { data: pe } = await supabase
         .from("public_events")
         .select("latitude, longitude, track_name")
-        .eq("id", publicEventId)
+        .eq("id", ev.public_event_id)
         .maybeSingle();
       if (pe?.latitude && pe?.longitude) {
         setCenter([Number(pe.latitude), Number(pe.longitude)]);
@@ -122,7 +127,7 @@ const LiveTrackMap = ({ eventId, publicEventId, participants }: LiveTrackMapProp
         }
       }
     })();
-  }, [publicEventId]);
+  }, [eventId]);
 
   // Initial load + realtime subscription
   useEffect(() => {

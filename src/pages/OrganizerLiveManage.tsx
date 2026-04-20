@@ -1329,6 +1329,25 @@ const OrganizerLiveManage = () => {
           <PairedRadiosPanel participants={registrations} runGroups={registrationTypes} />
         </motion.div>
 
+        {/* Live Track Map */}
+        <Separator className="mb-6" />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.13 }}
+          className="mb-6"
+        >
+          <LiveTrackMap
+            eventId={eventId!}
+            participants={registrations.map((r) => ({
+              id: r.id,
+              user_name: r.user_name,
+              car_number: r.car_number,
+              run_group_id: r.run_group_id,
+            }))}
+          />
+        </motion.div>
+
         {/* Participants — Crew Messaging Toggle */}
         <Separator className="mb-6" />
         <motion.div
