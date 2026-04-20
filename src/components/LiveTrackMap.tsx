@@ -451,24 +451,35 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
               />
               {trackCoords.length > 1 && (
                 <>
-                  {/* Glow halo */}
+                  {/* Soft white halo (asphalt glow) */}
                   <Polyline
                     positions={trackCoords}
                     pathOptions={{
-                      color: "hsl(0, 91%, 59%)",
-                      weight: 10,
-                      opacity: 0.25,
+                      color: "#ffffff",
+                      weight: 14,
+                      opacity: 0.35,
                       lineCap: "round",
                       lineJoin: "round",
                     }}
                   />
-                  {/* Solid core */}
+                  {/* Solid white asphalt */}
+                  <Polyline
+                    positions={trackCoords}
+                    pathOptions={{
+                      color: "#ffffff",
+                      weight: 5,
+                      opacity: 1,
+                      lineCap: "round",
+                      lineJoin: "round",
+                    }}
+                  />
+                  {/* Red racing-line accent */}
                   <Polyline
                     positions={trackCoords}
                     pathOptions={{
                       color: "hsl(0, 91%, 59%)",
-                      weight: 3,
-                      opacity: 0.95,
+                      weight: 1,
+                      opacity: 0.9,
                       lineCap: "round",
                       lineJoin: "round",
                     }}
