@@ -1,45 +1,36 @@
 
 
-## NJMP Lightning + wrong-track diagnosis
+## Revert to colored map + highlight track ribbon
 
-The user reports the searchable track picker can't find "NJMP Lightning", and some other tracks render in the wrong place. Both issues live in `preset_tracks` data, not the UI.
+User wants to drop the dark race-control basemap and go back to a standard colored map (like CartoDB Voyager / OSM-style), but still make the track itself stand out as a clearly highlighted ribbon — not buried in the surrounding roads.
 
-From the session replay I can see when they typed "njmp" the picker DID show three matches: "NJMP - Lightning", "NJMP - Thunderbolt", and "New Jersey Motorsports Park". So the row exists — but the user said "Lightning" doesn't come up. Two possibilities:
+### Approach
 
-1. They typed "NJMP lightning" (with a space, no dash) and `cmdk`'s default fuzzy matcher isn't catching it because the stored name uses " - " as separator.
-2. The lat/lon for NJMP Lightning (and possibly other tracks) points to the wrong physical location, so even when selected the map centers on the wrong spot and Overpass returns no raceway geometry.
+**1. Swap basemap back to colored**
+In `src/components/LiveTrackMap.tsx`, change the `<TileLayer>` URL from CartoDB Dark Matter back to CartoDB **Voyager** (colored, clean, with subtle labels — better than raw OSM for racing context). Update the attribution accordingly.
 
-I need to verify both before proposing fixes.
+**2. Keep + tune the track polyline so it pops on a light background**
+The current 3-layer polyline (white halo / white core / red centerline) was designed for dark tiles. On a colored map, white disappears against light roads. Re-tune to:
 
-### Investigation
+- **Outer halo**: solid black, weight 12, 35% opacity — creates a dark "shadow" outline that separates the track from surrounding roads regardless of basemap color
+- **Middle core**: bright racing red (`hsl(0 91% 59%)` — our `--f1-red`), weight 6, full opacity — this is the highlighted track ribbon
+- **Inner accent**: white, weight 1.5 — thin centerline that reads as a racing line and adds crispness
 
-Query `preset_tracks` to inspect:
-- All NJMP-related rows (names + coords)
-- Sample of other tracks that commonly have multiple configurations (COTA, Thunderhill, Sebring, VIR) to spot bad coords
+This gives a "highlighter marker" effect: dark edge + bold red fill + white centerline. The track will read instantly even on a busy colored map.
 
-Then propose a two-part fix:
+**3. Small CSS tweak**
+Update the `.live-track-map .leaflet-container` background in `src/index.css` from the dark `hsl(220 13% 6%)` to a neutral light fallback (or just remove the override) so tile-loading flashes look right.
 
-### Part 1 — Picker search relevance
-
-`cmdk` matches against the `value` prop on `CommandItem`, which we set to `p.name`. With names like "NJMP - Lightning", a search for "njmp lightning" (with space) may score poorly. Fix:
-- Set `value={p.name.replace(/[-\s]+/g, " ")}` or pass a custom `filter` to `<Command>` that does substring matching across normalized text (lowercase, strip punctuation). Substring beats fuzzy here since track names are short.
-
-### Part 2 — Fix wrong coordinates
-
-For each track with bad coords, update lat/lon to the correct circuit center. NJMP Lightning is at roughly **39.3947, -75.0810** (Millville, NJ). I'll batch-correct any tracks that look obviously wrong from the query results.
-
-Since `preset_tracks` has no UPDATE policy (admin-managed), the fix has to go through a migration.
+Attribution + zoom-control styling in `src/index.css` can stay (they're subtle enough to work over either basemap).
 
 ### Files touched
 
-- `src/components/LiveTrackMap.tsx` — add a custom `filter` prop on `<Command>` for normalized substring search
-- `supabase/migrations/<new>.sql` — UPDATE statements for the specific `preset_tracks` rows with wrong coordinates (driven by the query results)
+- `src/components/LiveTrackMap.tsx` — change `TileLayer` url/attribution; update the 3 `<Polyline>` `pathOptions` colors/weights
+- `src/index.css` — adjust `.live-track-map .leaflet-container` background + attribution contrast for a light basemap
 
 ### Out of scope
 
-- Bulk re-import of every track from a canonical source (separate effort if many are wrong)
-- Manual `track_geojson` overrides (Overpass usually works once coords are correct)
-- An admin UI to edit tracks (would need new RLS + UI — separate request)
-
-I'll run the diagnostic query first, then patch only the rows that are actually wrong.
+- A user toggle between dark/colored basemaps (can add later if wanted)
+- Per-track custom color schemes
+- Animated "racing line" pulse along the track
 
