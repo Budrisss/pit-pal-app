@@ -497,40 +497,40 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
             >
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
+                url="https://{s}.basemaps.cartocdn.com/voyager/{z}/{x}/{y}{r}.png"
                 subdomains="abcd"
                 maxZoom={20}
               />
               {trackCoords.length > 1 && (
                 <>
-                  {/* Soft white halo (asphalt glow) */}
+                  {/* Dark shadow halo — separates track from surrounding roads */}
                   <Polyline
                     positions={trackCoords}
                     pathOptions={{
-                      color: "#ffffff",
-                      weight: 14,
+                      color: "#000000",
+                      weight: 12,
                       opacity: 0.35,
                       lineCap: "round",
                       lineJoin: "round",
                     }}
                   />
-                  {/* Solid white asphalt */}
+                  {/* Bold racing red — highlighted track ribbon */}
                   <Polyline
                     positions={trackCoords}
                     pathOptions={{
-                      color: "#ffffff",
-                      weight: 5,
+                      color: "hsl(0, 91%, 59%)",
+                      weight: 6,
                       opacity: 1,
                       lineCap: "round",
                       lineJoin: "round",
                     }}
                   />
-                  {/* Red racing-line accent */}
+                  {/* White centerline — racing line accent */}
                   <Polyline
                     positions={trackCoords}
                     pathOptions={{
-                      color: "hsl(0, 91%, 59%)",
-                      weight: 1,
+                      color: "#ffffff",
+                      weight: 1.5,
                       opacity: 0.9,
                       lineCap: "round",
                       lineJoin: "round",
