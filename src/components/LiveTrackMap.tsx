@@ -504,9 +504,8 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
                 <LayersControl.BaseLayer checked name="Streets">
                   <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    subdomains="abcd"
-                    maxZoom={20}
+                    url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    maxZoom={19}
                   />
                 </LayersControl.BaseLayer>
                 <LayersControl.BaseLayer name="Satellite">
