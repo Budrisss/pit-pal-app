@@ -517,45 +517,9 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
                 </LayersControl.BaseLayer>
               </LayersControl>
               {trackCoords.length > 1 && (
-                <>
-                  {/* Dark shadow halo — separates track from surrounding roads */}
-                  <Polyline
-                    positions={trackCoords}
-                    pathOptions={{
-                      color: "#000000",
-                      weight: 12,
-                      opacity: 0.35,
-                      lineCap: "round",
-                      lineJoin: "round",
-                    }}
-                  />
-                  {/* Bold racing red — highlighted track ribbon */}
-                  <Polyline
-                    positions={trackCoords}
-                    pathOptions={{
-                      color: "hsl(0, 91%, 59%)",
-                      weight: 6,
-                      opacity: 1,
-                      lineCap: "round",
-                      lineJoin: "round",
-                    }}
-                  />
-                  {/* White centerline — racing line accent */}
-                  <Polyline
-                    positions={trackCoords}
-                    pathOptions={{
-                      color: "#ffffff",
-                      weight: 1.5,
-                      opacity: 0.9,
-                      lineCap: "round",
-                      lineJoin: "round",
-                    }}
-                  />
-                  {/* Start/finish at first vertex */}
-                  <Marker position={trackCoords[0]} icon={startFinishIcon()}>
-                    <Popup><div className="text-xs font-bold">Start / Finish</div></Popup>
-                  </Marker>
-                </>
+                <Marker position={trackCoords[0]} icon={startFinishIcon()}>
+                  <Popup><div className="text-xs font-bold">Start / Finish</div></Popup>
+                </Marker>
               )}
               <RecenterOnTrack
                 trackId={track?.id ?? null}
