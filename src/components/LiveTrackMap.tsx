@@ -500,12 +500,23 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
               zoomControl={false}
               style={{ height: "100%", width: "100%" }}
             >
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                subdomains="abcd"
-                maxZoom={20}
-              />
+              <LayersControl position="topright">
+                <LayersControl.BaseLayer checked name="Streets">
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    subdomains="abcd"
+                    maxZoom={20}
+                  />
+                </LayersControl.BaseLayer>
+                <LayersControl.BaseLayer name="Satellite">
+                  <TileLayer
+                    attribution='Tiles &copy; Esri — Source: Esri, Maxar, Earthstar Geographics'
+                    url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                    maxZoom={19}
+                  />
+                </LayersControl.BaseLayer>
+              </LayersControl>
               {trackCoords.length > 1 && (
                 <>
                   {/* Dark shadow halo — separates track from surrounding roads */}
@@ -550,8 +561,9 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
               <RecenterOnTrack
                 trackId={track?.id ?? null}
                 center={track ? [track.latitude, track.longitude] : null}
+                framedRef={framedTrackRef}
               />
-              <FitBounds trigger={fitTrigger} points={fitTarget} />
+              <FitBounds trigger={fitTrigger} points={fitTarget} trackId={track?.id ?? null} framedRef={framedTrackRef} />
               <FollowLeader enabled={followLeader} point={leaderPoint} />
               <ZoomControls />
               {visibleFixes.map(({ fix, participant, ageMs }) => {
