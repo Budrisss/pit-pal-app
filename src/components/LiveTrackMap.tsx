@@ -542,6 +542,10 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
                   </Marker>
                 </>
               )}
+              <RecenterOnTrack
+                trackId={track?.id ?? null}
+                center={track ? [track.latitude, track.longitude] : null}
+              />
               <FitBounds trigger={fitTrigger} points={fitTarget} />
               <FollowLeader enabled={followLeader} point={leaderPoint} />
               <ZoomControls />
