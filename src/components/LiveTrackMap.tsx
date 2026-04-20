@@ -416,7 +416,7 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
                     <ChevronsUpDown size={11} className="ml-1 opacity-60 shrink-0" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[260px] p-0" align="end">
+                <PopoverContent className="w-[260px] p-0 z-[1000]" align="end" sideOffset={4}>
                   <Command>
                     <CommandInput placeholder="Search tracks…" className="h-8 text-xs" />
                     <CommandList className="max-h-[260px]">
