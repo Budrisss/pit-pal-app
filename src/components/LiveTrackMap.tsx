@@ -401,21 +401,53 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
               )}
             </div>
             <div className="flex items-center gap-1 shrink-0">
-              <Select
-                value={selectedTrackId ?? undefined}
-                onValueChange={(v) => setSelectedTrackId(v)}
-              >
-                <SelectTrigger className="h-7 w-[200px] text-[10px] font-mono uppercase tracking-wider">
-                  <SelectValue placeholder="Select track…" />
-                </SelectTrigger>
-                <SelectContent className="max-h-[300px]">
-                  {presets.map((p) => (
-                    <SelectItem key={p.id} value={p.id} className="text-xs font-mono">
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={trackPickerOpen} onOpenChange={setTrackPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    role="combobox"
+                    aria-expanded={trackPickerOpen}
+                    className="h-7 w-[220px] justify-between text-[10px] font-mono uppercase tracking-wider"
+                  >
+                    <span className="truncate">
+                      {presets.find((p) => p.id === selectedTrackId)?.name ?? "Select track…"}
+                    </span>
+                    <ChevronsUpDown size={11} className="ml-1 opacity-60 shrink-0" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[260px] p-0" align="end">
+                  <Command>
+                    <CommandInput placeholder="Search tracks…" className="h-8 text-xs" />
+                    <CommandList className="max-h-[260px]">
+                      <CommandEmpty className="py-4 text-center text-xs text-muted-foreground">
+                        No tracks found.
+                      </CommandEmpty>
+                      <CommandGroup>
+                        {presets.map((p) => (
+                          <CommandItem
+                            key={p.id}
+                            value={p.name}
+                            onSelect={() => {
+                              setSelectedTrackId(p.id);
+                              setTrackPickerOpen(false);
+                            }}
+                            className="text-xs font-mono"
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-3.5 w-3.5",
+                                selectedTrackId === p.id ? "opacity-100" : "opacity-0",
+                              )}
+                            />
+                            {p.name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
               <Button
                 variant="outline"
                 size="sm"
