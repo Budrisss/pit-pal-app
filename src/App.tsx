@@ -28,6 +28,7 @@ import LocalEvents from "./pages/LocalEvents";
 import OrganizerSignup from "./pages/OrganizerSignup";
 import PublicEventPreview from "./pages/PublicEventPreview";
 import OrganizerLiveManage from "./pages/OrganizerLiveManage";
+import LiveTrackMapFullscreen from "./pages/LiveTrackMapFullscreen";
 import RacerLiveView from "./pages/RacerLiveView";
 import DriverLiveView from "./pages/DriverLiveView";
 import CrewLiveView from "./pages/CrewLiveView";
@@ -73,6 +74,7 @@ const App = () => (
                 <Route path="/public-event/:id" element={<ProtectedRoute><PublicEventPreview /></ProtectedRoute>} />
                 <Route path="/organizer-signup" element={<ProtectedRoute><OrganizerSignup /></ProtectedRoute>} />
                 <Route path="/live-manage/:eventId" element={<ProtectedRoute><OrganizerLiveManage /></ProtectedRoute>} />
+                <Route path="/live-map/:eventId" element={<ProtectedRoute><LiveTrackMapFullscreen /></ProtectedRoute>} />
                 <Route path="/race-live/:eventId" element={<ProtectedRoute><RacerLiveView /></ProtectedRoute>} />
                 <Route path="/driver-live/:eventId" element={<ProtectedRoute><DriverLiveView /></ProtectedRoute>} />
                 <Route path="/crew-live/:eventId" element={<ProtectedRoute><CrewLiveView /></ProtectedRoute>} />

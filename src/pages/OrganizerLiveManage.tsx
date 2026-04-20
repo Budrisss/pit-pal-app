@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Radio, Clock, Megaphone, Send, Users, Plus, Trash2, X, ChevronDown, Flag, AlertTriangle, Pencil, Check, History, ChevronRight, MessageSquare } from "lucide-react";
+import { ArrowLeft, Radio, Clock, Megaphone, Send, Users, Plus, Trash2, X, ChevronDown, Flag, AlertTriangle, Pencil, Check, History, ChevronRight, MessageSquare, ExternalLink } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrganizerMode } from "@/contexts/OrganizerModeContext";
@@ -1544,7 +1544,17 @@ const OrganizerLiveManage = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.13 }}
+            className="relative"
           >
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => window.open(`/live-map/${eventId}`, "_blank", "noopener,noreferrer")}
+              title="Pop out map to new tab"
+              className="absolute top-2 right-2 z-[500] h-8 w-8 bg-card/80 backdrop-blur-sm hover:bg-card border border-border"
+            >
+              <ExternalLink className="h-4 w-4" />
+            </Button>
             <LiveTrackMap
               eventId={eventId!}
               participants={registrations.map((r) => ({
