@@ -177,6 +177,7 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
   const [trackPickerOpen, setTrackPickerOpen] = useState(false);
   const [, forceTick] = useState(0);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const framedTrackRef = useRef<string | null>(null);
 
   useEffect(() => {
     const id = setInterval(() => forceTick((n) => n + 1), 5000);
