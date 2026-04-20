@@ -3,6 +3,8 @@ import { BleClient, type BleDevice } from "@capacitor-community/bluetooth-le";
 import { Bluetooth, BluetoothConnected, Loader2, Send, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +12,7 @@ import {
   isHardwareCapable,
   LoRaHardwareTransport,
 } from "@/lib/transport";
+import { POSITION_SHARE_KEY } from "@/lib/transport/LoRaHardwareTransport";
 
 const MESHTASTIC_SERVICE = "6ba1b218-15a8-461f-9fa8-5dcae273eafd";
 

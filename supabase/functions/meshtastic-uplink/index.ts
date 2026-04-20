@@ -21,7 +21,15 @@ interface BridgePayload {
   rssi?: number;
   snr?: number;
   received_at: number;
-  text: string;
+  text?: string;
+  position?: {
+    latitude: number;
+    longitude: number;
+    altitude_m?: number | null;
+    heading_deg?: number | null;
+    speed_mps?: number | null;
+    fix_time?: number | null; // unix seconds
+  };
 }
 
 interface LoRaPayload {
@@ -100,15 +108,6 @@ Deno.serve(async (req) => {
     });
   }
 
-  let inner: LoRaPayload;
-  try {
-    inner = JSON.parse(bridge.text);
-  } catch {
-    return new Response(JSON.stringify({ error: "Invalid inner payload" }), {
-      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
   // Resolve sender node → paired device → registration
   // Crew messages from unknown radios are dropped silently (security).
   const nodeId = bridge.from?.startsWith("!") ? bridge.from : `!${bridge.from ?? ""}`;
@@ -124,6 +123,47 @@ Deno.serve(async (req) => {
       .from("lora_paired_devices")
       .update({ last_seen_at: new Date().toISOString() })
       .eq("meshtastic_node_id", nodeId);
+  }
+
+  // Position packet branch — independent of text/flag content.
+  if (bridge.position && paired) {
+    const { error: posErr } = await supabase.from("lora_position_fixes").insert({
+      event_id: mapping.event_id,
+      event_registration_id: paired.event_registration_id ?? null,
+      user_id: paired.user_id,
+      meshtastic_node_id: nodeId,
+      latitude: bridge.position.latitude,
+      longitude: bridge.position.longitude,
+      altitude_m: bridge.position.altitude_m ?? null,
+      heading_deg: bridge.position.heading_deg ?? null,
+      speed_mps: bridge.position.speed_mps ?? null,
+      fix_time: bridge.position.fix_time ? new Date(bridge.position.fix_time * 1000).toISOString() : null,
+    });
+    if (posErr) {
+      console.error("[meshtastic-uplink] position insert failed", posErr);
+    }
+    // If there's no text content, we're done.
+    if (!bridge.text) {
+      return new Response(JSON.stringify({ ok: true, type: "position" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+  }
+
+  // No text content (e.g. position-only packet from unknown node) — accept and exit.
+  if (!bridge.text) {
+    return new Response(JSON.stringify({ ok: true, type: "noop" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  let inner: LoRaPayload;
+  try {
+    inner = JSON.parse(bridge.text);
+  } catch {
+    return new Response(JSON.stringify({ error: "Invalid inner payload" }), {
+      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   const senderId = paired?.user_id ?? inner.from ?? inner.f ?? bridge.from;
