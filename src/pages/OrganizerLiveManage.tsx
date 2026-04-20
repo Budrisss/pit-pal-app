@@ -25,6 +25,7 @@ import tracksideLogo from "@/assets/trackside-logo-v2.png";
 import { FailoverTransport, encodeFlagPayload } from "@/lib/transport";
 import { useSimConfig } from "@/hooks/useSimStore";
 import PairedRadiosPanel from "@/components/PairedRadiosPanel";
+import ConnectivityCheckPanel from "@/components/ConnectivityCheckPanel";
 
 interface EventSession {
   id?: string;
@@ -1304,6 +1305,17 @@ const OrganizerLiveManage = () => {
               ))}
             </div>
           )}
+        </motion.div>
+
+        {/* Connectivity Check */}
+        <Separator className="mb-6" />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mb-6"
+        >
+          <ConnectivityCheckPanel eventId={eventId!} />
         </motion.div>
 
         {/* Paired Radios by Run Group */}
