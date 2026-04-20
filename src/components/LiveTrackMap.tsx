@@ -378,7 +378,7 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
         </CollapsibleTrigger>
         <CollapsibleContent>
           {/* Race-control header strip */}
-          <div className="px-4 py-2 bg-gradient-to-r from-background via-card to-background border-b border-border/60 flex items-center justify-between gap-3 text-[11px]">
+          <div className="px-4 py-2 bg-gradient-to-r from-background via-card to-background border-b border-border/60 flex items-center justify-between gap-3 text-[11px] flex-wrap">
             <div className="flex items-center gap-3 min-w-0 font-mono">
               <span className="font-bold text-foreground truncate uppercase tracking-wider">
                 {track?.name ?? "Track location pending"}
@@ -388,8 +388,31 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
                   · <span className="text-foreground">{trackLengthMi.toFixed(2)}</span> mi
                 </span>
               )}
+              {selectedTrackId && eventTrackId && selectedTrackId !== eventTrackId && (
+                <button
+                  onClick={() => setSelectedTrackId(eventTrackId)}
+                  className="text-[10px] font-mono uppercase tracking-wider text-primary hover:underline shrink-0"
+                >
+                  ↺ Reset to event track
+                </button>
+              )}
             </div>
             <div className="flex items-center gap-1 shrink-0">
+              <Select
+                value={selectedTrackId ?? undefined}
+                onValueChange={(v) => setSelectedTrackId(v)}
+              >
+                <SelectTrigger className="h-7 w-[200px] text-[10px] font-mono uppercase tracking-wider">
+                  <SelectValue placeholder="Select track…" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  {presets.map((p) => (
+                    <SelectItem key={p.id} value={p.id} className="text-xs font-mono">
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Button
                 variant="outline"
                 size="sm"
