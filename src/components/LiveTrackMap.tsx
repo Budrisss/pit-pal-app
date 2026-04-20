@@ -495,7 +495,7 @@ const LiveTrackMap = ({ eventId, participants, fullscreen = false }: LiveTrackMa
           </div>
 
           {/* Map */}
-          <div className="live-track-map relative" style={{ height: 520 }}>
+          <div className={cn("live-track-map relative", fullscreen && "flex-1 min-h-0")} style={fullscreen ? undefined : { height: 520 }}>
             <MapContainer
               center={mapCenter}
               zoom={initialZoom}
