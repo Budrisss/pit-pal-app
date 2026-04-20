@@ -947,7 +947,7 @@ const OrganizerLiveManage = () => {
     <div className="min-h-screen bg-background text-foreground pb-20 lg:pb-0">
       <motion.nav initial={{ y: -60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5, ease: "easeOut" }} className="fixed top-0 inset-x-0 z-50 bg-background/80 backdrop-blur-md border-b border-border hidden lg:block"><div className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 h-20"><Link to="/dashboard" className="flex items-center h-full py-1"><img src={tracksideLogo} alt="Track Side Ops" className="h-full w-auto object-contain invert" /></Link><div className="flex items-center gap-1">{[{ label: "Home", path: "/dashboard" }, { label: "Garage", path: "/garage" }, { label: "GridID", path: "/grid-id" }, { label: "Events", path: "/events" }, { label: "Local Events", path: "/local-events" }, { label: "Organizer", path: "/event-organizer" }, { label: "Settings", path: "/settings" }].map((item) => (<Button key={item.path} variant={location.pathname === item.path ? "default" : "ghost"} size="sm" asChild><Link to={item.path}>{item.label}</Link></Button>))}<Button variant="ghost" size="sm" onClick={async () => { await signOut(); navigate("/"); }} className="text-destructive hover:text-destructive"><LogOut size={16} className="mr-1" /> Logout</Button></div></div></motion.nav>
 
-      <div className="pt-0 lg:pt-20 max-w-4xl mx-auto px-4 sm:px-6 py-6">
+      <div className="pt-0 lg:pt-20 max-w-4xl xl:max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -1078,6 +1078,9 @@ const OrganizerLiveManage = () => {
           </div>
         )}
 
+        {/* 2-column race-control grid: action surface (left) + situational awareness (right, sticky) */}
+        <div className="xl:grid xl:grid-cols-3 xl:gap-6 xl:items-start">
+        <div className="xl:col-span-2 space-y-6">
         {/* Flag Control Panel */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -1302,105 +1305,6 @@ const OrganizerLiveManage = () => {
                   >
                     <X size={12} />
                   </Button>
-                </div>
-              ))}
-            </div>
-          )}
-        </motion.div>
-
-        {/* Connectivity Check */}
-        <Separator className="mb-6" />
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-6"
-        >
-          <ConnectivityCheckPanel eventId={eventId!} />
-        </motion.div>
-
-        {/* Paired Radios by Run Group */}
-        <Separator className="mb-6" />
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.12 }}
-          className="mb-6"
-        >
-          <PairedRadiosPanel participants={registrations} runGroups={registrationTypes} />
-        </motion.div>
-
-        {/* Live Track Map */}
-        <Separator className="mb-6" />
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.13 }}
-          className="mb-6"
-        >
-          <LiveTrackMap
-            eventId={eventId!}
-            participants={registrations.map((r) => ({
-              id: r.id,
-              user_name: r.user_name,
-              car_number: r.car_number,
-              run_group_id: r.run_group_id,
-            }))}
-          />
-        </motion.div>
-
-        {/* Participants — Crew Messaging Toggle */}
-        <Separator className="mb-6" />
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="mb-6"
-        >
-          <h2 className="font-semibold flex items-center gap-2 mb-3">
-            <MessageSquare size={16} className="text-primary" /> Crew Messaging
-          </h2>
-          <p className="text-xs text-muted-foreground mb-3">
-            Enable crew messaging per driver so their pit crew can send real-time updates.
-          </p>
-          {registrations.length === 0 ? (
-            <p className="text-sm text-muted-foreground italic">No registrations yet.</p>
-          ) : (
-            <div className="space-y-1.5 max-h-[300px] overflow-y-auto">
-              {Object.entries(groupRegistrationsByType(registrations)).map(([groupName, groupRegs]) => (
-                <div key={groupName}>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1 mt-2">{groupName}</p>
-                  {groupRegs
-                    .sort((a, b) => (a.car_number || 0) - (b.car_number || 0))
-                    .map(r => (
-                    <div key={r.id} className="flex items-center justify-between gap-2 p-2 rounded-lg border border-border/50 bg-card/60">
-                      <div className="flex items-center gap-2 min-w-0">
-                        {r.car_number && <Badge variant="outline" className="font-mono text-[10px] shrink-0">#{r.car_number}</Badge>}
-                        <span className="text-sm truncate">{r.user_name}</span>
-                        {(() => {
-                          if (!r.radio_node_id) {
-                            return <span title="No radio paired" className="text-muted-foreground text-[10px]">⚫</span>;
-                          }
-                          const stale = !r.radio_last_seen || (Date.now() - new Date(r.radio_last_seen).getTime() > 10 * 60 * 1000);
-                          return (
-                            <span
-                              title={`Radio ${r.radio_node_id}${r.radio_last_seen ? ` · last seen ${new Date(r.radio_last_seen).toLocaleTimeString()}` : ""}`}
-                              className={stale ? "text-yellow-400 text-[10px]" : "text-green-400 text-[10px]"}
-                            >
-                              {stale ? "🟡" : "🟢"} <span className="font-mono">{r.radio_node_id}</span>
-                            </span>
-                          );
-                        })()}
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-[10px] text-muted-foreground">{r.crew_enabled ? "On" : "Off"}</span>
-                        <Switch
-                          checked={r.crew_enabled}
-                          onCheckedChange={() => handleToggleCrewEnabled(r.id, r.crew_enabled)}
-                        />
-                      </div>
-                    </div>
-                  ))}
                 </div>
               ))}
             </div>
@@ -1632,6 +1536,101 @@ const OrganizerLiveManage = () => {
             </motion.div>
           </>
         )}
+        </div>
+        {/* Right column — situational awareness panels (sticky on widescreen) */}
+        <div className="xl:col-span-1 space-y-6 mt-6 xl:mt-0 xl:sticky xl:top-24 xl:self-start xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto">
+          {/* Live Track Map */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.13 }}
+          >
+            <LiveTrackMap
+              eventId={eventId!}
+              participants={registrations.map((r) => ({
+                id: r.id,
+                user_name: r.user_name,
+                car_number: r.car_number,
+                run_group_id: r.run_group_id,
+              }))}
+            />
+          </motion.div>
+
+          {/* Connectivity Check */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <ConnectivityCheckPanel eventId={eventId!} />
+          </motion.div>
+
+          {/* Paired Radios by Run Group */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.12 }}
+          >
+            <PairedRadiosPanel participants={registrations} runGroups={registrationTypes} />
+          </motion.div>
+
+          {/* Participants — Crew Messaging Toggle */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+          >
+            <h2 className="font-semibold flex items-center gap-2 mb-3">
+              <MessageSquare size={16} className="text-primary" /> Crew Messaging
+            </h2>
+            <p className="text-xs text-muted-foreground mb-3">
+              Enable crew messaging per driver so their pit crew can send real-time updates.
+            </p>
+            {registrations.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic">No registrations yet.</p>
+            ) : (
+              <div className="space-y-1.5 max-h-[300px] overflow-y-auto">
+                {Object.entries(groupRegistrationsByType(registrations)).map(([groupName, groupRegs]) => (
+                  <div key={groupName}>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1 mt-2">{groupName}</p>
+                    {groupRegs
+                      .sort((a, b) => (a.car_number || 0) - (b.car_number || 0))
+                      .map(r => (
+                      <div key={r.id} className="flex items-center justify-between gap-2 p-2 rounded-lg border border-border/50 bg-card/60">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {r.car_number && <Badge variant="outline" className="font-mono text-[10px] shrink-0">#{r.car_number}</Badge>}
+                          <span className="text-sm truncate">{r.user_name}</span>
+                          {(() => {
+                            if (!r.radio_node_id) {
+                              return <span title="No radio paired" className="text-muted-foreground text-[10px]">⚫</span>;
+                            }
+                            const stale = !r.radio_last_seen || (Date.now() - new Date(r.radio_last_seen).getTime() > 10 * 60 * 1000);
+                            return (
+                              <span
+                                title={`Radio ${r.radio_node_id}${r.radio_last_seen ? ` · last seen ${new Date(r.radio_last_seen).toLocaleTimeString()}` : ""}`}
+                                className={stale ? "text-yellow-400 text-[10px]" : "text-green-400 text-[10px]"}
+                              >
+                                {stale ? "🟡" : "🟢"} <span className="font-mono">{r.radio_node_id}</span>
+                              </span>
+                            );
+                          })()}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-[10px] text-muted-foreground">{r.crew_enabled ? "On" : "Off"}</span>
+                          <Switch
+                            checked={r.crew_enabled}
+                            onCheckedChange={() => handleToggleCrewEnabled(r.id, r.crew_enabled)}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        </div>
+        </div>
       </div>
 
       {/* Delete Session Confirmation */}
