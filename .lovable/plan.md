@@ -1,36 +1,24 @@
 
 
-## Revert to colored map + highlight track ribbon
+## Switch basemap to standard OpenStreetMap
 
-User wants to drop the dark race-control basemap and go back to a standard colored map (like CartoDB Voyager / OSM-style), but still make the track itself stand out as a clearly highlighted ribbon — not buried in the surrounding roads.
+User wants the "normal" map — the universally recognized OpenStreetMap look (beige land, blue water, full road labels) instead of the current CartoDB Voyager (which is a styled/muted variant).
 
-### Approach
+### Change
 
-**1. Swap basemap back to colored**
-In `src/components/LiveTrackMap.tsx`, change the `<TileLayer>` URL from CartoDB Dark Matter back to CartoDB **Voyager** (colored, clean, with subtle labels — better than raw OSM for racing context). Update the attribution accordingly.
+In `src/components/LiveTrackMap.tsx`, swap the `<TileLayer>` from CartoDB Voyager to standard OpenStreetMap tiles:
 
-**2. Keep + tune the track polyline so it pops on a light background**
-The current 3-layer polyline (white halo / white core / red centerline) was designed for dark tiles. On a colored map, white disappears against light roads. Re-tune to:
+- **URL**: `https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png`
+- **Attribution**: `&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors`
 
-- **Outer halo**: solid black, weight 12, 35% opacity — creates a dark "shadow" outline that separates the track from surrounding roads regardless of basemap color
-- **Middle core**: bright racing red (`hsl(0 91% 59%)` — our `--f1-red`), weight 6, full opacity — this is the highlighted track ribbon
-- **Inner accent**: white, weight 1.5 — thin centerline that reads as a racing line and adds crispness
-
-This gives a "highlighter marker" effect: dark edge + bold red fill + white centerline. The track will read instantly even on a busy colored map.
-
-**3. Small CSS tweak**
-Update the `.live-track-map .leaflet-container` background in `src/index.css` from the dark `hsl(220 13% 6%)` to a neutral light fallback (or just remove the override) so tile-loading flashes look right.
-
-Attribution + zoom-control styling in `src/index.css` can stay (they're subtle enough to work over either basemap).
+The triple-layered red track ribbon (black halo / red core / white centerline) stays as-is — it was already tuned for light basemaps, so it'll continue to pop on standard OSM.
 
 ### Files touched
 
-- `src/components/LiveTrackMap.tsx` — change `TileLayer` url/attribution; update the 3 `<Polyline>` `pathOptions` colors/weights
-- `src/index.css` — adjust `.live-track-map .leaflet-container` background + attribution contrast for a light basemap
+- `src/components/LiveTrackMap.tsx` — update the single `<TileLayer>` url + attribution
 
 ### Out of scope
 
-- A user toggle between dark/colored basemaps (can add later if wanted)
-- Per-track custom color schemes
-- Animated "racing line" pulse along the track
+- Basemap toggle UI
+- Track ribbon color changes
 
