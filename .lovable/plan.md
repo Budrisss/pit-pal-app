@@ -1,43 +1,61 @@
 
 
-Looking at OrganizerLiveManage — it already joins paired devices per registration (status dot + node id). User wants a dedicated **Paired Radios panel** grouped by run group, showing driver / car / number / node id, so race control can scan radio coverage at a glance per group.
+## Connectivity Check panel on OrganizerLiveManage
 
-## Plan
+A compact status panel pinned near the top of `/live-manage/:eventId` that gives race control a one-glance read on whether they're operating on the resilient stack.
 
-### New section in `OrganizerLiveManage`: "Paired Radios by Run Group"
-
-Placed above (or as a tab next to) the existing participants table. Uses data already fetched — no new queries needed since registrations + paired devices are already joined.
-
-**Layout per run group:**
+### What it shows
 
 ```text
-┌─ Run Group A ─────────── 12/30 on radio ─┐
-│  #42  John Smith    Civic Type R    🟢 !a3b1c9d8   2m ago │
-│  #17  Jane Doe      Miata           🟡 !b8d4e2f1   18m ago│
-│  #08  Mike Chen     M3              ⚫ no radio            │
-└──────────────────────────────────────────┘
+┌─ Connectivity Check ──────────────────────────────────────┐
+│                                                            │
+│  Uplink         🟢 WiFi              (Starlink detected)   │
+│  Supabase       🟢 42ms              last check: just now  │
+│  Bridge node    🟢 Online            last beacon: 12s ago  │
+│  LoRa channel   🟢 Configured        ch: trackside-prod    │
+│                                                            │
+│  [Run check now]                                           │
+└────────────────────────────────────────────────────────────┘
 ```
 
-- Group header: name + "X/Y on radio" count + collapsible chevron
-- Row per registration in that group (sorted by car number)
-- Columns: car# · driver name · car (year/make/model from `cars` join — already fetched) · node status dot · node id (mono) · last_seen relative time
-- Unassigned (no run group) bucket at the bottom
-- Empty state: "No radios paired yet for this event"
+Four rows, each with a colored dot, a label, a value, and a freshness hint.
 
-### Status logic (already partially in place)
-- 🟢 paired + last_seen ≤ 10 min
-- 🟡 paired + last_seen > 10 min (stale)
-- ⚫ no paired device
+### Row details
 
-### Toggle
-Small "Hide drivers without radio" switch above the panel — useful when scanning who's actually on LoRa fallback.
+1. **Uplink type** — derived client-side from `navigator.connection` (NetworkInformation API) + heuristics:
+   - `effectiveType` (`4g` / `3g` / `2g` / `slow-2g`) → cellular labels
+   - `type` (`wifi` / `cellular` / `ethernet`) when available
+   - "Starlink detected" hint when reverse DNS / public IP suggests Starlink (best-effort via a lightweight check against `https://api.ipify.org` + a known Starlink ASN range — soft hint only, not relied on)
+   - Fallback: "Online" / "Offline" from `navigator.onLine`
+   - Status dot: 🟢 WiFi/ethernet/4g, 🟡 3g, 🔴 2g/offline
 
-### Files touched
-- `src/pages/OrganizerLiveManage.tsx` — add the grouped panel, reuse the existing joined participants array, add helper to bucket by `run_group_id`
-- `src/components/PairedRadiosPanel.tsx` (new) — extracted component to keep `OrganizerLiveManage` tidy; takes `participants` + `runGroups` as props, renders the grouped collapsible UI
+2. **Supabase latency** — every 30s, time a tiny `select 1` round-trip via `supabase.from('events').select('id').eq('id', eventId).maybeSingle()` (cached row, cheap). Shows ms.
+   - 🟢 < 200ms · 🟡 200-800ms · 🔴 > 800ms or error
+
+3. **Bridge node status** — query `lora_event_channels` for this event. If a channel is configured, look at the most recent `lora_paired_devices.last_seen_at` across all devices on this event as a proxy for "is anything reaching the bridge". Show:
+   - 🟢 Online — any device seen in last 5 min
+   - 🟡 Stale — last seen 5-30 min ago
+   - 🔴 Silent — no device seen in 30+ min OR no channel configured
+   - ⚫ Not configured — no `lora_event_channels` row (LoRa not in use for this event)
+
+4. **LoRa channel** — green if `lora_event_channels` row exists with `gateway_url`, gray "not configured" otherwise. Just shows the channel name as a sanity check.
+
+### Behavior
+
+- Auto-refresh every 30s (matches existing OrganizerLiveManage cadence)
+- Manual "Run check now" button for on-demand verification
+- Collapsible — defaults open, organizer can collapse to a single-line summary like `Connectivity 🟢 all systems`
+- All four rows degrade gracefully if a check fails — never breaks the page
+
+### Files to touch
+
+- `src/components/ConnectivityCheckPanel.tsx` (new) — self-contained component, takes `eventId` as prop, runs all four checks internally
+- `src/pages/OrganizerLiveManage.tsx` — mount `<ConnectivityCheckPanel eventId={eventId} />` near the top of the page, above the Paired Radios panel
 
 ### Out of scope
-- Realtime push updates of `last_seen_at` (current 30s refresh is enough)
-- Remote unpair / reassign by organizer
-- Per-radio test-ping from organizer side
+
+- True Starlink confirmation (would require an extra edge function doing ASN lookup — not worth it; the soft hint is enough)
+- Historical latency graph (just current value)
+- Push alerts when status degrades (organizer is staring at the screen anyway)
+- Re-pinging individual radios from this panel (separate feature)
 
