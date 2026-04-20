@@ -417,7 +417,15 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-[260px] p-0 z-[1000]" align="end" sideOffset={4}>
-                  <Command>
+                  <Command
+                    filter={(value, search) => {
+                      const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
+                      const v = norm(value);
+                      const tokens = norm(search).split(" ").filter(Boolean);
+                      if (tokens.length === 0) return 1;
+                      return tokens.every((t) => v.includes(t)) ? 1 : 0;
+                    }}
+                  >
                     <CommandInput placeholder="Search tracks…" className="h-8 text-xs" />
                     <CommandList className="max-h-[260px]">
                       <CommandEmpty className="py-4 text-center text-xs text-muted-foreground">
