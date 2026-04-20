@@ -376,8 +376,9 @@ const LiveTrackMap = ({ eventId, participants, fullscreen = false }: LiveTrackMa
   }, [followLeader, visibleFixes]);
 
   return (
-    <Card className="bg-card border-border/60 overflow-hidden">
-      <Collapsible open={open} onOpenChange={setOpen}>
+    <Card className={cn("bg-card border-border/60 overflow-hidden", fullscreen && "h-full w-full border-0 rounded-none flex flex-col")}>
+      <Collapsible open={fullscreen ? true : open} onOpenChange={fullscreen ? undefined : setOpen} className={cn(fullscreen && "flex-1 flex flex-col min-h-0")}>
+        {!fullscreen && (
         <CollapsibleTrigger asChild>
           <button className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors border-b border-border/60">
             <div className="flex items-center gap-3 min-w-0">
