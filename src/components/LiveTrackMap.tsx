@@ -151,8 +151,11 @@ function polylineLengthMi(coords: [number, number][]): number {
 const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
   const [open, setOpen] = useState(true);
   const [fixes, setFixes] = useState<Map<string, PositionFix>>(new Map());
+  const [eventTrackId, setEventTrackId] = useState<string | null>(null);
+  const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
   const [track, setTrack] = useState<TrackInfo | null>(null);
   const [trackCoords, setTrackCoords] = useState<[number, number][]>([]);
+  const [presets, setPresets] = useState<{ id: string; name: string }[]>([]);
   const [fitTrigger, setFitTrigger] = useState(0);
   const [followLeader, setFollowLeader] = useState(false);
   const [, forceTick] = useState(0);
@@ -163,7 +166,18 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
     return () => clearInterval(id);
   }, []);
 
-  // Resolve track + cached geojson
+  // Load preset tracks list once
+  useEffect(() => {
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("preset_tracks")
+        .select("id, name")
+        .order("name", { ascending: true });
+      if (data) setPresets(data);
+    })();
+  }, []);
+
+  // Resolve event's default track id
   useEffect(() => {
     if (!eventId) return;
     let cancelled = false;
@@ -176,14 +190,31 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
       if (!ev?.public_event_id) return;
       const { data: pe } = await supabase
         .from("public_events")
-        .select("latitude, longitude, track_name")
+        .select("track_name")
         .eq("id", ev.public_event_id)
         .maybeSingle();
       if (!pe?.track_name) return;
       const { data: presetTrack } = await (supabase as any)
         .from("preset_tracks")
-        .select("id, name, latitude, longitude, track_geojson")
+        .select("id")
         .ilike("name", pe.track_name)
+        .maybeSingle();
+      if (cancelled || !presetTrack?.id) return;
+      setEventTrackId(presetTrack.id);
+      setSelectedTrackId((cur) => cur ?? presetTrack.id);
+    })();
+    return () => { cancelled = true; };
+  }, [eventId]);
+
+  // Load track info + geojson whenever selected track changes
+  useEffect(() => {
+    if (!selectedTrackId) return;
+    let cancelled = false;
+    (async () => {
+      const { data: presetTrack } = await (supabase as any)
+        .from("preset_tracks")
+        .select("id, name, latitude, longitude, track_geojson")
+        .eq("id", selectedTrackId)
         .maybeSingle();
       if (cancelled || !presetTrack?.latitude || !presetTrack?.longitude) return;
       const info: TrackInfo = {
@@ -194,8 +225,9 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
         geojson: presetTrack.track_geojson ?? null,
       };
       setTrack(info);
+      setTrackCoords([]);
+      setHasAutoFit(false);
 
-      // Use cached or fetch from Overpass
       if (info.geojson?.coords?.length) {
         setTrackCoords(info.geojson.coords);
       } else {
@@ -206,7 +238,6 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
             body: query,
           });
           const json = await res.json();
-          // Pick the longest way (avoids pit lane fragments)
           let best: [number, number][] = [];
           for (const el of json.elements ?? []) {
             if (el.type === "way" && Array.isArray(el.geometry)) {
@@ -223,12 +254,12 @@ const LiveTrackMap = ({ eventId, participants }: LiveTrackMapProps) => {
             }).then(() => {});
           }
         } catch {
-          // Overpass failure — silent; track outline just won't render
+          // silent
         }
       }
     })();
     return () => { cancelled = true; };
-  }, [eventId]);
+  }, [selectedTrackId]);
 
   // Initial load + realtime subscription
   useEffect(() => {
