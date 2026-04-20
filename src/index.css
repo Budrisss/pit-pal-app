@@ -181,3 +181,29 @@
     cursor: pointer;
   }
 }
+
+/* Live Track Map — race-control styling */
+@layer components {
+  .live-car-marker { background: transparent !important; border: none !important; }
+  .live-track-map .leaflet-container { background: hsl(220 13% 6%); }
+  .live-track-map .leaflet-control-attribution {
+    background: hsl(220 13% 9% / 0.7) !important;
+    color: hsl(0 0% 65%) !important;
+    font-size: 9px !important;
+    backdrop-filter: blur(4px);
+  }
+  .live-track-map .leaflet-control-attribution a { color: hsl(0 0% 80%) !important; }
+  .live-track-map .leaflet-control-zoom { display: none; }
+
+  .live-pulse-dot {
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: hsl(var(--f1-red));
+    box-shadow: 0 0 0 0 hsl(var(--f1-red) / 0.7);
+    animation: live-pulse 1.6s ease-out infinite;
+  }
+  @keyframes live-pulse {
+    0%   { box-shadow: 0 0 0 0 hsl(var(--f1-red) / 0.7); }
+    70%  { box-shadow: 0 0 0 10px hsl(var(--f1-red) / 0); }
+    100% { box-shadow: 0 0 0 0 hsl(var(--f1-red) / 0); }
+  }
+}
