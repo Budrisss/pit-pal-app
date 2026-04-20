@@ -132,6 +132,19 @@ const LiveTrackMapFullscreen = () => {
         </div>
       </div>
 
+      {/* Fullscreen toggle */}
+      <div className="absolute top-3 right-3 z-[1000] pointer-events-auto">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleFullscreen}
+          title={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+          className="bg-card/90 backdrop-blur-md border border-border rounded-lg shadow-lg hover:bg-card"
+        >
+          {fullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+        </Button>
+      </div>
+
       {/* Fullscreen map — fills entire viewport */}
       <div className="absolute inset-0">
         <LiveTrackMap eventId={eventId} participants={participants} fullscreen />
