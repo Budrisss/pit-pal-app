@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Radio, Clock, Megaphone, Send, Users, Plus, Trash2, X, ChevronDown, Flag, AlertTriangle, Pencil, Check, History, ChevronRight, MessageSquare, ExternalLink } from "lucide-react";
+import { ArrowLeft, Radio, Clock, Megaphone, Send, Users, Plus, Trash2, X, ChevronDown, Flag, AlertTriangle, Pencil, Check, History, ChevronRight, MessageSquare, ExternalLink, Eye, EyeOff, Map as MapIcon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrganizerMode } from "@/contexts/OrganizerModeContext";
@@ -137,6 +137,13 @@ const OrganizerLiveManage = () => {
   const [blackFlagTarget, setBlackFlagTarget] = useState<string>("all");
   const [blackFlagMessage, setBlackFlagMessage] = useState("");
   const [registrations, setRegistrations] = useState<EventRegistrationWithCar[]>([]);
+  const [showLiveMap, setShowLiveMap] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem("liveManage.showLiveMap") !== "false";
+  });
+  useEffect(() => {
+    localStorage.setItem("liveManage.showLiveMap", String(showLiveMap));
+  }, [showLiveMap]);
   const [blackFlagSearch, setBlackFlagSearch] = useState("");
   const [blackFlagGroupFilter, setBlackFlagGroupFilter] = useState<"active" | "all">("active");
   const [showYellowFlagDialog, setShowYellowFlagDialog] = useState(false);
@@ -1546,24 +1553,48 @@ const OrganizerLiveManage = () => {
             transition={{ delay: 0.13 }}
             className="relative"
           >
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => window.open(`/live-map/${eventId}`, "_blank", "noopener,noreferrer")}
-              title="Pop out map to new tab"
-              className="absolute top-2 right-2 z-[500] h-8 w-8 bg-card/80 backdrop-blur-sm hover:bg-card border border-border"
-            >
-              <ExternalLink className="h-4 w-4" />
-            </Button>
-            <LiveTrackMap
-              eventId={eventId!}
-              participants={registrations.map((r) => ({
-                id: r.id,
-                user_name: r.user_name,
-                car_number: r.car_number,
-                run_group_id: r.run_group_id,
-              }))}
-            />
+            {showLiveMap ? (
+              <>
+                <div className="absolute top-2 right-2 z-[500] flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => window.open(`/live-map/${eventId}`, "_blank", "noopener,noreferrer")}
+                    title="Pop out map to new tab"
+                    className="h-8 w-8 bg-card/80 backdrop-blur-sm hover:bg-card border border-border"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowLiveMap(false)}
+                    title="Hide live track map"
+                    className="h-8 w-8 bg-card/80 backdrop-blur-sm hover:bg-card border border-border"
+                  >
+                    <EyeOff className="h-4 w-4" />
+                  </Button>
+                </div>
+                <LiveTrackMap
+                  eventId={eventId!}
+                  participants={registrations.map((r) => ({
+                    id: r.id,
+                    user_name: r.user_name,
+                    car_number: r.car_number,
+                    run_group_id: r.run_group_id,
+                  }))}
+                />
+              </>
+            ) : (
+              <Button
+                variant="outline"
+                onClick={() => setShowLiveMap(true)}
+                className="w-full justify-center gap-2"
+              >
+                <MapIcon className="h-4 w-4" />
+                Show Live Track Map
+              </Button>
+            )}
           </motion.div>
 
           {/* Connectivity Check */}
