@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams, Navigate } from "react-router-dom";
+import { Maximize2, Minimize2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 import LiveTrackMap from "@/components/LiveTrackMap";
 
 interface ParticipantInfo {
@@ -18,6 +20,22 @@ const LiveTrackMapFullscreen = () => {
   const [participants, setParticipants] = useState<ParticipantInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState<boolean | null>(null);
+
+  const [fullscreen, setFullscreen] = useState(false);
+
+  useEffect(() => {
+    const onChange = () => setFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+  };
 
   useEffect(() => {
     if (!eventId || !user) return;
@@ -112,6 +130,19 @@ const LiveTrackMapFullscreen = () => {
             · {participants.length} {participants.length === 1 ? "participant" : "participants"}
           </span>
         </div>
+      </div>
+
+      {/* Fullscreen toggle */}
+      <div className="absolute top-3 right-3 z-[1000] pointer-events-auto">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleFullscreen}
+          title={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+          className="bg-card/90 backdrop-blur-md border border-border rounded-lg shadow-lg hover:bg-card"
+        >
+          {fullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+        </Button>
       </div>
 
       {/* Fullscreen map — fills entire viewport */}
