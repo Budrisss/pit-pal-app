@@ -36,6 +36,12 @@ const RegistrationRadioPairing = ({ registrationId, eventId, carNumber }: Regist
   const [scanning, setScanning] = useState(false);
   const [testing, setTesting] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [sharePos, setSharePos] = useState<boolean>(() => {
+    try {
+      const v = localStorage.getItem(POSITION_SHARE_KEY);
+      return v === null ? true : v === "true";
+    } catch { return true; }
+  });
 
   // Hide entire UI on web — BLE only works in Capacitor native
   const supported = isHardwareCapable();

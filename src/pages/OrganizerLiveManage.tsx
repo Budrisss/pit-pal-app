@@ -26,6 +26,7 @@ import { FailoverTransport, encodeFlagPayload } from "@/lib/transport";
 import { useSimConfig } from "@/hooks/useSimStore";
 import PairedRadiosPanel from "@/components/PairedRadiosPanel";
 import ConnectivityCheckPanel from "@/components/ConnectivityCheckPanel";
+import LiveTrackMap from "@/components/LiveTrackMap";
 
 interface EventSession {
   id?: string;
