@@ -185,14 +185,14 @@
 /* Live Track Map — race-control styling */
 @layer components {
   .live-car-marker { background: transparent !important; border: none !important; }
-  .live-track-map .leaflet-container { background: hsl(220 13% 6%); }
+  .live-track-map .leaflet-container { background: hsl(0 0% 95%); }
   .live-track-map .leaflet-control-attribution {
-    background: hsl(220 13% 9% / 0.7) !important;
-    color: hsl(0 0% 65%) !important;
+    background: hsl(0 0% 100% / 0.75) !important;
+    color: hsl(220 13% 25%) !important;
     font-size: 9px !important;
     backdrop-filter: blur(4px);
   }
-  .live-track-map .leaflet-control-attribution a { color: hsl(0 0% 80%) !important; }
+  .live-track-map .leaflet-control-attribution a { color: hsl(220 13% 15%) !important; }
   .live-track-map .leaflet-control-zoom { display: none; }
 
   .live-pulse-dot {
