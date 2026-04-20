@@ -1,24 +1,34 @@
 
 
-## Switch basemap to standard OpenStreetMap
+## Disable auto-recenter + add satellite layer toggle
 
-User wants the "normal" map — the universally recognized OpenStreetMap look (beige land, blue water, full road labels) instead of the current CartoDB Voyager (which is a styled/muted variant).
+Two changes to `src/components/LiveTrackMap.tsx`:
 
-### Change
+### 1. Stop the map from auto-moving
 
-In `src/components/LiveTrackMap.tsx`, swap the `<TileLayer>` from CartoDB Voyager to standard OpenStreetMap tiles:
+Currently `RecenterOnTrack` calls `map.setView` whenever the selected track changes, and `FitBounds` re-fits when track geometry loads. Both fight the organizer when they pan/zoom.
 
-- **URL**: `https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png`
-- **Attribution**: `&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors`
+Fix: only auto-frame **once per track selection**, then leave the map alone.
+- Track the last "framed" trackId in a ref
+- `RecenterOnTrack` and `FitBounds` both early-return if `trackId === lastFramedRef.current`
+- Update the ref after the initial frame
 
-The triple-layered red track ribbon (black halo / red core / white centerline) stays as-is — it was already tuned for light basemaps, so it'll continue to pop on standard OSM.
+This means: pick a track → map snaps + fits once → organizer can pan/zoom freely → map never jumps again until they pick a different track.
+
+### 2. Add detailed satellite view toggle
+
+Use Leaflet's `<LayersControl>` with two `BaseLayer`s:
+- **Streets**: current OSM tiles (default)
+- **Satellite**: Esri World Imagery — `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}` — high-resolution aerial up to ~zoom 19, free, no API key. Attribution: `Tiles &copy; Esri`.
+
+Leaflet renders a small layers icon top-right that flips between the two. The red track ribbon stays on top of either basemap (already pops on both light streets and dark satellite).
 
 ### Files touched
 
-- `src/components/LiveTrackMap.tsx` — update the single `<TileLayer>` url + attribution
+- `src/components/LiveTrackMap.tsx` — add `lastFramedRef` gate in `RecenterOnTrack` + `FitBounds`; replace single `<TileLayer>` with `<LayersControl>` containing Streets + Satellite base layers
 
 ### Out of scope
 
-- Basemap toggle UI
-- Track ribbon color changes
+- A "recenter to track" button (can add later if organizers ask)
+- Hybrid satellite-with-labels layer
 
