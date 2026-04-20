@@ -94,22 +94,26 @@ function startFinishIcon() {
   return L.divIcon({ html, className: "live-car-marker", iconSize: [14, 14], iconAnchor: [7, 7] });
 }
 
-function FitBounds({ trigger, points }: { trigger: number; points: [number, number][] }) {
+function FitBounds({ trigger, points, trackId, framedRef }: { trigger: number; points: [number, number][]; trackId: string | null; framedRef: React.MutableRefObject<string | null> }) {
   const map = useMap();
   useEffect(() => {
     if (trigger === 0 || points.length === 0) return;
+    if (trackId && framedRef.current === trackId) return;
     if (points.length === 1) map.setView(points[0], 16);
     else map.fitBounds(L.latLngBounds(points), { padding: [40, 40], maxZoom: 17 });
-  }, [trigger, points, map]);
+    if (trackId) framedRef.current = trackId;
+  }, [trigger, points, map, trackId, framedRef]);
   return null;
 }
 
-function RecenterOnTrack({ trackId, center }: { trackId: string | null; center: [number, number] | null }) {
+function RecenterOnTrack({ trackId, center, framedRef }: { trackId: string | null; center: [number, number] | null; framedRef: React.MutableRefObject<string | null> }) {
   const map = useMap();
   useEffect(() => {
     if (!trackId || !center) return;
+    if (framedRef.current === trackId) return;
     map.setView(center, 15, { animate: true });
-  }, [trackId, center, map]);
+    framedRef.current = trackId;
+  }, [trackId, center, map, framedRef]);
   return null;
 }
 
