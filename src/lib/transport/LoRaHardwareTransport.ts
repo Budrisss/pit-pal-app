@@ -1,7 +1,23 @@
 import { BleClient } from "@capacitor-community/bluetooth-le";
 import { Capacitor } from "@capacitor/core";
 import { decode, encode } from "./encoder";
-import { decodeFromRadioPacket, decodeMyNodeInfo, encodeToRadioPacket } from "./meshtastic/protobuf";
+import {
+  decodeFromRadioPacket,
+  decodeMyNodeInfo,
+  decodePositionFromPacket,
+  encodeToRadioPacket,
+  PORTNUM_POSITION_APP,
+  PORTNUM_TEXT_MESSAGE_APP,
+} from "./meshtastic/protobuf";
+import { supabase } from "@/integrations/supabase/client";
+
+export const POSITION_SHARE_KEY = "lora_share_position";
+function shouldSharePosition(): boolean {
+  try {
+    const v = localStorage.getItem(POSITION_SHARE_KEY);
+    return v === null ? true : v === "true";
+  } catch { return true; }
+}
 import type {
   IncomingMessage,
   LoRaPayload,
@@ -98,6 +114,8 @@ export class LoRaHardwareTransport implements Transport {
     }
   }
 
+  private lastPositionInsertAt = 0;
+
   private onIncoming(buf: Uint8Array) {
     // Try MyNodeInfo first (fires once on connect)
     try {
@@ -108,17 +126,49 @@ export class LoRaHardwareTransport implements Transport {
       }
     } catch { /* ignore */ }
 
+    let decoded: ReturnType<typeof decodeFromRadioPacket> = null;
     try {
-      const decoded = decodeFromRadioPacket(buf);
-      if (!decoded) return;
-      const text = new TextDecoder().decode(decoded.payload);
-      const payload = decode(text);
-      const id = `${payload.from}-${payload.ts}`;
-      this.subscribers.forEach((h) =>
-        h({ id, payload, via: "lora-sim" })
-      );
-    } catch {
-      // Non-app traffic (config, telemetry) — ignore
+      decoded = decodeFromRadioPacket(buf);
+    } catch { /* ignore */ }
+    if (!decoded) return;
+
+    if (decoded.portnum === PORTNUM_TEXT_MESSAGE_APP) {
+      try {
+        const text = new TextDecoder().decode(decoded.payload);
+        const payload = decode(text);
+        const id = `${payload.from}-${payload.ts}`;
+        this.subscribers.forEach((h) => h({ id, payload, via: "lora-sim" }));
+      } catch { /* malformed app payload */ }
+      return;
+    }
+
+    if (decoded.portnum === PORTNUM_POSITION_APP) {
+      this.handlePositionPacket(decoded);
+    }
+  }
+
+  private async handlePositionPacket(decoded: { portnum: number; payload: Uint8Array }) {
+    if (!shouldSharePosition()) return;
+    const now = Date.now();
+    if (now - this.lastPositionInsertAt < 10_000) return;
+    const pos = decodePositionFromPacket(decoded);
+    if (!pos) return;
+    this.lastPositionInsertAt = now;
+    try {
+      await (supabase as any).from("lora_position_fixes").insert({
+        event_id: this.ctx.eventId,
+        event_registration_id: this.ctx.registrationId ?? null,
+        user_id: this.ctx.userId,
+        meshtastic_node_id: null,
+        latitude: pos.latitude,
+        longitude: pos.longitude,
+        altitude_m: pos.altitudeM ?? null,
+        heading_deg: pos.headingDeg ?? null,
+        speed_mps: pos.speedMps ?? null,
+        fix_time: pos.fixTime?.toISOString() ?? null,
+      });
+    } catch (err) {
+      console.warn("[LoRaHardwareTransport] position insert failed", err);
     }
   }
 
