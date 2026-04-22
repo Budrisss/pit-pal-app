@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Car, Mail, Lock, UserPlus, Phone, ShieldCheck, Eye, EyeOff } from 'lucide-react';
+import { Car, Mail, Lock, Phone, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +12,7 @@ import racingCockpit from '@/assets/racing-cockpit.jpg';
 
 const SignUp = () => {
   const navigate = useNavigate();
-  const { signUp, user } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -52,17 +52,19 @@ const SignUp = () => {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('send-verification-code', {
-        body: { phone },
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: true,
+          data: phone ? { phone } : undefined,
+        },
       });
 
-      if (error || !data?.success) {
-        throw new Error(data?.error || error?.message || 'Failed to send code');
-      }
+      if (error) throw error;
 
       toast({
         title: "Code sent!",
-        description: `A 6-digit verification code has been sent to ${phone}.`,
+        description: `A 6-digit verification code has been sent to ${email}.`,
       });
       setStep('verify');
     } catch (err: any) {
@@ -81,27 +83,24 @@ const SignUp = () => {
     setLoading(true);
 
     try {
-      // Verify the OTP code
-      const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-code', {
-        body: { phone, code: otpCode },
+      // Verify the OTP — this creates and logs in the user
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        email,
+        token: otpCode,
+        type: 'email',
       });
 
-      if (verifyError || !verifyData?.success) {
-        throw new Error(verifyData?.error || verifyError?.message || 'Invalid code');
-      }
+      if (verifyError) throw verifyError;
 
-      // Code verified — create account
-      const { error: signUpError } = await signUp(email, password);
-
-      if (signUpError) {
-        throw signUpError;
-      }
+      // Set the password so the user can sign in normally next time
+      const { error: updateError } = await supabase.auth.updateUser({ password });
+      if (updateError) throw updateError;
 
       toast({
         title: "Account created!",
-        description: "Check your email to confirm your account, then log in.",
+        description: "Welcome to Track Side Ops.",
       });
-      navigate('/login');
+      navigate('/dashboard');
     } catch (err: any) {
       toast({
         title: "Verification failed",
