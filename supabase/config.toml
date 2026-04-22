@@ -5,3 +5,5 @@ project_id = "fkkemgtdxbsqvtsidhvu"
     verify_jwt = false
   [functions.flag-downlink-broadcast]
     verify_jwt = false
+  [functions.process-email-queue]
+    verify_jwt = true
