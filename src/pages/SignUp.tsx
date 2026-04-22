@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Car, Mail, Lock, UserPlus, Phone, ShieldCheck, Eye, EyeOff } from 'lucide-react';
+import { Car, Mail, Lock, Phone, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +12,7 @@ import racingCockpit from '@/assets/racing-cockpit.jpg';
 
 const SignUp = () => {
   const navigate = useNavigate();
-  const { signUp, user } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -52,17 +52,19 @@ const SignUp = () => {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('send-verification-code', {
-        body: { phone },
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: true,
+          data: phone ? { phone } : undefined,
+        },
       });
 
-      if (error || !data?.success) {
-        throw new Error(data?.error || error?.message || 'Failed to send code');
-      }
+      if (error) throw error;
 
       toast({
         title: "Code sent!",
-        description: `A 6-digit verification code has been sent to ${phone}.`,
+        description: `A 6-digit verification code has been sent to ${email}.`,
       });
       setStep('verify');
     } catch (err: any) {
