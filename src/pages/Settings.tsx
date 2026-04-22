@@ -478,6 +478,23 @@ const Settings = () => {
         </Card>
       </div>
       <Navigation />
+      {user && (
+        <>
+          <ChangeEmailDialog
+            open={emailDialogOpen}
+            onOpenChange={setEmailDialogOpen}
+            currentEmail={user.email ?? ''}
+          />
+          <ChangePhoneDialog
+            open={phoneDialogOpen}
+            onOpenChange={setPhoneDialogOpen}
+            currentEmail={user.email ?? ''}
+            userId={user.id}
+            currentPhone={phoneNumber}
+            onSaved={loadProfile}
+          />
+        </>
+      )}
     </div>
   );
 };
