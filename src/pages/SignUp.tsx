@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Car, Mail, Lock, Phone, ShieldCheck, Eye, EyeOff } from 'lucide-react';
+import { Car, Mail, Lock, Phone, ShieldCheck, Eye, EyeOff, MailCheck, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,10 +42,10 @@ const SignUp = () => {
       return;
     }
 
-    if (!phone.startsWith('+')) {
+    if (phone && !phone.startsWith('+')) {
       toast({
         title: "Invalid phone number",
-        description: "Please enter your phone number with country code (e.g. +1 for US).",
+        description: "Include country code (e.g. +1 for US) or leave the field blank.",
         variant: "destructive",
       });
       return;
