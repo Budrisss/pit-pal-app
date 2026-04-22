@@ -31,7 +31,7 @@ const SignUp = () => {
   }
 
   const sendVerificationEmail = async () => {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -40,6 +40,19 @@ const SignUp = () => {
       },
     });
     if (error) throw error;
+
+    // Supabase anti-enumeration: when the email already exists as an
+    // unconfirmed user, signUp returns success but does NOT resend the
+    // confirmation email. Detect that case and explicitly resend.
+    const identitiesEmpty = data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0;
+    if (identitiesEmpty) {
+      const { error: resendError } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: { emailRedirectTo: `${window.location.origin}/dashboard` },
+      });
+      if (resendError) throw resendError;
+    }
   };
 
   const handleSendCode = async (e: React.FormEvent) => {
