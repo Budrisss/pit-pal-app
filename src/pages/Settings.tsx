@@ -19,7 +19,6 @@ import RacingGallery from "@/components/RacingGallery";
 import SavedTracksManager from "@/components/SavedTracksManager";
 import MyRegistrations from "@/components/MyRegistrations";
 import LoRaPairingCard from "@/components/LoRaPairingCard";
-import { Label } from "@/components/ui/label";
 
 const Settings = () => {
   const { isOrganizerMode } = useOrganizerMode();
