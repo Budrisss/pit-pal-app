@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Car, Mail, Lock, Phone, ShieldCheck, Eye, EyeOff } from 'lucide-react';
+import { Car, Mail, Lock, Phone, ShieldCheck, Eye, EyeOff, MailCheck, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,10 +42,10 @@ const SignUp = () => {
       return;
     }
 
-    if (!phone.startsWith('+')) {
+    if (phone && !phone.startsWith('+')) {
       toast({
         title: "Invalid phone number",
-        description: "Please enter your phone number with country code (e.g. +1 for US).",
+        description: "Include country code (e.g. +1 for US) or leave the field blank.",
         variant: "destructive",
       });
       return;
@@ -154,7 +155,10 @@ const SignUp = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="phone" className="text-white">Phone Number</Label>
+                  <Label htmlFor="phone" className="text-white flex items-center gap-2">
+                    Phone Number
+                    <span className="text-[10px] uppercase tracking-wider text-white/40 font-normal">Optional</span>
+                  </Label>
                   <div className="relative">
                     <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50" size={20} />
                     <Input
@@ -164,7 +168,6 @@ const SignUp = () => {
                       onChange={(e) => setPhone(e.target.value)}
                       className="pl-10 bg-white/10 border-white/30 text-white placeholder:text-white/50"
                       placeholder="+1 555 123 4567"
-                      required
                     />
                   </div>
                 </div>
@@ -225,37 +228,49 @@ const SignUp = () => {
                   {loading ? (
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   ) : (
-                    <><Phone size={20} className="mr-2" /> Send Verification Code</>
+                    <><Mail size={20} className="mr-2" /> Email Verification Code</>
                   )}
                 </Button>
+
+                <p className="text-white/50 text-xs text-center">
+                  We'll email you a 6-digit code to confirm your address.
+                </p>
               </form>
             </>
           ) : (
             <>
+              <div className="flex justify-center mb-4">
+                <div className="w-14 h-14 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center">
+                  <MailCheck className="text-primary" size={28} />
+                </div>
+              </div>
               <h2 className="text-2xl font-bold text-white mb-2 text-center">
-                Verify Your Phone
+                Check Your Email
               </h2>
               <p className="text-white/60 text-sm text-center mb-6">
-                Enter the 6-digit code sent to {phone}
+                We sent a 6-digit code to<br />
+                <span className="text-white font-medium">{email}</span>
               </p>
 
               <form onSubmit={handleVerifyAndSignUp} className="space-y-6">
-                <div>
-                  <Label htmlFor="otp" className="text-white">Verification Code</Label>
-                  <div className="relative">
-                    <ShieldCheck className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50" size={20} />
-                    <Input
-                      id="otp"
-                      type="text"
-                      inputMode="numeric"
-                      maxLength={6}
-                      value={otpCode}
-                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      className="pl-10 bg-white/10 border-white/30 text-white placeholder:text-white/50 text-center text-2xl tracking-[0.5em] font-mono"
-                      placeholder="000000"
-                      required
-                    />
-                  </div>
+                <div className="flex flex-col items-center gap-3">
+                  <Label htmlFor="otp" className="sr-only">Verification Code</Label>
+                  <InputOTP
+                    maxLength={6}
+                    value={otpCode}
+                    onChange={(v) => setOtpCode(v.replace(/\D/g, ''))}
+                    containerClassName="gap-2"
+                  >
+                    <InputOTPGroup className="gap-2">
+                      {[0, 1, 2, 3, 4, 5].map((i) => (
+                        <InputOTPSlot
+                          key={i}
+                          index={i}
+                          className="w-11 h-12 text-xl font-mono bg-white/10 border-white/30 text-white rounded-md border-l"
+                        />
+                      ))}
+                    </InputOTPGroup>
+                  </InputOTP>
                 </div>
 
                 <Button
@@ -270,22 +285,27 @@ const SignUp = () => {
                   )}
                 </Button>
 
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <button
                     type="button"
-                    onClick={() => setStep('details')}
-                    className="text-white/70 hover:text-white text-sm transition-colors"
+                    onClick={() => { setOtpCode(''); setStep('details'); }}
+                    className="text-white/70 hover:text-white text-sm transition-colors flex items-center gap-1"
                   >
-                    ← Back
+                    <ArrowLeft size={14} /> Back
                   </button>
                   <button
                     type="button"
-                    onClick={handleSendCode as any}
-                    className="text-primary hover:text-primary/80 text-sm transition-colors"
+                    disabled={loading}
+                    onClick={() => handleSendCode(new Event('submit') as unknown as React.FormEvent)}
+                    className="text-primary hover:text-primary/80 text-sm font-medium transition-colors disabled:opacity-50"
                   >
                     Resend code
                   </button>
                 </div>
+
+                <p className="text-white/40 text-xs text-center">
+                  Didn't get it? Check your spam folder.
+                </p>
               </form>
             </>
           )}
