@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Car, User, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -21,13 +21,16 @@ const OnboardingProfile = () => {
   const [model, setModel] = useState('');
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
+  const didPrefill = useRef(false);
 
   useEffect(() => {
-    if (user?.email && !displayName) {
+    if (didPrefill.current) return;
+    if (user?.email) {
       const handle = user.email.split('@')[0].replace(/[._-]+/g, ' ');
       setDisplayName(handle.charAt(0).toUpperCase() + handle.slice(1));
+      didPrefill.current = true;
     }
-  }, [user, displayName]);
+  }, [user]);
 
   const markComplete = async () => {
     if (!user) return;
