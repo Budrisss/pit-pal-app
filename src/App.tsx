@@ -39,6 +39,7 @@ import OrganizerStampPortal from "./pages/OrganizerStampPortal";
 import Subscription from "./pages/Subscription";
 import Admin from "./pages/Admin";
 import AdminLoraSim from "./pages/AdminLoraSim";
+import OnboardingProfile from "./pages/OnboardingProfile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -62,6 +63,7 @@ const App = () => (
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/onboarding" element={<ProtectedRoute skipOnboardingCheck><OnboardingProfile /></ProtectedRoute>} />
                 <Route path="/garage" element={<ProtectedRoute><Garage /></ProtectedRoute>} />
                 <Route path="/events" element={<ProtectedRoute><Events /></ProtectedRoute>} />
                 <Route path="/events/:id" element={<ProtectedRoute><EventDetails /></ProtectedRoute>} />

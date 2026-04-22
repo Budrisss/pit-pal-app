@@ -1,10 +1,38 @@
+import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  skipOnboardingCheck?: boolean;
+}
+
+const ProtectedRoute = ({ children, skipOnboardingCheck = false }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
+  const [onboardingChecked, setOnboardingChecked] = useState(false);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
-  if (loading) {
+  useEffect(() => {
+    if (!user || skipOnboardingCheck) {
+      setOnboardingChecked(true);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("racer_profiles")
+        .select("onboarding_completed")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      setNeedsOnboarding(!data || data.onboarding_completed === false);
+      setOnboardingChecked(true);
+    })();
+    return () => { cancelled = true; };
+  }, [user, skipOnboardingCheck]);
+
+  if (loading || (user && !onboardingChecked)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -17,6 +45,10 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   if (!user) {
     return <Navigate to="/" replace />;
+  }
+
+  if (needsOnboarding && !skipOnboardingCheck) {
+    return <Navigate to="/onboarding" replace />;
   }
 
   return <>{children}</>;

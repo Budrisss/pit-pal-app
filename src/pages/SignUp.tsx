@@ -130,9 +130,9 @@ const SignUp = () => {
 
       toast({
         title: "Account created!",
-        description: "Welcome to Track Side Ops.",
+        description: "Let's set up your profile.",
       });
-      navigate('/dashboard');
+      navigate('/onboarding');
     } catch (err: any) {
       toast({
         title: "Verification failed",
