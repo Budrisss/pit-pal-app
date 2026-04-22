@@ -246,12 +246,12 @@ const SignUp = () => {
                   {loading ? (
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   ) : (
-                    <><Mail size={20} className="mr-2" /> Email Verification Code</>
+                    <><Mail size={20} className="mr-2" /> Send Verification Code</>
                   )}
                 </Button>
 
                 <p className="text-white/50 text-xs text-center">
-                  We'll email you a 6-digit code to confirm your address.
+                  We'll email you a verification code to confirm your address.
                 </p>
               </form>
             </>
@@ -266,7 +266,7 @@ const SignUp = () => {
                 Check Your Email
               </h2>
               <p className="text-white/60 text-sm text-center mb-6">
-                We sent an 8-digit code to<br />
+                We sent a verification code to<br />
                 <span className="text-white font-medium">{email}</span>
               </p>
 
@@ -314,7 +314,7 @@ const SignUp = () => {
                   <button
                     type="button"
                     disabled={loading}
-                    onClick={() => handleSendCode(new Event('submit') as unknown as React.FormEvent)}
+                    onClick={handleResend}
                     className="text-primary hover:text-primary/80 text-sm font-medium transition-colors disabled:opacity-50"
                   >
                     Resend code
