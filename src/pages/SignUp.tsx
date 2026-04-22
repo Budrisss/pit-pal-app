@@ -65,7 +65,7 @@ const SignUp = () => {
 
       toast({
         title: "Code sent!",
-        description: `A 6-digit verification code has been sent to ${email}.`,
+        description: `An 8-digit verification code has been sent to ${email}.`,
       });
       setStep('verify');
     } catch (err: any) {
