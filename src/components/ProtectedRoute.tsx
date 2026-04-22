@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -10,6 +10,7 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute = ({ children, skipOnboardingCheck = false }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
+  const location = useLocation();
   const [onboardingChecked, setOnboardingChecked] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
@@ -18,6 +19,7 @@ const ProtectedRoute = ({ children, skipOnboardingCheck = false }: ProtectedRout
       setOnboardingChecked(true);
       return;
     }
+    setOnboardingChecked(false);
     let cancelled = false;
     (async () => {
       const { data } = await supabase
@@ -30,7 +32,7 @@ const ProtectedRoute = ({ children, skipOnboardingCheck = false }: ProtectedRout
       setOnboardingChecked(true);
     })();
     return () => { cancelled = true; };
-  }, [user, skipOnboardingCheck]);
+  }, [user, skipOnboardingCheck, location.pathname]);
 
   if (loading || (user && !onboardingChecked)) {
     return (
