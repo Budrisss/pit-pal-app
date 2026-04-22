@@ -418,48 +418,6 @@ const Settings = () => {
           </CardContent>
         </Card>
 
-        {/* Racing Gallery */}
-        <Card className="bg-gradient-dark border-border/50">
-          <CardHeader>
-            <CardTitle className="text-lg text-foreground flex items-center gap-2">
-              <Camera className="text-primary" size={20} />
-              Racing Gallery
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-muted-foreground text-sm">Browse GT cars and race car collection</p>
-            <Button 
-              variant="pulse" 
-              onClick={() => setShowGallery(true)}
-              className="w-full"
-            >
-              <Camera size={16} />
-              View Racing Gallery
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Data Management */}
-        <Card className="bg-gradient-dark border-border/50">
-          <CardHeader>
-            <CardTitle className="text-lg text-foreground flex items-center gap-2">
-              <Database className="text-primary" size={20} />
-              Data Management
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button variant="outline" size="sm" className="w-full">
-              Export Data
-            </Button>
-            <Button variant="outline" size="sm" className="w-full">
-              Import Data
-            </Button>
-            <Button variant="destructive" size="sm" className="w-full">
-              Reset All Data
-            </Button>
-          </CardContent>
-        </Card>
-
         {/* Account / Logout */}
         <Card className="bg-gradient-dark border-border/50">
           <CardHeader>
