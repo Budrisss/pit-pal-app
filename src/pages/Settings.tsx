@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Settings as SettingsIcon, User, Bell, Car, Database, Camera, LogOut, MapPin, ArrowLeft, Crown, Shield } from "lucide-react";
+import { Settings as SettingsIcon, User, Bell, Car, Database, Camera, LogOut, MapPin, ArrowLeft, Crown, Shield, Pencil, X, Check } from "lucide-react";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,7 @@ import RacingGallery from "@/components/RacingGallery";
 import SavedTracksManager from "@/components/SavedTracksManager";
 import MyRegistrations from "@/components/MyRegistrations";
 import LoRaPairingCard from "@/components/LoRaPairingCard";
+import { Label } from "@/components/ui/label";
 
 const Settings = () => {
   const { isOrganizerMode } = useOrganizerMode();
@@ -31,6 +32,99 @@ const Settings = () => {
   const [zipCode, setZipCode] = useState('');
   const [savedZip, setSavedZip] = useState('');
   const [savingZip, setSavingZip] = useState(false);
+
+  // Profile state
+  const [displayName, setDisplayName] = useState('');
+  const [primaryCar, setPrimaryCar] = useState<{ id: string; name: string; year: number | null; make: string | null; model: string | null } | null>(null);
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editYear, setEditYear] = useState('');
+  const [editMake, setEditMake] = useState('');
+  const [editModel, setEditModel] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  const loadProfile = async () => {
+    if (!user) return;
+    const { data: prof } = await supabase
+      .from('racer_profiles')
+      .select('display_name, primary_car_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (prof) {
+      setDisplayName(prof.display_name || '');
+      if (prof.primary_car_id) {
+        const { data: car } = await supabase
+          .from('cars')
+          .select('id, name, year, make, model')
+          .eq('id', prof.primary_car_id)
+          .maybeSingle();
+        setPrimaryCar(car ?? null);
+      } else {
+        setPrimaryCar(null);
+      }
+    }
+  };
+
+  useEffect(() => { loadProfile(); }, [user]);
+
+  const startEdit = () => {
+    setEditName(displayName);
+    setEditYear(primaryCar?.year ? String(primaryCar.year) : '');
+    setEditMake(primaryCar?.make ?? '');
+    setEditModel(primaryCar?.model ?? '');
+    setEditingProfile(true);
+  };
+
+  const saveProfile = async () => {
+    if (!user) return;
+    if (!editName.trim()) {
+      toast({ title: 'Driver name required', variant: 'destructive' });
+      return;
+    }
+    setSavingProfile(true);
+    try {
+      let primaryCarId = primaryCar?.id ?? null;
+      const hasVehicle = editYear.trim() || editMake.trim() || editModel.trim();
+      const carName = [editYear, editMake, editModel].filter(Boolean).join(' ').trim() || 'My Car';
+
+      if (hasVehicle) {
+        if (primaryCarId) {
+          const { error } = await supabase.from('cars').update({
+            name: carName,
+            year: editYear ? parseInt(editYear, 10) : null,
+            make: editMake.trim() || null,
+            model: editModel.trim() || null,
+          }).eq('id', primaryCarId);
+          if (error) throw error;
+        } else {
+          const { data: car, error } = await supabase.from('cars').insert({
+            user_id: user.id,
+            name: carName,
+            year: editYear ? parseInt(editYear, 10) : null,
+            make: editMake.trim() || null,
+            model: editModel.trim() || null,
+          }).select('id').single();
+          if (error) throw error;
+          primaryCarId = car.id;
+        }
+      }
+
+      const { error: pErr } = await supabase.from('racer_profiles').upsert({
+        user_id: user.id,
+        display_name: editName.trim(),
+        ...(primaryCarId ? { primary_car_id: primaryCarId } : {}),
+      }, { onConflict: 'user_id' });
+      if (pErr) throw pErr;
+
+      toast({ title: 'Profile updated' });
+      setEditingProfile(false);
+      await loadProfile();
+    } catch (err: any) {
+      toast({ title: 'Failed to save', description: err.message, variant: 'destructive' });
+    } finally {
+      setSavingProfile(false);
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -141,15 +235,55 @@ const Settings = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <label className="text-sm text-muted-foreground">Driver Name</label>
-              <p className="text-foreground font-medium">John Racer</p>
-            </div>
-            <div>
-              <label className="text-sm text-muted-foreground">Primary Vehicle</label>
-              <p className="text-foreground font-medium">2018 Mazda MX-5 Miata</p>
-            </div>
-            <Button variant="outline" size="sm">Edit Profile</Button>
+            {!editingProfile ? (
+              <>
+                <div>
+                  <label className="text-sm text-muted-foreground">Driver Name</label>
+                  <p className="text-foreground font-medium">{displayName || <span className="text-muted-foreground italic">Not set</span>}</p>
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">Primary Vehicle</label>
+                  {primaryCar ? (
+                    <p className="text-foreground font-medium">
+                      {[primaryCar.year, primaryCar.make, primaryCar.model].filter(Boolean).join(' ') || primaryCar.name}
+                    </p>
+                  ) : (
+                    <p className="text-muted-foreground italic text-sm">Add your primary vehicle</p>
+                  )}
+                </div>
+                <Button variant="outline" size="sm" onClick={startEdit}>
+                  <Pencil size={14} className="mr-1" /> Edit Profile
+                </Button>
+              </>
+            ) : (
+              <>
+                <div>
+                  <Label htmlFor="editName" className="text-sm text-muted-foreground">Driver Name</Label>
+                  <Input id="editName" value={editName} onChange={(e) => setEditName(e.target.value)} />
+                </div>
+                <div>
+                  <Label className="text-sm text-muted-foreground">Primary Vehicle</Label>
+                  <div className="grid grid-cols-3 gap-2 mt-1">
+                    <Input
+                      placeholder="Year"
+                      inputMode="numeric"
+                      value={editYear}
+                      onChange={(e) => setEditYear(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    />
+                    <Input placeholder="Make" value={editMake} onChange={(e) => setEditMake(e.target.value)} />
+                    <Input placeholder="Model" value={editModel} onChange={(e) => setEditModel(e.target.value)} />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={saveProfile} disabled={savingProfile}>
+                    <Check size={14} className="mr-1" /> Save
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setEditingProfile(false)} disabled={savingProfile}>
+                    <X size={14} className="mr-1" /> Cancel
+                  </Button>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
