@@ -1,0 +1,1 @@
+ALTER TABLE public.racer_profiles ADD COLUMN IF NOT EXISTS phone_number text;

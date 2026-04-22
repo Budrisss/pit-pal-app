@@ -1123,6 +1123,7 @@ export type Database = {
           display_name: string
           id: string
           onboarding_completed: boolean
+          phone_number: string | null
           primary_car_id: string | null
           total_track_hours: number
           updated_at: string
@@ -1134,6 +1135,7 @@ export type Database = {
           display_name?: string
           id?: string
           onboarding_completed?: boolean
+          phone_number?: string | null
           primary_car_id?: string | null
           total_track_hours?: number
           updated_at?: string
@@ -1145,6 +1147,7 @@ export type Database = {
           display_name?: string
           id?: string
           onboarding_completed?: boolean
+          phone_number?: string | null
           primary_car_id?: string | null
           total_track_hours?: number
           updated_at?: string

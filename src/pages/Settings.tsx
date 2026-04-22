@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Settings as SettingsIcon, User, Bell, Car, Database, Camera, LogOut, MapPin, ArrowLeft, Crown, Shield, Pencil, X, Check } from "lucide-react";
+import { Settings as SettingsIcon, User, Bell, Car, Database, Camera, LogOut, MapPin, ArrowLeft, Crown, Shield, Pencil, X, Check, Mail, Phone } from "lucide-react";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,8 @@ import RacingGallery from "@/components/RacingGallery";
 import SavedTracksManager from "@/components/SavedTracksManager";
 import MyRegistrations from "@/components/MyRegistrations";
 import LoRaPairingCard from "@/components/LoRaPairingCard";
+import ChangeEmailDialog from "@/components/ChangeEmailDialog";
+import ChangePhoneDialog from "@/components/ChangePhoneDialog";
 
 const Settings = () => {
   const { isOrganizerMode } = useOrganizerMode();
@@ -41,16 +43,20 @@ const Settings = () => {
   const [editMake, setEditMake] = useState('');
   const [editModel, setEditModel] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [phoneDialogOpen, setPhoneDialogOpen] = useState(false);
 
   const loadProfile = async () => {
     if (!user) return;
     const { data: prof } = await supabase
       .from('racer_profiles')
-      .select('display_name, primary_car_id')
+      .select('display_name, primary_car_id, phone_number')
       .eq('user_id', user.id)
       .maybeSingle();
     if (prof) {
       setDisplayName(prof.display_name || '');
+      setPhoneNumber(prof.phone_number ?? null);
       if (prof.primary_car_id) {
         const { data: car } = await supabase
           .from('cars')
@@ -253,6 +259,34 @@ const Settings = () => {
                 <Button variant="outline" size="sm" onClick={startEdit}>
                   <Pencil size={14} className="mr-1" /> Edit Profile
                 </Button>
+                <div className="border-t border-border/50 pt-4 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <label className="text-sm text-muted-foreground flex items-center gap-1">
+                        <Mail size={12} /> Email
+                      </label>
+                      <p className="text-foreground font-medium truncate">{user?.email}</p>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => setEmailDialogOpen(true)}>
+                      Change
+                    </Button>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <label className="text-sm text-muted-foreground flex items-center gap-1">
+                        <Phone size={12} /> Phone
+                      </label>
+                      {phoneNumber ? (
+                        <p className="text-foreground font-medium">{phoneNumber}</p>
+                      ) : (
+                        <p className="text-muted-foreground italic text-sm">Not set</p>
+                      )}
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => setPhoneDialogOpen(true)}>
+                      {phoneNumber ? 'Change' : 'Add'}
+                    </Button>
+                  </div>
+                </div>
               </>
             ) : (
               <>
@@ -444,6 +478,23 @@ const Settings = () => {
         </Card>
       </div>
       <Navigation />
+      {user && (
+        <>
+          <ChangeEmailDialog
+            open={emailDialogOpen}
+            onOpenChange={setEmailDialogOpen}
+            currentEmail={user.email ?? ''}
+          />
+          <ChangePhoneDialog
+            open={phoneDialogOpen}
+            onOpenChange={setPhoneDialogOpen}
+            currentEmail={user.email ?? ''}
+            userId={user.id}
+            currentPhone={phoneNumber}
+            onSaved={loadProfile}
+          />
+        </>
+      )}
     </div>
   );
 };
