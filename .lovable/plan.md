@@ -1,46 +1,43 @@
 
 
-## Fix Driver Name field on onboarding being un-editable
+## Email/phone change with email-based verification
 
-### Problem
-On `/onboarding`, typing or deleting characters in the **Driver Name** input keeps snapping the value back to the email-derived default (e.g. "Thebudrissgroup"). The session replay shows the user backspacing the field clean over and over, and each time the prefill returns.
+### Goal
+Let users change their **email** or **phone number** from Settings → Profile. Both changes go through an **8-digit code sent to the user's current email** (same style as signup) — no Twilio/SMS needed since SMS isn't wired up yet.
 
-### Root cause
-In `src/pages/OnboardingProfile.tsx`, the prefill effect lists `displayName` as a dependency:
+### What the user will experience
 
-```ts
-useEffect(() => {
-  if (user?.email && !displayName) {
-    setDisplayName(deriveFromEmail(user.email));
-  }
-}, [user, displayName]);
-```
+On the Profile card, two new rows appear:
+- **Email** — current email + "Change" button
+- **Phone** — current phone (or "Not set") + "Change" / "Add" button
 
-Because `displayName` is in the dependency array, every keystroke that empties the field (e.g., clearing it to type a new name) re-fires the effect and re-prefills it. The user can never blank the field to type their own name.
+**Flow for either change:**
+1. Click "Change" → dialog opens.
+2. Step 1 — **Verify it's you**: dialog says "We'll send an 8-digit code to your current email (`user@x.com`) to confirm this change." Click "Send code".
+3. Supabase emails an 8-digit OTP to the **current** email (using existing `signInWithOtp` flow already used at signup).
+4. Step 2 — User enters the 8-digit code + the new email (or new phone). Click "Confirm change".
+5. We verify the OTP, then call `supabase.auth.updateUser({ email: newEmail })` or update the phone field.
+6. **Email changes**: Supabase additionally sends a confirmation link to the **new** email — the change only finalizes when that link is clicked. Toast: "Check your new inbox to finalize the change."
+7. **Phone changes**: phone is stored on the profile immediately after OTP passes. Toast: "Phone updated."
+8. Profile card refreshes.
 
-### Fix
-Run the prefill exactly once, when the user first loads the page. Use a `useRef` flag so it never re-applies after the user starts editing.
+### Where the phone number lives
+Since Twilio isn't connected, we **do not** touch `auth.users.phone` (that would trigger an SMS). Instead, store the phone on `racer_profiles.phone_number` (new column). This is the field the Profile card reads/writes. When SMS is wired up later, we can migrate to `auth.users.phone` with real SMS verification.
 
-```ts
-const didPrefill = useRef(false);
-useEffect(() => {
-  if (didPrefill.current) return;
-  if (user?.email) {
-    const handle = user.email.split('@')[0].replace(/[._-]+/g, ' ');
-    setDisplayName(handle.charAt(0).toUpperCase() + handle.slice(1));
-    didPrefill.current = true;
-  }
-}, [user]);
-```
+### Files to create / update
 
-This lets the field be cleared, retyped, or replaced freely after the initial prefill.
+- **Update** `src/pages/Settings.tsx` — add Email and Phone rows to the Profile card with "Change" buttons.
+- **Create** `src/components/ChangeEmailDialog.tsx` — two-step: send 8-digit OTP to current email → verify code + new email → `updateUser({ email })`.
+- **Create** `src/components/ChangePhoneDialog.tsx` — two-step: send 8-digit OTP to current email → verify code + new phone → upsert into `racer_profiles.phone_number`.
+- **Migration**: add `phone_number text NULL` column to `racer_profiles` (RLS already covers it via the existing `auth.uid() = user_id` policies).
 
-### Files changed
-- `src/pages/OnboardingProfile.tsx` — replace the prefill `useEffect` with a one-shot ref-guarded version.
+### Why email OTP for both
+- No Twilio dependency.
+- Matches the existing 8-digit email OTP flow used at signup, so users already recognize it.
+- Re-verifying via the **current** email proves account ownership before allowing a sensitive change — same security model major SaaS uses when SMS isn't available.
 
-### QA
-1. Visit `/onboarding` — Driver Name is prefilled from the email handle.
-2. Clear the field completely — it stays empty.
-3. Type a new name — characters appear and persist.
-4. Submit — saved value matches what was typed.
+### Out of scope
+- Real SMS verification of the new phone (revisit when Twilio is connected).
+- Removing email/phone (can add later).
+- Changing email without OTP (intentionally unsafe, not supported).
 
