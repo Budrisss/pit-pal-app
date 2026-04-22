@@ -208,13 +208,6 @@ async function handleWebhook(req: Request): Promise<Response> {
   // payload.type is the hook event type ("auth")
   const emailType = payload.data.action_type
   console.log('Received auth event', { emailType, email: payload.data.email, run_id })
-  console.log('Token debug', {
-    token: payload.data.token,
-    token_length: payload.data.token?.length,
-    token_hash: payload.data.token_hash,
-    token_hash_length: payload.data.token_hash?.length,
-    keys: Object.keys(payload.data),
-  })
 
   const EmailTemplate = EMAIL_TEMPLATES[emailType]
   if (!EmailTemplate) {
