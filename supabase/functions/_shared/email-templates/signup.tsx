@@ -9,6 +9,7 @@ import {
   Head,
   Heading,
   Html,
+  Img,
   Link,
   Preview,
   Text,
@@ -19,6 +20,7 @@ interface SignupEmailProps {
   siteUrl: string
   recipient: string
   confirmationUrl: string
+  token?: string
 }
 
 export const SignupEmail = ({
@@ -26,32 +28,43 @@ export const SignupEmail = ({
   siteUrl,
   recipient,
   confirmationUrl,
+  token,
 }: SignupEmailProps) => (
   <Html lang="en" dir="ltr">
     <Head />
-    <Preview>Confirm your email for {siteName}</Preview>
+    <Preview>Your Track Side Ops verification code</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Confirm your email</Heading>
+        <Img
+          src="https://fkkemgtdxbsqvtsidhvu.supabase.co/storage/v1/object/public/email-assets/trackside-logo.png"
+          alt="Track Side Ops"
+          width="180"
+          style={logo}
+        />
+        <Heading style={h1}>Welcome to the paddock</Heading>
         <Text style={text}>
-          Thanks for signing up for{' '}
-          <Link href={siteUrl} style={link}>
-            <strong>{siteName}</strong>
-          </Link>
-          !
+          Thanks for joining <strong>Track Side Ops</strong>. Confirm{' '}
+          <Link href={`mailto:${recipient}`} style={link}>{recipient}</Link>{' '}
+          to hit the grid.
         </Text>
-        <Text style={text}>
-          Please confirm your email address (
-          <Link href={`mailto:${recipient}`} style={link}>
-            {recipient}
-          </Link>
-          ) by clicking the button below:
-        </Text>
+        {token ? (
+          <>
+            <Text style={label}>YOUR VERIFICATION CODE</Text>
+            <Text style={otpBox}>{token}</Text>
+            <Text style={subtle}>
+              Enter this 6-digit code in the app to finish creating your account. The code expires in 10 minutes.
+            </Text>
+            <Text style={fallbackLabel}>Or click to verify directly:</Text>
+          </>
+        ) : null}
         <Button style={button} href={confirmationUrl}>
           Verify Email
         </Button>
         <Text style={footer}>
-          If you didn't create an account, you can safely ignore this email.
+          Didn't request this? You can safely ignore this email — no account will be created.
+        </Text>
+        <Text style={footer}>
+          <Link href={siteUrl} style={footerLink}>{siteName}</Link>
         </Text>
       </Container>
     </Body>
@@ -60,27 +73,59 @@ export const SignupEmail = ({
 
 export default SignupEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
-const container = { padding: '20px 25px' }
+const fontStack =
+  "-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif"
+const brandRed = '#ef3c3c'
+const main = { backgroundColor: '#ffffff', fontFamily: fontStack, padding: '24px 0' }
+const container = {
+  padding: '32px 28px',
+  maxWidth: '520px',
+  margin: '0 auto',
+  border: '1px solid #ececec',
+  borderRadius: '16px',
+  backgroundColor: '#ffffff',
+}
+const logo = { margin: '0 0 24px' }
 const h1 = {
-  fontSize: '22px',
+  fontSize: '24px',
   fontWeight: 'bold' as const,
-  color: '#000000',
-  margin: '0 0 20px',
+  color: '#0d0f12',
+  margin: '0 0 16px',
+  letterSpacing: '-0.01em',
 }
-const text = {
-  fontSize: '14px',
-  color: '#55575d',
-  lineHeight: '1.5',
-  margin: '0 0 25px',
+const text = { fontSize: '15px', color: '#3a3d44', lineHeight: '1.55', margin: '0 0 20px' }
+const link = { color: brandRed, textDecoration: 'underline' }
+const label = {
+  fontSize: '11px',
+  letterSpacing: '0.12em',
+  color: '#7a7d85',
+  fontWeight: 'bold' as const,
+  margin: '4px 0 8px',
 }
-const link = { color: 'inherit', textDecoration: 'underline' }
+const otpBox = {
+  fontFamily: "'SF Mono', Menlo, Consolas, monospace",
+  fontSize: '34px',
+  fontWeight: 'bold' as const,
+  letterSpacing: '0.4em',
+  color: brandRed,
+  backgroundColor: '#fff5f5',
+  border: `1px solid ${brandRed}33`,
+  borderRadius: '12px',
+  padding: '18px 12px',
+  textAlign: 'center' as const,
+  margin: '0 0 16px',
+}
+const subtle = { fontSize: '13px', color: '#6b6e75', lineHeight: '1.5', margin: '0 0 28px' }
+const fallbackLabel = { fontSize: '12px', color: '#7a7d85', margin: '0 0 8px' }
 const button = {
-  backgroundColor: '#000000',
+  backgroundColor: brandRed,
   color: '#ffffff',
   fontSize: '14px',
-  borderRadius: '8px',
-  padding: '12px 20px',
+  fontWeight: 'bold' as const,
+  borderRadius: '10px',
+  padding: '12px 22px',
   textDecoration: 'none',
+  display: 'inline-block',
 }
-const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
+const footer = { fontSize: '12px', color: '#9a9da4', margin: '28px 0 0', lineHeight: '1.5' }
+const footerLink = { color: '#9a9da4', textDecoration: 'underline' }
