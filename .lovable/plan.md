@@ -1,63 +1,59 @@
 
+## Fix signup so it sends a verification code email instead of a login link
 
-## Branded verification email for Track Side Ops
+### Root cause
+The signup screen is currently starting a passwordless email flow by calling `supabase.auth.signInWithOtp(...)` in `src/pages/SignUp.tsx`. That triggers the `magiclink` auth email, which is why users receive an email titled “Your login link” instead of the branded signup verification email.
 
-Set up a custom-branded email template for the signup verification code so users receive a Track Side Ops-styled email instead of Supabase's default plain template.
+### Implementation
+1. **Switch the initial signup action to normal account creation**
+   - Replace the current `signInWithOtp` call in `src/pages/SignUp.tsx` with `supabase.auth.signUp(...)`.
+   - Pass the entered password during signup so the account is created in the correct email-confirmation flow.
+   - Keep optional phone data in `options.data` so that field still works.
 
-### What you'll see
+2. **Use the correct verification type for the code step**
+   - Update the verify step from:
+     - `verifyOtp({ ..., type: 'email' })`
+   - To:
+     - `verifyOtp({ ..., type: 'signup' })`
+   - This aligns the code-entry screen with the actual signup confirmation flow.
 
-When a user signs up, they'll get an email that:
-- Comes from `notify@notify.tracksideops.com` (your branded subdomain)
-- Uses the Track Side Ops dark theme with red accent (`#EF3E36`-ish primary)
-- Shows the Track Side Ops logo at the top (white card on white email body — emails always use white backgrounds for deliverability)
-- Displays the 6-digit OTP in a large, monospace, easy-to-read format
-- Uses racing-inspired tone: "Your Track Side Ops verification code" / "Enter this code to hit the grid"
-- Includes a fallback note: "Didn't request this? You can safely ignore this email."
+3. **Remove the unnecessary password update after verification**
+   - The current flow verifies the OTP and then calls `updateUser({ password })`.
+   - Once signup uses `signUp(...)`, the password is already set up front, so this extra update should be removed.
 
-### Setup steps
+4. **Refactor resend logic**
+   - Extract the “send verification email” request into a shared helper instead of reusing a synthetic submit event.
+   - Use that helper for both:
+     - the first “Email Verification Code” button
+     - the “Resend code” button
+   - Keep the user on the verify step when resending.
 
-**1. Email sender domain**
-- Set up `notify.tracksideops.com` as the verified sender subdomain
-- This requires you to add 2 NS records at your domain registrar (where `tracksideops.com` is managed)
-- DNS verification runs in the background — scaffolding/deploy don't wait for it
+5. **Align all signup copy**
+   - Update the signup UI text so it consistently says:
+     - “verification code”
+     - not “login link”
+   - Make the code-length messaging consistent across:
+     - the helper text
+     - the toast
+     - the verify screen
+   - If the backend continues returning 8-digit signup tokens, keep the 8-slot OTP UI; otherwise align the UI length with the real signup token length.
 
-**2. Scaffold the auth email templates**
-- Creates `supabase/functions/auth-email-hook/` (the function Supabase calls when an auth email needs to be sent)
-- Creates `supabase/functions/_shared/email-templates/` with 6 React Email templates:
-  - `signup.tsx` — the one drivers will see during signup (the focus of styling)
-  - `magic-link.tsx`, `recovery.tsx`, `invite.tsx`, `email-change.tsx`, `reauthentication.tsx` — styled to match for consistency
+### Expected outcome
+- Clicking the signup button sends the **signup confirmation email**, not the magic-link email.
+- The branded `signup.tsx` email template is used.
+- The email subject/body will match account verification instead of login.
+- The code-entry screen will verify the correct signup token and complete account creation cleanly.
 
-**3. Apply Track Side Ops branding to all 6 templates**
-- Pull brand tokens from `src/index.css`: primary red `hsl(0 91% 59%)`, dark surfaces, border radius `1rem`
-- Body background: white `#ffffff` (mandatory for email deliverability — even though the app is dark)
-- Inner card: white with subtle border, dark text for readability
-- Logo: Track Side Ops logo (`trackside-logo-v2.png`) at the top of every template
-- Primary button / OTP highlight: Track Side Ops red
-- Font stack: web-safe fallback (`-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif`)
-- Tone matches the app — e.g. "Welcome to the paddock" instead of generic "Confirm your email"
+### Files to update
+- `src/pages/SignUp.tsx`
 
-**4. Deploy the auth-email-hook**
-- One deploy call activates the hook
-- Auth emails switch from default Supabase templates to Track Side Ops branded templates automatically once DNS verifies
+### Technical notes
+- No database migration should be required.
+- No auth-template rewrite should be required unless copy tweaks are wanted; the branded signup email template already exists.
+- The magic-link template should remain in place for any true passwordless login flows, but it should no longer be used by signup.
 
-### What you need to do
-
-When the email setup dialog appears, you'll:
-1. Confirm the subdomain (`notify.tracksideops.com` is the default — fine to keep)
-2. Get 2 NS records to add at your domain registrar (Namecheap, GoDaddy, Cloudflare, wherever `tracksideops.com` lives)
-3. Add them — DNS propagation can take a few minutes to 72 hours
-
-Setup continues automatically in the background. You can monitor progress in **Cloud → Emails**.
-
-### What stays the same
-
-- The signup OTP flow (`SignUp.tsx`) — no code change needed; Supabase routes the email through the new branded template automatically
-- All 6 templates get styled, but only `signup.tsx` is in active use today (the others are ready for future flows like password reset)
-- Default Supabase emails keep working until DNS verifies — no downtime during the transition
-
-### Out of scope
-
-- Replacing the actual sending provider (we use Lovable's built-in email infrastructure — no Resend/SendGrid setup needed)
-- Adding marketing or notification emails (this is auth-only)
-- Customizing the verification code length or expiry (controlled by Supabase auth settings, not the template)
-
+### QA
+1. Start a fresh signup from `/signup`.
+2. Confirm the resulting email is the signup/verification email, not “Your login link”.
+3. Confirm the entered code verifies successfully and lands the user in the app.
+4. Check logs to verify the auth event is `signup` instead of `magiclink`.
