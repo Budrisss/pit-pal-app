@@ -1,59 +1,63 @@
 
 
-## Switch signup verification from SMS to email
+## Branded verification email for Track Side Ops
 
-Currently signup uses **SMS OTP via Twilio** (`send-verification-code` / `verify-code` edge functions writing to a `verification_codes` table keyed by phone). You want to verify via **email** instead.
+Set up a custom-branded email template for the signup verification code so users receive a Track Side Ops-styled email instead of Supabase's default plain template.
 
-The cleanest path is to use **Supabase's built-in email OTP** — no custom edge functions, no custom code table, no Twilio cost on signup. Supabase emails a 6-digit code, you verify it with one SDK call, and the account is created automatically.
+### What you'll see
 
-### How it will work for the user
+When a user signs up, they'll get an email that:
+- Comes from `notify@notify.tracksideops.com` (your branded subdomain)
+- Uses the Track Side Ops dark theme with red accent (`#EF3E36`-ish primary)
+- Shows the Track Side Ops logo at the top (white card on white email body — emails always use white backgrounds for deliverability)
+- Displays the 6-digit OTP in a large, monospace, easy-to-read format
+- Uses racing-inspired tone: "Your Track Side Ops verification code" / "Enter this code to hit the grid"
+- Includes a fallback note: "Didn't request this? You can safely ignore this email."
 
-1. Signup form collects: email, password, name, etc. (whatever fields you currently collect — phone becomes optional)
-2. User clicks "Send verification code" → Supabase emails them a 6-digit OTP from your branded sender domain
-3. User enters the code → account is created and they're logged in
-4. Redirect to `/dashboard`
+### Setup steps
 
-### Changes
+**1. Email sender domain**
+- Set up `notify.tracksideops.com` as the verified sender subdomain
+- This requires you to add 2 NS records at your domain registrar (where `tracksideops.com` is managed)
+- DNS verification runs in the background — scaffolding/deploy don't wait for it
 
-**`src/pages/SignUp.tsx`**
-- Replace the phone-OTP step with an email-OTP step
-- Step 1: collect email + password + profile fields, call `supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true, data: { ...profileFields } } })` to send the code
-- Step 2: 6-digit input, call `supabase.auth.verifyOtp({ email, token, type: 'email' })` to verify + auto-login
-- After successful verify, set the password via `supabase.auth.updateUser({ password })` so the user can log in normally next time
-- Keep phone as an optional profile field (stored in profile, not used for auth)
+**2. Scaffold the auth email templates**
+- Creates `supabase/functions/auth-email-hook/` (the function Supabase calls when an auth email needs to be sent)
+- Creates `supabase/functions/_shared/email-templates/` with 6 React Email templates:
+  - `signup.tsx` — the one drivers will see during signup (the focus of styling)
+  - `magic-link.tsx`, `recovery.tsx`, `invite.tsx`, `email-change.tsx`, `reauthentication.tsx` — styled to match for consistency
 
-**Auth config** (via `configure_auth` tool)
-- Enable email OTP / email confirmations
-- Keep auto-confirm OFF (the OTP verification IS the confirmation)
+**3. Apply Track Side Ops branding to all 6 templates**
+- Pull brand tokens from `src/index.css`: primary red `hsl(0 91% 59%)`, dark surfaces, border radius `1rem`
+- Body background: white `#ffffff` (mandatory for email deliverability — even though the app is dark)
+- Inner card: white with subtle border, dark text for readability
+- Logo: Track Side Ops logo (`trackside-logo-v2.png`) at the top of every template
+- Primary button / OTP highlight: Track Side Ops red
+- Font stack: web-safe fallback (`-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif`)
+- Tone matches the app — e.g. "Welcome to the paddock" instead of generic "Confirm your email"
 
-**Branded verification email** (recommended, optional)
-- Scaffold the Lovable auth email templates so the verification email matches Track Side Ops branding (logo, dark theme, red accent) instead of the default Supabase template
-- Requires a verified sender domain. Your project has `tracksideops.com` configured — we'll use a `notify.tracksideops.com` subdomain via the email setup dialog
-- If you skip this step, signup still works — users just get the default unbranded verification email
+**4. Deploy the auth-email-hook**
+- One deploy call activates the hook
+- Auth emails switch from default Supabase templates to Track Side Ops branded templates automatically once DNS verifies
 
-**Decommission SMS path (cleanup)**
-- Remove `send-verification-code` and `verify-code` edge functions from active use (leave files for reference or delete)
-- The `verification_codes` table can stay (harmless) or be dropped in a follow-up
+### What you need to do
+
+When the email setup dialog appears, you'll:
+1. Confirm the subdomain (`notify.tracksideops.com` is the default — fine to keep)
+2. Get 2 NS records to add at your domain registrar (Namecheap, GoDaddy, Cloudflare, wherever `tracksideops.com` lives)
+3. Add them — DNS propagation can take a few minutes to 72 hours
+
+Setup continues automatically in the background. You can monitor progress in **Cloud → Emails**.
 
 ### What stays the same
 
-- `Login.tsx` — unchanged (email + password)
-- `ForgotPassword.tsx` / `ResetPassword.tsx` — unchanged
-- `AuthContext.tsx` — `signIn` / `signOut` work as-is; `signUp` becomes unused (replaced by the OTP flow inside `SignUp.tsx`)
-- All test accounts and existing user records — untouched
-- Phone field stays in the UI as optional contact info
-
-### Open question
-
-Do you want the branded email template now, or just get the basic email OTP flow working first and add branding later?
-
-- **Branded now**: I'll set up the `notify.tracksideops.com` sender subdomain (you'll add 2 NS records at your domain registrar), scaffold + style the verification email template to match Track Side Ops, then build the OTP flow.
-- **Basic first**: I'll just build the OTP flow today using Supabase's default email template. Branding can be added later in one pass.
+- The signup OTP flow (`SignUp.tsx`) — no code change needed; Supabase routes the email through the new branded template automatically
+- All 6 templates get styled, but only `signup.tsx` is in active use today (the others are ready for future flows like password reset)
+- Default Supabase emails keep working until DNS verifies — no downtime during the transition
 
 ### Out of scope
 
-- Changing the login page (still email + password)
-- Removing phone from profiles entirely (kept as optional contact field)
-- Migrating existing phone-verified users (their accounts continue to work)
-- Two-factor auth on login (this is signup verification only)
+- Replacing the actual sending provider (we use Lovable's built-in email infrastructure — no Resend/SendGrid setup needed)
+- Adding marketing or notification emails (this is auth-only)
+- Customizing the verification code length or expiry (controlled by Supabase auth settings, not the template)
 
