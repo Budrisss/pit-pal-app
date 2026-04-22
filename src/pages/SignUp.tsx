@@ -30,6 +30,18 @@ const SignUp = () => {
     return null;
   }
 
+  const sendVerificationEmail = async () => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/dashboard`,
+        data: phone ? { phone } : undefined,
+      },
+    });
+    if (error) throw error;
+  };
+
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -53,24 +65,34 @@ const SignUp = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: true,
-          data: phone ? { phone } : undefined,
-        },
-      });
-
-      if (error) throw error;
-
+      await sendVerificationEmail();
       toast({
         title: "Code sent!",
-        description: `An 8-digit verification code has been sent to ${email}.`,
+        description: `A verification code has been sent to ${email}.`,
       });
       setStep('verify');
     } catch (err: any) {
       toast({
         title: "Failed to send code",
+        description: err.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setLoading(true);
+    try {
+      await sendVerificationEmail();
+      toast({
+        title: "Code resent",
+        description: `A new verification code has been sent to ${email}.`,
+      });
+    } catch (err: any) {
+      toast({
+        title: "Failed to resend code",
         description: err.message,
         variant: "destructive",
       });
@@ -88,14 +110,10 @@ const SignUp = () => {
       const { error: verifyError } = await supabase.auth.verifyOtp({
         email,
         token: otpCode,
-        type: 'email',
+        type: 'signup',
       });
 
       if (verifyError) throw verifyError;
-
-      // Set the password so the user can sign in normally next time
-      const { error: updateError } = await supabase.auth.updateUser({ password });
-      if (updateError) throw updateError;
 
       toast({
         title: "Account created!",
