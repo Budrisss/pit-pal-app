@@ -83,27 +83,24 @@ const SignUp = () => {
     setLoading(true);
 
     try {
-      // Verify the OTP code
-      const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-code', {
-        body: { phone, code: otpCode },
+      // Verify the OTP — this creates and logs in the user
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        email,
+        token: otpCode,
+        type: 'email',
       });
 
-      if (verifyError || !verifyData?.success) {
-        throw new Error(verifyData?.error || verifyError?.message || 'Invalid code');
-      }
+      if (verifyError) throw verifyError;
 
-      // Code verified — create account
-      const { error: signUpError } = await signUp(email, password);
-
-      if (signUpError) {
-        throw signUpError;
-      }
+      // Set the password so the user can sign in normally next time
+      const { error: updateError } = await supabase.auth.updateUser({ password });
+      if (updateError) throw updateError;
 
       toast({
         title: "Account created!",
-        description: "Check your email to confirm your account, then log in.",
+        description: "Welcome to Track Side Ops.",
       });
-      navigate('/login');
+      navigate('/dashboard');
     } catch (err: any) {
       toast({
         title: "Verification failed",
