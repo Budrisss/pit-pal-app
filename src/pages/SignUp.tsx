@@ -65,7 +65,7 @@ const SignUp = () => {
 
       toast({
         title: "Code sent!",
-        description: `A 6-digit verification code has been sent to ${email}.`,
+        description: `An 8-digit verification code has been sent to ${email}.`,
       });
       setStep('verify');
     } catch (err: any) {
@@ -248,7 +248,7 @@ const SignUp = () => {
                 Check Your Email
               </h2>
               <p className="text-white/60 text-sm text-center mb-6">
-                We sent a 6-digit code to<br />
+                We sent an 8-digit code to<br />
                 <span className="text-white font-medium">{email}</span>
               </p>
 
@@ -256,17 +256,17 @@ const SignUp = () => {
                 <div className="flex flex-col items-center gap-3">
                   <Label htmlFor="otp" className="sr-only">Verification Code</Label>
                   <InputOTP
-                    maxLength={6}
+                    maxLength={8}
                     value={otpCode}
                     onChange={(v) => setOtpCode(v.replace(/\D/g, ''))}
                     containerClassName="gap-2"
                   >
                     <InputOTPGroup className="gap-2">
-                      {[0, 1, 2, 3, 4, 5].map((i) => (
+                      {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
                         <InputOTPSlot
                           key={i}
                           index={i}
-                          className="w-11 h-12 text-xl font-mono bg-white/10 border-white/30 text-white rounded-md border-l"
+                          className="w-9 h-12 text-lg font-mono bg-white/10 border-white/30 text-white rounded-md border-l"
                         />
                       ))}
                     </InputOTPGroup>
@@ -275,7 +275,7 @@ const SignUp = () => {
 
                 <Button
                   type="submit"
-                  disabled={loading || otpCode.length !== 6}
+                  disabled={loading || otpCode.length !== 8}
                   className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-3"
                 >
                   {loading ? (

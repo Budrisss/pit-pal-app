@@ -52,7 +52,7 @@ export const SignupEmail = ({
             <Text style={label}>YOUR VERIFICATION CODE</Text>
             <Text style={otpBox}>{token}</Text>
             <Text style={subtle}>
-              Enter this 6-digit code in the app to finish creating your account. The code expires in 10 minutes.
+              Enter this code in the app to finish creating your account. The code expires in 10 minutes.
             </Text>
             <Text style={fallbackLabel}>Or click to verify directly:</Text>
           </>
