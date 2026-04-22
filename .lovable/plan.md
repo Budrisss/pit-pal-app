@@ -1,59 +1,69 @@
 
-## Fix signup so it sends a verification code email instead of a login link
 
-### Root cause
-The signup screen is currently starting a passwordless email flow by calling `supabase.auth.signInWithOtp(...)` in `src/pages/SignUp.tsx`. That triggers the `magiclink` auth email, which is why users receive an email titled “Your login link” instead of the branded signup verification email.
+## Onboard new users with profile details that flow into Settings
 
-### Implementation
-1. **Switch the initial signup action to normal account creation**
-   - Replace the current `signInWithOtp` call in `src/pages/SignUp.tsx` with `supabase.auth.signUp(...)`.
-   - Pass the entered password during signup so the account is created in the correct email-confirmation flow.
-   - Keep optional phone data in `options.data` so that field still works.
+### Goal
+After a user verifies their email and creates their account, walk them through a quick onboarding step that captures **Driver Name** and **Primary Vehicle**. This data lands in their racer profile and is shown live on the Settings → Profile card (replacing the current hardcoded "John Racer / 2018 Mazda MX-5 Miata" placeholder).
 
-2. **Use the correct verification type for the code step**
-   - Update the verify step from:
-     - `verifyOtp({ ..., type: 'email' })`
-   - To:
-     - `verifyOtp({ ..., type: 'signup' })`
-   - This aligns the code-entry screen with the actual signup confirmation flow.
+### What the user will experience
 
-3. **Remove the unnecessary password update after verification**
-   - The current flow verifies the OTP and then calls `updateUser({ password })`.
-   - Once signup uses `signUp(...)`, the password is already set up front, so this extra update should be removed.
+1. Sign up → verify 8-digit email code (unchanged).
+2. Immediately after verification, instead of jumping straight to the dashboard, show a new **"Complete Your Profile"** screen with:
+   - **Driver Name** (required, prefilled from email handle)
+   - **Primary Vehicle** — two quick fields: Year/Make/Model (e.g. "2018 Mazda MX-5 Miata") and optional class/notes
+   - "Skip for now" link (so it never blocks entry)
+   - "Save & Continue" button → goes to `/dashboard`
+3. The Settings → Profile card now shows real data:
+   - Driver Name = `racer_profiles.display_name`
+   - Primary Vehicle = the car flagged as primary
+   - "Edit Profile" button opens an inline editor that updates both.
+4. Existing users who never completed onboarding will see the same prompt the next time they hit `/dashboard` (one-time, dismissible).
 
-4. **Refactor resend logic**
-   - Extract the “send verification email” request into a shared helper instead of reusing a synthetic submit event.
-   - Use that helper for both:
-     - the first “Email Verification Code” button
-     - the “Resend code” button
-   - Keep the user on the verify step when resending.
+### Data model changes
 
-5. **Align all signup copy**
-   - Update the signup UI text so it consistently says:
-     - “verification code”
-     - not “login link”
-   - Make the code-length messaging consistent across:
-     - the helper text
-     - the toast
-     - the verify screen
-   - If the backend continues returning 8-digit signup tokens, keep the 8-slot OTP UI; otherwise align the UI length with the real signup token length.
+- `racer_profiles` already has `display_name` and `bio`. Add:
+  - `primary_car_id uuid NULL` — points at the user's primary car in `cars`.
+  - `onboarding_completed boolean NOT NULL DEFAULT false` — tracks whether the new-user flow has been finished or skipped.
+- No changes to `auth.users`. No new table required.
 
-### Expected outcome
-- Clicking the signup button sends the **signup confirmation email**, not the magic-link email.
-- The branded `signup.tsx` email template is used.
-- The email subject/body will match account verification instead of login.
-- The code-entry screen will verify the correct signup token and complete account creation cleanly.
+### Code changes
 
-### Files to update
-- `src/pages/SignUp.tsx`
+1. **New page**: `src/pages/OnboardingProfile.tsx`
+   - Form with Driver Name + Primary Vehicle (Year, Make, Model, optional Color/Notes).
+   - On save:
+     - `upsert` into `racer_profiles` (`display_name`, `onboarding_completed = true`).
+     - Insert a row into `cars` with the entered vehicle.
+     - Update `racer_profiles.primary_car_id` to the new car id.
+   - On skip: set `onboarding_completed = true` only.
+   - Redirect to `/dashboard`.
 
-### Technical notes
-- No database migration should be required.
-- No auth-template rewrite should be required unless copy tweaks are wanted; the branded signup email template already exists.
-- The magic-link template should remain in place for any true passwordless login flows, but it should no longer be used by signup.
+2. **Routing**: `src/App.tsx`
+   - Add `/onboarding` route (protected).
 
-### QA
-1. Start a fresh signup from `/signup`.
-2. Confirm the resulting email is the signup/verification email, not “Your login link”.
-3. Confirm the entered code verifies successfully and lands the user in the app.
-4. Check logs to verify the auth event is `signup` instead of `magiclink`.
+3. **Signup flow**: `src/pages/SignUp.tsx`
+   - After successful `verifyOtp`, navigate to `/onboarding` instead of `/dashboard`.
+
+4. **Onboarding gate**: lightweight check in `ProtectedRoute` (or a small hook used by `Dashboard`) that, when `racer_profiles.onboarding_completed === false`, redirects to `/onboarding`. This catches users who close the tab mid-onboarding.
+
+5. **Settings → Profile card**: `src/pages/Settings.tsx`
+   - Replace the hardcoded block with live data fetched from `racer_profiles` + the linked primary car from `cars`.
+   - Wire "Edit Profile" to an inline edit mode (reusing the same fields as onboarding) that updates `racer_profiles.display_name` and either swaps `primary_car_id` to an existing car or creates a new one.
+   - Show a graceful empty state if no primary vehicle is set yet ("Add your primary vehicle").
+
+6. **GridID page**: already reads `racer_profiles.display_name`, so no change needed — it'll automatically reflect the new name.
+
+### Security / RLS
+- Existing `racer_profiles` policies already cover insert/update by `auth.uid() = user_id`, so the new columns are protected automatically.
+- Existing `cars` policies already cover insert by the owning user.
+- No RLS changes needed.
+
+### Files to create / update
+- **Create**: `src/pages/OnboardingProfile.tsx`
+- **Update**: `src/pages/SignUp.tsx`, `src/pages/Settings.tsx`, `src/App.tsx`, `src/components/ProtectedRoute.tsx`
+- **Migration**: add `primary_car_id` and `onboarding_completed` columns to `racer_profiles`.
+
+### Out of scope (can do later if you want)
+- Avatar upload during onboarding.
+- Multi-step onboarding (track preferences, experience level, etc.).
+- Email verification copy/branding tweaks (already addressed in prior turn).
+
