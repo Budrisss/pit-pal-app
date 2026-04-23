@@ -1,39 +1,62 @@
 
 
-## Smoother "Add Item" UX for Checklists
+## Add "Download Maintenance Log" PDF Export
 
-### What's clunky now
-- The add-item row is a thin 8pt input next to a barely-visible ghost `+` button. Target is small, looks more like a hint than a primary action.
-- After adding an item, the input clears but **focus is lost**, so adding 5 items = 5 clicks back into the input.
-- No visual feedback when an item lands in the list.
-- On the **By Event** tab, adding to an event checklist re-fetches *all* checklists across *all* events (`fetchAllEventChecklists`), causing a full page flash on every keystroke-submit.
+### What gets added
+A **Download Log** button at the top of the Maintenance Log page (next to "Add Record") that generates a printable PDF of all maintenance records for the current vehicle, with a summary cover page.
 
-### Fixes
+### PDF structure
 
-**1. Better add-item composer** (`src/components/ChecklistCard.tsx`)
-- Replace the thin inline row with a dedicated bottom strip:
-  - Slightly taller input (h-9), placeholder "Add a new item…"
-  - Trailing **filled** primary button labeled "Add" with `Plus` icon (not a ghost icon-only button). Disabled state stays muted.
-  - Visual separator (border-top) above it so it reads as the composer, not another list row.
-- **Auto-refocus**: keep an `inputRef`, refocus after submit so the user can keep typing items rapidly.
-- **Enter to add, Shift+Enter ignored** (single-line is correct here).
-- Subtle 250ms highlight (`bg-primary/10` fade) on the most-recently-added row so the user sees where it landed.
+**Page 1 — Cover / Summary**
+- Title: "Maintenance Log"
+- Vehicle: `{Year} {Make} {Model}` + car name
+- Generated on: today's date
+- **Overall stats**:
+  - Total records
+  - Total spent (sum of all `cost`)
+  - Date range (earliest → latest service date)
+  - Latest mileage on file (if any)
+- **Spend by year** table:
+  ```
+  Year    Records   Total Spent
+  2025    8         $1,240.50
+  2024    12        $2,830.00
+  2023    5         $675.25
+  ```
+- **Spend by service type** table (top 10 by cost):
+  ```
+  Service Type     Count   Total
+  Brake Pads       4       $890.00
+  Oil Change       12      $540.00
+  ...
+  ```
 
-**2. Optimistic add** (`src/contexts/ChecklistsContext.tsx`)
-- `addTemplateItem` and `addEventChecklistItem` currently `await insert` then **re-fetch everything**. Change to:
-  - Insert with `.select().single()` to get the new row back
-  - Push it into local state directly (no full re-fetch)
-- Result: item appears instantly, no flash, input stays focused, no network round-trip blocking the UI.
+**Page 2+ — Full log**
+- Records listed newest-first (matches on-screen order)
+- Each entry shows: date, service type, mileage, cost, notes, and a marker like `[2 attachments]` if any
+- Smart page breaks: an entry won't split across pages
+- Auto-fit font sizing (9–11pt) so common logs fit cleanly on letter pages
+- Repeated header (vehicle name) and footer (`Page X of Y`) on every page
 
-**3. Mobile polish**
-- On mobile, the composer sticks to the bottom of the card content with safe spacing; input uses `inputMode="text"` and `enterKeyHint="done"` so the on-screen keyboard shows a Done key.
+### Implementation
+
+**New file: `src/lib/exportMaintenancePdf.ts`**
+- Uses `jsPDF` (already in the project — used by `exportSetupPdf.ts` and `exportChecklistPdf.ts`)
+- Exports `exportMaintenanceToPdf({ car, records })`
+- Computes summary stats in-memory (group by year using `service_date`, group by `service_type`)
+- Letter page size, 48pt margins, same layout conventions as the checklist exporter
+- Filename: `maintenance-log-{car-name-slugified}-{YYYY-MM-DD}.pdf`
+
+**Edit: `src/pages/MaintenanceLog.tsx`**
+- Import `Download` icon from lucide-react
+- Add a `Download Log` button in the header row next to "Add Record"
+  - Disabled when `records.length === 0` (with title tooltip "No records to export")
+  - On click: calls `exportMaintenanceToPdf({ car, records })`
+- No change to the Add/Edit/Delete flows
 
 ### Out of scope
-- Multi-line / paste-many-items-at-once (could be a follow-up: "paste a list, split on newlines")
-- Reordering UX changes
-- Editing UX changes (already fine)
-
-### Files changed
-- `src/components/ChecklistCard.tsx` — new composer layout, inputRef + autofocus-after-add, recently-added highlight
-- `src/contexts/ChecklistsContext.tsx` — optimistic local-state updates for `addTemplateItem` and `addEventChecklistItem` (drop the full re-fetch)
+- Embedding attachment images/PDFs inside the export (would require fetching binaries + base64; could bloat file size significantly — possible follow-up)
+- Per-year separate PDFs / date range filters
+- CSV / Excel export
+- Charts (bar/line of spend over time) — can add later if useful
 
