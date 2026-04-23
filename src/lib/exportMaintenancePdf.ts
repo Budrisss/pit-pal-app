@@ -11,7 +11,7 @@ interface MaintenanceRecordLite {
 
 interface CarLite {
   name?: string | null;
-  year?: number | null;
+  year?: number | string | null;
   make?: string | null;
   model?: string | null;
 }
