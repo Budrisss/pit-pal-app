@@ -589,8 +589,7 @@ const Setups = () => {
         </Collapsible>
 
         {/* Saved Setups List */}
-        {savedSetups.length > 0 && (
-          <div className="space-y-3">
+        <div className="space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <h2 className="text-lg font-semibold text-foreground">Saved Setups</h2>
               <div className="relative sm:w-72">
@@ -603,9 +602,13 @@ const Setups = () => {
                 />
               </div>
             </div>
-            {filteredSetups.length === 0 && (
+            {savedSetups.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">
+                No saved setups yet. Upload a setup sheet or use the Chassis Setup Form above to create one.
+              </p>
+            ) : filteredSetups.length === 0 ? (
               <p className="text-sm text-muted-foreground py-4 text-center">No setups match "{searchQuery}".</p>
-            )}
+            ) : null}
             {filteredSetups.map((setup) => {
               const isExpanded = expandedSetup === setup.id;
               const setupAtts = getSetupAttachments(setup.id);
@@ -727,8 +730,7 @@ const Setups = () => {
                 </Card>
               );
             })}
-          </div>
-        )}
+        </div>
       </div>
 
       <Navigation />
