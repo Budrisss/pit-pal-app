@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CheckSquare, Square, List, Plus, Trash2, X, Edit2, Check, GripVertical } from "lucide-react";
+import { CheckSquare, Square, List, Plus, Trash2, X, Edit2, Check, GripVertical, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +42,7 @@ interface ChecklistCardProps {
   onUpdateItem?: (itemId: string, text: string) => void;
   onReorderItems?: (orderedIds: string[]) => void;
   onDelete?: () => void;
+  onDownload?: () => void;
 }
 
 interface SortableItemProps {
@@ -131,7 +132,7 @@ const SortableItem = ({
   );
 };
 
-const ChecklistCard = ({ id, title, type, mode, items, onToggleItem, onAddItem, onDeleteItem, onUpdateItem, onReorderItems, onDelete }: ChecklistCardProps) => {
+const ChecklistCard = ({ id, title, type, mode, items, onToggleItem, onAddItem, onDeleteItem, onUpdateItem, onReorderItems, onDelete, onDownload }: ChecklistCardProps) => {
   const [newItemText, setNewItemText] = useState("");
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
@@ -207,6 +208,17 @@ const ChecklistCard = ({ id, title, type, mode, items, onToggleItem, onAddItem, 
             <Badge className={type === "event" ? "bg-racing-red text-primary-foreground" : "bg-racing-orange text-background"}>
               {type.charAt(0).toUpperCase() + type.slice(1)}
             </Badge>
+            {onDownload && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={onDownload}
+                title="Download checklist as PDF"
+              >
+                <Download size={14} />
+              </Button>
+            )}
             {onDelete && (
               <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={onDelete}>
                 <Trash2 size={14} />
