@@ -572,8 +572,10 @@ const Setups = () => {
               <Save size={16} className="mr-2" />
               {saving ? "Saving..." : "Save Setup Sheet"}
             </Button>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          </CollapsibleContent>
+        </Collapsible>
 
         {/* Collapsible Chassis Setup Form */}
         <Collapsible open={formOpen} onOpenChange={setFormOpen}>
