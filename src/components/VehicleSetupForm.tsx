@@ -602,6 +602,99 @@ export const VehicleSetupForm = () => {
                 </div>
               </div>
 
+              {/* Tire Pressures */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Tire Pressures (psi)</h3>
+                <div className="space-y-2">
+                  <h4 className="font-medium">Cold Pressure</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <FormField control={form.control} name="fl_cold_pressure" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>LF Cold</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.1" placeholder="28" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                        </FormControl>
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="fr_cold_pressure" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>RF Cold</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.1" placeholder="28" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                        </FormControl>
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="rl_cold_pressure" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>LR Cold</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.1" placeholder="26" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                        </FormControl>
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="rr_cold_pressure" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>RR Cold</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.1" placeholder="26" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                        </FormControl>
+                      </FormItem>
+                    )} />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <h4 className="font-medium">Hot Pressure</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <FormField control={form.control} name="fl_hot_pressure" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>LF Hot</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.1" placeholder="32" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                        </FormControl>
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="fr_hot_pressure" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>RF Hot</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.1" placeholder="32" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                        </FormControl>
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="rl_hot_pressure" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>LR Hot</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.1" placeholder="30" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                        </FormControl>
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="rr_hot_pressure" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>RR Hot</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.1" placeholder="30" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                        </FormControl>
+                      </FormItem>
+                    )} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Tire Wear Photos */}
+              {user && (
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold">Tire Wear Photos</h3>
+                  <p className="text-xs text-muted-foreground">Capture wear pattern for each corner. Photos upload now and link to this setup when saved.</p>
+                  <TireWearPhotos
+                    setupId={null}
+                    userId={user.id}
+                    photos={tirePhotos}
+                    onChanged={fetchUnlinkedTirePhotos}
+                  />
+                </div>
+              )}
+
               {/* Notes */}
               <FormField
                 control={form.control}
