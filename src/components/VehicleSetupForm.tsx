@@ -81,7 +81,11 @@ interface SetupFormData {
   notes_times: string;
 }
 
-export const VehicleSetupForm = () => {
+interface VehicleSetupFormProps {
+  onSaved?: () => void;
+}
+
+export const VehicleSetupForm = ({ onSaved }: VehicleSetupFormProps = {}) => {
   const { toast } = useToast();
   const { user } = useAuth();
   const [cars, setCars] = useState<UserCar[]>([]);
@@ -178,10 +182,21 @@ export const VehicleSetupForm = () => {
     if (!user) return;
     try {
       const sessionObj = sessions.find((s) => s.id === selectedSession);
+      // Sanitize: convert empty strings / NaN numeric inputs to null so Postgres accepts them
+      const sanitized: Record<string, any> = {};
+      Object.entries(data).forEach(([k, v]) => {
+        if (typeof v === "number" && Number.isNaN(v)) sanitized[k] = null;
+        else if (v === "" || v === undefined) sanitized[k] = null;
+        else sanitized[k] = v;
+      });
+      if (!sanitized.setup_name || String(sanitized.setup_name).trim() === "") {
+        toast({ title: "Setup name is required", variant: "destructive" });
+        return;
+      }
       const { data: inserted, error } = await (supabase as any)
         .from("setup_data")
         .insert({
-          ...data,
+          ...sanitized,
           user_id: user.id,
           car_id: selectedCar || null,
           event_id: selectedEvent || null,
@@ -213,10 +228,11 @@ export const VehicleSetupForm = () => {
       setSelectedSession("");
       setResolvedTrack("");
       fetchUnlinkedTirePhotos();
-    } catch (error) {
+      onSaved?.();
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to save setup",
+        description: error?.message || "Failed to save setup",
         variant: "destructive",
       });
     }
