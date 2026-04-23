@@ -186,6 +186,30 @@ const Setups = () => {
     }
   };
 
+  const fetchTirePhotos = async () => {
+    if (!user) return;
+    const { data } = await (supabase as any)
+      .from("setup_tire_photos")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+    if (data) {
+      const resolved = await Promise.all(
+        data.map(async (p: any) => {
+          let storagePath = p.file_url;
+          if (storagePath.includes("/setup-attachments/")) {
+            storagePath = decodeURIComponent(storagePath.split("/setup-attachments/").pop()!);
+          }
+          const { data: signedData } = await supabase.storage
+            .from("setup-attachments")
+            .createSignedUrl(storagePath, 3600);
+          return { ...p, file_url: signedData?.signedUrl || p.file_url };
+        })
+      );
+      setAllTirePhotos(resolved);
+    }
+  };
+
   const handleSaveSetupSheet = async () => {
     if (!user || !sheetName.trim()) {
       toast({ title: "Setup name is required", variant: "destructive" });
