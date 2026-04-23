@@ -271,6 +271,7 @@ const Setups = () => {
     fetchSetups();
     fetchAttachments();
     fetchTirePhotos();
+    setUploadOpen(false);
   };
 
   const handleDeleteSetup = async (setupId: string) => {
