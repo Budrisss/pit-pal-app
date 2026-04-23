@@ -682,6 +682,18 @@ const Setups = () => {
                             {setupAtts.length} file{setupAtts.length !== 1 ? "s" : ""}
                           </Badge>
                         )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          title="Download setup as PDF"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownloadSetup(setup);
+                          }}
+                        >
+                          <Download size={16} />
+                        </Button>
                         {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                       </div>
                     </div>
