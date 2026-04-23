@@ -208,6 +208,14 @@ const Checklists = () => {
                               onToggleItem={(itemId, completed) => toggleChecklistItem(itemId, completed)}
                               onAddItem={(text) => addEventChecklistItem(cl.id, text)}
                               onDelete={() => deleteEventChecklist(cl.id)}
+                              onDownload={() => exportChecklistToPdf({
+                                title: cl.name,
+                                type: cl.type,
+                                mode: "event",
+                                items: cl.items,
+                                eventName: event.name,
+                                eventDate: event.date,
+                              })}
                             />
                           ))}
 
