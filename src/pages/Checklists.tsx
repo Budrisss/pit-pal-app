@@ -10,6 +10,7 @@ import ChecklistCard from "@/components/ChecklistCard";
 import Navigation from "@/components/Navigation";
 import { useChecklists } from "@/contexts/ChecklistsContext";
 import { useEvents } from "@/contexts/EventsContext";
+import { exportChecklistToPdf } from "@/lib/exportChecklistPdf";
 
 const Checklists = () => {
   const navigate = useNavigate();
@@ -136,6 +137,12 @@ const Checklists = () => {
                     onDeleteItem={deleteTemplateItem}
                     onReorderItems={(orderedIds) => reorderTemplateItems(template.id, orderedIds)}
                     onDelete={() => deleteTemplate(template.id)}
+                    onDownload={() => exportChecklistToPdf({
+                      title: template.name,
+                      type: template.type,
+                      mode: "template",
+                      items: template.items,
+                    })}
                   />
                 ))}
               </div>
