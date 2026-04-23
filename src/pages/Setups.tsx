@@ -559,6 +559,9 @@ const Setups = () => {
 
         {/* Collapsible Chassis Setup Form */}
         <Collapsible open={formOpen} onOpenChange={setFormOpen}>
+          <p className="text-sm text-muted-foreground mb-2">
+            Manually enter your setup data using our structured collector. Captures alignment, springs, shocks, sway bars, tire pressures, and per-corner tire wear photos — all searchable and comparable across sessions.
+          </p>
           <CollapsibleTrigger asChild>
             <Button variant="outline" className="w-full flex justify-between items-center">
               <span className="flex items-center gap-2">
