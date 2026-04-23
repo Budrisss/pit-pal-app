@@ -142,13 +142,20 @@ export const ChecklistsProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return;
     const template = templates.find(t => t.id === templateId);
     const sortOrder = template ? template.items.length : 0;
-    await (supabase as any).from("checklist_template_items").insert({
-      template_id: templateId,
-      user_id: user.id,
-      text,
-      sort_order: sortOrder,
-    });
-    await fetchTemplates();
+    const { data, error } = await (supabase as any)
+      .from("checklist_template_items")
+      .insert({
+        template_id: templateId,
+        user_id: user.id,
+        text,
+        sort_order: sortOrder,
+      })
+      .select()
+      .single();
+    if (error || !data) return;
+    setTemplates(prev => prev.map(t =>
+      t.id === templateId ? { ...t, items: [...t.items, data as ChecklistTemplateItem] } : t
+    ));
   };
 
   const updateTemplateItem = async (itemId: string, text: string) => {
@@ -237,15 +244,29 @@ export const ChecklistsProvider = ({ children }: { children: ReactNode }) => {
       const cl = checklists.find(c => c.id === checklistId);
       if (cl) { sortOrder = cl.items.length; break; }
     }
-    await (supabase as any).from("event_checklist_items").insert({
-      checklist_id: checklistId,
-      user_id: user.id,
-      text,
-      completed: false,
-      sort_order: sortOrder,
+    const { data, error } = await (supabase as any)
+      .from("event_checklist_items")
+      .insert({
+        checklist_id: checklistId,
+        user_id: user.id,
+        text,
+        completed: false,
+        sort_order: sortOrder,
+      })
+      .select()
+      .single();
+    if (error || !data) return;
+    setEventChecklists(prev => {
+      const next: Record<string, EventChecklist[]> = {};
+      for (const eventId of Object.keys(prev)) {
+        next[eventId] = prev[eventId].map(cl =>
+          cl.id === checklistId
+            ? { ...cl, items: [...cl.items, data as EventChecklistItem] }
+            : cl
+        );
+      }
+      return next;
     });
-    // Re-fetch all to update state
-    await fetchAllEventChecklists();
   };
 
   const deleteEventChecklist = async (checklistId: string) => {
