@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Car, Calendar, MapPin, Clock, Save } from "lucide-react";
+import TireWearPhotos, { TirePhoto } from "@/components/TireWearPhotos";
 
 interface UserCar {
   id: string;
@@ -46,6 +47,12 @@ interface SetupFormData {
   rf_camber: number;
   lr_camber: number;
   rr_camber: number;
+  lf_toe: number;
+  rf_toe: number;
+  lr_toe: number;
+  rr_toe: number;
+  lf_caster: number;
+  rf_caster: number;
   lf_ride_height: number;
   rf_ride_height: number;
   lr_ride_height: number;
@@ -58,6 +65,14 @@ interface SetupFormData {
   rf_shock: number;
   lr_shock: number;
   rr_shock: number;
+  fl_cold_pressure: number;
+  fr_cold_pressure: number;
+  rl_cold_pressure: number;
+  rr_cold_pressure: number;
+  fl_hot_pressure: number;
+  fr_hot_pressure: number;
+  rl_hot_pressure: number;
+  rr_hot_pressure: number;
   front_percentage: number;
   rear_percentage: number;
   cross_percentage: number;
