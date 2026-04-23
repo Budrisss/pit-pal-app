@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Wrench, Calendar, FileText, Trash2, Paperclip, Pencil, X, DollarSign } from "lucide-react";
+import { ArrowLeft, Plus, Wrench, Calendar, FileText, Trash2, Paperclip, Pencil, X, DollarSign, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import Navigation from "@/components/Navigation";
+import { exportMaintenanceToPdf } from "@/lib/exportMaintenancePdf";
 
 const SERVICE_PRESETS = [
   "Oil Change",
