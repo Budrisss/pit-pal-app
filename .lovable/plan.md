@@ -1,36 +1,35 @@
 
 
-## Fix: Onboarding doesn't redirect after Save & Continue
+## Setups Page: Add Intro & Section Explainers
 
-### Root cause
-`OnboardingProfile` calls `navigate('/dashboard')` right after upsert succeeds. `Dashboard` is wrapped in `ProtectedRoute`, which on mount fires its own query against `racer_profiles.onboarding_completed`. Because the page just transitioned, that query sometimes returns the **stale** row (or hits a tiny replication lag), `needsOnboarding` flips to `true`, and `<Navigate to="/onboarding" replace />` bounces the user right back. The toast shows because the upsert did succeed — but the redirect never sticks.
+### What gets added
 
-The replay confirms this: spinner appears on Save, "Profile saved!" toast fires, then the user is sitting on `/onboarding` again.
+**1. Page intro (top of `/setups`, below the existing page title)**
+A short info card explaining what the Setups page is for:
 
-### Fix
+> **Track Your Vehicle Setups**
+> Keep a complete history of every chassis configuration you run. Setups can be saved two ways — upload an existing setup sheet for safekeeping, or enter your numbers manually using our structured data collector. Use saved setups to compare changes session-to-session and dial in faster at every track.
 
-Make the onboarding state authoritative in one place instead of re-querying on every protected route mount.
+Styled as a subtle bordered `Card` with an info icon, muted background — non-intrusive, dismissible later if needed (not in this pass).
 
-**`src/contexts/AuthContext.tsx`** — add `onboardingCompleted: boolean | null` and `refreshOnboarding()` to the context. Load it once when the user session is established (single query alongside the existing auth bootstrap). Expose a setter so pages can mark it complete locally without waiting for a refetch.
+**2. "New Setup Sheet" card — short helper line under its title**
 
-**`src/components/ProtectedRoute.tsx`** — read `onboardingCompleted` from `AuthContext` instead of running its own `useEffect` query. Only redirect to `/onboarding` when the value is explicitly `false` (not `null`/loading). This kills the race entirely — no per-navigation query, no stale read.
+> Upload an existing setup sheet (PDF, image, or doc) for safekeeping and cataloging. Best for sheets you already have from your shop, crew chief, or chassis builder.
 
-**`src/pages/OnboardingProfile.tsx`** — after a successful upsert (both `handleSave` and `handleSkip`), call the new context setter to flip `onboardingCompleted` to `true` in memory, then `navigate('/dashboard', { replace: true })`. Guarantees the next route mount sees `true` synchronously.
+**3. "Chassis Setup Form" card — short helper line under its title**
 
-### Why this works
-- Removes the duplicate DB read that was racing the write.
-- Single source of truth for onboarding status.
-- Local state update means the redirect can't be undone by a slow query.
+> Manually enter your setup data using our structured collector. Captures alignment, springs, shocks, sway bars, tire pressures, and per-corner tire wear photos — all searchable and comparable across sessions.
+
+### Visual treatment
+- Intro card: `Card` with `Info` icon (lucide), `text-muted-foreground` body, top margin matching existing page padding.
+- Section helper text: small `text-sm text-muted-foreground` paragraph inside each `CardHeader`, directly under the existing `CardTitle` (above `CardDescription` if one exists, or replacing/augmenting it).
+- No layout shifts to existing form fields or upload UI — purely additive copy.
 
 ### Files changed
-- `src/contexts/AuthContext.tsx` — add onboarding state + setter + initial load
-- `src/components/ProtectedRoute.tsx` — consume context instead of querying
-- `src/pages/OnboardingProfile.tsx` — set context flag before navigating
+- `src/pages/Setups.tsx` — add intro card at top, add helper paragraphs to the two existing section cards' headers.
 
-### QA
-1. Sign up fresh → land on `/onboarding`.
-2. Click Save & Continue → lands on `/dashboard` and stays there.
-3. Click Skip for now → lands on `/dashboard` and stays there.
-4. Refresh `/dashboard` → stays on dashboard (no bounce).
-5. Sign out, sign back in with completed profile → goes straight to dashboard.
+### Out of scope
+- Dismiss/collapse for the intro card
+- Tooltips or "Learn more" links
+- Reordering the two cards
 
