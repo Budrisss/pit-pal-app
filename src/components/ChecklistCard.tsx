@@ -137,6 +137,22 @@ const ChecklistCard = ({ id, title, type, mode, items, onToggleItem, onAddItem, 
   const [newItemText, setNewItemText] = useState("");
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
+  const [recentlyAddedId, setRecentlyAddedId] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const prevItemIdsRef = useRef<Set<string>>(new Set(items.map(i => i.id)));
+
+  useEffect(() => {
+    const prev = prevItemIdsRef.current;
+    const newIds = items.map(i => i.id).filter(id => !prev.has(id));
+    if (newIds.length > 0) {
+      const lastId = newIds[newIds.length - 1];
+      setRecentlyAddedId(lastId);
+      const t = setTimeout(() => setRecentlyAddedId(curr => (curr === lastId ? null : curr)), 900);
+      prevItemIdsRef.current = new Set(items.map(i => i.id));
+      return () => clearTimeout(t);
+    }
+    prevItemIdsRef.current = new Set(items.map(i => i.id));
+  }, [items]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -150,6 +166,8 @@ const ChecklistCard = ({ id, title, type, mode, items, onToggleItem, onAddItem, 
     if (newItemText.trim() && onAddItem) {
       onAddItem(newItemText.trim());
       setNewItemText("");
+      // Refocus on next tick so the user can rapidly add items
+      requestAnimationFrame(() => inputRef.current?.focus());
     }
   };
 
@@ -190,6 +208,7 @@ const ChecklistCard = ({ id, title, type, mode, items, onToggleItem, onAddItem, 
           onStartEdit={handleStartEdit}
           onSaveEdit={handleSaveEdit}
           onCancelEdit={() => setEditingItemId(null)}
+          isRecentlyAdded={recentlyAddedId === item.id}
         />
       ))}
     </div>
@@ -251,16 +270,31 @@ const ChecklistCard = ({ id, title, type, mode, items, onToggleItem, onAddItem, 
           )}
 
           {(mode === "template" || (mode === "event" && onAddItem)) && (
-            <div className="flex items-center gap-2">
+            <div className="pt-3 border-t border-border flex items-center gap-2">
               <Input
-                placeholder="Add item..."
+                ref={inputRef}
+                placeholder="Add a new item…"
                 value={newItemText}
                 onChange={(e) => setNewItemText(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAddItem()}
-                className="h-8 text-sm"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleAddItem();
+                  }
+                }}
+                inputMode="text"
+                enterKeyHint="done"
+                className="h-9 text-sm flex-1"
               />
-              <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" onClick={handleAddItem} disabled={!newItemText.trim()}>
+              <Button
+                variant="default"
+                size="sm"
+                className="h-9 flex-shrink-0 gap-1"
+                onClick={handleAddItem}
+                disabled={!newItemText.trim()}
+              >
                 <Plus size={16} />
+                Add
               </Button>
             </div>
           )}
