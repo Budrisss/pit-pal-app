@@ -646,6 +646,18 @@ const Setups = () => {
                           compact
                         />
                       )}
+                      {user && (
+                        <div className="space-y-1">
+                          <p className="text-xs font-semibold text-foreground">Tire Wear</p>
+                          <TireWearPhotos
+                            setupId={setup.id}
+                            userId={user.id}
+                            photos={getSetupTirePhotos(setup.id)}
+                            onChanged={fetchTirePhotos}
+                            compact
+                          />
+                        </div>
+                      )}
                       <div className="flex gap-2 mt-2">
                         <Button
                           variant="outline"
