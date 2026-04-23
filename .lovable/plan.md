@@ -1,35 +1,37 @@
 
 
-## Setups Page: Add Intro & Section Explainers
+## Make "New Setup Sheet" Card Collapsible
 
-### What gets added
+### Why this is a good call
+Right now the upload card is always expanded while the Chassis Setup Form is collapsed — that's asymmetric and pushes the manual form (and the saved setups list) below the fold. Making both collapsible puts the two options side-by-side visually as equal-weight choices, so users immediately see "I can upload a sheet OR fill out the form" without scrolling.
 
-**1. Page intro (top of `/setups`, below the existing page title)**
-A short info card explaining what the Setups page is for:
+### What changes
 
-> **Track Your Vehicle Setups**
-> Keep a complete history of every chassis configuration you run. Setups can be saved two ways — upload an existing setup sheet for safekeeping, or enter your numbers manually using our structured data collector. Use saved setups to compare changes session-to-session and dial in faster at every track.
+**`src/pages/Setups.tsx`** — wrap the existing "New Setup Sheet" card body in a `Collapsible`, matching the pattern already used by the Chassis Setup Form card:
 
-Styled as a subtle bordered `Card` with an info icon, muted background — non-intrusive, dismissible later if needed (not in this pass).
+- Card header becomes a `CollapsibleTrigger` row showing the title, helper text, and a chevron that rotates on open.
+- Card body (car/event selectors + `SetupAttachments` upload UI) moves inside `CollapsibleContent`.
+- Default state: **collapsed** (same as the chassis form), so both options present as peers.
+- Local state: `const [uploadOpen, setUploadOpen] = useState(false);`
 
-**2. "New Setup Sheet" card — short helper line under its title**
-
-> Upload an existing setup sheet (PDF, image, or doc) for safekeeping and cataloging. Best for sheets you already have from your shop, crew chief, or chassis builder.
-
-**3. "Chassis Setup Form" card — short helper line under its title**
-
-> Manually enter your setup data using our structured collector. Captures alignment, springs, shocks, sway bars, tire pressures, and per-corner tire wear photos — all searchable and comparable across sessions.
-
-### Visual treatment
-- Intro card: `Card` with `Info` icon (lucide), `text-muted-foreground` body, top margin matching existing page padding.
-- Section helper text: small `text-sm text-muted-foreground` paragraph inside each `CardHeader`, directly under the existing `CardTitle` (above `CardDescription` if one exists, or replacing/augmenting it).
-- No layout shifts to existing form fields or upload UI — purely additive copy.
+### Visual result
+```text
+┌─ Track Your Vehicle Setups (intro) ─┐
+└─────────────────────────────────────┘
+┌─ ▸ New Setup Sheet         (upload) ┐  ← collapsed, click to expand
+└─────────────────────────────────────┘
+┌─ ▸ Chassis Setup Form     (manual)  ┐  ← collapsed, click to expand
+└─────────────────────────────────────┘
+┌─ Saved Setups   [search...........] ┐
+│  ...list...                          │
+└─────────────────────────────────────┘
+```
 
 ### Files changed
-- `src/pages/Setups.tsx` — add intro card at top, add helper paragraphs to the two existing section cards' headers.
+- `src/pages/Setups.tsx` — add `Collapsible` wrapper around the New Setup Sheet card content, add `uploadOpen` state, add chevron icon to header.
 
 ### Out of scope
-- Dismiss/collapse for the intro card
-- Tooltips or "Learn more" links
-- Reordering the two cards
+- Auto-expanding either card based on prior usage
+- Remembering open/closed state across sessions
+- Restyling the chassis form card
 
