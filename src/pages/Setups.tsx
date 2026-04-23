@@ -279,6 +279,11 @@ const Setups = () => {
       .delete()
       .eq("setup_id", setupId)
       .eq("user_id", user.id);
+    await (supabase as any)
+      .from("setup_tire_photos")
+      .delete()
+      .eq("setup_id", setupId)
+      .eq("user_id", user.id);
     
     const { error } = await (supabase as any)
       .from("setup_data")
@@ -292,6 +297,7 @@ const Setups = () => {
       toast({ title: "Setup deleted" });
       setSavedSetups((prev) => prev.filter((s) => s.id !== setupId));
       setAllAttachments((prev) => prev.filter((a) => a.setup_id !== setupId));
+      setAllTirePhotos((prev) => prev.filter((p) => p.setup_id !== setupId));
       if (expandedSetup === setupId) setExpandedSetup(null);
     }
     setDeleteConfirmId(null);
@@ -375,6 +381,8 @@ const Setups = () => {
 
   const generalAttachments = allAttachments.filter((a) => !a.setup_id);
   const getSetupAttachments = (setupId: string) => allAttachments.filter((a) => a.setup_id === setupId);
+  const generalTirePhotos = allTirePhotos.filter((p) => !p.setup_id);
+  const getSetupTirePhotos = (setupId: string) => allTirePhotos.filter((p) => p.setup_id === setupId);
 
   return (
     <div className="min-h-screen bg-gradient-dark pb-20">
