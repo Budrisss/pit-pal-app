@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Wrench, ChevronDown, ChevronUp, Upload, Car, Calendar, Clock, MapPin, Save, Trash2, Pencil, ArrowLeft } from "lucide-react";
+import { Wrench, ChevronDown, ChevronUp, Upload, Car, Calendar, Clock, MapPin, Save, Trash2, Pencil, ArrowLeft, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -403,6 +403,19 @@ const Setups = () => {
           </div>
         </div>
 
+        {/* Page intro */}
+        <Card className="border-border/50 bg-muted/20">
+          <CardContent className="p-4 flex gap-3">
+            <Info size={20} className="text-primary shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h2 className="font-semibold text-foreground text-sm">Track Your Vehicle Setups</h2>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                Keep a complete history of every chassis configuration you run. Setups can be saved two ways — upload an existing setup sheet for safekeeping, or enter your numbers manually using our structured data collector. Use saved setups to compare changes session-to-session and dial in faster at every track.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* General Upload with metadata */}
         <Card className="border-border/50">
           <CardHeader className="pb-3">
@@ -410,7 +423,9 @@ const Setups = () => {
               <Upload size={20} className="text-primary" />
               New Setup Sheet
             </CardTitle>
-            <p className="text-muted-foreground text-xs">Upload images or PDFs and link to a car, event & session</p>
+            <p className="text-sm text-muted-foreground">
+              Upload an existing setup sheet (PDF, image, or doc) for safekeeping and cataloging. Best for sheets you already have from your shop, crew chief, or chassis builder.
+            </p>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Setup Name */}
