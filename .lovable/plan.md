@@ -1,66 +1,36 @@
 
 
-## Expand Chassis Setup Form: Toe, Caster, Tire Pressures & Wear Photos
+## Fix: Onboarding doesn't redirect after Save & Continue
 
-### What gets added to the Chassis Setup Form
+### Root cause
+`OnboardingProfile` calls `navigate('/dashboard')` right after upsert succeeds. `Dashboard` is wrapped in `ProtectedRoute`, which on mount fires its own query against `racer_profiles.onboarding_completed`. Because the page just transitioned, that query sometimes returns the **stale** row (or hits a tiny replication lag), `needsOnboarding` flips to `true`, and `<Navigate to="/onboarding" replace />` bounces the user right back. The toast shows because the upsert did succeed — but the redirect never sticks.
 
-Under **Suspension Settings**:
-- **Toe (degrees)** — LF / RF / LR / RR (positive = toe-in, negative = toe-out)
-- **Caster (degrees)** — LF / RF only (rear caster isn't a thing on most cars)
+The replay confirms this: spinner appears on Save, "Profile saved!" toast fires, then the user is sitting on `/onboarding` again.
 
-Under a new **Tire Pressures** section:
-- **Cold Pressure (psi)** — LF / RF / LR / RR
-- **Hot Pressure (psi)** — LF / RF / LR / RR
+### Fix
 
-Under a new **Tire Wear Photos** section:
-- One upload slot per corner: **LF, RF, LR, RR**
-- Each slot lets you upload an image (camera capture supported on mobile), shows a thumbnail, click to preview full-size, X to remove
-- Multiple photos per corner allowed (e.g., before/after a session)
+Make the onboarding state authoritative in one place instead of re-querying on every protected route mount.
 
-### Database changes
+**`src/contexts/AuthContext.tsx`** — add `onboardingCompleted: boolean | null` and `refreshOnboarding()` to the context. Load it once when the user session is established (single query alongside the existing auth bootstrap). Expose a setter so pages can mark it complete locally without waiting for a refetch.
 
-**New columns on `setup_data`** (all `numeric NULL`):
-- `lf_toe`, `rf_toe`, `lr_toe`, `rr_toe`
-- `lf_caster`, `rf_caster`
+**`src/components/ProtectedRoute.tsx`** — read `onboardingCompleted` from `AuthContext` instead of running its own `useEffect` query. Only redirect to `/onboarding` when the value is explicitly `false` (not `null`/loading). This kills the race entirely — no per-navigation query, no stale read.
 
-(Cold/hot pressure columns already exist on `setup_data` — no migration needed there.)
+**`src/pages/OnboardingProfile.tsx`** — after a successful upsert (both `handleSave` and `handleSkip`), call the new context setter to flip `onboardingCompleted` to `true` in memory, then `navigate('/dashboard', { replace: true })`. Guarantees the next route mount sees `true` synchronously.
 
-**New table `setup_tire_photos`** for per-corner wear photos:
-| column | type |
-|---|---|
-| id | uuid PK |
-| setup_id | uuid (nullable, like setup_attachments) |
-| user_id | uuid |
-| corner | text — `'LF' \| 'RF' \| 'LR' \| 'RR'` (CHECK constraint) |
-| file_name | text |
-| file_url | text (storage path) |
-| file_type | text |
-| created_at | timestamptz default now() |
+### Why this works
+- Removes the duplicate DB read that was racing the write.
+- Single source of truth for onboarding status.
+- Local state update means the redirect can't be undone by a slow query.
 
-RLS: standard `auth.uid() = user_id` for select/insert/update/delete.
+### Files changed
+- `src/contexts/AuthContext.tsx` — add onboarding state + setter + initial load
+- `src/components/ProtectedRoute.tsx` — consume context instead of querying
+- `src/pages/OnboardingProfile.tsx` — set context flag before navigating
 
-Files go in the existing **`setup-attachments`** private bucket under `${user_id}/tire-wear/${setup_id_or_unlinked}/${corner}-${timestamp}.jpg`. No new bucket needed.
-
-### Files to create / update
-
-- **Update** `src/components/VehicleSetupForm.tsx`
-  - Add Toe (4) and Caster (2) inputs to Suspension Settings section
-  - Add new "Tire Pressures" section with Cold + Hot pressure grids (4 corners each)
-  - Wire new fields into `SetupFormData` and the insert payload
-  - Add new "Tire Wear Photos" section using the new component below
-- **Create** `src/components/TireWearPhotos.tsx`
-  - Props: `setupId | null`, `userId`, `photos`, `onChanged`
-  - Renders a 2×2 corner grid (LF/RF on top, LR/RR on bottom) — each cell has thumbnails + an "Add photo" button (`<input type="file" accept="image/*" capture="environment">`)
-  - Click thumbnail → full-size preview dialog (reuses the same pattern as `SetupAttachments`)
-  - X button removes the photo from storage + DB
-- **Update** `src/pages/Setups.tsx`
-  - On the "New Setup Sheet" card, add a Tire Wear Photos block (corner grid) the same way it currently shows generic attachments — uploads while `setup_id` is null get linked to the new setup on save
-  - Saved-setup expanded view: show tire wear photos per corner alongside the existing attachments
-  - Fetch tire photos alongside `fetchAttachments` and pass them down
-- **Migration**: add new columns + create `setup_tire_photos` table with RLS policies
-
-### Out of scope (can add later)
-- Tire temp grid in this form (already exists in DB columns; can add as separate "Tire Temperatures" section in a follow-up)
-- Toe-in vs toe-out unit toggle (inches vs degrees)
-- Side-by-side wear photo comparison across sessions
+### QA
+1. Sign up fresh → land on `/onboarding`.
+2. Click Save & Continue → lands on `/dashboard` and stays there.
+3. Click Skip for now → lands on `/dashboard` and stays there.
+4. Refresh `/dashboard` → stays on dashboard (no bounce).
+5. Sign out, sign back in with completed profile → goes straight to dashboard.
 
