@@ -375,6 +375,69 @@ export const VehicleSetupForm = () => {
                 </div>
               </div>
 
+              {/* Toe */}
+              <div className="space-y-2">
+                <h4 className="font-medium">Toe (degrees)</h4>
+                <p className="text-xs text-muted-foreground">Positive = toe-in, negative = toe-out</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <FormField control={form.control} name="lf_toe" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>LF Toe</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" placeholder="0.10" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                      </FormControl>
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="rf_toe" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>RF Toe</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" placeholder="0.10" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                      </FormControl>
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="lr_toe" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>LR Toe</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" placeholder="0.05" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                      </FormControl>
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="rr_toe" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>RR Toe</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" placeholder="0.05" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                      </FormControl>
+                    </FormItem>
+                  )} />
+                </div>
+              </div>
+
+              {/* Caster (front only) */}
+              <div className="space-y-2">
+                <h4 className="font-medium">Caster (degrees)</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <FormField control={form.control} name="lf_caster" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>LF Caster</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.1" placeholder="6.5" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                      </FormControl>
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="rf_caster" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>RF Caster</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.1" placeholder="6.5" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                      </FormControl>
+                    </FormItem>
+                  )} />
+                </div>
+              </div>
+
               {/* Ride Height */}
               <div className="space-y-2">
                 <h4 className="font-medium">Ride Height (inches)</h4>
