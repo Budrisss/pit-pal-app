@@ -618,7 +618,14 @@ const Setups = () => {
             </Button>
           </CollapsibleTrigger>
           <CollapsibleContent className="mt-3">
-            <VehicleSetupForm />
+            <VehicleSetupForm
+              onSaved={() => {
+                fetchSetups();
+                fetchAttachments();
+                fetchTirePhotos();
+                setFormOpen(false);
+              }}
+            />
           </CollapsibleContent>
         </Collapsible>
 
