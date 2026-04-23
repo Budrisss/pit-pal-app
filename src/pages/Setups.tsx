@@ -516,6 +516,20 @@ const Setups = () => {
               />
             )}
 
+            {/* Tire wear photos */}
+            {user && (
+              <div className="space-y-2">
+                <Label>Tire Wear Photos</Label>
+                <p className="text-xs text-muted-foreground">Capture wear pattern for each corner. Photos link to this setup when saved.</p>
+                <TireWearPhotos
+                  setupId={null}
+                  userId={user.id}
+                  photos={generalTirePhotos}
+                  onChanged={fetchTirePhotos}
+                />
+              </div>
+            )}
+
             {/* Save button */}
             <Button
               onClick={handleSaveSetupSheet}
