@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { CheckSquare, Square, List, Plus, Trash2, X, Edit2, Check, GripVertical, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -56,11 +56,12 @@ interface SortableItemProps {
   onStartEdit: (item: ChecklistItem) => void;
   onSaveEdit: () => void;
   onCancelEdit: () => void;
+  isRecentlyAdded?: boolean;
 }
 
 const SortableItem = ({
   item, mode, editingItemId, editingText, setEditingText,
-  onToggleItem, onDeleteItem, onStartEdit, onSaveEdit, onCancelEdit,
+  onToggleItem, onDeleteItem, onStartEdit, onSaveEdit, onCancelEdit, isRecentlyAdded,
 }: SortableItemProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
 
@@ -74,7 +75,7 @@ const SortableItem = ({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-2 p-2 rounded-md hover:bg-secondary/50 transition-colors group"
+      className={`flex items-center gap-2 p-2 rounded-md hover:bg-secondary/50 transition-colors duration-700 group ${isRecentlyAdded ? 'bg-primary/10' : ''}`}
     >
       {mode === "template" && (
         <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing touch-none flex-shrink-0 text-muted-foreground hover:text-foreground">
