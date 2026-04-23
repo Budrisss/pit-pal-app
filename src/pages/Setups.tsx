@@ -430,17 +430,22 @@ const Setups = () => {
         </Card>
 
         {/* General Upload with metadata */}
-        <Card className="border-border/50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Upload size={20} className="text-primary" />
-              New Setup Sheet
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Upload an existing setup sheet (PDF, image, or doc) for safekeeping and cataloging. Best for sheets you already have from your shop, crew chief, or chassis builder.
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <Collapsible open={uploadOpen} onOpenChange={setUploadOpen}>
+          <p className="text-sm text-muted-foreground mb-2">
+            Upload an existing setup sheet (PDF, image, or doc) for safekeeping and cataloging. Best for sheets you already have from your shop, crew chief, or chassis builder.
+          </p>
+          <CollapsibleTrigger asChild>
+            <Button variant="outline" className="w-full flex justify-between items-center">
+              <span className="flex items-center gap-2">
+                <Upload size={16} className="text-primary" />
+                New Setup Sheet
+              </span>
+              {uploadOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-3">
+            <Card className="border-border/50">
+              <CardContent className="space-y-4 pt-6">
             {/* Setup Name */}
             <div className="space-y-2">
               <Label>Setup Name</Label>
