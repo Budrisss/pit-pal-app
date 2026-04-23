@@ -13,6 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import SetupAttachments from "@/components/SetupAttachments";
+import TireWearPhotos, { TirePhoto } from "@/components/TireWearPhotos";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -70,6 +71,7 @@ const Setups = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [savedSetups, setSavedSetups] = useState<SavedSetup[]>([]);
   const [allAttachments, setAllAttachments] = useState<SetupAttachment[]>([]);
+  const [allTirePhotos, setAllTirePhotos] = useState<TirePhoto[]>([]);
   const [expandedSetup, setExpandedSetup] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [editingSetup, setEditingSetup] = useState<SavedSetup | null>(null);
@@ -99,6 +101,7 @@ const Setups = () => {
     if (user) {
       fetchSetups();
       fetchAttachments();
+      fetchTirePhotos();
       fetchCars();
       fetchUserEvents();
     }
@@ -183,6 +186,30 @@ const Setups = () => {
     }
   };
 
+  const fetchTirePhotos = async () => {
+    if (!user) return;
+    const { data } = await (supabase as any)
+      .from("setup_tire_photos")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+    if (data) {
+      const resolved = await Promise.all(
+        data.map(async (p: any) => {
+          let storagePath = p.file_url;
+          if (storagePath.includes("/setup-attachments/")) {
+            storagePath = decodeURIComponent(storagePath.split("/setup-attachments/").pop()!);
+          }
+          const { data: signedData } = await supabase.storage
+            .from("setup-attachments")
+            .createSignedUrl(storagePath, 3600);
+          return { ...p, file_url: signedData?.signedUrl || p.file_url };
+        })
+      );
+      setAllTirePhotos(resolved);
+    }
+  };
+
   const handleSaveSetupSheet = async () => {
     if (!user || !sheetName.trim()) {
       toast({ title: "Setup name is required", variant: "destructive" });
@@ -224,6 +251,15 @@ const Setups = () => {
       }
     }
 
+    // Link unlinked tire photos to this setup
+    if (data?.id) {
+      await (supabase as any)
+        .from("setup_tire_photos")
+        .update({ setup_id: data.id })
+        .eq("user_id", user.id)
+        .is("setup_id", null);
+    }
+
     toast({ title: "Setup saved", description: "Your setup sheet has been created" });
     setSheetName("");
     setSheetCar("");
@@ -232,6 +268,7 @@ const Setups = () => {
     setSheetFastestLap("");
     fetchSetups();
     fetchAttachments();
+    fetchTirePhotos();
   };
 
   const handleDeleteSetup = async (setupId: string) => {
@@ -239,6 +276,11 @@ const Setups = () => {
     // Delete attachments first, then the setup record
     await (supabase as any)
       .from("setup_attachments")
+      .delete()
+      .eq("setup_id", setupId)
+      .eq("user_id", user.id);
+    await (supabase as any)
+      .from("setup_tire_photos")
       .delete()
       .eq("setup_id", setupId)
       .eq("user_id", user.id);
@@ -255,6 +297,7 @@ const Setups = () => {
       toast({ title: "Setup deleted" });
       setSavedSetups((prev) => prev.filter((s) => s.id !== setupId));
       setAllAttachments((prev) => prev.filter((a) => a.setup_id !== setupId));
+      setAllTirePhotos((prev) => prev.filter((p) => p.setup_id !== setupId));
       if (expandedSetup === setupId) setExpandedSetup(null);
     }
     setDeleteConfirmId(null);
@@ -338,6 +381,8 @@ const Setups = () => {
 
   const generalAttachments = allAttachments.filter((a) => !a.setup_id);
   const getSetupAttachments = (setupId: string) => allAttachments.filter((a) => a.setup_id === setupId);
+  const generalTirePhotos = allTirePhotos.filter((p) => !p.setup_id);
+  const getSetupTirePhotos = (setupId: string) => allTirePhotos.filter((p) => p.setup_id === setupId);
 
   return (
     <div className="min-h-screen bg-gradient-dark pb-20">
@@ -471,6 +516,20 @@ const Setups = () => {
               />
             )}
 
+            {/* Tire wear photos */}
+            {user && (
+              <div className="space-y-2">
+                <Label>Tire Wear Photos</Label>
+                <p className="text-xs text-muted-foreground">Capture wear pattern for each corner. Photos link to this setup when saved.</p>
+                <TireWearPhotos
+                  setupId={null}
+                  userId={user.id}
+                  photos={generalTirePhotos}
+                  onChanged={fetchTirePhotos}
+                />
+              </div>
+            )}
+
             {/* Save button */}
             <Button
               onClick={handleSaveSetupSheet}
@@ -586,6 +645,18 @@ const Setups = () => {
                           onChanged={fetchAttachments}
                           compact
                         />
+                      )}
+                      {user && (
+                        <div className="space-y-1">
+                          <p className="text-xs font-semibold text-foreground">Tire Wear</p>
+                          <TireWearPhotos
+                            setupId={setup.id}
+                            userId={user.id}
+                            photos={getSetupTirePhotos(setup.id)}
+                            onChanged={fetchTirePhotos}
+                            compact
+                          />
+                        </div>
                       )}
                       <div className="flex gap-2 mt-2">
                         <Button

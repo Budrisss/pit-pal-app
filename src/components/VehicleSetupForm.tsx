@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Car, Calendar, MapPin, Clock, Save } from "lucide-react";
+import TireWearPhotos, { TirePhoto } from "@/components/TireWearPhotos";
 
 interface UserCar {
   id: string;
@@ -46,6 +47,12 @@ interface SetupFormData {
   rf_camber: number;
   lr_camber: number;
   rr_camber: number;
+  lf_toe: number;
+  rf_toe: number;
+  lr_toe: number;
+  rr_toe: number;
+  lf_caster: number;
+  rf_caster: number;
   lf_ride_height: number;
   rf_ride_height: number;
   lr_ride_height: number;
@@ -58,6 +65,14 @@ interface SetupFormData {
   rf_shock: number;
   lr_shock: number;
   rr_shock: number;
+  fl_cold_pressure: number;
+  fr_cold_pressure: number;
+  rl_cold_pressure: number;
+  rr_cold_pressure: number;
+  fl_hot_pressure: number;
+  fr_hot_pressure: number;
+  rl_hot_pressure: number;
+  rr_hot_pressure: number;
   front_percentage: number;
   rear_percentage: number;
   cross_percentage: number;
@@ -76,6 +91,7 @@ export const VehicleSetupForm = () => {
   const [selectedEvent, setSelectedEvent] = useState<string>("");
   const [selectedSession, setSelectedSession] = useState<string>("");
   const [resolvedTrack, setResolvedTrack] = useState("");
+  const [tirePhotos, setTirePhotos] = useState<TirePhoto[]>([]);
 
   const form = useForm<SetupFormData>();
 
@@ -83,6 +99,7 @@ export const VehicleSetupForm = () => {
     if (user) {
       fetchCars();
       fetchUserEvents();
+      fetchUnlinkedTirePhotos();
     }
   }, [user]);
 
@@ -132,11 +149,36 @@ export const VehicleSetupForm = () => {
     if (data) setSessions(data);
   };
 
+  const fetchUnlinkedTirePhotos = async () => {
+    if (!user) return;
+    const { data } = await (supabase as any)
+      .from("setup_tire_photos")
+      .select("*")
+      .eq("user_id", user.id)
+      .is("setup_id", null)
+      .order("created_at", { ascending: false });
+    if (data) {
+      const resolved = await Promise.all(
+        data.map(async (p: any) => {
+          let storagePath = p.file_url;
+          if (storagePath.includes("/setup-attachments/")) {
+            storagePath = decodeURIComponent(storagePath.split("/setup-attachments/").pop()!);
+          }
+          const { data: signed } = await supabase.storage
+            .from("setup-attachments")
+            .createSignedUrl(storagePath, 3600);
+          return { ...p, file_url: signed?.signedUrl || p.file_url };
+        })
+      );
+      setTirePhotos(resolved);
+    }
+  };
+
   const onSubmit = async (data: SetupFormData) => {
     if (!user) return;
     try {
       const sessionObj = sessions.find((s) => s.id === selectedSession);
-      const { error } = await (supabase as any)
+      const { data: inserted, error } = await (supabase as any)
         .from("setup_data")
         .insert({
           ...data,
@@ -145,9 +187,20 @@ export const VehicleSetupForm = () => {
           event_id: selectedEvent || null,
           session_id: selectedSession || null,
           session_name: sessionObj?.name || null,
-        });
+        })
+        .select("id")
+        .single();
 
       if (error) throw error;
+
+      // Link any unlinked tire photos to the new setup
+      if (inserted?.id && tirePhotos.length > 0) {
+        await (supabase as any)
+          .from("setup_tire_photos")
+          .update({ setup_id: inserted.id })
+          .eq("user_id", user.id)
+          .is("setup_id", null);
+      }
 
       toast({
         title: "Setup Saved",
@@ -159,6 +212,7 @@ export const VehicleSetupForm = () => {
       setSelectedEvent("");
       setSelectedSession("");
       setResolvedTrack("");
+      fetchUnlinkedTirePhotos();
     } catch (error) {
       toast({
         title: "Error",
@@ -315,6 +369,69 @@ export const VehicleSetupForm = () => {
                       <FormLabel>RR Camber</FormLabel>
                       <FormControl>
                         <Input type="number" step="0.1" placeholder="-1.8" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                      </FormControl>
+                    </FormItem>
+                  )} />
+                </div>
+              </div>
+
+              {/* Toe */}
+              <div className="space-y-2">
+                <h4 className="font-medium">Toe (degrees)</h4>
+                <p className="text-xs text-muted-foreground">Positive = toe-in, negative = toe-out</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <FormField control={form.control} name="lf_toe" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>LF Toe</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" placeholder="0.10" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                      </FormControl>
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="rf_toe" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>RF Toe</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" placeholder="0.10" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                      </FormControl>
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="lr_toe" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>LR Toe</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" placeholder="0.05" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                      </FormControl>
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="rr_toe" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>RR Toe</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" placeholder="0.05" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                      </FormControl>
+                    </FormItem>
+                  )} />
+                </div>
+              </div>
+
+              {/* Caster (front only) */}
+              <div className="space-y-2">
+                <h4 className="font-medium">Caster (degrees)</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <FormField control={form.control} name="lf_caster" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>LF Caster</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.1" placeholder="6.5" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                      </FormControl>
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="rf_caster" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>RF Caster</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.1" placeholder="6.5" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
                       </FormControl>
                     </FormItem>
                   )} />
@@ -484,6 +601,99 @@ export const VehicleSetupForm = () => {
                   )} />
                 </div>
               </div>
+
+              {/* Tire Pressures */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Tire Pressures (psi)</h3>
+                <div className="space-y-2">
+                  <h4 className="font-medium">Cold Pressure</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <FormField control={form.control} name="fl_cold_pressure" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>LF Cold</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.1" placeholder="28" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                        </FormControl>
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="fr_cold_pressure" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>RF Cold</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.1" placeholder="28" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                        </FormControl>
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="rl_cold_pressure" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>LR Cold</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.1" placeholder="26" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                        </FormControl>
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="rr_cold_pressure" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>RR Cold</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.1" placeholder="26" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                        </FormControl>
+                      </FormItem>
+                    )} />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <h4 className="font-medium">Hot Pressure</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <FormField control={form.control} name="fl_hot_pressure" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>LF Hot</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.1" placeholder="32" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                        </FormControl>
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="fr_hot_pressure" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>RF Hot</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.1" placeholder="32" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                        </FormControl>
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="rl_hot_pressure" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>LR Hot</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.1" placeholder="30" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                        </FormControl>
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="rr_hot_pressure" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>RR Hot</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.1" placeholder="30" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                        </FormControl>
+                      </FormItem>
+                    )} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Tire Wear Photos */}
+              {user && (
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold">Tire Wear Photos</h3>
+                  <p className="text-xs text-muted-foreground">Capture wear pattern for each corner. Photos upload now and link to this setup when saved.</p>
+                  <TireWearPhotos
+                    setupId={null}
+                    userId={user.id}
+                    photos={tirePhotos}
+                    onChanged={fetchUnlinkedTirePhotos}
+                  />
+                </div>
+              )}
 
               {/* Notes */}
               <FormField

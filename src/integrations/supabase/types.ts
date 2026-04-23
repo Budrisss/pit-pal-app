@@ -1337,19 +1337,24 @@ export type Database = {
           id: string
           left_percentage: number | null
           lf_camber: number | null
+          lf_caster: number | null
           lf_ride_height: number | null
           lf_shock: number | null
           lf_spring: number | null
+          lf_toe: number | null
           lr_camber: number | null
           lr_ride_height: number | null
           lr_shock: number | null
           lr_spring: number | null
+          lr_toe: number | null
           notes_times: string | null
           rear_percentage: number | null
           rf_camber: number | null
+          rf_caster: number | null
           rf_ride_height: number | null
           rf_shock: number | null
           rf_spring: number | null
+          rf_toe: number | null
           right_percentage: number | null
           rl_cold_pressure: number | null
           rl_hot_pressure: number | null
@@ -1365,6 +1370,7 @@ export type Database = {
           rr_temp_center: number | null
           rr_temp_inside: number | null
           rr_temp_outside: number | null
+          rr_toe: number | null
           session_id: string | null
           session_name: string | null
           setup_name: string | null
@@ -1391,19 +1397,24 @@ export type Database = {
           id?: string
           left_percentage?: number | null
           lf_camber?: number | null
+          lf_caster?: number | null
           lf_ride_height?: number | null
           lf_shock?: number | null
           lf_spring?: number | null
+          lf_toe?: number | null
           lr_camber?: number | null
           lr_ride_height?: number | null
           lr_shock?: number | null
           lr_spring?: number | null
+          lr_toe?: number | null
           notes_times?: string | null
           rear_percentage?: number | null
           rf_camber?: number | null
+          rf_caster?: number | null
           rf_ride_height?: number | null
           rf_shock?: number | null
           rf_spring?: number | null
+          rf_toe?: number | null
           right_percentage?: number | null
           rl_cold_pressure?: number | null
           rl_hot_pressure?: number | null
@@ -1419,6 +1430,7 @@ export type Database = {
           rr_temp_center?: number | null
           rr_temp_inside?: number | null
           rr_temp_outside?: number | null
+          rr_toe?: number | null
           session_id?: string | null
           session_name?: string | null
           setup_name?: string | null
@@ -1445,19 +1457,24 @@ export type Database = {
           id?: string
           left_percentage?: number | null
           lf_camber?: number | null
+          lf_caster?: number | null
           lf_ride_height?: number | null
           lf_shock?: number | null
           lf_spring?: number | null
+          lf_toe?: number | null
           lr_camber?: number | null
           lr_ride_height?: number | null
           lr_shock?: number | null
           lr_spring?: number | null
+          lr_toe?: number | null
           notes_times?: string | null
           rear_percentage?: number | null
           rf_camber?: number | null
+          rf_caster?: number | null
           rf_ride_height?: number | null
           rf_shock?: number | null
           rf_spring?: number | null
+          rf_toe?: number | null
           right_percentage?: number | null
           rl_cold_pressure?: number | null
           rl_hot_pressure?: number | null
@@ -1473,6 +1490,7 @@ export type Database = {
           rr_temp_center?: number | null
           rr_temp_inside?: number | null
           rr_temp_outside?: number | null
+          rr_toe?: number | null
           session_id?: string | null
           session_name?: string | null
           setup_name?: string | null
@@ -1499,6 +1517,47 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      setup_tire_photos: {
+        Row: {
+          corner: string
+          created_at: string
+          file_name: string
+          file_type: string | null
+          file_url: string
+          id: string
+          setup_id: string | null
+          user_id: string
+        }
+        Insert: {
+          corner: string
+          created_at?: string
+          file_name: string
+          file_type?: string | null
+          file_url: string
+          id?: string
+          setup_id?: string | null
+          user_id: string
+        }
+        Update: {
+          corner?: string
+          created_at?: string
+          file_name?: string
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          setup_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "setup_tire_photos_setup_id_fkey"
+            columns: ["setup_id"]
+            isOneToOne: false
+            referencedRelation: "setup_data"
             referencedColumns: ["id"]
           },
         ]
