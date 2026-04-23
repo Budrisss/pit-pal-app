@@ -69,6 +69,7 @@ const Setups = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [formOpen, setFormOpen] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
   const [savedSetups, setSavedSetups] = useState<SavedSetup[]>([]);
   const [allAttachments, setAllAttachments] = useState<SetupAttachment[]>([]);
   const [allTirePhotos, setAllTirePhotos] = useState<TirePhoto[]>([]);
