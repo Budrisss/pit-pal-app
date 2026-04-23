@@ -1,43 +1,66 @@
 
 
-## Email/phone change with email-based verification
+## Expand Chassis Setup Form: Toe, Caster, Tire Pressures & Wear Photos
 
-### Goal
-Let users change their **email** or **phone number** from Settings → Profile. Both changes go through an **8-digit code sent to the user's current email** (same style as signup) — no Twilio/SMS needed since SMS isn't wired up yet.
+### What gets added to the Chassis Setup Form
 
-### What the user will experience
+Under **Suspension Settings**:
+- **Toe (degrees)** — LF / RF / LR / RR (positive = toe-in, negative = toe-out)
+- **Caster (degrees)** — LF / RF only (rear caster isn't a thing on most cars)
 
-On the Profile card, two new rows appear:
-- **Email** — current email + "Change" button
-- **Phone** — current phone (or "Not set") + "Change" / "Add" button
+Under a new **Tire Pressures** section:
+- **Cold Pressure (psi)** — LF / RF / LR / RR
+- **Hot Pressure (psi)** — LF / RF / LR / RR
 
-**Flow for either change:**
-1. Click "Change" → dialog opens.
-2. Step 1 — **Verify it's you**: dialog says "We'll send an 8-digit code to your current email (`user@x.com`) to confirm this change." Click "Send code".
-3. Supabase emails an 8-digit OTP to the **current** email (using existing `signInWithOtp` flow already used at signup).
-4. Step 2 — User enters the 8-digit code + the new email (or new phone). Click "Confirm change".
-5. We verify the OTP, then call `supabase.auth.updateUser({ email: newEmail })` or update the phone field.
-6. **Email changes**: Supabase additionally sends a confirmation link to the **new** email — the change only finalizes when that link is clicked. Toast: "Check your new inbox to finalize the change."
-7. **Phone changes**: phone is stored on the profile immediately after OTP passes. Toast: "Phone updated."
-8. Profile card refreshes.
+Under a new **Tire Wear Photos** section:
+- One upload slot per corner: **LF, RF, LR, RR**
+- Each slot lets you upload an image (camera capture supported on mobile), shows a thumbnail, click to preview full-size, X to remove
+- Multiple photos per corner allowed (e.g., before/after a session)
 
-### Where the phone number lives
-Since Twilio isn't connected, we **do not** touch `auth.users.phone` (that would trigger an SMS). Instead, store the phone on `racer_profiles.phone_number` (new column). This is the field the Profile card reads/writes. When SMS is wired up later, we can migrate to `auth.users.phone` with real SMS verification.
+### Database changes
+
+**New columns on `setup_data`** (all `numeric NULL`):
+- `lf_toe`, `rf_toe`, `lr_toe`, `rr_toe`
+- `lf_caster`, `rf_caster`
+
+(Cold/hot pressure columns already exist on `setup_data` — no migration needed there.)
+
+**New table `setup_tire_photos`** for per-corner wear photos:
+| column | type |
+|---|---|
+| id | uuid PK |
+| setup_id | uuid (nullable, like setup_attachments) |
+| user_id | uuid |
+| corner | text — `'LF' \| 'RF' \| 'LR' \| 'RR'` (CHECK constraint) |
+| file_name | text |
+| file_url | text (storage path) |
+| file_type | text |
+| created_at | timestamptz default now() |
+
+RLS: standard `auth.uid() = user_id` for select/insert/update/delete.
+
+Files go in the existing **`setup-attachments`** private bucket under `${user_id}/tire-wear/${setup_id_or_unlinked}/${corner}-${timestamp}.jpg`. No new bucket needed.
 
 ### Files to create / update
 
-- **Update** `src/pages/Settings.tsx` — add Email and Phone rows to the Profile card with "Change" buttons.
-- **Create** `src/components/ChangeEmailDialog.tsx` — two-step: send 8-digit OTP to current email → verify code + new email → `updateUser({ email })`.
-- **Create** `src/components/ChangePhoneDialog.tsx` — two-step: send 8-digit OTP to current email → verify code + new phone → upsert into `racer_profiles.phone_number`.
-- **Migration**: add `phone_number text NULL` column to `racer_profiles` (RLS already covers it via the existing `auth.uid() = user_id` policies).
+- **Update** `src/components/VehicleSetupForm.tsx`
+  - Add Toe (4) and Caster (2) inputs to Suspension Settings section
+  - Add new "Tire Pressures" section with Cold + Hot pressure grids (4 corners each)
+  - Wire new fields into `SetupFormData` and the insert payload
+  - Add new "Tire Wear Photos" section using the new component below
+- **Create** `src/components/TireWearPhotos.tsx`
+  - Props: `setupId | null`, `userId`, `photos`, `onChanged`
+  - Renders a 2×2 corner grid (LF/RF on top, LR/RR on bottom) — each cell has thumbnails + an "Add photo" button (`<input type="file" accept="image/*" capture="environment">`)
+  - Click thumbnail → full-size preview dialog (reuses the same pattern as `SetupAttachments`)
+  - X button removes the photo from storage + DB
+- **Update** `src/pages/Setups.tsx`
+  - On the "New Setup Sheet" card, add a Tire Wear Photos block (corner grid) the same way it currently shows generic attachments — uploads while `setup_id` is null get linked to the new setup on save
+  - Saved-setup expanded view: show tire wear photos per corner alongside the existing attachments
+  - Fetch tire photos alongside `fetchAttachments` and pass them down
+- **Migration**: add new columns + create `setup_tire_photos` table with RLS policies
 
-### Why email OTP for both
-- No Twilio dependency.
-- Matches the existing 8-digit email OTP flow used at signup, so users already recognize it.
-- Re-verifying via the **current** email proves account ownership before allowing a sensitive change — same security model major SaaS uses when SMS isn't available.
-
-### Out of scope
-- Real SMS verification of the new phone (revisit when Twilio is connected).
-- Removing email/phone (can add later).
-- Changing email without OTP (intentionally unsafe, not supported).
+### Out of scope (can add later)
+- Tire temp grid in this form (already exists in DB columns; can add as separate "Tire Temperatures" section in a follow-up)
+- Toe-in vs toe-out unit toggle (inches vs degrees)
+- Side-by-side wear photo comparison across sessions
 
