@@ -283,9 +283,20 @@ const MaintenanceLog = () => {
             <h1 className="text-xl font-bold text-foreground truncate">Maintenance Log</h1>
             {car && <p className="text-sm text-muted-foreground truncate">{car.year} {car.make} {car.model}</p>}
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-full gap-1.5"
+            onClick={() => exportMaintenanceToPdf({ car, records })}
+            disabled={records.length === 0}
+            title={records.length === 0 ? "No records to export" : "Download maintenance log as PDF"}
+          >
+            <Download size={16} />
+            <span className="hidden sm:inline">Download Log</span>
+          </Button>
           <Button size="sm" className="rounded-full gap-1.5" onClick={openAddDialog}>
             <Plus size={16} />
-            Add Record
+            <span className="hidden sm:inline">Add Record</span>
           </Button>
         </div>
 
