@@ -728,7 +728,8 @@ const Setups = () => {
               );
             })}
           </div>
-        )}
+          );
+        })()}
       </div>
 
       <Navigation />
