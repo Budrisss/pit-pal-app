@@ -13,6 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import SetupAttachments from "@/components/SetupAttachments";
+import TireWearPhotos, { TirePhoto } from "@/components/TireWearPhotos";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -70,6 +71,7 @@ const Setups = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [savedSetups, setSavedSetups] = useState<SavedSetup[]>([]);
   const [allAttachments, setAllAttachments] = useState<SetupAttachment[]>([]);
+  const [allTirePhotos, setAllTirePhotos] = useState<TirePhoto[]>([]);
   const [expandedSetup, setExpandedSetup] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [editingSetup, setEditingSetup] = useState<SavedSetup | null>(null);
@@ -99,6 +101,7 @@ const Setups = () => {
     if (user) {
       fetchSetups();
       fetchAttachments();
+      fetchTirePhotos();
       fetchCars();
       fetchUserEvents();
     }
