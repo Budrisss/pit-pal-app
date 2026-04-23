@@ -12,7 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 const OnboardingProfile = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, setOnboardingCompleted } = useAuth();
   const { toast } = useToast();
 
   const [displayName, setDisplayName] = useState('');
@@ -52,7 +52,8 @@ const OnboardingProfile = () => {
         { user_id: user.id, display_name: user.email?.split('@')[0] ?? 'Racer', onboarding_completed: true },
         { onConflict: 'user_id' }
       );
-      navigate('/dashboard');
+      setOnboardingCompleted(true);
+      navigate('/dashboard', { replace: true });
     } finally {
       setSaving(false);
     }
@@ -101,7 +102,8 @@ const OnboardingProfile = () => {
       if (profErr) throw profErr;
 
       toast({ title: 'Profile saved!', description: 'Welcome to the grid.' });
-      navigate('/dashboard');
+      setOnboardingCompleted(true);
+      navigate('/dashboard', { replace: true });
     } catch (err: any) {
       toast({ title: 'Failed to save profile', description: err.message, variant: 'destructive' });
     } finally {

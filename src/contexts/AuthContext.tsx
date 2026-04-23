@@ -6,6 +6,9 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  onboardingCompleted: boolean | null;
+  setOnboardingCompleted: (value: boolean) => void;
+  refreshOnboarding: () => Promise<void>;
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -25,7 +28,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [onboardingCompleted, setOnboardingCompletedState] = useState<boolean | null>(null);
   const hasRestoredSession = useRef(false);
+
+  const loadOnboarding = async (userId: string) => {
+    const { data } = await supabase
+      .from("racer_profiles")
+      .select("onboarding_completed")
+      .eq("user_id", userId)
+      .maybeSingle();
+    setOnboardingCompletedState(!data ? false : data.onboarding_completed !== false);
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -36,6 +49,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         setSession(nextSession);
         setUser(nextSession?.user ?? null);
+
+        if (nextSession?.user) {
+          // Defer DB call to avoid deadlocks inside the auth callback
+          setTimeout(() => {
+            if (isMounted) loadOnboarding(nextSession.user.id);
+          }, 0);
+        } else {
+          setOnboardingCompletedState(null);
+        }
 
         if (hasRestoredSession.current) {
           setLoading(false);
@@ -49,6 +71,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       hasRestoredSession.current = true;
       setSession(restoredSession);
       setUser(restoredSession?.user ?? null);
+      if (restoredSession?.user) {
+        loadOnboarding(restoredSession.user.id);
+      }
       setLoading(false);
     });
 
@@ -72,8 +97,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await supabase.auth.signOut();
   };
 
+  const setOnboardingCompleted = (value: boolean) => {
+    setOnboardingCompletedState(value);
+  };
+
+  const refreshOnboarding = async () => {
+    if (user) await loadOnboarding(user.id);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, onboardingCompleted, setOnboardingCompleted, refreshOnboarding, signUp, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );
