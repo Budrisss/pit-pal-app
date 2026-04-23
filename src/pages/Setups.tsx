@@ -388,6 +388,30 @@ const Setups = () => {
   const generalTirePhotos = allTirePhotos.filter((p) => !p.setup_id);
   const getSetupTirePhotos = (setupId: string) => allTirePhotos.filter((p) => p.setup_id === setupId);
 
+  const handleDownloadSetup = async (setup: SavedSetup) => {
+    try {
+      const { data: full, error } = await supabase
+        .from("setup_data")
+        .select("*")
+        .eq("id", setup.id)
+        .maybeSingle();
+      if (error) throw error;
+      const car = cars.find((c) => c.id === setup.car_id) || null;
+      const event = userEvents.find((e) => e.id === setup.event_id) || null;
+      const atts = getSetupAttachments(setup.id);
+      const photos = getSetupTirePhotos(setup.id);
+      exportSetupToPdf(
+        (full as any) || (setup as any),
+        car,
+        event,
+        atts.map((a) => ({ file_name: a.file_name })),
+        photos.map((p) => ({ corner: p.corner, file_name: p.file_name })),
+      );
+    } catch (e: any) {
+      toast({ title: "Download failed", description: e?.message || "Could not generate PDF", variant: "destructive" });
+    }
+  };
+
   const searchLower = searchQuery.trim().toLowerCase();
   const filteredSetups = searchLower
     ? savedSetups.filter((setup) => {
