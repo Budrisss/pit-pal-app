@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Wrench, ChevronDown, ChevronUp, Upload, Car, Calendar, Clock, MapPin, Save, Trash2, Pencil, ArrowLeft, Info, Search } from "lucide-react";
+import { Wrench, ChevronDown, ChevronUp, Upload, Car, Calendar, Clock, MapPin, Save, Trash2, Pencil, ArrowLeft, Info, Search, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +17,7 @@ import TireWearPhotos, { TirePhoto } from "@/components/TireWearPhotos";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { exportSetupToPdf } from "@/lib/exportSetupPdf";
 
 interface SetupAttachment {
   id: string;
@@ -387,6 +388,30 @@ const Setups = () => {
   const generalTirePhotos = allTirePhotos.filter((p) => !p.setup_id);
   const getSetupTirePhotos = (setupId: string) => allTirePhotos.filter((p) => p.setup_id === setupId);
 
+  const handleDownloadSetup = async (setup: SavedSetup) => {
+    try {
+      const { data: full, error } = await supabase
+        .from("setup_data")
+        .select("*")
+        .eq("id", setup.id)
+        .maybeSingle();
+      if (error) throw error;
+      const car = cars.find((c) => c.id === setup.car_id) || null;
+      const event = userEvents.find((e) => e.id === setup.event_id) || null;
+      const atts = getSetupAttachments(setup.id);
+      const photos = getSetupTirePhotos(setup.id);
+      exportSetupToPdf(
+        (full as any) || (setup as any),
+        car,
+        event,
+        atts.map((a) => ({ file_name: a.file_name })),
+        photos.map((p) => ({ corner: p.corner, file_name: p.file_name })),
+      );
+    } catch (e: any) {
+      toast({ title: "Download failed", description: e?.message || "Could not generate PDF", variant: "destructive" });
+    }
+  };
+
   const searchLower = searchQuery.trim().toLowerCase();
   const filteredSetups = searchLower
     ? savedSetups.filter((setup) => {
@@ -657,6 +682,18 @@ const Setups = () => {
                             {setupAtts.length} file{setupAtts.length !== 1 ? "s" : ""}
                           </Badge>
                         )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          title="Download setup as PDF"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownloadSetup(setup);
+                          }}
+                        >
+                          <Download size={16} />
+                        </Button>
                         {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                       </div>
                     </div>
