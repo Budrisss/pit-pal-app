@@ -385,6 +385,17 @@ const Setups = () => {
   const generalTirePhotos = allTirePhotos.filter((p) => !p.setup_id);
   const getSetupTirePhotos = (setupId: string) => allTirePhotos.filter((p) => p.setup_id === setupId);
 
+  const searchLower = searchQuery.trim().toLowerCase();
+  const filteredSetups = searchLower
+    ? savedSetups.filter((setup) => {
+        const car = cars.find((c) => c.id === setup.car_id);
+        const evt = userEvents.find((e) => e.id === setup.event_id);
+        const carText = [car?.name, car?.make, car?.model].filter(Boolean).join(" ").toLowerCase();
+        const trackText = [evt?.trackName, evt?.address, evt?.name].filter(Boolean).join(" ").toLowerCase();
+        return carText.includes(searchLower) || trackText.includes(searchLower);
+      })
+    : savedSetups;
+
   return (
     <div className="min-h-screen bg-gradient-dark pb-20">
       <div className="p-4 space-y-6">
@@ -578,18 +589,7 @@ const Setups = () => {
         </Collapsible>
 
         {/* Saved Setups List */}
-        {savedSetups.length > 0 && (() => {
-          const q = searchQuery.trim().toLowerCase();
-          const filtered = q
-            ? savedSetups.filter((setup) => {
-                const car = cars.find((c) => c.id === setup.car_id);
-                const evt = userEvents.find((e) => e.id === setup.event_id);
-                const carText = [car?.name, car?.make, car?.model].filter(Boolean).join(" ").toLowerCase();
-                const trackText = [evt?.trackName, evt?.address, evt?.name].filter(Boolean).join(" ").toLowerCase();
-                return carText.includes(q) || trackText.includes(q);
-              })
-            : savedSetups;
-          return (
+        {savedSetups.length > 0 && (
           <div className="space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <h2 className="text-lg font-semibold text-foreground">Saved Setups</h2>
@@ -603,10 +603,10 @@ const Setups = () => {
                 />
               </div>
             </div>
-            {filtered.length === 0 && (
+            {filteredSetups.length === 0 && (
               <p className="text-sm text-muted-foreground py-4 text-center">No setups match "{searchQuery}".</p>
             )}
-            {filtered.map((setup) => {
+            {filteredSetups.map((setup) => {
               const isExpanded = expandedSetup === setup.id;
               const setupAtts = getSetupAttachments(setup.id);
               const setupCar = cars.find((c) => c.id === setup.car_id);
