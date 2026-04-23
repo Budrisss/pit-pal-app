@@ -251,6 +251,15 @@ const Setups = () => {
       }
     }
 
+    // Link unlinked tire photos to this setup
+    if (data?.id) {
+      await (supabase as any)
+        .from("setup_tire_photos")
+        .update({ setup_id: data.id })
+        .eq("user_id", user.id)
+        .is("setup_id", null);
+    }
+
     toast({ title: "Setup saved", description: "Your setup sheet has been created" });
     setSheetName("");
     setSheetCar("");
@@ -259,6 +268,7 @@ const Setups = () => {
     setSheetFastestLap("");
     fetchSetups();
     fetchAttachments();
+    fetchTirePhotos();
   };
 
   const handleDeleteSetup = async (setupId: string) => {
