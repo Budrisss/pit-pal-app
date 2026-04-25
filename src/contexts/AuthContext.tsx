@@ -83,6 +83,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
+  useEffect(() => {
+    const handlePopoutSessionRequest = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== "trackside:session-request") return;
+      if (!session?.access_token || !session?.refresh_token || !event.source) return;
+
+      event.source.postMessage(
+        {
+          type: "trackside:session-response",
+          session: {
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+          },
+        },
+        event.origin,
+      );
+    };
+
+    window.addEventListener("message", handlePopoutSessionRequest);
+    return () => window.removeEventListener("message", handlePopoutSessionRequest);
+  }, [session]);
+
   const signUp = async (email: string, password: string) => {
     const { error } = await supabase.auth.signUp({ email, password });
     return { error: error as Error | null };
