@@ -184,16 +184,30 @@
 
 /* Live Track Map — race-control styling */
 @layer components {
-  .live-car-marker { background: transparent !important; border: none !important; }
-  .live-track-map .leaflet-container { background: hsl(0 0% 95%); }
-  .live-track-map .leaflet-control-attribution {
-    background: hsl(0 0% 100% / 0.75) !important;
-    color: hsl(220 13% 25%) !important;
+  /* MapLibre tweaks for dark theme */
+  .live-track-map .maplibregl-ctrl-attrib {
+    background: hsl(var(--card) / 0.75) !important;
+    color: hsl(var(--muted-foreground)) !important;
     font-size: 9px !important;
     backdrop-filter: blur(4px);
   }
-  .live-track-map .leaflet-control-attribution a { color: hsl(220 13% 15%) !important; }
-  .live-track-map .leaflet-control-zoom { display: none; }
+  .live-track-map .maplibregl-ctrl-attrib a { color: hsl(var(--foreground)) !important; }
+  .live-track-map .maplibregl-popup-content {
+    background: hsl(var(--card)) !important;
+    color: hsl(var(--foreground)) !important;
+    border: 1px solid hsl(var(--border));
+    border-radius: 8px;
+    padding: 8px 10px;
+    box-shadow: 0 8px 24px hsl(0 0% 0% / 0.5);
+  }
+  .live-track-map .maplibregl-popup-tip { border-top-color: hsl(var(--card)) !important; }
+  .live-track-map .maplibregl-ctrl-group {
+    background: hsl(var(--card) / 0.9) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    backdrop-filter: blur(8px);
+  }
+  .live-track-map .maplibregl-ctrl-group button { color: hsl(var(--foreground)) !important; }
+  .live-track-map .maplibregl-ctrl-group button span { filter: invert(0.85); }
 
   .live-pulse-dot {
     width: 8px; height: 8px; border-radius: 9999px;
