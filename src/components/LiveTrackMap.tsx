@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import Map, { Source, Layer, Marker, Popup, NavigationControl, type MapRef } from "react-map-gl/maplibre";
+import MapGL, { Source, Layer, Marker, Popup, NavigationControl, type MapRef } from "react-map-gl/maplibre";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Check, ChevronDown, ChevronRight, ChevronsUpDown, Crosshair, Minus, Plus, Radio, Target, Flag, Box, Square, Layers } from "lucide-react";
@@ -530,13 +530,13 @@ const LiveTrackMap = ({ eventId, participants, fullscreen = false }: LiveTrackMa
 
           {/* Map */}
           <div className={cn("live-track-map relative", fullscreen && "flex-1 min-h-0")} style={fullscreen ? undefined : { height: 520 }}>
-            <Map
+            <MapGL
               ref={mapRef}
               mapLib={maplibregl}
               initialViewState={initialViewState}
               mapStyle={activeStyle as any}
               onRotate={(e) => setBearing(e.viewState.bearing)}
-              attributionControl={{ compact: true }}
+              attributionControl={false}
               style={{ width: "100%", height: "100%" }}
               maxPitch={70}
             >
@@ -619,7 +619,7 @@ const LiveTrackMap = ({ eventId, participants, fullscreen = false }: LiveTrackMa
                   </Popup>
                 );
               })()}
-            </Map>
+            </MapGL>
 
             {/* Reset-north compass overlay (only when rotated) */}
             {Math.abs(((bearing % 360) + 360) % 360) > 1 && Math.abs(((bearing % 360) + 360) % 360) < 359 && (
