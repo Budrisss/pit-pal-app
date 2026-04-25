@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, LayersControl } from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-import { Check, ChevronDown, ChevronRight, ChevronsUpDown, Crosshair, Minus, Plus, Radio, Target, Flag } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import Map, { Source, Layer, Marker, Popup, NavigationControl, type MapRef } from "react-map-gl/maplibre";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
+import { Check, ChevronDown, ChevronRight, ChevronsUpDown, Crosshair, Minus, Plus, Radio, Target, Flag, Box, Square, Layers } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -10,6 +10,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { tracksideDarkStyle, tracksideSatelliteStyle } from "@/lib/mapStyles/trackside-dark";
+import { computeBestBearing } from "@/lib/geo/orientTrack";
 
 interface PositionFix {
   id: string;
@@ -55,97 +57,44 @@ function colorForRunGroup(runGroupId: string | null, runGroupIdx: Map<string, nu
   return `hsl(${RUN_GROUP_HUES[idx % RUN_GROUP_HUES.length]}, 80%, 55%)`;
 }
 
-function carIcon(carNumber: number | string, color: string, heading: number | null, stale: boolean) {
-  const ringStyle = stale
-    ? `border:2px dashed ${color};`
-    : `border:2px solid ${color}; box-shadow:0 0 8px ${color}80, 0 2px 6px rgba(0,0,0,0.6);`;
-  const arrow = heading == null
-    ? ""
-    : `<div style="position:absolute;top:50%;left:50%;width:0;height:0;transform:translate(-50%,-50%) rotate(${heading}deg);">
-         <div style="position:absolute;top:-22px;left:-5px;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:8px solid ${color};filter:drop-shadow(0 0 3px ${color});"></div>
-       </div>`;
-  const html = `
-    <div style="position:relative;width:36px;height:36px;display:flex;align-items:center;justify-content:center;">
-      ${arrow}
-      <div style="
-        background:hsl(220 13% 9% / 0.95);
-        color:white;
-        font-weight:800;
-        font-size:11px;
-        padding:3px 6px;
-        clip-path: polygon(15% 0, 85% 0, 100% 50%, 85% 100%, 15% 100%, 0 50%);
-        ${ringStyle}
-        white-space:nowrap;
-        font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
-        line-height:1;
-        letter-spacing:0.5px;
-      ">${carNumber}</div>
-    </div>`;
-  return L.divIcon({ html, className: "live-car-marker", iconSize: [36, 36], iconAnchor: [18, 18] });
-}
-
-function startFinishIcon() {
-  const html = `<div style="
-    width:14px;height:14px;
-    background:repeating-conic-gradient(white 0 25%, black 0 50%) 50%/6px 6px;
-    border:2px solid hsl(var(--f1-red));
-    border-radius:3px;
-    box-shadow:0 0 6px hsl(var(--f1-red) / 0.8);
-  "></div>`;
-  return L.divIcon({ html, className: "live-car-marker", iconSize: [14, 14], iconAnchor: [7, 7] });
-}
-
-function FitBounds({ trigger, points, trackId, framedRef }: { trigger: number; points: [number, number][]; trackId: string | null; framedRef: React.MutableRefObject<string | null> }) {
-  const map = useMap();
-  useEffect(() => {
-    if (trigger === 0 || points.length === 0) return;
-    if (trackId && framedRef.current === trackId) return;
-    if (points.length === 1) map.setView(points[0], 16);
-    else map.fitBounds(L.latLngBounds(points), { padding: [40, 40], maxZoom: 17 });
-    if (trackId) framedRef.current = trackId;
-  }, [trigger, points, map, trackId, framedRef]);
-  return null;
-}
-
-function RecenterOnTrack({ trackId, center, framedRef }: { trackId: string | null; center: [number, number] | null; framedRef: React.MutableRefObject<string | null> }) {
-  const map = useMap();
-  useEffect(() => {
-    if (!trackId || !center) return;
-    if (framedRef.current === trackId) return;
-    map.setView(center, 15, { animate: true });
-    framedRef.current = trackId;
-  }, [trackId, center, map, framedRef]);
-  return null;
-}
-
-function FollowLeader({ enabled, point }: { enabled: boolean; point: [number, number] | null }) {
-  const map = useMap();
-  useEffect(() => {
-    if (!enabled || !point) return;
-    map.panTo(point, { animate: true, duration: 0.6 });
-  }, [enabled, point, map]);
-  return null;
-}
-
-function ZoomControls() {
-  const map = useMap();
+// Car number marker (screen-aligned hex badge)
+function CarBadge({ carNumber, color, heading, stale }: { carNumber: number | string; color: string; heading: number | null; stale: boolean }) {
+  const ring = stale
+    ? { border: `2px dashed ${color}` }
+    : { border: `2px solid ${color}`, boxShadow: `0 0 8px ${color}80, 0 2px 6px rgba(0,0,0,0.6)` };
   return (
-    <div className="absolute bottom-4 right-4 z-[400] flex flex-col gap-1">
-      <button
-        onClick={() => map.zoomIn()}
-        className="w-9 h-9 rounded-md bg-card/90 backdrop-blur border border-border/60 hover:bg-card hover:border-primary/50 transition-colors flex items-center justify-center text-foreground shadow-lg"
-        aria-label="Zoom in"
-      >
-        <Plus size={16} />
-      </button>
-      <button
-        onClick={() => map.zoomOut()}
-        className="w-9 h-9 rounded-md bg-card/90 backdrop-blur border border-border/60 hover:bg-card hover:border-primary/50 transition-colors flex items-center justify-center text-foreground shadow-lg"
-        aria-label="Zoom out"
-      >
-        <Minus size={16} />
-      </button>
+    <div style={{ position: "relative", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      {heading != null && (
+        <div style={{ position: "absolute", top: "50%", left: "50%", width: 0, height: 0, transform: `translate(-50%,-50%) rotate(${heading}deg)` }}>
+          <div style={{ position: "absolute", top: -22, left: -5, width: 0, height: 0, borderLeft: "5px solid transparent", borderRight: "5px solid transparent", borderBottom: `8px solid ${color}`, filter: `drop-shadow(0 0 3px ${color})` }} />
+        </div>
+      )}
+      <div style={{
+        background: "hsl(220 13% 9% / 0.95)",
+        color: "white",
+        fontWeight: 800,
+        fontSize: 11,
+        padding: "3px 6px",
+        clipPath: "polygon(15% 0, 85% 0, 100% 50%, 85% 100%, 15% 100%, 0 50%)",
+        whiteSpace: "nowrap",
+        fontFamily: "ui-monospace,SFMono-Regular,Menlo,monospace",
+        lineHeight: 1,
+        letterSpacing: 0.5,
+        ...ring,
+      }}>{carNumber}</div>
     </div>
+  );
+}
+
+function StartFinishBadge() {
+  return (
+    <div style={{
+      width: 14, height: 14,
+      background: "repeating-conic-gradient(white 0 25%, black 0 50%) 50%/6px 6px",
+      border: "2px solid hsl(var(--f1-red))",
+      borderRadius: 3,
+      boxShadow: "0 0 6px hsl(var(--f1-red) / 0.8)",
+    }} />
   );
 }
 
@@ -172,13 +121,17 @@ const LiveTrackMap = ({ eventId, participants, fullscreen = false }: LiveTrackMa
   const [track, setTrack] = useState<TrackInfo | null>(null);
   const [trackCoords, setTrackCoords] = useState<[number, number][]>([]);
   const [presets, setPresets] = useState<{ id: string; name: string }[]>([]);
-  const [fitTrigger, setFitTrigger] = useState(0);
   const [followLeader, setFollowLeader] = useState(false);
   const [hasAutoFit, setHasAutoFit] = useState(false);
   const [trackPickerOpen, setTrackPickerOpen] = useState(false);
+  const [is3D, setIs3D] = useState(true);
+  const [styleMode, setStyleMode] = useState<"dark" | "satellite">("dark");
+  const [bearing, setBearing] = useState(0);
+  const [openPopupId, setOpenPopupId] = useState<string | null>(null);
   const [, forceTick] = useState(0);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const framedTrackRef = useRef<string | null>(null);
+  const mapRef = useRef<MapRef | null>(null);
 
   useEffect(() => {
     const id = setInterval(() => forceTick((n) => n + 1), 5000);
@@ -349,31 +302,94 @@ const LiveTrackMap = ({ eventId, participants, fullscreen = false }: LiveTrackMa
   const totalCars = participants.length;
   const trackLengthMi = trackCoords.length > 1 ? polylineLengthMi(trackCoords) : null;
 
-  // Map center: track coords bounds → track point → first fix → US fallback
-  const points: [number, number][] = visibleFixes.map((v) => [v.fix.latitude, v.fix.longitude]);
-  const mapCenter: [number, number] = track
-    ? [track.latitude, track.longitude]
-    : (points[0] ?? [39.8283, -98.5795]);
-  const initialZoom = track ? 16 : (points.length ? 15 : 4);
+  // Map initial view
+  const initialViewState = useMemo(() => ({
+    longitude: track?.longitude ?? -98.5795,
+    latitude: track?.latitude ?? 39.8283,
+    zoom: track ? 14.5 : 4,
+    pitch: 45,
+    bearing: 0,
+  }), []); // intentionally only on mount; we use flyTo for subsequent track switches
 
-  // Auto-fit to track when coords first arrive
-  useEffect(() => {
-    if (!hasAutoFit && trackCoords.length > 1) {
-      setFitTrigger((n) => n + 1);
-      setHasAutoFit(true);
+  // GeoJSON for the track polyline (used as a glow overlay — also visible on satellite)
+  const trackGeoJson = useMemo(() => {
+    if (trackCoords.length < 2) return null;
+    return {
+      type: "FeatureCollection" as const,
+      features: [{
+        type: "Feature" as const,
+        geometry: { type: "LineString" as const, coordinates: trackCoords.map(([lat, lng]) => [lng, lat]) },
+        properties: {},
+      }],
+    };
+  }, [trackCoords]);
+
+  // Frame: fit to track and orient longest axis horizontally
+  const frameTrack = useCallback((animate = true) => {
+    const map = mapRef.current?.getMap();
+    if (!map) return;
+    if (trackCoords.length > 1) {
+      const oriented = computeBestBearing(trackCoords);
+      if (!oriented) return;
+      const { bounds, bearing: targetBearing } = oriented;
+      // Set bearing first, then fit bounds in that rotated frame
+      map.setBearing(targetBearing);
+      setBearing(targetBearing);
+      map.fitBounds(
+        [[bounds.minLng, bounds.minLat], [bounds.maxLng, bounds.maxLat]],
+        { padding: 60, bearing: targetBearing, pitch: is3D ? 45 : 0, duration: animate ? 800 : 0, maxZoom: 17 },
+      );
+    } else if (visibleFixes.length > 0) {
+      const lngs = visibleFixes.map((v) => v.fix.longitude);
+      const lats = visibleFixes.map((v) => v.fix.latitude);
+      map.fitBounds(
+        [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]],
+        { padding: 60, duration: animate ? 800 : 0, maxZoom: 17 },
+      );
     }
-  }, [trackCoords, hasAutoFit]);
+  }, [trackCoords, visibleFixes, is3D]);
 
-  const fitTarget = trackCoords.length > 1 ? trackCoords : points;
+  // Auto-frame when track first loads
+  useEffect(() => {
+    if (!hasAutoFit && trackCoords.length > 1 && mapRef.current) {
+      frameTrack(true);
+      setHasAutoFit(true);
+      framedTrackRef.current = track?.id ?? null;
+    }
+  }, [trackCoords, hasAutoFit, frameTrack, track?.id]);
 
-  // Leader = most recently updated fix
-  const leaderPoint: [number, number] | null = useMemo(() => {
-    if (!followLeader || visibleFixes.length === 0) return null;
+  // Re-frame when user switches selected track
+  useEffect(() => {
+    if (!track) return;
+    if (framedTrackRef.current === track.id) return;
+    setHasAutoFit(false);
+  }, [track?.id]);
+
+  // Toggle 3D pitch
+  useEffect(() => {
+    const map = mapRef.current?.getMap();
+    if (!map) return;
+    map.easeTo({ pitch: is3D ? 45 : 0, duration: 500 });
+  }, [is3D]);
+
+  // Follow leader
+  useEffect(() => {
+    if (!followLeader || visibleFixes.length === 0) return;
     const sorted = [...visibleFixes].sort(
       (a, b) => new Date(b.fix.received_at).getTime() - new Date(a.fix.received_at).getTime(),
     );
-    return [sorted[0].fix.latitude, sorted[0].fix.longitude];
+    const lead = sorted[0].fix;
+    mapRef.current?.getMap().easeTo({ center: [lead.longitude, lead.latitude], duration: 600 });
   }, [followLeader, visibleFixes]);
+
+  const resetNorth = useCallback(() => {
+    const map = mapRef.current?.getMap();
+    if (!map) return;
+    map.easeTo({ bearing: 0, duration: 500 });
+    setBearing(0);
+  }, []);
+
+  const activeStyle = styleMode === "dark" ? tracksideDarkStyle : tracksideSatelliteStyle;
 
   return (
     <Card className={cn("bg-card border-border/60 overflow-hidden", fullscreen && "h-full w-full border-0 rounded-none flex flex-col")}>
@@ -477,10 +493,28 @@ const LiveTrackMap = ({ eventId, participants, fullscreen = false }: LiveTrackMa
                 variant="outline"
                 size="sm"
                 className="h-7 text-[10px] font-mono uppercase tracking-wider"
-                onClick={() => setFitTrigger((n) => n + 1)}
-                disabled={fitTarget.length === 0}
+                onClick={() => frameTrack(true)}
+                disabled={trackCoords.length < 2 && visibleFixes.length === 0}
               >
-                <Crosshair size={11} className="mr-1" /> Fit
+                <Crosshair size={11} className="mr-1" /> Frame
+              </Button>
+              <Button
+                variant={is3D ? "default" : "outline"}
+                size="sm"
+                className="h-7 text-[10px] font-mono uppercase tracking-wider"
+                onClick={() => setIs3D((v) => !v)}
+                title={is3D ? "Switch to flat view" : "Switch to 3D tilt"}
+              >
+                {is3D ? <Box size={11} className="mr-1" /> : <Square size={11} className="mr-1" />} {is3D ? "3D" : "Flat"}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-[10px] font-mono uppercase tracking-wider"
+                onClick={() => setStyleMode((m) => (m === "dark" ? "satellite" : "dark"))}
+                title="Toggle map style"
+              >
+                <Layers size={11} className="mr-1" /> {styleMode === "dark" ? "Map" : "Sat"}
               </Button>
               <Button
                 variant={followLeader ? "default" : "outline"}
@@ -496,68 +530,110 @@ const LiveTrackMap = ({ eventId, participants, fullscreen = false }: LiveTrackMa
 
           {/* Map */}
           <div className={cn("live-track-map relative", fullscreen && "flex-1 min-h-0")} style={fullscreen ? undefined : { height: 520 }}>
-            <MapContainer
-              center={mapCenter}
-              zoom={initialZoom}
-              scrollWheelZoom
-              zoomControl={false}
-              style={{ height: "100%", width: "100%" }}
+            <Map
+              ref={mapRef}
+              mapLib={maplibregl}
+              initialViewState={initialViewState}
+              mapStyle={activeStyle as any}
+              onRotate={(e) => setBearing(e.viewState.bearing)}
+              attributionControl={{ compact: true }}
+              style={{ width: "100%", height: "100%" }}
+              maxPitch={70}
             >
-              <LayersControl position="topright">
-                <LayersControl.BaseLayer checked name="Streets">
-                  <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    maxZoom={19}
+              <NavigationControl position="bottom-right" visualizePitch showCompass showZoom />
+
+              {/* Track polyline glow — drawn on top so it pops on satellite too */}
+              {trackGeoJson && (
+                <Source id="track-line" type="geojson" data={trackGeoJson}>
+                  <Layer
+                    id="track-line-glow"
+                    type="line"
+                    paint={{
+                      "line-color": "#ef4444",
+                      "line-blur": 6,
+                      "line-opacity": 0.55,
+                      "line-width": ["interpolate", ["linear"], ["zoom"], 10, 5, 14, 12, 18, 28],
+                    }}
+                    layout={{ "line-cap": "round", "line-join": "round" }}
                   />
-                </LayersControl.BaseLayer>
-                <LayersControl.BaseLayer name="Satellite">
-                  <TileLayer
-                    attribution='Tiles &copy; Esri — Source: Esri, Maxar, Earthstar Geographics'
-                    url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                    maxZoom={19}
+                  <Layer
+                    id="track-line-core"
+                    type="line"
+                    paint={{
+                      "line-color": "#ef4444",
+                      "line-width": ["interpolate", ["linear"], ["zoom"], 10, 1.5, 14, 4, 18, 10],
+                    }}
+                    layout={{ "line-cap": "round", "line-join": "round" }}
                   />
-                </LayersControl.BaseLayer>
-              </LayersControl>
+                </Source>
+              )}
+
               {trackCoords.length > 1 && (
-                <Marker position={trackCoords[0]} icon={startFinishIcon()}>
-                  <Popup><div className="text-xs font-bold">Start / Finish</div></Popup>
+                <Marker longitude={trackCoords[0][1]} latitude={trackCoords[0][0]} anchor="center">
+                  <StartFinishBadge />
                 </Marker>
               )}
-              <RecenterOnTrack
-                trackId={track?.id ?? null}
-                center={track ? [track.latitude, track.longitude] : null}
-                framedRef={framedTrackRef}
-              />
-              <FitBounds trigger={fitTrigger} points={fitTarget} trackId={track?.id ?? null} framedRef={framedTrackRef} />
-              <FollowLeader enabled={followLeader} point={leaderPoint} />
-              <ZoomControls />
+
               {visibleFixes.map(({ fix, participant, ageMs }) => {
                 const carNum = participant?.car_number ?? "?";
                 const color = colorForRunGroup(participant?.run_group_id ?? null, runGroupIdx);
                 const stale = ageMs > STALE_MS;
-                const speedMph = fix.speed_mps != null ? Math.round(fix.speed_mps * 2.237) : null;
-                const ageSec = Math.round(ageMs / 1000);
                 return (
                   <Marker
                     key={fix.id}
-                    position={[fix.latitude, fix.longitude]}
-                    icon={carIcon(carNum, color, fix.heading_deg, stale)}
+                    longitude={fix.longitude}
+                    latitude={fix.latitude}
+                    anchor="center"
+                    onClick={(e) => { e.originalEvent.stopPropagation(); setOpenPopupId(fix.id); }}
                   >
-                    <Popup>
-                      <div className="text-xs space-y-0.5 font-mono">
-                        <div className="font-bold text-sm">#{carNum} {participant?.user_name ?? "Unknown driver"}</div>
-                        {speedMph != null && <div>Speed: <span className="font-bold">{speedMph}</span> mph</div>}
-                        {fix.heading_deg != null && <div>Hdg: {Math.round(fix.heading_deg)}°</div>}
-                        <div className={stale ? "text-orange-500" : "text-muted-foreground"}>
-                          Last fix: {ageSec}s ago{stale ? " (stale)" : ""}
-                        </div>
-                      </div>
-                    </Popup>
+                    <CarBadge carNumber={carNum} color={color} heading={fix.heading_deg} stale={stale} />
                   </Marker>
                 );
               })}
-            </MapContainer>
+
+              {openPopupId && (() => {
+                const v = visibleFixes.find((x) => x.fix.id === openPopupId);
+                if (!v) return null;
+                const { fix, participant, ageMs } = v;
+                const carNum = participant?.car_number ?? "?";
+                const stale = ageMs > STALE_MS;
+                const speedMph = fix.speed_mps != null ? Math.round(fix.speed_mps * 2.237) : null;
+                const ageSec = Math.round(ageMs / 1000);
+                return (
+                  <Popup
+                    longitude={fix.longitude}
+                    latitude={fix.latitude}
+                    anchor="bottom"
+                    onClose={() => setOpenPopupId(null)}
+                    closeButton
+                    closeOnClick={false}
+                  >
+                    <div className="text-xs space-y-0.5 font-mono text-foreground">
+                      <div className="font-bold text-sm">#{carNum} {participant?.user_name ?? "Unknown driver"}</div>
+                      {speedMph != null && <div>Speed: <span className="font-bold">{speedMph}</span> mph</div>}
+                      {fix.heading_deg != null && <div>Hdg: {Math.round(fix.heading_deg)}°</div>}
+                      <div className={stale ? "text-orange-500" : "text-muted-foreground"}>
+                        Last fix: {ageSec}s ago{stale ? " (stale)" : ""}
+                      </div>
+                    </div>
+                  </Popup>
+                );
+              })()}
+            </Map>
+
+            {/* Reset-north compass overlay (only when rotated) */}
+            {Math.abs(((bearing % 360) + 360) % 360) > 1 && Math.abs(((bearing % 360) + 360) % 360) < 359 && (
+              <button
+                onClick={resetNorth}
+                title="Reset rotation to north"
+                className="absolute top-3 right-3 z-[400] w-9 h-9 rounded-md bg-card/90 backdrop-blur border border-border/60 hover:bg-card hover:border-primary/50 transition-colors flex items-center justify-center text-foreground shadow-lg"
+              >
+                <div style={{ transform: `rotate(${-bearing}deg)`, transition: "transform 200ms" }} className="flex flex-col items-center leading-none">
+                  <span className="text-[10px] font-bold text-primary">N</span>
+                  <span className="text-[7px] -mt-0.5 text-muted-foreground">▲</span>
+                </div>
+              </button>
+            )}
 
             {/* Empty state overlay */}
             {visibleFixes.length === 0 && (
