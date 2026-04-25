@@ -203,30 +203,56 @@ const LiveTrackMap = ({ eventId, participants, fullscreen = false }: LiveTrackMa
       if (info.geojson?.coords?.length) {
         setTrackCoords(info.geojson.coords);
       } else {
-        const query = `[out:json][timeout:15];way["highway"="raceway"](around:1500,${info.latitude},${info.longitude});out geom;`;
-        try {
-          const res = await fetch("https://overpass-api.de/api/interpreter", {
-            method: "POST",
-            body: query,
-          });
-          const json = await res.json();
-          let best: [number, number][] = [];
-          for (const el of json.elements ?? []) {
-            if (el.type === "way" && Array.isArray(el.geometry)) {
-              const coords: [number, number][] = el.geometry.map((g: any) => [g.lat, g.lon]);
-              if (coords.length > best.length) best = coords;
+        // Fetch raceway polyline from Overpass with retries across multiple
+        // mirrors and a widening search radius. The public Overpass endpoint
+        // is sometimes rate-limited or slow, so we try alternates before
+        // giving up — this is the main reason tracks "sometimes don't load".
+        const endpoints = [
+          "https://overpass-api.de/api/interpreter",
+          "https://overpass.kumi.systems/api/interpreter",
+          "https://overpass.openstreetmap.fr/api/interpreter",
+        ];
+        const radii = [1500, 3000, 6000];
+
+        const fetchWithTimeout = async (url: string, body: string, ms: number) => {
+          const ctrl = new AbortController();
+          const timer = setTimeout(() => ctrl.abort(), ms);
+          try {
+            return await fetch(url, { method: "POST", body, signal: ctrl.signal });
+          } finally {
+            clearTimeout(timer);
+          }
+        };
+
+        let best: [number, number][] = [];
+        outer: for (const radius of radii) {
+          const query = `[out:json][timeout:25];way["highway"="raceway"](around:${radius},${info.latitude},${info.longitude});out geom;`;
+          for (const url of endpoints) {
+            if (cancelled) return;
+            try {
+              const res = await fetchWithTimeout(url, query, 18000);
+              if (!res.ok) continue;
+              const json = await res.json();
+              for (const el of json.elements ?? []) {
+                if (el.type === "way" && Array.isArray(el.geometry)) {
+                  const coords: [number, number][] = el.geometry.map((g: any) => [g.lat, g.lon]);
+                  if (coords.length > best.length) best = coords;
+                }
+              }
+              if (best.length > 1) break outer;
+            } catch {
+              // try next mirror / radius
             }
           }
-          if (cancelled) return;
-          if (best.length > 1) {
-            setTrackCoords(best);
-            (supabase as any).rpc("upsert_track_geojson", {
-              _track_id: info.id,
-              _geojson: { coords: best },
-            }).then(() => {});
-          }
-        } catch {
-          // silent
+        }
+
+        if (cancelled) return;
+        if (best.length > 1) {
+          setTrackCoords(best);
+          (supabase as any).rpc("upsert_track_geojson", {
+            _track_id: info.id,
+            _geojson: { coords: best },
+          }).then(() => {});
         }
       }
     })();
