@@ -21,6 +21,6 @@ export default defineConfig(({ mode }) => ({
     dedupe: ["react", "react-dom"],
   },
   optimizeDeps: {
-    include: ["react", "react-dom", "react-leaflet", "leaflet", "@react-leaflet/core"],
+    include: ["react", "react-dom", "maplibre-gl", "react-map-gl"],
   },
 }));
