@@ -1559,7 +1559,7 @@ const OrganizerLiveManage = () => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => window.open(`/live-map/${eventId}`, "_blank", "noopener,noreferrer")}
+                    onClick={() => window.open(`/live-map/${eventId}`, "trackside-live-map")}
                     title="Pop out map to new tab"
                     className="h-8 w-8 bg-card/80 backdrop-blur-sm hover:bg-card border border-border"
                   >

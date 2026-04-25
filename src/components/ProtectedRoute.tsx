@@ -8,6 +8,7 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute = ({ children, skipOnboardingCheck = false }: ProtectedRouteProps) => {
   const { user, loading, onboardingCompleted } = useAuth();
+  const isLiveMapPopout = window.location.pathname.startsWith("/live-map/") && !!window.opener;
 
   const needsOnboardingCheck = !!user && !skipOnboardingCheck;
 
@@ -23,6 +24,7 @@ const ProtectedRoute = ({ children, skipOnboardingCheck = false }: ProtectedRout
   }
 
   if (!user) {
+    if (isLiveMapPopout) return <>{children}</>;
     return <Navigate to="/" replace />;
   }
 
