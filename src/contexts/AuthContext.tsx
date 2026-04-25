@@ -89,7 +89,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (event.data?.type !== "trackside:session-request") return;
       if (!session?.access_token || !session?.refresh_token || !event.source) return;
 
-      event.source.postMessage(
+      (event.source as Window).postMessage(
         {
           type: "trackside:session-response",
           session: {
