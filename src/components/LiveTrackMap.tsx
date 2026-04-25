@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import MapGL, { Source, Layer, Marker, Popup, NavigationControl, type MapRef } from "react-map-gl/maplibre";
+import MapGL, { Marker, Popup, NavigationControl, type MapRef } from "react-map-gl/maplibre";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Check, ChevronDown, ChevronRight, ChevronsUpDown, Crosshair, Minus, Plus, Radio, Target, Flag, Box, Square, Layers } from "lucide-react";
@@ -541,32 +541,6 @@ const LiveTrackMap = ({ eventId, participants, fullscreen = false }: LiveTrackMa
               maxPitch={70}
             >
               <NavigationControl position="bottom-right" visualizePitch showCompass showZoom />
-
-              {/* Track polyline glow — drawn on top so it pops on satellite too */}
-              {trackGeoJson && (
-                <Source id="track-line" type="geojson" data={trackGeoJson}>
-                  <Layer
-                    id="track-line-glow"
-                    type="line"
-                    paint={{
-                      "line-color": "#ef4444",
-                      "line-blur": 6,
-                      "line-opacity": 0.55,
-                      "line-width": ["interpolate", ["linear"], ["zoom"], 10, 5, 14, 12, 18, 28],
-                    }}
-                    layout={{ "line-cap": "round", "line-join": "round" }}
-                  />
-                  <Layer
-                    id="track-line-core"
-                    type="line"
-                    paint={{
-                      "line-color": "#ef4444",
-                      "line-width": ["interpolate", ["linear"], ["zoom"], 10, 1.5, 14, 4, 18, 10],
-                    }}
-                    layout={{ "line-cap": "round", "line-join": "round" }}
-                  />
-                </Source>
-              )}
 
               {trackCoords.length > 1 && (
                 <Marker longitude={trackCoords[0][1]} latitude={trackCoords[0][0]} anchor="center">
