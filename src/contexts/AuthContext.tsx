@@ -30,6 +30,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [onboardingCompleted, setOnboardingCompletedState] = useState<boolean | null>(null);
   const hasRestoredSession = useRef(false);
+  const requestedPopoutSession = useRef(false);
 
   const loadOnboarding = async (userId: string) => {
     const { data } = await supabase
@@ -104,6 +105,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     window.addEventListener("message", handlePopoutSessionRequest);
     return () => window.removeEventListener("message", handlePopoutSessionRequest);
   }, [session]);
+
+  useEffect(() => {
+    if (loading || session || requestedPopoutSession.current || !window.opener) return;
+    requestedPopoutSession.current = true;
+
+    const handlePopoutSessionResponse = async (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== "trackside:session-response") return;
+      const tokens = event.data.session;
+      if (!tokens?.access_token || !tokens?.refresh_token) return;
+      await supabase.auth.setSession({
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+      });
+    };
+
+    window.addEventListener("message", handlePopoutSessionResponse);
+    window.opener.postMessage({ type: "trackside:session-request" }, window.location.origin);
+    return () => window.removeEventListener("message", handlePopoutSessionResponse);
+  }, [loading, session]);
 
   const signUp = async (email: string, password: string) => {
     const { error } = await supabase.auth.signUp({ email, password });
