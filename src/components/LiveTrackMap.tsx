@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import MapGL, { Source, Layer, Marker, Popup, NavigationControl, type MapRef } from "react-map-gl/maplibre";
+import MapGL, { Marker, Popup, NavigationControl, type MapRef } from "react-map-gl/maplibre";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Check, ChevronDown, ChevronRight, ChevronsUpDown, Crosshair, Minus, Plus, Radio, Target, Flag, Box, Square, Layers } from "lucide-react";
@@ -391,6 +391,61 @@ const LiveTrackMap = ({ eventId, participants, fullscreen = false }: LiveTrackMa
 
   const activeStyle = styleMode === "dark" ? tracksideDarkStyle : tracksideSatelliteStyle;
 
+  // Imperatively manage the track polyline source + glow layers.
+  // (Done via the map ref instead of <Source>/<Layer> JSX so the Lovable
+  // dev tagger's `data-component-*` attributes don't leak into MapLibre's
+  // strict source-spec validator.)
+  useEffect(() => {
+    const map = mapRef.current?.getMap();
+    if (!map) return;
+
+    const SRC_ID = "track-line";
+    const apply = () => {
+      if (!map.getStyle()) return;
+      const existing = map.getSource(SRC_ID) as maplibregl.GeoJSONSource | undefined;
+      if (!trackGeoJson) {
+        if (map.getLayer("track-line-core")) map.removeLayer("track-line-core");
+        if (map.getLayer("track-line-glow")) map.removeLayer("track-line-glow");
+        if (existing) map.removeSource(SRC_ID);
+        return;
+      }
+      if (existing) {
+        existing.setData(trackGeoJson as any);
+        return;
+      }
+      map.addSource(SRC_ID, { type: "geojson", data: trackGeoJson as any });
+      map.addLayer({
+        id: "track-line-glow",
+        type: "line",
+        source: SRC_ID,
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": "#ef4444",
+          "line-blur": 6,
+          "line-opacity": 0.55,
+          "line-width": ["interpolate", ["linear"], ["zoom"], 10, 5, 14, 12, 18, 28],
+        },
+      });
+      map.addLayer({
+        id: "track-line-core",
+        type: "line",
+        source: SRC_ID,
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": "#ef4444",
+          "line-width": ["interpolate", ["linear"], ["zoom"], 10, 1.5, 14, 4, 18, 10],
+        },
+      });
+    };
+
+    if (map.isStyleLoaded()) apply();
+    else map.once("load", apply);
+    // Re-apply when the basemap style changes (load fires again)
+    const onStyleData = () => { if (map.isStyleLoaded()) apply(); };
+    map.on("styledata", onStyleData);
+    return () => { map.off("styledata", onStyleData); };
+  }, [trackGeoJson, styleMode]);
+
   return (
     <Card className={cn("bg-card border-border/60 overflow-hidden", fullscreen && "h-full w-full border-0 rounded-none flex flex-col")}>
       <Collapsible open={fullscreen ? true : open} onOpenChange={fullscreen ? undefined : setOpen} className={cn(fullscreen && "flex-1 flex flex-col min-h-0")}>
@@ -541,32 +596,6 @@ const LiveTrackMap = ({ eventId, participants, fullscreen = false }: LiveTrackMa
               maxPitch={70}
             >
               <NavigationControl position="bottom-right" visualizePitch showCompass showZoom />
-
-              {/* Track polyline glow — drawn on top so it pops on satellite too */}
-              {trackGeoJson && (
-                <Source id="track-line" type="geojson" data={trackGeoJson}>
-                  <Layer
-                    id="track-line-glow"
-                    type="line"
-                    paint={{
-                      "line-color": "#ef4444",
-                      "line-blur": 6,
-                      "line-opacity": 0.55,
-                      "line-width": ["interpolate", ["linear"], ["zoom"], 10, 5, 14, 12, 18, 28],
-                    }}
-                    layout={{ "line-cap": "round", "line-join": "round" }}
-                  />
-                  <Layer
-                    id="track-line-core"
-                    type="line"
-                    paint={{
-                      "line-color": "#ef4444",
-                      "line-width": ["interpolate", ["linear"], ["zoom"], 10, 1.5, 14, 4, 18, 10],
-                    }}
-                    layout={{ "line-cap": "round", "line-join": "round" }}
-                  />
-                </Source>
-              )}
 
               {trackCoords.length > 1 && (
                 <Marker longitude={trackCoords[0][1]} latitude={trackCoords[0][0]} anchor="center">
