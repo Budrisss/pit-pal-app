@@ -1,126 +1,50 @@
-## Goal
-The Organizer Dashboard (`/organizer`) still shows several red accents from the racer theme leaking through `bg-primary` / `text-primary` / default Button & Badge variants. Re-skin every remaining accent surface on this page to the Williams blue palette so the dashboard reads consistently navy + electric blue.
+# Fix organizer-side refresh bounce & timeout
 
-## Red elements identified in `src/pages/EventOrganizer.tsx`
+## Problem
 
-| Line(s) | Element | Current | Why it shows red |
-|---|---|---|---|
-| 1011–1045 | 3 stat cards (Total Events, Total Registrations, Registration Groups) | `bg-primary/10` icon tile + `text-primary` icon | `--primary` is F1 red |
-| 1134 | Event card | `hover:border-primary/40` | red hover border |
-| 1140 | Status pill | `<Badge variant="default">` | default badge = red bg |
-| 1147 | Track name | `text-primary` | red track name |
-| 996 | "Publish Event" submit button | default `<Button>` (red primary) | red CTA |
-| 1238 | "Save Changes" submit button | default `<Button>` | red CTA |
-| 1111, 997, 1238 | Loading spinners | `border-primary` / `border-primary-foreground` | red ring |
-| 397–399 | Track type filter chips (in Create Event dialog) | `bg-primary text-primary-foreground border-primary` and `hover:border-primary/50` | red chip + red hover |
-| 905 | "Sign Up as Organizer" CTA (no-profile fallback) | default `<Button>` | red |
-| 892, 930, 1201, 1254 | Logout / Delete (destructive) | `text-destructive` / `bg-destructive` | **KEEP RED** — destructive actions stay semantic red |
+Two related bugs on the organizer side:
 
-## Changes to make in `src/pages/EventOrganizer.tsx`
+1. **Refresh on `/organizer/*` bounces to racer side.** `OrganizerShell` gates on `isApproved` from `OrganizerModeContext`, but that context initializes `isOrganizer=false` / `isApproved=false` and only sets them after an async Supabase query. While the query is in flight, the shell evaluates `!isApproved` as true and redirects to `/organizer/apply` (and from there the racer dashboard). If the query is slow or hiccups, you also get a "timeout" feel.
+2. **Mode is not restored on refresh.** `last_active_mode` is persisted in `racer_profiles`, but nothing reads it on boot to send an organizer-mode user back into `/organizer`. So a refresh from `/dashboard` always lands on the racer side, even if their last active mode was organizer.
 
-### 1. Stat cards (lines 1011–1046)
-Replace each `<div className="p-3 bg-primary/10 rounded-lg">` + `<Icon className="text-primary" />` with inline styles bound to the org tokens:
-```tsx
-<div
-  className="p-3 rounded-lg"
-  style={{ backgroundColor: "hsl(var(--org-accent) / 0.12)" }}
->
-  <Calendar size={24} style={{ color: "hsl(var(--org-accent))" }} />
-</div>
-```
-Apply identically to all three stat cards.
+## Fix
 
-Also bump card border to a subtle blue tint by adding `style={{ borderColor: "hsl(var(--org-border))" }}` on each `<Card>` (keeps the existing `bg-card/80` since dashboards already sit on the org gradient background).
+### 1. Add a real "loading" state to `OrganizerModeContext`
+- Track `orgStatusLoading` (true until both the `organizer_profiles` and `racer_profiles` lookups resolve).
+- Expose it from the context.
 
-### 2. Event cards (line 1134)
-Drop `hover:border-primary/40` and instead apply the Williams "side-stripe":
-```tsx
-<Card
-  className="bg-card/80 transition-colors border-l-2"
-  style={{
-    borderColor: "hsl(var(--org-border))",
-    borderLeftColor: "hsl(var(--org-accent))",
-  }}
->
-```
-Hover lift handled by the existing transition; no red ring.
+### 2. Make `OrganizerShell` wait instead of bouncing
+- In `src/layouts/OrganizerShell.tsx`, while `auth.loading || orgStatusLoading`, render the existing spinner.
+- Only after both resolve, evaluate the `!isOrganizer` / `!isApproved` redirects.
+- This eliminates the false-negative bounce on refresh.
 
-### 3. Status badge (line 1140)
-Replace the default badge with explicit Williams styling for upcoming events; keep neutral gray for completed/cancelled:
-```tsx
-<Badge
-  variant="secondary"
-  className="text-xs shrink-0 border"
-  style={
-    event.status === "upcoming"
-      ? {
-          backgroundColor: "hsl(var(--org-accent) / 0.15)",
-          color: "hsl(var(--org-accent-soft))",
-          borderColor: "hsl(var(--org-accent) / 0.4)",
-        }
-      : undefined
-  }
->
-  {event.status}
-</Badge>
-```
+### 3. Make the org-status query resilient
+- In `OrganizerModeContext`, replace unhandled `.then(...)` chains with proper `try/catch`, set loading=false in a `finally`, and on transient error keep the previous known state instead of silently flipping to `false`.
+- Cache the last-known `{isOrganizer, isApproved, organizerProfileId}` in `localStorage` keyed by `user.id`. Hydrate synchronously on mount so the shell can render organizer chrome immediately on refresh; the network call then confirms/updates. This removes the perceived timeout.
 
-### 4. Track name (line 1147)
-Change `className="text-primary font-medium"` → `style={{ color: "hsl(var(--org-accent-soft))" }}` className `font-medium`.
+### 4. Restore last active mode on app boot
+- In `OrganizerModeContext`, after `lastActiveMode` and `isApproved` are known, if:
+  - the user is on `/` or `/dashboard` (a "neutral" racer landing) **and**
+  - `lastActiveMode === "organizer"` **and**
+  - `isApproved === true` **and**
+  - this is a fresh page load (guarded by a ref so it runs once per mount)
+  then `navigate("/organizer", { replace: true })`.
+- Do NOT redirect from deep racer routes (e.g. `/garage`, `/events/:id`) — only the neutral landing spots, so we don't fight the user's actual navigation.
 
-### 5. Submit CTAs (lines 996–998 "Publish Event", 1237–1239 "Save Changes")
-Apply org gradient to match the existing "Create Event" button:
-```tsx
-<Button
-  type="submit"
-  disabled={creating}
-  className="w-full text-white border-0 hover:opacity-90"
-  style={{ background: "var(--gradient-org)", boxShadow: "var(--shadow-org)" }}
->
-  {creating ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Publish Event'}
-</Button>
-```
-Spinner ring color updated from `border-primary-foreground` → `border-white` so it reads on blue.
+### 5. Login-time routing — harden it
+- `Login.tsx` already routes approved organizers to `/choose-mode`. Update it so that if `last_active_mode === "organizer"`, it skips the chooser and goes straight to `/organizer`. The chooser is still reachable via the in-app Mode switch.
 
-### 6. Page loading spinner (line 1111)
-Change `border-primary` → inline `style={{ borderColor: "hsl(var(--org-accent))", borderTopColor: "transparent" }}`.
+## Files to change
+- `src/contexts/OrganizerModeContext.tsx` — add `orgStatusLoading`, localStorage cache, error handling, boot-time mode restoration.
+- `src/layouts/OrganizerShell.tsx` — gate redirect behind `orgStatusLoading`.
+- `src/pages/Login.tsx` — when `last_active_mode === "organizer"` and approved, route directly to `/organizer` instead of `/choose-mode`.
 
-### 7. Track-type filter chips (lines 391–403, inside `EventFormFields`)
-This sits inside the Create Event dialog (still org-side). Active chip should use blue:
-```tsx
-className={`px-2 py-0.5 rounded-full text-[10px] font-medium border transition-colors ${
-  typeFilter === value ? "text-white" : "bg-background text-muted-foreground border-border"
-}`}
-style={
-  typeFilter === value
-    ? { backgroundColor: "hsl(var(--org-accent))", borderColor: "hsl(var(--org-accent))" }
-    : undefined
-}
-```
-Hover border for inactive chips: append `hover:border-[hsl(var(--org-accent)/0.5)]` (Tailwind arbitrary value) — or a small className via `cn`.
+## Out of scope
+- No DB migrations needed (`last_active_mode` already exists).
+- No edge-function changes — this is a client-side gating race, not a serverless timeout.
+- Racer-side routing untouched.
 
-### 8. "Sign Up as Organizer" fallback CTA (line 905)
-Apply the same org gradient style as Create Event so the empty-state CTA is on-brand. (This branch is rarely shown inside the shell since it'd usually redirect, but harmless to update.)
-
-### 9. Leave alone (semantic / destructive)
-- Logout buttons (lines 892, 930) — destructive red hover stays.
-- Delete dropdown item (line 1201) and Delete alert action (line 1254) — destructive red stays.
-- Toast `variant: "destructive"` calls (lines 769, 812, 827) — error semantics, stay red.
-- The two hidden `<motion.nav>` blocks (lines 881, 919) marked `hidden` — not rendered, skip.
-
-## What we explicitly do NOT change
-- Racer-side dashboard, Garage, Events, GridID — stay F1 red.
-- Flag drop buttons on Live Manage — semantic, untouched.
-- Map/chart/weather widget colors.
-- The `--primary` token itself (still red globally for racer side).
-
-## QA checklist
-1. `/organizer` loads on a navy background with three blue stat-card icon tiles.
-2. Event cards show a thin blue left stripe; hover doesn't produce any red ring.
-3. "upcoming" status pill reads cyan-on-blue, not red.
-4. Track name on each event card reads cyan, not red.
-5. "Publish Event" and "Save Changes" buttons in Create/Edit dialogs use the blue gradient.
-6. Track-type filter chips inside Create Event highlight blue when active.
-7. Loading spinner ring is blue.
-8. Logout button still hovers red (semantic preserved).
-9. Switch to Racer mode → racer dashboard is still entirely red (no leaked blues).
+## Expected result
+- Refreshing any `/organizer/*` page stays on the organizer side (brief spinner, then renders).
+- Refreshing the app while last active mode was organizer lands you back in `/organizer` automatically.
+- Transient network slowness no longer kicks an approved organizer back to the racer dashboard.

@@ -29,13 +29,25 @@ const Login = () => {
     let cancelled = false;
     (async () => {
       try {
-        const { data: org } = await supabase
-          .from('organizer_profiles')
-          .select('approved')
-          .eq('user_id', user.id)
-          .maybeSingle();
+        const [{ data: org }, { data: racer }] = await Promise.all([
+          supabase
+            .from('organizer_profiles')
+            .select('approved')
+            .eq('user_id', user.id)
+            .maybeSingle(),
+          supabase
+            .from('racer_profiles')
+            .select('last_active_mode')
+            .eq('user_id', user.id)
+            .maybeSingle(),
+        ]);
         if (cancelled) return;
-        setPostLoginRedirect(org?.approved ? '/choose-mode' : '/dashboard');
+        if (org?.approved) {
+          const lam = (racer as any)?.last_active_mode;
+          setPostLoginRedirect(lam === 'organizer' ? '/organizer' : '/choose-mode');
+        } else {
+          setPostLoginRedirect('/dashboard');
+        }
       } catch {
         if (!cancelled) setPostLoginRedirect('/dashboard');
       }
@@ -71,13 +83,25 @@ const Login = () => {
       const { data: sessionData } = await supabase.auth.getUser();
       const uid = sessionData.user?.id;
       if (uid) {
-        const { data: org } = await supabase
-          .from('organizer_profiles')
-          .select('approved')
-          .eq('user_id', uid)
-          .maybeSingle();
+        const [{ data: org }, { data: racer }] = await Promise.all([
+          supabase
+            .from('organizer_profiles')
+            .select('approved')
+            .eq('user_id', uid)
+            .maybeSingle(),
+          supabase
+            .from('racer_profiles')
+            .select('last_active_mode')
+            .eq('user_id', uid)
+            .maybeSingle(),
+        ]);
         setLoading(false);
-        setPostLoginRedirect(org?.approved ? '/choose-mode' : '/dashboard');
+        if (org?.approved) {
+          const lam = (racer as any)?.last_active_mode;
+          setPostLoginRedirect(lam === 'organizer' ? '/organizer' : '/choose-mode');
+        } else {
+          setPostLoginRedirect('/dashboard');
+        }
         return;
       }
     } catch {

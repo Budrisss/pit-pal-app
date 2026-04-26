@@ -12,7 +12,7 @@ import OrganizerMobileNavigation from "@/components/OrganizerMobileNavigation";
  */
 const OrganizerShell = () => {
   const { user, loading } = useAuth();
-  const { isOrganizer, isApproved } = useOrganizerMode();
+  const { isOrganizer, isApproved, orgStatusLoading } = useOrganizerMode();
 
   // Set document title while inside the shell
   useEffect(() => {
@@ -21,7 +21,7 @@ const OrganizerShell = () => {
     return () => { document.title = previous; };
   }, []);
 
-  if (loading) {
+  if (loading || orgStatusLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
