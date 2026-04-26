@@ -261,7 +261,7 @@ const Admin = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>User ID</TableHead>
+                    <TableHead>Email</TableHead>
                     <TableHead>Tier</TableHead>
                     <TableHead>Joined</TableHead>
                     <TableHead>Actions</TableHead>
