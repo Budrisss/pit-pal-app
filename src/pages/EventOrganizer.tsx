@@ -1263,8 +1263,13 @@ const EventOrganizer = () => {
               <RegistrationTypesEditor types={editRegTypes} onChange={setEditRegTypes} />
               <RunGroupsEditor groups={editRunGroups} onChange={setEditRunGroups} />
               <SessionsEditor sessions={editSessions} onChange={setEditSessions} runGroups={editRunGroups} />
-              <Button type="submit" disabled={creating} className="w-full">
-                {creating ? <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : 'Save Changes'}
+              <Button
+                type="submit"
+                disabled={creating}
+                className="w-full text-white border-0 hover:opacity-90"
+                style={{ background: "var(--gradient-org)", boxShadow: "var(--shadow-org)" }}
+              >
+                {creating ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Save Changes'}
               </Button>
             </form>
           )}
