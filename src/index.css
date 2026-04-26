@@ -48,6 +48,15 @@
     --f1-silver: 0 0% 75%;
     --racing-green: 120 100% 25%;
     --racing-yellow: 45 100% 50%;
+
+    /* Organizer shell — distinct accent (amber) so the mode is unmistakable */
+    --org-accent: 38 92% 50%;
+    --org-accent-dark: 32 95% 44%;
+    --org-bg: 220 18% 8%;
+    --org-surface: 220 16% 11%;
+    --org-border: 38 40% 22%;
+    --gradient-org: linear-gradient(135deg, hsl(var(--org-accent)), hsl(var(--org-accent-dark)));
+    --shadow-org: 0 8px 32px -8px hsl(var(--org-accent) / 0.45);
     
     /* F1 App gradients */
     --f1-gradient-start: 0 91% 59%;
