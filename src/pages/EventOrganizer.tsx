@@ -878,7 +878,7 @@ const EventOrganizer = () => {
   if (!loading && !organizerProfile) {
     return (
       <div className="min-h-screen bg-background text-foreground pb-20 lg:pb-0">
-        <motion.nav initial={{ y: -60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5, ease: "easeOut" }} className="fixed top-0 inset-x-0 z-50 bg-background/80 backdrop-blur-md border-b border-border hidden lg:block">
+        <motion.nav initial={{ y: -60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5, ease: "easeOut" }} className="fixed top-0 inset-x-0 z-50 bg-background/80 backdrop-blur-md border-b border-border hidden">
           <div className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 h-20">
             <Link to="/dashboard" className="flex items-center h-full py-1">
               <img src={tracksideLogo} alt="Track Side Ops" className="h-full w-auto object-contain invert" />
@@ -902,7 +902,7 @@ const EventOrganizer = () => {
             <p className="text-muted-foreground mb-6">
               Register as an organizer to create and manage racing events with registration groups and participant tracking.
             </p>
-            <Button onClick={() => navigate('/organizer-signup')}>
+            <Button onClick={() => navigate('/organizer/apply')}>
               <Building2 size={16} className="mr-2" /> Sign Up as Organizer
             </Button>
           </div>
@@ -916,7 +916,7 @@ const EventOrganizer = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-20 lg:pb-0">
-      <motion.nav initial={{ y: -60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5, ease: "easeOut" }} className="fixed top-0 inset-x-0 z-50 bg-background/80 backdrop-blur-md border-b border-border hidden lg:block">
+      <motion.nav initial={{ y: -60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5, ease: "easeOut" }} className="fixed top-0 inset-x-0 z-50 bg-background/80 backdrop-blur-md border-b border-border hidden">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 h-20">
           <Link to="/dashboard" className="flex items-center h-full py-1">
             <img src={tracksideLogo} alt="Track Side Ops" className="h-full w-auto object-contain invert" />
@@ -1176,7 +1176,7 @@ const EventOrganizer = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => navigate(`/live-manage/${event.id}`)}>
+                          <DropdownMenuItem onClick={() => navigate(`/organizer/live/${event.id}`)}>
                             <Radio size={14} className="mr-2" /> Live Manage
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => openPreview(event)}>

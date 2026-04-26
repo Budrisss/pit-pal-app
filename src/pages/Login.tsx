@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
+import { supabase } from '@/integrations/supabase/client';
 
 import pitLaneHero from '@/assets/pit-lane-hero.jpg';
 import tracksideLogo from '@/assets/trackside-logo-v2.png';
@@ -30,17 +31,39 @@ const Login = () => {
     setLoading(true);
 
     const { error } = await signIn(email, password);
-    setLoading(false);
 
     if (error) {
+      setLoading(false);
       toast({
         title: "Login failed",
         description: error.message,
         variant: "destructive",
       });
-    } else {
-      navigate('/dashboard');
+      return;
     }
+
+    // After successful login, check whether this user is an approved organizer.
+    // If so, route through the mode chooser; otherwise straight to the racer dashboard.
+    try {
+      const { data: sessionData } = await supabase.auth.getUser();
+      const uid = sessionData.user?.id;
+      if (uid) {
+        const { data: org } = await supabase
+          .from('organizer_profiles')
+          .select('approved')
+          .eq('user_id', uid)
+          .maybeSingle();
+        if (org?.approved) {
+          setLoading(false);
+          navigate('/choose-mode');
+          return;
+        }
+      }
+    } catch {
+      // fall through to dashboard
+    }
+    setLoading(false);
+    navigate('/dashboard');
   };
 
   return (

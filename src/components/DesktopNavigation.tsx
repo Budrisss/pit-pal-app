@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Settings, Calendar, Car, Home, MapPin, LogOut, ClipboardList, Repeat, IdCard, Stamp } from "lucide-react";
+import { Settings, Calendar, Car, Home, MapPin, LogOut, IdCard, Briefcase } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrganizerMode } from "@/contexts/OrganizerModeContext";
@@ -9,14 +9,17 @@ const DesktopNavigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut } = useAuth();
-  const { isOrganizer, isApproved, isOrganizerMode, toggleMode } = useOrganizerMode();
+  const { isOrganizer, isApproved, enterOrganizerMode } = useOrganizerMode();
+
+  // Inside the organizer shell, OrganizerDesktopNavigation takes over.
+  if (location.pathname.startsWith("/organizer")) return null;
 
   const handleLogout = async () => {
     await signOut();
     navigate('/');
   };
 
-  const userNavItems = [
+  const navItems = [
     { icon: Home, label: "Home", path: "/dashboard" },
     { icon: Car, label: "Garage", path: "/garage" },
     { icon: IdCard, label: "GridID", path: "/grid-id" },
@@ -24,14 +27,6 @@ const DesktopNavigation = () => {
     { icon: Calendar, label: "Events", path: "/events" },
     { icon: Settings, label: "Settings", path: "/settings" },
   ];
-
-  const organizerNavItems = [
-    { icon: ClipboardList, label: "Organizer", path: "/event-organizer" },
-    { icon: Stamp, label: "Stamps", path: "/organizer-stamp" },
-    { icon: Settings, label: "Settings", path: "/settings" },
-  ];
-
-  const navItems = isOrganizerMode ? organizerNavItems : userNavItems;
 
   return (
     <nav className="hidden lg:flex fixed top-0 left-0 w-full bg-f1-black border-b-2 border-f1-red z-50">
@@ -63,14 +58,12 @@ const DesktopNavigation = () => {
           ))}
           {isOrganizer && isApproved && (
             <button
-              onClick={() => {
-                toggleMode();
-                navigate(isOrganizerMode ? "/dashboard" : "/event-organizer");
-              }}
-              className="flex items-center gap-2 px-6 py-3 transition-all duration-300 transform -skew-x-6 border-2 border-transparent uppercase tracking-wide font-bold text-sm text-f1-silver hover:text-white hover:bg-primary hover:border-f1-silver"
+              onClick={() => { void enterOrganizerMode(); }}
+              className="flex items-center gap-2 px-6 py-3 transition-all duration-300 transform -skew-x-6 border-2 border-transparent uppercase tracking-wide font-bold text-sm text-f1-silver hover:text-white hover:border-f1-silver"
+              style={{ background: 'linear-gradient(135deg, hsl(var(--org-accent)), hsl(var(--org-accent-dark)))' }}
             >
-              <Repeat size={18} className="transform skew-x-6" />
-              <span className="transform skew-x-6">{isOrganizerMode ? "User Mode" : "Org Mode"}</span>
+              <Briefcase size={18} className="transform skew-x-6" />
+              <span className="transform skew-x-6">Organizer</span>
             </button>
           )}
           <button

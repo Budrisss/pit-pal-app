@@ -40,6 +40,10 @@ import Subscription from "./pages/Subscription";
 import Admin from "./pages/Admin";
 import AdminLoraSim from "./pages/AdminLoraSim";
 import OnboardingProfile from "./pages/OnboardingProfile";
+import OrganizerSettings from "./pages/OrganizerSettings";
+import ModeChooser from "./pages/ModeChooser";
+import OrganizerShell from "./layouts/OrganizerShell";
+import { Navigate } from "react-router-dom";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,35 +51,38 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <AuthProvider>
-        <OrganizerModeProvider>
-        <SubscriptionProvider>
-        <CarsProvider>
-          <EventsProvider>
-          <ChecklistsProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
+      <BrowserRouter>
+        <AuthProvider>
+          <OrganizerModeProvider>
+          <SubscriptionProvider>
+          <CarsProvider>
+            <EventsProvider>
+            <ChecklistsProvider>
+              <Toaster />
+              <Sonner />
               <Routes>
                 <Route path="/" element={<Landing />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<SignUp />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/choose-mode" element={<ProtectedRoute><ModeChooser /></ProtectedRoute>} />
                 <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/onboarding" element={<ProtectedRoute skipOnboardingCheck><OnboardingProfile /></ProtectedRoute>} />
                 <Route path="/garage" element={<ProtectedRoute><Garage /></ProtectedRoute>} />
                 <Route path="/events" element={<ProtectedRoute><Events /></ProtectedRoute>} />
                 <Route path="/events/:id" element={<ProtectedRoute><EventDetails /></ProtectedRoute>} />
-                <Route path="/event-organizer" element={<ProtectedRoute><EventOrganizer /></ProtectedRoute>} />
+                {/* Legacy organizer paths — redirect into the new shell */}
+                <Route path="/event-organizer" element={<Navigate to="/organizer" replace />} />
+                <Route path="/organizer-signup" element={<Navigate to="/organizer/apply" replace />} />
+                <Route path="/organizer-stamp" element={<Navigate to="/organizer/stamps" replace />} />
+                <Route path="/live-manage/:eventId" element={<LegacyLiveManageRedirect />} />
                 <Route path="/setups" element={<ProtectedRoute><Setups /></ProtectedRoute>} />
                 <Route path="/checklists" element={<ProtectedRoute><Checklists /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 <Route path="/session-management/:eventId" element={<ProtectedRoute><SessionManagement /></ProtectedRoute>} />
                 <Route path="/local-events" element={<ProtectedRoute><LocalEvents /></ProtectedRoute>} />
                 <Route path="/public-event/:id" element={<ProtectedRoute><PublicEventPreview /></ProtectedRoute>} />
-                <Route path="/organizer-signup" element={<ProtectedRoute><OrganizerSignup /></ProtectedRoute>} />
-                <Route path="/live-manage/:eventId" element={<ProtectedRoute><OrganizerLiveManage /></ProtectedRoute>} />
                 <Route path="/live-map/:eventId" element={<ProtectedRoute><LiveTrackMapFullscreen /></ProtectedRoute>} />
                 <Route path="/race-live/:eventId" element={<ProtectedRoute><RacerLiveView /></ProtectedRoute>} />
                 <Route path="/driver-live/:eventId" element={<ProtectedRoute><DriverLiveView /></ProtectedRoute>} />
@@ -83,21 +90,37 @@ const App = () => (
                 <Route path="/maintenance/:carId" element={<ProtectedRoute><MaintenanceLog /></ProtectedRoute>} />
                 <Route path="/grid-id" element={<ProtectedRoute><GridID /></ProtectedRoute>} />
                 <Route path="/grid-manifest/:userId" element={<ProtectedRoute><GridManifest /></ProtectedRoute>} />
-                <Route path="/organizer-stamp" element={<ProtectedRoute><OrganizerStampPortal /></ProtectedRoute>} />
                 <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
                 <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
                 <Route path="/admin/lora-sim" element={<ProtectedRoute><AdminLoraSim /></ProtectedRoute>} />
+
+                {/* New organizer namespace — gated and chrome'd by OrganizerShell */}
+                <Route path="/organizer/apply" element={<ProtectedRoute><OrganizerSignup /></ProtectedRoute>} />
+                <Route element={<ProtectedRoute><OrganizerShell /></ProtectedRoute>}>
+                  <Route path="/organizer" element={<EventOrganizer />} />
+                  <Route path="/organizer/stamps" element={<OrganizerStampPortal />} />
+                  <Route path="/organizer/settings" element={<OrganizerSettings />} />
+                  <Route path="/organizer/live/:eventId" element={<OrganizerLiveManage />} />
+                </Route>
+
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </BrowserRouter>
-          </ChecklistsProvider>
-          </EventsProvider>
-        </CarsProvider>
-        </SubscriptionProvider>
-        </OrganizerModeProvider>
-      </AuthProvider>
+            </ChecklistsProvider>
+            </EventsProvider>
+          </CarsProvider>
+          </SubscriptionProvider>
+          </OrganizerModeProvider>
+        </AuthProvider>
+      </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
 );
+
+// Tiny inline component so /live-manage/:eventId keeps working from old bookmarks
+import { useParams } from "react-router-dom";
+function LegacyLiveManageRedirect() {
+  const { eventId } = useParams();
+  return <Navigate to={`/organizer/live/${eventId}`} replace />;
+}
 
 export default App;

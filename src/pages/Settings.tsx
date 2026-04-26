@@ -4,8 +4,6 @@ import { Settings as SettingsIcon, User, Bell, Car, Database, Camera, LogOut, Ma
 import { useAdmin } from "@/hooks/useAdmin";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { Badge } from "@/components/ui/badge";
-import { useOrganizerMode } from "@/contexts/OrganizerModeContext";
-import OrganizerSettings from "@/pages/OrganizerSettings";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -23,7 +21,6 @@ import ChangeEmailDialog from "@/components/ChangeEmailDialog";
 import ChangePhoneDialog from "@/components/ChangePhoneDialog";
 
 const Settings = () => {
-  const { isOrganizerMode } = useOrganizerMode();
   const { isPro } = useSubscription();
   const { isAdmin } = useAdmin();
   const [showGallery, setShowGallery] = useState(false);
@@ -180,10 +177,6 @@ const Settings = () => {
     await signOut();
     navigate('/');
   };
-
-  if (isOrganizerMode) {
-    return <OrganizerSettings />;
-  }
 
   if (showGallery) {
     return <RacingGallery onClose={() => setShowGallery(false)} />;

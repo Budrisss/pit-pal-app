@@ -931,7 +931,7 @@ const LocalEvents = () => {
               </DialogContent>
             </Dialog>
           ) : (
-            <Button size="sm" variant="outline" onClick={() => navigate('/organizer-signup')}>
+            <Button size="sm" variant="outline" onClick={() => navigate('/organizer/apply')}>
               <Building2 size={16} className="mr-1" /> Become an Organizer
             </Button>
           )}
