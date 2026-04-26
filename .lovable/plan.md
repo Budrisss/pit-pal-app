@@ -1,50 +1,103 @@
-# Fix organizer-side refresh bounce & timeout
 
-## Problem
+# Desktop App via Electron — Implementation Plan
 
-Two related bugs on the organizer side:
+Goal: Ship a downloadable desktop app for **macOS, Windows, and Linux** that opens Track Side Ops in a native window. The shell loads `https://tracksideops.com` directly, so every web update (UI, features, bug fixes, paywalls, new API keys, etc.) appears instantly in the desktop app with **no rebuild required**.
 
-1. **Refresh on `/organizer/*` bounces to racer side.** `OrganizerShell` gates on `isApproved` from `OrganizerModeContext`, but that context initializes `isOrganizer=false` / `isApproved=false` and only sets them after an async Supabase query. While the query is in flight, the shell evaluates `!isApproved` as true and redirects to `/organizer/apply` (and from there the racer dashboard). If the query is slow or hiccups, you also get a "timeout" feel.
-2. **Mode is not restored on refresh.** `last_active_mode` is persisted in `racer_profiles`, but nothing reads it on boot to send an organizer-mode user back into `/organizer`. So a refresh from `/dashboard` always lands on the racer side, even if their last active mode was organizer.
+This is purely additive — no existing code, routes, edge functions, or database logic change.
 
-## Fix
+---
 
-### 1. Add a real "loading" state to `OrganizerModeContext`
-- Track `orgStatusLoading` (true until both the `organizer_profiles` and `racer_profiles` lookups resolve).
-- Expose it from the context.
+## 1. Electron shell
 
-### 2. Make `OrganizerShell` wait instead of bouncing
-- In `src/layouts/OrganizerShell.tsx`, while `auth.loading || orgStatusLoading`, render the existing spinner.
-- Only after both resolve, evaluate the `!isOrganizer` / `!isApproved` redirects.
-- This eliminates the false-negative bounce on refresh.
+**New file: `electron/main.cjs`** (CommonJS — required because `package.json` has `"type": "module"`)
 
-### 3. Make the org-status query resilient
-- In `OrganizerModeContext`, replace unhandled `.then(...)` chains with proper `try/catch`, set loading=false in a `finally`, and on transient error keep the previous known state instead of silently flipping to `false`.
-- Cache the last-known `{isOrganizer, isApproved, organizerProfileId}` in `localStorage` keyed by `user.id`. Hydrate synchronously on mount so the shell can render organizer chrome immediately on refresh; the network call then confirms/updates. This removes the perceived timeout.
+- Creates a `BrowserWindow` (1280×800, min 1024×640) with:
+  - `contextIsolation: true`, `nodeIntegration: false` (secure defaults)
+  - App title "Track Side Ops"
+  - Loads `https://tracksideops.com` directly
+- External links (`target="_blank"`, `mailto:`, etc.) open in the user's default browser via `shell.openExternal`
+- Native menu bar (File / Edit / View / Window / Help) with standard shortcuts (reload, devtools, zoom, quit)
+- Single-instance lock so launching twice focuses the existing window
+- macOS-friendly: re-create window on `activate`, quit on `window-all-closed` (except darwin)
 
-### 4. Restore last active mode on app boot
-- In `OrganizerModeContext`, after `lastActiveMode` and `isApproved` are known, if:
-  - the user is on `/` or `/dashboard` (a "neutral" racer landing) **and**
-  - `lastActiveMode === "organizer"` **and**
-  - `isApproved === true` **and**
-  - this is a fresh page load (guarded by a ref so it runs once per mount)
-  then `navigate("/organizer", { replace: true })`.
-- Do NOT redirect from deep racer routes (e.g. `/garage`, `/events/:id`) — only the neutral landing spots, so we don't fight the user's actual navigation.
+**Edit: `package.json`**
+- Add `"main": "electron/main.cjs"`
+- Add scripts:
+  - `"electron:dev": "electron ."`
+  - `"electron:build:mac": "@electron/packager . 'Track Side Ops' --platform=darwin --arch=x64 --out=electron-release --overwrite"`
+  - `"electron:build:win": "@electron/packager . 'Track Side Ops' --platform=win32 --arch=x64 --out=electron-release --overwrite"`
+  - `"electron:build:linux": "@electron/packager . 'Track Side Ops' --platform=linux --arch=x64 --out=electron-release --overwrite"`
+- Add devDependencies: `electron`, `@electron/packager`
 
-### 5. Login-time routing — harden it
-- `Login.tsx` already routes approved organizers to `/choose-mode`. Update it so that if `last_active_mode === "organizer"`, it skips the chooser and goes straight to `/organizer`. The chooser is still reachable via the in-app Mode switch.
+> Note: I'll install via `bun add -d` so the lockfile stays consistent. The shell loads the live URL, so no Vite `base` change is needed (that's only for bundled `file://` builds).
 
-## Files to change
-- `src/contexts/OrganizerModeContext.tsx` — add `orgStatusLoading`, localStorage cache, error handling, boot-time mode restoration.
-- `src/layouts/OrganizerShell.tsx` — gate redirect behind `orgStatusLoading`.
-- `src/pages/Login.tsx` — when `last_active_mode === "organizer"` and approved, route directly to `/organizer` instead of `/choose-mode`.
+---
 
-## Out of scope
-- No DB migrations needed (`last_active_mode` already exists).
-- No edge-function changes — this is a client-side gating race, not a serverless timeout.
-- Racer-side routing untouched.
+## 2. Build the distributable bundles
 
-## Expected result
-- Refreshing any `/organizer/*` page stays on the organizer side (brief spinner, then renders).
-- Refreshing the app while last active mode was organizer lands you back in `/organizer` automatically.
-- Transient network slowness no longer kicks an approved organizer back to the racer dashboard.
+After the shell is in place, I'll run the three packager commands to produce:
+
+- `Track Side Ops-darwin-x64/` → zipped to `/mnt/documents/TrackSideOps-mac.zip`
+- `Track Side Ops-win32-x64/` → zipped to `/mnt/documents/TrackSideOps-windows.zip`
+- `Track Side Ops-linux-x64/` → tarred to `/mnt/documents/TrackSideOps-linux.tar.gz`
+
+These are downloadable artifacts you can host anywhere (Lovable Cloud Storage, your own S3, GitHub Releases, etc.).
+
+**Limitations of sandbox builds (transparent up front):**
+- macOS: ships as `.zip`, not `.dmg` (no `hdiutil` here). Users unzip and drag to Applications.
+- macOS: not code-signed → users right-click → Open the first time. For App Store / Gatekeeper, you'll need an Apple Developer account ($99/yr) and to sign on a real Mac.
+- Windows: ships as `.zip` containing `Track Side Ops.exe`, not an `.exe` installer. Not code-signed → SmartScreen warning on first launch. Real signing needs an EV certificate.
+- Linux: ships as `.tar.gz`, not `.AppImage`/`.deb`.
+
+These are fine for direct distribution from your site. Store-grade installers can come later.
+
+---
+
+## 3. In-app download page
+
+**New file: `src/pages/Download.tsx`** — clean page matching the Landing aesthetic with:
+- Three platform cards (macOS, Windows, Linux) with download buttons
+- "What's this?" explainer: same app as the web, runs in its own window, auto-updates with the website
+- Mobile section: "iOS and Android coming soon via Median.co" (placeholder so you can drop links in later)
+- Install instructions per platform (unzip → move to Applications / Program Files / `~/Applications`)
+
+**Edit: `src/App.tsx`** — register `/download` route (public, no auth required).
+
+**Edit: `src/pages/Landing.tsx`** — add a small "Download the desktop app" link in the nav and a CTA button in the footer.
+
+> Download URLs will be placeholders (`/downloads/TrackSideOps-mac.zip` etc.) that you'll point at wherever you host the artifacts. I'll document this clearly on the page and in the build doc.
+
+---
+
+## 4. Documentation
+
+**New file: `docs/desktop-build.md`** covering:
+- How to run `npm run electron:dev` locally to test
+- How to rebuild the bundles when you ever change the shell (window size, icon, app name)
+- How to host the resulting files (Lovable Cloud Storage bucket, GitHub Releases, etc.)
+- How to add a custom app icon (drop `.icns` / `.ico` / `.png` into `electron/`, reference via `--icon=` flag)
+- Code-signing pointers for when you're ready to remove the "unidentified developer" warnings
+
+---
+
+## How updates work after this ships
+
+| You change… | Desktop users get it… |
+|---|---|
+| UI / React components | **Instantly** on next app launch (loads live site) |
+| New page or feature | **Instantly** |
+| Edge function / DB migration | **Instantly** (backend is shared) |
+| New API keys / connectors / Stripe paywall | **Instantly** |
+| Electron shell itself (window size, icon, app name) | Only then do you rebuild + redistribute the `.zip`/`.tar.gz` |
+
+Same model Median.co will use for iOS/Android — one web codebase, three thin wrappers.
+
+---
+
+## Files touched
+
+**New:** `electron/main.cjs`, `src/pages/Download.tsx`, `docs/desktop-build.md`
+**Edited:** `package.json`, `src/App.tsx`, `src/pages/Landing.tsx`
+**Generated artifacts (in `/mnt/documents/`):** `TrackSideOps-mac.zip`, `TrackSideOps-windows.zip`, `TrackSideOps-linux.tar.gz`
+
+**Not touched:** any existing route, context, edge function, migration, RLS policy, or component. Zero risk to current functionality.
