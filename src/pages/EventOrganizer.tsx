@@ -878,7 +878,7 @@ const EventOrganizer = () => {
   if (!loading && !organizerProfile) {
     return (
       <div className="min-h-screen bg-background text-foreground pb-20 lg:pb-0">
-        <motion.nav initial={{ y: -60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5, ease: "easeOut" }} className="fixed top-0 inset-x-0 z-50 bg-background/80 backdrop-blur-md border-b border-border hidden lg:block">
+        <motion.nav initial={{ y: -60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5, ease: "easeOut" }} className="fixed top-0 inset-x-0 z-50 bg-background/80 backdrop-blur-md border-b border-border hidden">
           <div className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 h-20">
             <Link to="/dashboard" className="flex items-center h-full py-1">
               <img src={tracksideLogo} alt="Track Side Ops" className="h-full w-auto object-contain invert" />
@@ -916,7 +916,7 @@ const EventOrganizer = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-20 lg:pb-0">
-      <motion.nav initial={{ y: -60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5, ease: "easeOut" }} className="fixed top-0 inset-x-0 z-50 bg-background/80 backdrop-blur-md border-b border-border hidden lg:block">
+      <motion.nav initial={{ y: -60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5, ease: "easeOut" }} className="fixed top-0 inset-x-0 z-50 bg-background/80 backdrop-blur-md border-b border-border hidden">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 h-20">
           <Link to="/dashboard" className="flex items-center h-full py-1">
             <img src={tracksideLogo} alt="Track Side Ops" className="h-full w-auto object-contain invert" />
