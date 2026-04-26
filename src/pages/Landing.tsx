@@ -64,6 +64,9 @@ const Landing = () => {
             <img src={tracksideLogo} alt="Track Side Ops" className="h-full w-auto object-contain invert" />
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
+            <Button variant="ghost" size="sm" className="hidden sm:inline-flex" asChild>
+              <Link to="/download">Download</Link>
+            </Button>
             <Button variant="ghost" size="sm" className="sm:size-default" asChild>
               <Link to="/login">Log in</Link>
             </Button>
