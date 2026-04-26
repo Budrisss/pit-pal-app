@@ -1622,7 +1622,7 @@ const OrganizerLiveManage = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.13 }}
           >
-            <LoRaGatewayConfigCard personalEventId={eventId!} />
+            <LoRaGatewayConfigCard eventId={eventId!} />
           </motion.div>
 
           {/* Participants — Crew Messaging Toggle */}
