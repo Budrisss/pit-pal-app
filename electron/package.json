@@ -1,0 +1,9 @@
+{
+  "name": "trackside-ops-desktop",
+  "version": "1.0.0",
+  "description": "Track Side Ops desktop wrapper",
+  "main": "main.cjs",
+  "author": "Track Side Ops",
+  "license": "UNLICENSED",
+  "private": true
+}
