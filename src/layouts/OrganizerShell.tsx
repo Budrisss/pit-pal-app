@@ -35,7 +35,7 @@ const OrganizerShell = () => {
 
   return (
     <div
-      className="min-h-screen pb-24 lg:pb-0 lg:pt-20"
+      className="min-h-screen pb-24 lg:pb-0"
       style={{ backgroundColor: "hsl(var(--org-bg))", color: "hsl(var(--foreground))" }}
     >
       {/* Accent strip — visible at all times so the mode is unmistakable */}
