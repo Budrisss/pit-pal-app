@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { Mail, Lock, LogIn, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,10 +20,31 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [postLoginRedirect, setPostLoginRedirect] = useState<string | null>(null);
 
-  if (user) {
-    navigate('/dashboard');
-    return null;
+  // If the user is already authenticated when they hit /login, route them
+  // through the same approved-organizer check so they still get the chooser.
+  useEffect(() => {
+    if (!user || postLoginRedirect) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: org } = await supabase
+          .from('organizer_profiles')
+          .select('approved')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (cancelled) return;
+        setPostLoginRedirect(org?.approved ? '/choose-mode' : '/dashboard');
+      } catch {
+        if (!cancelled) setPostLoginRedirect('/dashboard');
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user, postLoginRedirect]);
+
+  if (postLoginRedirect) {
+    return <Navigate to={postLoginRedirect} replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,6 +65,8 @@ const Login = () => {
 
     // After successful login, check whether this user is an approved organizer.
     // If so, route through the mode chooser; otherwise straight to the racer dashboard.
+    // We set state instead of calling navigate() directly so we win the race against
+    // the auth-state listener that also wants to redirect.
     try {
       const { data: sessionData } = await supabase.auth.getUser();
       const uid = sessionData.user?.id;
@@ -53,17 +76,15 @@ const Login = () => {
           .select('approved')
           .eq('user_id', uid)
           .maybeSingle();
-        if (org?.approved) {
-          setLoading(false);
-          navigate('/choose-mode');
-          return;
-        }
+        setLoading(false);
+        setPostLoginRedirect(org?.approved ? '/choose-mode' : '/dashboard');
+        return;
       }
     } catch {
       // fall through to dashboard
     }
     setLoading(false);
-    navigate('/dashboard');
+    setPostLoginRedirect('/dashboard');
   };
 
   return (
