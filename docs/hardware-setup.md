@@ -210,3 +210,39 @@ edge function handles both branches independently.
 Drivers can toggle **Share my position with race control** (default: on) on
 their `RegistrationRadioPairing` row. When off, the BLE path stops writing —
 but the LoRa uplink path is unaffected (it's a "best effort" privacy hint).
+
+---
+
+## Live test checklist (no-cell scenario)
+
+Use this end-to-end check when you want to verify a paired racer phone displays
+an organizer flag with cellular completely disabled.
+
+### 1. Phone radio is paired
+- On the racer's phone (Capacitor native), open **Dashboard → LoRa Radio (Hardware)**.
+- Pair the T1000-E, enable the "LoRa fallback" switch.
+- Hit **Send Test** — the radio's serial log should show the packet.
+- Optional: hit **Listen 30s for incoming** and from another node, send a
+  Meshtastic text message — the toast should fire.
+
+### 2. Organizer configures the gateway
+- Go to **Live Manage** for a published organizer event.
+- Open the **LoRa Gateway** card.
+- Fill in:
+  - **Channel name** — must match the channel configured on the RAK / Mosquitto bridge.
+  - **Gateway URL** — public HTTPS URL of the RAK7289v2 bridge endpoint.
+  - **HMAC secret** — click ↻ to generate, then paste the same value into the bridge config.
+- Hit **Save**.
+
+### 3. Verify the downlink path
+- Hit **Send test packet**. The card shows the bridge HTTP response inline.
+- 200 = the chain `org UI → DB → flag-downlink-broadcast → RAK bridge` is wired.
+- Non-200 = check that `gateway_url` is reachable from the public internet
+  (Tailscale Funnel / ngrok / Cloudflare Tunnel are valid options if the RAK
+  is behind NAT) and that the HMAC secret matches the bridge.
+
+### 4. No-cell flag display
+- Put the racer's phone in **airplane mode**, then re-enable Bluetooth.
+- Open the racer's live view for the same event.
+- Organizer drops a yellow flag → the racer phone should show yellow within
+  ~3s, with the "Radio" indicator visible (instead of "Cell").

@@ -27,6 +27,7 @@ import { useSimConfig } from "@/hooks/useSimStore";
 import PairedRadiosPanel from "@/components/PairedRadiosPanel";
 import ConnectivityCheckPanel from "@/components/ConnectivityCheckPanel";
 import LiveTrackMap from "@/components/LiveTrackMap";
+import LoRaGatewayConfigCard from "@/components/LoRaGatewayConfigCard";
 
 interface EventSession {
   id?: string;
@@ -1613,6 +1614,15 @@ const OrganizerLiveManage = () => {
             transition={{ delay: 0.12 }}
           >
             <PairedRadiosPanel participants={registrations} runGroups={registrationTypes} />
+          </motion.div>
+
+          {/* LoRa Gateway Config */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.13 }}
+          >
+            <LoRaGatewayConfigCard personalEventId={eventId!} />
           </motion.div>
 
           {/* Participants — Crew Messaging Toggle */}
