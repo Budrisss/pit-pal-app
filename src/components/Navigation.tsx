@@ -6,6 +6,10 @@ import LoraStatusIndicator from "@/components/LoraStatusIndicator";
 const Navigation = () => {
   const location = useLocation();
 
+  // Don't render the racer mobile nav inside the organizer shell —
+  // OrganizerMobileNavigation is shown there instead.
+  if (location.pathname.startsWith("/organizer")) return null;
+
   const navItems = [
     { icon: Home, label: "Home", path: "/dashboard" },
     { icon: Car, label: "Garage", path: "/garage" },

@@ -11,6 +11,9 @@ const DesktopNavigation = () => {
   const { signOut } = useAuth();
   const { isOrganizer, isApproved, enterOrganizerMode } = useOrganizerMode();
 
+  // Inside the organizer shell, OrganizerDesktopNavigation takes over.
+  if (location.pathname.startsWith("/organizer")) return null;
+
   const handleLogout = async () => {
     await signOut();
     navigate('/');
