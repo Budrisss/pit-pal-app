@@ -12,8 +12,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
 interface Props {
-  /** Personal events.id from the URL (used to look up its public_event_id). */
-  personalEventId: string;
+  /**
+   * Either a public_events.id (organizer-managed event) or a personal events.id
+   * (which we'll resolve to its linked public_event_id, if any).
+   */
+  eventId: string;
 }
 
 function genHexSecret(bytes = 32): string {
@@ -22,7 +25,7 @@ function genHexSecret(bytes = 32): string {
   return Array.from(a).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-const LoRaGatewayConfigCard = ({ personalEventId }: Props) => {
+const LoRaGatewayConfigCard = ({ eventId }: Props) => {
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -45,12 +48,26 @@ const LoRaGatewayConfigCard = ({ personalEventId }: Props) => {
     (async () => {
       setLoading(true);
       try {
-        const { data: ev } = await supabase
-          .from("events")
-          .select("public_event_id")
-          .eq("id", personalEventId)
+        // First check if this id is itself a public_events row (organizer is
+        // managing a published event directly).
+        const { data: pub } = await supabase
+          .from("public_events")
+          .select("id")
+          .eq("id", eventId)
           .maybeSingle();
-        const peid = ev?.public_event_id ?? null;
+        let peid: string | null = pub?.id ?? null;
+
+        // Fallback: treat it as a personal events.id and resolve its linked
+        // public_event_id (if any).
+        if (!peid) {
+          const { data: ev } = await supabase
+            .from("events")
+            .select("public_event_id")
+            .eq("id", eventId)
+            .maybeSingle();
+          peid = ev?.public_event_id ?? null;
+        }
+
         if (!active) return;
         setPublicEventId(peid);
         if (!peid) { setLoading(false); return; }
@@ -72,7 +89,7 @@ const LoRaGatewayConfigCard = ({ personalEventId }: Props) => {
       }
     })();
     return () => { active = false; };
-  }, [personalEventId]);
+  }, [eventId]);
 
   const configured = !!rowId && !!gatewayUrl && !!hmacSecret && !!channelName;
 
