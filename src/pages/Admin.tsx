@@ -42,6 +42,7 @@ const Admin = () => {
   const { toast } = useToast();
   const [organizers, setOrganizers] = useState<OrganizerProfile[]>([]);
   const [subscriptions, setSubscriptions] = useState<UserSubscription[]>([]);
+  const [emailMap, setEmailMap] = useState<Record<string, string>>({});
   const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
@@ -64,6 +65,17 @@ const Admin = () => {
     ]);
     if (orgRes.data) setOrganizers(orgRes.data);
     if (subRes.data) setSubscriptions(subRes.data as UserSubscription[]);
+
+    // Fetch user emails via admin edge function
+    const { data: usersData, error: usersErr } = await supabase.functions.invoke("admin-list-users");
+    if (!usersErr && usersData?.users) {
+      const map: Record<string, string> = {};
+      for (const u of usersData.users as AuthUserLite[]) {
+        if (u.email) map[u.id] = u.email;
+      }
+      setEmailMap(map);
+    }
+
     setLoadingData(false);
   };
 
@@ -258,8 +270,12 @@ const Admin = () => {
                 <TableBody>
                   {subscriptions.map((sub) => (
                     <TableRow key={sub.id}>
-                      <TableCell className="font-mono text-xs text-foreground">
-                        {sub.user_id.slice(0, 8)}...
+                      <TableCell className="text-foreground text-sm">
+                        {emailMap[sub.user_id] ?? (
+                          <span className="font-mono text-xs text-muted-foreground">
+                            {sub.user_id.slice(0, 8)}…
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge
