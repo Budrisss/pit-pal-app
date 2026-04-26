@@ -1122,6 +1122,7 @@ export type Database = {
           created_at: string
           display_name: string
           id: string
+          last_active_mode: string
           onboarding_completed: boolean
           phone_number: string | null
           primary_car_id: string | null
@@ -1134,6 +1135,7 @@ export type Database = {
           created_at?: string
           display_name?: string
           id?: string
+          last_active_mode?: string
           onboarding_completed?: boolean
           phone_number?: string | null
           primary_car_id?: string | null
@@ -1146,6 +1148,7 @@ export type Database = {
           created_at?: string
           display_name?: string
           id?: string
+          last_active_mode?: string
           onboarding_completed?: boolean
           phone_number?: string | null
           primary_car_id?: string | null
