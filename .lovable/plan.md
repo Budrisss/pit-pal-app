@@ -1,89 +1,80 @@
-# Restructure Organizer Experience: Separate Shell, Same Account
+## Goal
+Re-skin the organizer side (everything under `/organizer/*` plus the post-login mode chooser) into a **Williams F1-inspired** look: deep navy/midnight backgrounds, electric/Williams blue accents, crisp white type, subtle cyan highlights for active states. Racer side stays untouched (F1 red).
 
-## Why
-The current localStorage `toggleMode` is fragile: it doesn't survive devices, doesn't deep-link, and the "which hat am I wearing?" answer relies on a small label change. We'll keep one auth account (so racer data stays linked) but make organizer mode a **first-class sibling app** with its own URL namespace, its own nav/header/brand, and an explicit chooser at sign-in.
+## Visual language
 
----
+| Token | Current (amber) | New (Williams) |
+|---|---|---|
+| `--org-bg` | dark warm | **`220 40% 6%`** — near-black navy |
+| `--org-surface` | warm gray | **`218 35% 11%`** — midnight blue panel |
+| `--org-surface-2` (new) | — | **`216 30% 15%`** — raised card |
+| `--org-accent` | amber `38 92% 50%` | **`212 100% 50%`** — Williams electric blue |
+| `--org-accent-dark` | amber dark | **`220 90% 38%`** — deep racing blue |
+| `--org-accent-soft` (new) | — | **`195 100% 60%`** — cyan highlight for hover/active dots |
+| `--org-border` | warm | **`216 35% 22%`** — cool steel border |
+| `--gradient-org` | amber gradient | linear-gradient 135° navy → electric blue |
+| `--shadow-org` | amber glow | electric-blue glow (lower opacity, tighter) |
 
-## 1. New routing namespace: `/organizer/*`
+All tokens land in `src/index.css` `:root`. Because `OrganizerShell`, the org nav components, and `ModeChooser` already consume `--org-*` via inline styles, **the whole shell re-skins from token swaps alone** — no markup churn for the chrome.
 
-Move organizer surfaces under a dedicated path prefix:
+## Files to update
 
-| Old route | New route |
-|---|---|
-| `/event-organizer` | `/organizer` (dashboard) |
-| `/live-manage/:eventId` | `/organizer/live/:eventId` |
-| `/organizer-stamp` | `/organizer/stamps` |
-| `/organizer-signup` | `/organizer/apply` |
-| Organizer-side `OrganizerSettings` (currently rendered inside `Settings.tsx` when `isOrganizerMode`) | `/organizer/settings` (own page) |
+### 1. `src/index.css`
+- Replace the `--org-*` token block with the navy/blue values above.
+- Add `--org-surface-2` and `--org-accent-soft`.
+- Update `--gradient-org` and `--shadow-org` to the cool palette.
+- Add a small utility class `.org-skew-tab` (used by nav buttons) so we can drop the heavy `transform -skew-x-6` chain in favor of a softer 3° skew that reads more "Williams precision" and less "F1 aggressive" — optional, only if it looks cleaner.
 
-- Add a new `<OrganizerRoute>` guard wrapping these — requires logged-in **and** `organizer_profiles.approved = true`. Unapproved → redirect to `/organizer/apply`. Not an organizer at all → redirect to `/dashboard`.
-- Old paths get permanent `<Navigate>` redirects so existing bookmarks keep working.
+### 2. `src/layouts/OrganizerShell.tsx`
+- Swap the page container background from a flat `--org-bg` to a subtle vertical gradient `--org-bg → --org-surface` for depth.
+- Accent strip stays but gets a thin white hairline above it (`border-b border-white/10`) for the Williams "stripe" feel.
 
-## 2. Dedicated organizer shell (brand separation)
+### 3. `src/components/OrganizerDesktopNavigation.tsx`
+- Header background: `--org-surface` with `border-b` using `--org-accent` at 60% opacity (down from solid).
+- Logo lockup: replace the skewed parallelogram with a **squared white badge** containing the briefcase icon in `--org-accent`, matching Williams' clean rectangular brand marks.
+- Eyebrow text "ORGANIZER" → keep but in `--org-accent-soft` (cyan) for that Williams telemetry vibe.
+- Nav buttons: tone down skew, switch active state from gradient fill to **white bottom-border underline + electric-blue text** (Williams sidebar style); inactive hover shows a thin blue underline.
+- Logout button keeps destructive hover.
 
-Create `src/layouts/OrganizerShell.tsx` that wraps every `/organizer/*` route:
+### 4. `src/components/OrganizerMobileNavigation.tsx`
+- Bottom bar: `--org-surface` background, top border in `--org-accent` (1px not 2px), each tab's active state becomes a small white pill on top + electric-blue icon (instead of full gradient fill).
 
-- **New header** `OrganizerNavigation` + `OrganizerDesktopNavigation` (replaces the user nav while inside the shell).
-  - Different accent color (e.g. amber/steel-blue instead of F1 red) — sourced from new tokens in `index.css` so it stays themeable.
-  - Logo treatment: "Track Side **Ops** · Organizer" wordmark.
-  - Persistent "Switch to Racer" button in the header (replaces the bottom-nav toggle).
-- **Document title** changes to `Organizer · Track Side Ops` while in the shell.
-- Different favicon-ish accent strip at top of viewport so even at a glance the mode is unmistakable.
-- Mobile bottom nav swapped to organizer items only (Dashboard / Stamps / Settings / Switch).
+### 5. `src/pages/ModeChooser.tsx`
+- The Organizer card currently uses `bg-gradient-f1` (red) for its icon tile. Swap that specific tile to `bg-gradient-org` so the choice screen previews each mode's brand. Racer card stays red. This is the only racer-red bleed in the org-adjacent UI.
 
-Racer side keeps the existing `Navigation` / `DesktopNavigation` unchanged.
+### 6. `src/pages/EventOrganizer.tsx` (Dashboard)
+- Page wrapper: remove `<Navigation />` import bleed if any; rely on shell.
+- Headline lockup: keep `tracksideLogo` but place it next to a small "ORGANIZER · CONTROL TOWER" eyebrow in `--org-accent-soft`.
+- Primary CTA buttons ("Create Event", "Add Track") → use `style={{ background: 'var(--gradient-org)' }}` so they read blue, not the default red primary.
+- Event cards: add a left **`border-l-2` in `--org-accent`** (Williams' signature side-stripe) and switch hover lift shadow to `--shadow-org`.
+- Status pills (Public/Personal/Live) → recolor: Live = `--org-accent-soft` cyan dot, Public = `--org-accent` blue, Personal = neutral.
 
-## 3. Post-login role chooser
+### 7. `src/pages/OrganizerLiveManage.tsx`
+- Header strip (the in-page sub-nav with event title + Exit) → `--org-surface` background with `border-b` in `--org-accent`.
+- The big **flag drop buttons** keep their semantic colors (yellow/red/checkered) — flags must remain instantly readable; we do NOT recolor them. Only the surrounding card chrome (panel borders, section headers, "LIVE" badge) shifts to the blue palette.
+- "LIVE" indicator → `--org-accent-soft` cyan pulse instead of red.
+- `LiveTrackMap`, `PairedRadiosPanel`, `LoRaGatewayConfigCard`, `ConnectivityCheckPanel`: wrapping `<Card>` gets the org border-left treatment for visual consistency. Internal map/radio styling untouched (they're functional, not branded).
 
-New page `src/pages/ModeChooser.tsx` at `/choose-mode`:
+### 8. `src/pages/OrganizerSettings.tsx`
+- Section card headers → switch icon color from default to `--org-accent`.
+- "Save" buttons → `--gradient-org`.
+- Tabs / dnd handles unchanged structurally.
 
-- Shown automatically after sign-in **if and only if** the user is an approved organizer (otherwise straight to `/dashboard` as today).
-- Two large cards: **Continue as Racer** → `/dashboard`, **Continue as Organizer** → `/organizer`.
-- Optional checkbox "Remember my choice on this device" (stored in localStorage as a hint, not a security boundary).
-- `Login.tsx` post-success logic: query `organizer_profiles` (approved) for the user; if found → `/choose-mode`, else → `/dashboard` (current behavior). Same hook on `SignUp` completion if they happen to already have an approved profile (rare).
-- Direct visits to `/login` while already authenticated as an approved organizer also route through the chooser (unless the "remember" hint is set).
+### 9. `src/pages/OrganizerStampPortal.tsx`
+- Replace the racer-red Stamp icon tile (if present) with `--org-accent`.
+- Submit button → `--gradient-org`.
+- Success state checkmark stays semantic green.
 
-## 4. Server-side mode persistence (lightweight)
+## What we explicitly do NOT change
+- Racer side (`Dashboard`, `Garage`, `Events`, `GridID`, etc.) — stays red/F1.
+- Flag drop button colors (yellow/red/black-white check) — safety-critical semantics.
+- Map styling, charts, weather widgets — functional color systems.
+- Any database or routing logic — pure visual.
 
-Add a `last_active_mode text` column on `racer_profiles` (`'racer' | 'organizer'`, default `'racer'`).
-
-- Updated whenever the user enters either shell.
-- Used as the default selection on the chooser and as the auto-redirect target if the "remember" hint was set.
-- Survives device changes — the racer's primary phone and the laptop they organize from will both remember their last mode.
-
-## 5. Refactor `OrganizerModeContext`
-
-Rename to `OrganizerContext`. Drop `isOrganizerMode` / `toggleMode` / localStorage. Keep:
-
-- `isOrganizer`, `isApproved`, `organizerProfileId` (unchanged data fetch)
-- New: `enterOrganizerMode()` / `exitOrganizerMode()` helpers that just `navigate('/organizer')` or `navigate('/dashboard')` and update `last_active_mode` server-side.
-
-Update the 8 call sites found in the codebase:
-- `Navigation.tsx` / `DesktopNavigation.tsx` — remove toggle button, only render in racer shell.
-- `Settings.tsx` — remove `if (isOrganizerMode) return <OrganizerSettings />` branch (organizer settings moves to its own `/organizer/settings` route).
-- `LocalEvents.tsx`, `PublicEventPreview.tsx` — currently use `isOrganizerMode` to decide whether the viewer is "the owning organizer". Replace with: check current pathname starts with `/organizer/` **and** `event.organizer_id === organizerProfileId`. Same UX outcome, no toggle dependency.
-- `EventOrganizer.tsx`, `OrganizerStampPortal.tsx`, `OrganizerSettings.tsx`, `OrganizerLiveManage.tsx` — only need `organizerProfileId`, no change.
-
-## 6. Apply flow polish
-
-`/organizer/apply` (the renamed signup):
-- If user is already approved → redirect into `/organizer`.
-- If application is pending → show a "Pending review" status card instead of the form.
-- After submission, land on the pending status card (not racer dashboard), so it's clear what's next.
-
-## 7. Migration & cleanup
-
-- Add SPA redirects (React Router `<Navigate>`) for all old organizer paths.
-- Remove the toggle UI from both navs.
-- Remove `localStorage.organizerMode` reads (a stray entry left behind is harmless).
-- Update memory: `mem://features/events` to reflect new shell + chooser instead of toggle.
-
-## What stays the same
-- Single auth account / single password — racer data stays linked to the same user.
-- All RLS policies (they already key off `organizer_profiles.user_id` + `approved`).
-- Existing organizer features (event creation, live manage, stamps, LoRa gateway card) — only their URLs and surrounding chrome change.
-
-## Out of scope (can do later if desired)
-- A truly separate `/organizer/login` entry that bypasses the chooser. Easy follow-up: just a route alias that sets the "remember organizer" hint then forwards to `/login`.
-- Different auth account per role — explicitly rejected per the chosen "same account, separate shell" model.
+## QA checklist after implementation
+1. `/choose-mode` shows red Racer tile + blue Organizer tile side by side.
+2. `/organizer` dashboard: navy background, blue accent strip, blue CTAs, no stray red buttons.
+3. `/organizer/live/:id`: flag buttons still yellow/red/checkered; surrounding chrome blue.
+4. Switch back to Racer → entire app reverts to red theme (no leaked blues).
+5. Mobile bottom nav on `/organizer/*`: blue active state, racer side untouched.
+6. Logout/destructive hovers still red (semantic).

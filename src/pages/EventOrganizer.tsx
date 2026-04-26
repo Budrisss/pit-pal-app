@@ -915,7 +915,7 @@ const EventOrganizer = () => {
   // EventFormFields moved outside the component — see top-level definition below
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-20 lg:pb-0">
+    <div className="min-h-screen text-foreground pb-20 lg:pb-0 lg:pt-20">
       <motion.nav initial={{ y: -60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5, ease: "easeOut" }} className="fixed top-0 inset-x-0 z-50 bg-background/80 backdrop-blur-md border-b border-border hidden">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 h-20">
           <Link to="/dashboard" className="flex items-center h-full py-1">
@@ -942,8 +942,15 @@ const EventOrganizer = () => {
           className="flex items-center justify-between mb-8"
         >
           <div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-              Event <span className="text-primary">Organizer</span>
+            <div
+              className="text-[10px] uppercase tracking-[0.3em] font-bold mb-1"
+              style={{ color: "hsl(var(--org-accent-soft))" }}
+            >
+              Control Tower
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+              Event{" "}
+              <span style={{ color: "hsl(var(--org-accent))" }}>Organizer</span>
             </h1>
             <p className="text-muted-foreground mt-1">
               {organizerProfile?.org_name} — Manage your events and registrations
@@ -962,7 +969,10 @@ const EventOrganizer = () => {
               setShowCreateDialog(open);
             }}>
             <DialogTrigger asChild>
-              <Button>
+              <Button
+                className="text-white border-0 hover:opacity-90"
+                style={{ background: "var(--gradient-org)", boxShadow: "var(--shadow-org)" }}
+              >
                 <Plus size={16} className="mr-1" /> Create Event
               </Button>
             </DialogTrigger>

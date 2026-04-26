@@ -23,23 +23,26 @@ const OrganizerDesktopNavigation = () => {
 
   return (
     <nav
-      className="hidden lg:flex fixed top-0 left-0 w-full z-50 border-b-2"
+      className="hidden lg:flex fixed top-0 left-0 w-full z-50 border-b backdrop-blur-sm"
       style={{
-        backgroundColor: "hsl(var(--org-bg))",
-        borderBottomColor: "hsl(var(--org-accent))",
+        backgroundColor: "hsl(var(--org-surface) / 0.95)",
+        borderBottomColor: "hsl(var(--org-accent) / 0.55)",
       }}
     >
       <div className="flex items-center justify-between w-full max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center gap-3">
           <div
-            className="w-10 h-10 rounded-none flex items-center justify-center transform -skew-x-12"
-            style={{ background: "var(--gradient-org)" }}
+            className="w-10 h-10 rounded-sm flex items-center justify-center bg-white"
+            style={{ boxShadow: "var(--shadow-org)" }}
           >
-            <Briefcase className="text-white transform skew-x-12" size={22} />
+            <Briefcase style={{ color: "hsl(var(--org-accent))" }} size={22} />
           </div>
           <div className="flex flex-col leading-tight">
-            <span className="text-[10px] uppercase tracking-[0.2em] font-bold" style={{ color: "hsl(var(--org-accent))" }}>
-              Organizer
+            <span
+              className="text-[10px] uppercase tracking-[0.25em] font-bold"
+              style={{ color: "hsl(var(--org-accent-soft))" }}
+            >
+              Organizer · Control Tower
             </span>
             <h1 className="text-lg font-bold text-white uppercase tracking-wider">Track Side Ops</h1>
           </div>
@@ -53,29 +56,31 @@ const OrganizerDesktopNavigation = () => {
                 key={path}
                 to={path}
                 className={cn(
-                  "flex items-center gap-2 px-5 py-2.5 transition-all duration-300 transform -skew-x-6 border-2 uppercase tracking-wide font-bold text-sm",
-                  active ? "text-white border-white" : "text-white/70 hover:text-white border-transparent hover:border-white/40",
+                  "flex items-center gap-2 px-5 py-2.5 transition-all duration-200 uppercase tracking-wide font-bold text-sm border-b-2 rounded-none",
+                  active
+                    ? "text-white border-white bg-white/5"
+                    : "text-white/70 hover:text-white border-transparent hover:border-white/40",
                 )}
-                style={active ? { background: "var(--gradient-org)" } : undefined}
+                style={active ? { color: "hsl(var(--org-accent-soft))", borderBottomColor: "hsl(var(--org-accent))" } : undefined}
               >
-                <Icon size={18} className="transform skew-x-6" />
-                <span className="transform skew-x-6">{label}</span>
+                <Icon size={18} />
+                <span>{label}</span>
               </Link>
             );
           })}
           <button
             onClick={() => { void exitOrganizerMode(); }}
-            className="flex items-center gap-2 px-5 py-2.5 transition-all duration-300 transform -skew-x-6 border-2 border-transparent uppercase tracking-wide font-bold text-sm text-white/70 hover:text-white hover:bg-white/10 hover:border-white/40"
+            className="flex items-center gap-2 px-5 py-2.5 transition-all duration-200 border-b-2 border-transparent uppercase tracking-wide font-bold text-sm text-white/70 hover:text-white hover:bg-white/10 hover:border-white/40"
           >
-            <ArrowLeftRight size={18} className="transform skew-x-6" />
-            <span className="transform skew-x-6">Switch to Racer</span>
+            <ArrowLeftRight size={18} />
+            <span>Switch to Racer</span>
           </button>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 px-5 py-2.5 transition-all duration-300 transform -skew-x-6 border-2 border-transparent uppercase tracking-wide font-bold text-sm text-white/70 hover:text-white hover:bg-destructive hover:border-white/40"
+            className="flex items-center gap-2 px-5 py-2.5 transition-all duration-200 border-b-2 border-transparent uppercase tracking-wide font-bold text-sm text-white/70 hover:text-white hover:bg-destructive hover:border-white/40"
           >
-            <LogOut size={18} className="transform skew-x-6" />
-            <span className="transform skew-x-6">Logout</span>
+            <LogOut size={18} />
+            <span>Logout</span>
           </button>
         </div>
       </div>
