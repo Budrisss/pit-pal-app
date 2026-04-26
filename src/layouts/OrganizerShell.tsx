@@ -36,10 +36,13 @@ const OrganizerShell = () => {
   return (
     <div
       className="min-h-screen pb-24 lg:pb-0"
-      style={{ backgroundColor: "hsl(var(--org-bg))", color: "hsl(var(--foreground))" }}
+      style={{ background: "var(--gradient-org-bg)", color: "hsl(var(--foreground))" }}
     >
-      {/* Accent strip — visible at all times so the mode is unmistakable */}
-      <div className="fixed top-0 left-0 right-0 h-1 z-[60] lg:hidden" style={{ background: "var(--gradient-org)" }} />
+      {/* Accent strip — Williams stripe: thin white hairline above the blue bar */}
+      <div className="fixed top-0 left-0 right-0 z-[60] lg:hidden">
+        <div className="h-px w-full bg-white/15" />
+        <div className="h-1 w-full" style={{ background: "var(--gradient-org)" }} />
+      </div>
       <OrganizerDesktopNavigation />
       <main className="pt-1 lg:pt-0">
         <Outlet />
