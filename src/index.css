@@ -49,14 +49,17 @@
     --racing-green: 120 100% 25%;
     --racing-yellow: 45 100% 50%;
 
-    /* Organizer shell — distinct accent (amber) so the mode is unmistakable */
-    --org-accent: 38 92% 50%;
-    --org-accent-dark: 32 95% 44%;
-    --org-bg: 220 18% 8%;
-    --org-surface: 220 16% 11%;
-    --org-border: 38 40% 22%;
-    --gradient-org: linear-gradient(135deg, hsl(var(--org-accent)), hsl(var(--org-accent-dark)));
-    --shadow-org: 0 8px 32px -8px hsl(var(--org-accent) / 0.45);
+    /* Organizer shell — Williams F1-inspired: navy + electric blue + cyan */
+    --org-accent: 212 100% 50%;       /* Williams electric blue */
+    --org-accent-dark: 220 90% 38%;   /* deep racing blue */
+    --org-accent-soft: 195 100% 60%;  /* cyan telemetry highlight */
+    --org-bg: 220 40% 6%;             /* near-black navy */
+    --org-surface: 218 35% 11%;       /* midnight blue panel */
+    --org-surface-2: 216 30% 15%;     /* raised card */
+    --org-border: 216 35% 22%;        /* cool steel border */
+    --gradient-org: linear-gradient(135deg, hsl(var(--org-accent-dark)), hsl(var(--org-accent)));
+    --gradient-org-bg: linear-gradient(180deg, hsl(var(--org-bg)), hsl(var(--org-surface)));
+    --shadow-org: 0 6px 24px -6px hsl(var(--org-accent) / 0.35);
     
     /* F1 App gradients */
     --f1-gradient-start: 0 91% 59%;
