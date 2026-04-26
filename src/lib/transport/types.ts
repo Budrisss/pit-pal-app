@@ -24,7 +24,7 @@ export interface IncomingMessage {
   via: TransportName;
 }
 
-export type TransportName = "supabase" | "lora-sim" | "failover";
+export type TransportName = "supabase" | "lora-sim" | "lora-hw" | "failover";
 
 export type TransportStatus = "connected" | "degraded" | "down";
 

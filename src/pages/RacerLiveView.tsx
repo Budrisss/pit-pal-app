@@ -294,7 +294,7 @@ const RacerLiveView = () => {
   // otherwise direct Supabase subscribe. Sim-only packets (cell down) reach the driver via LoRa leg.
   const { enabled: simEnabled } = useSimConfig();
   const transportRef = useRef<Transport | null>(null);
-  const [activeLeg, setActiveLeg] = useState<"supabase" | "lora-sim" | null>(null);
+  const [activeLeg, setActiveLeg] = useState<"supabase" | "lora-sim" | "lora-hw" | null>(null);
 
   useEffect(() => {
     if (!personalEventId || !user?.id) return;
@@ -318,7 +318,7 @@ const RacerLiveView = () => {
     // Track active leg for badge (only when failover is in use)
     let offStatus: (() => void) | null = null;
     if (t instanceof FailoverTransport) {
-      const update = () => setActiveLeg(t.getActive() as "supabase" | "lora-sim");
+      const update = () => setActiveLeg(t.getActive() as "supabase" | "lora-sim" | "lora-hw");
       update();
       offStatus = t.onStatusChange(update);
     } else {
@@ -837,7 +837,7 @@ const RacerLiveView = () => {
               #{userCarNumber}
             </Badge>
           )}
-          {simEnabled && (activeLeg === "lora-sim" || hasLoraFlag) && (
+          {simEnabled && (activeLeg === "lora-sim" || activeLeg === "lora-hw" || hasLoraFlag) && (
             <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 border-yellow-500/60 text-yellow-400 font-semibold">
               <Radio size={10} className="mr-0.5" /> LoRa{hasLoraFlag ? " 🏁" : ""}
             </Badge>

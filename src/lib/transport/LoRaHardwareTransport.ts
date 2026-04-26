@@ -67,7 +67,7 @@ export function isHardwareCapable(): boolean {
 }
 
 export class LoRaHardwareTransport implements Transport {
-  readonly name = "lora-sim" as const; // reuses the same enum slot — UI treats both as "radio"
+  readonly name = "lora-hw" as const; // distinct from "lora-sim" so logs/UI can differentiate
   private deviceId: string | null;
   private status: TransportStatus = "down";
   private connected = false;
@@ -137,7 +137,7 @@ export class LoRaHardwareTransport implements Transport {
         const text = new TextDecoder().decode(decoded.payload);
         const payload = decode(text);
         const id = `${payload.from}-${payload.ts}`;
-        this.subscribers.forEach((h) => h({ id, payload, via: "lora-sim" }));
+        this.subscribers.forEach((h) => h({ id, payload, via: "lora-hw" }));
       } catch { /* malformed app payload */ }
       return;
     }

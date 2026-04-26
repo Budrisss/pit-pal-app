@@ -244,7 +244,7 @@ const CrewLiveView = () => {
   // Transport: created lazily per (eventId, userId). Falls back to direct Supabase when sim flag off.
   const { enabled: simEnabled } = useSimConfig();
   const transportRef = useRef<Transport | null>(null);
-  const [activeLeg, setActiveLeg] = useState<"supabase" | "lora-sim" | null>(null);
+  const [activeLeg, setActiveLeg] = useState<"supabase" | "lora-sim" | "lora-hw" | null>(null);
 
   useEffect(() => {
     if (!eventId || !user) return;
@@ -252,7 +252,7 @@ const CrewLiveView = () => {
     const t = getCrewTransport({ eventId, userId: user.id });
     transportRef.current = t;
     if (t instanceof FailoverTransport) {
-      const update = () => setActiveLeg(t.getActive() as "supabase" | "lora-sim");
+      const update = () => setActiveLeg(t.getActive() as "supabase" | "lora-sim" | "lora-hw");
       update();
       const off = t.onStatusChange(update);
       return () => { off(); t.destroy?.(); transportRef.current = null; };
@@ -307,7 +307,7 @@ const CrewLiveView = () => {
             <h1 className="text-xl font-bold text-foreground truncate">Crew View</h1>
             <p className="text-sm text-muted-foreground truncate">{resolvedEventName || "Event"}</p>
           </div>
-          {simEnabled && activeLeg === "lora-sim" && (
+          {simEnabled && (activeLeg === "lora-sim" || activeLeg === "lora-hw") && (
             <Badge variant="outline" className="text-xs px-2 py-1 border-yellow-500/60 text-yellow-400 font-semibold">
               <Radio size={11} className="mr-1" /> LoRa
             </Badge>
