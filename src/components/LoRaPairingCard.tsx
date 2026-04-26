@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { BleClient, type BleDevice } from "@capacitor-community/bluetooth-le";
-import { Bluetooth, BluetoothConnected, Loader2, Radio, Send, Trash2 } from "lucide-react";
+import { Bluetooth, BluetoothConnected, Ear, Loader2, Radio, Send, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -28,6 +28,8 @@ const LoRaPairingCard = () => {
   const [enabled, setEnabledState] = useState<boolean>(isHardwareEnabled());
   const [scanning, setScanning] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [lastReceived, setLastReceived] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user || !pairedId) return;
@@ -125,6 +127,29 @@ const LoRaPairingCard = () => {
     }
   };
 
+  const handleListen = async () => {
+    if (!user || !pairedId) return;
+    setListening(true);
+    setLastReceived(null);
+    const transport = new LoRaHardwareTransport({ eventId: "test", userId: user.id });
+    let received = 0;
+    const unsub = transport.subscribe((msg) => {
+      received++;
+      setLastReceived(JSON.stringify(msg.payload));
+      toast({ title: `Packet received (#${received})`, description: `${msg.payload.t}: ${msg.payload.v.slice(0, 60)}` });
+    });
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 30_000));
+      if (received === 0) {
+        toast({ title: "No packets received", description: "Listened for 30s, nothing arrived from the radio.", variant: "destructive" });
+      }
+    } finally {
+      unsub();
+      transport.destroy();
+      setListening(false);
+    }
+  };
+
   return (
     <Card className="bg-gradient-dark border-border/50">
       <CardHeader>
@@ -195,6 +220,24 @@ const LoRaPairingCard = () => {
             Send Test
           </Button>
         </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleListen}
+          disabled={!pairedId || listening}
+          className="w-full"
+        >
+          {listening ? <Loader2 size={14} className="animate-spin" /> : <Ear size={14} />}
+          {listening ? "Listening (30s)…" : "Listen 30s for incoming"}
+        </Button>
+
+        {lastReceived && (
+          <div className="rounded-md border border-border/50 bg-muted/30 p-2">
+            <p className="text-[10px] text-muted-foreground mb-1">Last packet:</p>
+            <pre className="text-[10px] font-mono whitespace-pre-wrap break-all">{lastReceived}</pre>
+          </div>
+        )}
 
         {pairedId && (
           <Button variant="ghost" size="sm" onClick={handleUnpair} className="w-full text-destructive">
