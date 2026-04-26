@@ -965,7 +965,7 @@ const OrganizerLiveManage = () => {
           <Button
             variant="glass"
             size="icon"
-            onClick={() => navigate("/event-organizer")}
+            onClick={() => navigate("/organizer")}
             className="shrink-0"
           >
             <ArrowLeft size={20} />

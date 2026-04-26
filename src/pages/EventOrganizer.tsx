@@ -902,7 +902,7 @@ const EventOrganizer = () => {
             <p className="text-muted-foreground mb-6">
               Register as an organizer to create and manage racing events with registration groups and participant tracking.
             </p>
-            <Button onClick={() => navigate('/organizer-signup')}>
+            <Button onClick={() => navigate('/organizer/apply')}>
               <Building2 size={16} className="mr-2" /> Sign Up as Organizer
             </Button>
           </div>
@@ -1176,7 +1176,7 @@ const EventOrganizer = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => navigate(`/live-manage/${event.id}`)}>
+                          <DropdownMenuItem onClick={() => navigate(`/organizer/live/${event.id}`)}>
                             <Radio size={14} className="mr-2" /> Live Manage
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => openPreview(event)}>
