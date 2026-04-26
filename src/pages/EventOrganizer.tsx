@@ -394,9 +394,14 @@ const EventFormFields = ({ values, onChange, isEdit = false, presetTracks = [], 
                   onClick={(e) => { e.stopPropagation(); setPresetTypeFilter?.(value); }}
                   className={`px-2 py-0.5 rounded-full text-[10px] font-medium border transition-colors ${
                     typeFilter === value
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'bg-background text-muted-foreground border-border hover:border-primary/50'
+                  ? 'text-white'
+                      : 'bg-background text-muted-foreground border-border'
                   }`}
+                  style={
+                    typeFilter === value
+                      ? { backgroundColor: "hsl(var(--org-accent))", borderColor: "hsl(var(--org-accent))" }
+                      : undefined
+                  }
                 >
                   {label}
                 </button>
@@ -902,7 +907,11 @@ const EventOrganizer = () => {
             <p className="text-muted-foreground mb-6">
               Register as an organizer to create and manage racing events with registration groups and participant tracking.
             </p>
-            <Button onClick={() => navigate('/organizer/apply')}>
+            <Button
+              onClick={() => navigate('/organizer/apply')}
+              className="text-white border-0 hover:opacity-90"
+              style={{ background: "var(--gradient-org)", boxShadow: "var(--shadow-org)" }}
+            >
               <Building2 size={16} className="mr-2" /> Sign Up as Organizer
             </Button>
           </div>
@@ -993,8 +1002,13 @@ const EventOrganizer = () => {
                 <RegistrationTypesEditor types={newRegTypes} onChange={setNewRegTypes} />
                 <RunGroupsEditor groups={newRunGroups} onChange={setNewRunGroups} />
                 <SessionsEditor sessions={newSessions} onChange={setNewSessions} runGroups={newRunGroups} defaultDuration={defaultSessionDuration} />
-                <Button type="submit" disabled={creating} className="w-full">
-                  {creating ? <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : 'Publish Event'}
+                <Button
+                  type="submit"
+                  disabled={creating}
+                  className="w-full text-white border-0 hover:opacity-90"
+                  style={{ background: "var(--gradient-org)", boxShadow: "var(--shadow-org)" }}
+                >
+                  {creating ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Publish Event'}
                 </Button>
               </form>
             </DialogContent>
@@ -1008,10 +1022,10 @@ const EventOrganizer = () => {
           transition={{ delay: 0.1 }}
           className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8"
         >
-          <Card className="bg-card/80 border-border">
+          <Card className="bg-card/80" style={{ borderColor: "hsl(var(--org-border))" }}>
             <CardContent className="p-5 flex items-center gap-4">
-              <div className="p-3 bg-primary/10 rounded-lg">
-                <Calendar size={24} className="text-primary" />
+              <div className="p-3 rounded-lg" style={{ backgroundColor: "hsl(var(--org-accent) / 0.12)" }}>
+                <Calendar size={24} style={{ color: "hsl(var(--org-accent))" }} />
               </div>
               <div>
                 <p className="text-2xl font-bold">{events.length}</p>
@@ -1019,10 +1033,10 @@ const EventOrganizer = () => {
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-card/80 border-border">
+          <Card className="bg-card/80" style={{ borderColor: "hsl(var(--org-border))" }}>
             <CardContent className="p-5 flex items-center gap-4">
-              <div className="p-3 bg-primary/10 rounded-lg">
-                <Users size={24} className="text-primary" />
+              <div className="p-3 rounded-lg" style={{ backgroundColor: "hsl(var(--org-accent) / 0.12)" }}>
+                <Users size={24} style={{ color: "hsl(var(--org-accent))" }} />
               </div>
               <div>
                 <p className="text-2xl font-bold">{totalRegistrations}</p>
@@ -1030,10 +1044,10 @@ const EventOrganizer = () => {
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-card/80 border-border">
+          <Card className="bg-card/80" style={{ borderColor: "hsl(var(--org-border))" }}>
             <CardContent className="p-5 flex items-center gap-4">
-              <div className="p-3 bg-primary/10 rounded-lg">
-                <Tag size={24} className="text-primary" />
+              <div className="p-3 rounded-lg" style={{ backgroundColor: "hsl(var(--org-accent) / 0.12)" }}>
+                <Tag size={24} style={{ color: "hsl(var(--org-accent))" }} />
               </div>
               <div>
                 <p className="text-2xl font-bold">
@@ -1108,7 +1122,7 @@ const EventOrganizer = () => {
 
           return loading ? (
           <div className="flex justify-center py-16">
-            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 rounded-full animate-spin" style={{ borderColor: "hsl(var(--org-accent))", borderTopColor: "transparent" }} />
           </div>
         ) : filteredEvents.length === 0 ? (
           <motion.div
@@ -1131,20 +1145,35 @@ const EventOrganizer = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.15 + i * 0.05 }}
               >
-                <Card className="bg-card/80 border-border hover:border-primary/40 transition-colors">
+                <Card
+                  className="bg-card/80 transition-colors border-l-2"
+                  style={{ borderColor: "hsl(var(--org-border))", borderLeftColor: "hsl(var(--org-accent))" }}
+                >
                   <CardContent className="p-5">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="font-bold text-lg truncate">{event.name}</h3>
-                          <Badge variant={event.status === 'upcoming' ? 'default' : 'secondary'} className="text-xs shrink-0">
+                          <Badge
+                            variant="secondary"
+                            className="text-xs shrink-0 border"
+                            style={
+                              event.status === 'upcoming'
+                                ? {
+                                    backgroundColor: "hsl(var(--org-accent) / 0.15)",
+                                    color: "hsl(var(--org-accent-soft))",
+                                    borderColor: "hsl(var(--org-accent) / 0.4)",
+                                  }
+                                : undefined
+                            }
+                          >
                             {event.status}
                           </Badge>
                         </div>
 
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground mb-3">
                           {event.track_name && (
-                            <span className="text-primary font-medium">{event.track_name}</span>
+                            <span className="font-medium" style={{ color: "hsl(var(--org-accent-soft))" }}>{event.track_name}</span>
                           )}
                           <span className="flex items-center gap-1">
                             <Calendar size={13} />

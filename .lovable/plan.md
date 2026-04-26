@@ -1,80 +1,126 @@
 ## Goal
-Re-skin the organizer side (everything under `/organizer/*` plus the post-login mode chooser) into a **Williams F1-inspired** look: deep navy/midnight backgrounds, electric/Williams blue accents, crisp white type, subtle cyan highlights for active states. Racer side stays untouched (F1 red).
+The Organizer Dashboard (`/organizer`) still shows several red accents from the racer theme leaking through `bg-primary` / `text-primary` / default Button & Badge variants. Re-skin every remaining accent surface on this page to the Williams blue palette so the dashboard reads consistently navy + electric blue.
 
-## Visual language
+## Red elements identified in `src/pages/EventOrganizer.tsx`
 
-| Token | Current (amber) | New (Williams) |
-|---|---|---|
-| `--org-bg` | dark warm | **`220 40% 6%`** — near-black navy |
-| `--org-surface` | warm gray | **`218 35% 11%`** — midnight blue panel |
-| `--org-surface-2` (new) | — | **`216 30% 15%`** — raised card |
-| `--org-accent` | amber `38 92% 50%` | **`212 100% 50%`** — Williams electric blue |
-| `--org-accent-dark` | amber dark | **`220 90% 38%`** — deep racing blue |
-| `--org-accent-soft` (new) | — | **`195 100% 60%`** — cyan highlight for hover/active dots |
-| `--org-border` | warm | **`216 35% 22%`** — cool steel border |
-| `--gradient-org` | amber gradient | linear-gradient 135° navy → electric blue |
-| `--shadow-org` | amber glow | electric-blue glow (lower opacity, tighter) |
+| Line(s) | Element | Current | Why it shows red |
+|---|---|---|---|
+| 1011–1045 | 3 stat cards (Total Events, Total Registrations, Registration Groups) | `bg-primary/10` icon tile + `text-primary` icon | `--primary` is F1 red |
+| 1134 | Event card | `hover:border-primary/40` | red hover border |
+| 1140 | Status pill | `<Badge variant="default">` | default badge = red bg |
+| 1147 | Track name | `text-primary` | red track name |
+| 996 | "Publish Event" submit button | default `<Button>` (red primary) | red CTA |
+| 1238 | "Save Changes" submit button | default `<Button>` | red CTA |
+| 1111, 997, 1238 | Loading spinners | `border-primary` / `border-primary-foreground` | red ring |
+| 397–399 | Track type filter chips (in Create Event dialog) | `bg-primary text-primary-foreground border-primary` and `hover:border-primary/50` | red chip + red hover |
+| 905 | "Sign Up as Organizer" CTA (no-profile fallback) | default `<Button>` | red |
+| 892, 930, 1201, 1254 | Logout / Delete (destructive) | `text-destructive` / `bg-destructive` | **KEEP RED** — destructive actions stay semantic red |
 
-All tokens land in `src/index.css` `:root`. Because `OrganizerShell`, the org nav components, and `ModeChooser` already consume `--org-*` via inline styles, **the whole shell re-skins from token swaps alone** — no markup churn for the chrome.
+## Changes to make in `src/pages/EventOrganizer.tsx`
 
-## Files to update
+### 1. Stat cards (lines 1011–1046)
+Replace each `<div className="p-3 bg-primary/10 rounded-lg">` + `<Icon className="text-primary" />` with inline styles bound to the org tokens:
+```tsx
+<div
+  className="p-3 rounded-lg"
+  style={{ backgroundColor: "hsl(var(--org-accent) / 0.12)" }}
+>
+  <Calendar size={24} style={{ color: "hsl(var(--org-accent))" }} />
+</div>
+```
+Apply identically to all three stat cards.
 
-### 1. `src/index.css`
-- Replace the `--org-*` token block with the navy/blue values above.
-- Add `--org-surface-2` and `--org-accent-soft`.
-- Update `--gradient-org` and `--shadow-org` to the cool palette.
-- Add a small utility class `.org-skew-tab` (used by nav buttons) so we can drop the heavy `transform -skew-x-6` chain in favor of a softer 3° skew that reads more "Williams precision" and less "F1 aggressive" — optional, only if it looks cleaner.
+Also bump card border to a subtle blue tint by adding `style={{ borderColor: "hsl(var(--org-border))" }}` on each `<Card>` (keeps the existing `bg-card/80` since dashboards already sit on the org gradient background).
 
-### 2. `src/layouts/OrganizerShell.tsx`
-- Swap the page container background from a flat `--org-bg` to a subtle vertical gradient `--org-bg → --org-surface` for depth.
-- Accent strip stays but gets a thin white hairline above it (`border-b border-white/10`) for the Williams "stripe" feel.
+### 2. Event cards (line 1134)
+Drop `hover:border-primary/40` and instead apply the Williams "side-stripe":
+```tsx
+<Card
+  className="bg-card/80 transition-colors border-l-2"
+  style={{
+    borderColor: "hsl(var(--org-border))",
+    borderLeftColor: "hsl(var(--org-accent))",
+  }}
+>
+```
+Hover lift handled by the existing transition; no red ring.
 
-### 3. `src/components/OrganizerDesktopNavigation.tsx`
-- Header background: `--org-surface` with `border-b` using `--org-accent` at 60% opacity (down from solid).
-- Logo lockup: replace the skewed parallelogram with a **squared white badge** containing the briefcase icon in `--org-accent`, matching Williams' clean rectangular brand marks.
-- Eyebrow text "ORGANIZER" → keep but in `--org-accent-soft` (cyan) for that Williams telemetry vibe.
-- Nav buttons: tone down skew, switch active state from gradient fill to **white bottom-border underline + electric-blue text** (Williams sidebar style); inactive hover shows a thin blue underline.
-- Logout button keeps destructive hover.
+### 3. Status badge (line 1140)
+Replace the default badge with explicit Williams styling for upcoming events; keep neutral gray for completed/cancelled:
+```tsx
+<Badge
+  variant="secondary"
+  className="text-xs shrink-0 border"
+  style={
+    event.status === "upcoming"
+      ? {
+          backgroundColor: "hsl(var(--org-accent) / 0.15)",
+          color: "hsl(var(--org-accent-soft))",
+          borderColor: "hsl(var(--org-accent) / 0.4)",
+        }
+      : undefined
+  }
+>
+  {event.status}
+</Badge>
+```
 
-### 4. `src/components/OrganizerMobileNavigation.tsx`
-- Bottom bar: `--org-surface` background, top border in `--org-accent` (1px not 2px), each tab's active state becomes a small white pill on top + electric-blue icon (instead of full gradient fill).
+### 4. Track name (line 1147)
+Change `className="text-primary font-medium"` → `style={{ color: "hsl(var(--org-accent-soft))" }}` className `font-medium`.
 
-### 5. `src/pages/ModeChooser.tsx`
-- The Organizer card currently uses `bg-gradient-f1` (red) for its icon tile. Swap that specific tile to `bg-gradient-org` so the choice screen previews each mode's brand. Racer card stays red. This is the only racer-red bleed in the org-adjacent UI.
+### 5. Submit CTAs (lines 996–998 "Publish Event", 1237–1239 "Save Changes")
+Apply org gradient to match the existing "Create Event" button:
+```tsx
+<Button
+  type="submit"
+  disabled={creating}
+  className="w-full text-white border-0 hover:opacity-90"
+  style={{ background: "var(--gradient-org)", boxShadow: "var(--shadow-org)" }}
+>
+  {creating ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Publish Event'}
+</Button>
+```
+Spinner ring color updated from `border-primary-foreground` → `border-white` so it reads on blue.
 
-### 6. `src/pages/EventOrganizer.tsx` (Dashboard)
-- Page wrapper: remove `<Navigation />` import bleed if any; rely on shell.
-- Headline lockup: keep `tracksideLogo` but place it next to a small "ORGANIZER · CONTROL TOWER" eyebrow in `--org-accent-soft`.
-- Primary CTA buttons ("Create Event", "Add Track") → use `style={{ background: 'var(--gradient-org)' }}` so they read blue, not the default red primary.
-- Event cards: add a left **`border-l-2` in `--org-accent`** (Williams' signature side-stripe) and switch hover lift shadow to `--shadow-org`.
-- Status pills (Public/Personal/Live) → recolor: Live = `--org-accent-soft` cyan dot, Public = `--org-accent` blue, Personal = neutral.
+### 6. Page loading spinner (line 1111)
+Change `border-primary` → inline `style={{ borderColor: "hsl(var(--org-accent))", borderTopColor: "transparent" }}`.
 
-### 7. `src/pages/OrganizerLiveManage.tsx`
-- Header strip (the in-page sub-nav with event title + Exit) → `--org-surface` background with `border-b` in `--org-accent`.
-- The big **flag drop buttons** keep their semantic colors (yellow/red/checkered) — flags must remain instantly readable; we do NOT recolor them. Only the surrounding card chrome (panel borders, section headers, "LIVE" badge) shifts to the blue palette.
-- "LIVE" indicator → `--org-accent-soft` cyan pulse instead of red.
-- `LiveTrackMap`, `PairedRadiosPanel`, `LoRaGatewayConfigCard`, `ConnectivityCheckPanel`: wrapping `<Card>` gets the org border-left treatment for visual consistency. Internal map/radio styling untouched (they're functional, not branded).
+### 7. Track-type filter chips (lines 391–403, inside `EventFormFields`)
+This sits inside the Create Event dialog (still org-side). Active chip should use blue:
+```tsx
+className={`px-2 py-0.5 rounded-full text-[10px] font-medium border transition-colors ${
+  typeFilter === value ? "text-white" : "bg-background text-muted-foreground border-border"
+}`}
+style={
+  typeFilter === value
+    ? { backgroundColor: "hsl(var(--org-accent))", borderColor: "hsl(var(--org-accent))" }
+    : undefined
+}
+```
+Hover border for inactive chips: append `hover:border-[hsl(var(--org-accent)/0.5)]` (Tailwind arbitrary value) — or a small className via `cn`.
 
-### 8. `src/pages/OrganizerSettings.tsx`
-- Section card headers → switch icon color from default to `--org-accent`.
-- "Save" buttons → `--gradient-org`.
-- Tabs / dnd handles unchanged structurally.
+### 8. "Sign Up as Organizer" fallback CTA (line 905)
+Apply the same org gradient style as Create Event so the empty-state CTA is on-brand. (This branch is rarely shown inside the shell since it'd usually redirect, but harmless to update.)
 
-### 9. `src/pages/OrganizerStampPortal.tsx`
-- Replace the racer-red Stamp icon tile (if present) with `--org-accent`.
-- Submit button → `--gradient-org`.
-- Success state checkmark stays semantic green.
+### 9. Leave alone (semantic / destructive)
+- Logout buttons (lines 892, 930) — destructive red hover stays.
+- Delete dropdown item (line 1201) and Delete alert action (line 1254) — destructive red stays.
+- Toast `variant: "destructive"` calls (lines 769, 812, 827) — error semantics, stay red.
+- The two hidden `<motion.nav>` blocks (lines 881, 919) marked `hidden` — not rendered, skip.
 
 ## What we explicitly do NOT change
-- Racer side (`Dashboard`, `Garage`, `Events`, `GridID`, etc.) — stays red/F1.
-- Flag drop button colors (yellow/red/black-white check) — safety-critical semantics.
-- Map styling, charts, weather widgets — functional color systems.
-- Any database or routing logic — pure visual.
+- Racer-side dashboard, Garage, Events, GridID — stay F1 red.
+- Flag drop buttons on Live Manage — semantic, untouched.
+- Map/chart/weather widget colors.
+- The `--primary` token itself (still red globally for racer side).
 
-## QA checklist after implementation
-1. `/choose-mode` shows red Racer tile + blue Organizer tile side by side.
-2. `/organizer` dashboard: navy background, blue accent strip, blue CTAs, no stray red buttons.
-3. `/organizer/live/:id`: flag buttons still yellow/red/checkered; surrounding chrome blue.
-4. Switch back to Racer → entire app reverts to red theme (no leaked blues).
-5. Mobile bottom nav on `/organizer/*`: blue active state, racer side untouched.
-6. Logout/destructive hovers still red (semantic).
+## QA checklist
+1. `/organizer` loads on a navy background with three blue stat-card icon tiles.
+2. Event cards show a thin blue left stripe; hover doesn't produce any red ring.
+3. "upcoming" status pill reads cyan-on-blue, not red.
+4. Track name on each event card reads cyan, not red.
+5. "Publish Event" and "Save Changes" buttons in Create/Edit dialogs use the blue gradient.
+6. Track-type filter chips inside Create Event highlight blue when active.
+7. Loading spinner ring is blue.
+8. Logout button still hovers red (semantic preserved).
+9. Switch to Racer mode → racer dashboard is still entirely red (no leaked blues).
