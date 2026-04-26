@@ -30,6 +30,11 @@ interface UserSubscription {
   created_at: string;
 }
 
+interface AuthUserLite {
+  id: string;
+  email: string | null;
+}
+
 const Admin = () => {
   const { isAdmin, loading: adminLoading } = useAdmin();
   const { user } = useAuth();
