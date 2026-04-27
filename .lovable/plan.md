@@ -1,72 +1,38 @@
-# Wire Up GitHub Releases Hosting for Desktop Downloads
+## Goal
+Make `/download` instructions answer the real question users have: *"OK, I downloaded the zip — now how do I make this feel like an actual installed app?"* Right now the steps are technically correct but skip the install-flow finishing touches (where to put the folder, how to pin it, how to create a shortcut/launcher).
 
-Goal: Replace the broken placeholder download links on `/download` with real, working URLs pointing to GitHub Releases — and make the page safe so it never 404s again, even if a future release is missing.
+## Changes — `src/pages/Download.tsx` only
 
----
+Rewrite the `steps` array for each platform to be a fuller 5-step walkthrough. No structural changes to the page; just longer step lists in the existing `<ol>`.
 
-## Step 1 — You: create the GitHub release (manual, ~5 min)
+### Windows — new steps
+1. Download `TrackSideOps-windows.zip`, then right-click → **Extract All…**
+2. Move the extracted **`Track Side Ops-win32-x64`** folder to a permanent location — e.g. `C:\Program Files\Track Side Ops\` (don't leave it in Downloads)
+3. Open the folder and double-click **`Track Side Ops.exe`**
+4. First launch only: SmartScreen says *"Windows protected your PC"* → click **More info → Run anyway**
+5. Right-click the taskbar icon → **Pin to taskbar**, or right-click the `.exe` → **Create shortcut** and drag it to your Desktop / Start Menu
 
-I'll give you exact steps. You only do this once per release.
+### macOS — new steps
+1. Download `TrackSideOps-mac.zip` and double-click to unzip
+2. Drag **Track Side Ops.app** into your **Applications** folder
+3. First launch only: right-click the app → **Open** → confirm in the dialog (Apple's one-time unsigned-app prompt)
+4. The app icon now lives in Launchpad and Spotlight — search "Track Side" to open
+5. Optional: while running, right-click the Dock icon → **Options → Keep in Dock**
 
-1. **Make sure your project is connected to GitHub** (Connectors → GitHub → Connect). Repo can stay **private** — release assets are independently public.
-2. Download the three binaries I already built from `/mnt/documents/`:
-   - `TrackSideOps-mac.zip`
-   - `TrackSideOps-windows.zip`
-   - `TrackSideOps-linux.tar.gz`
-3. On GitHub: **Releases → Draft a new release**
-   - Tag: `v1.0.0`
-   - Title: `Track Side Ops Desktop v1.0.0`
-   - Drag all three files into the assets area
-   - Publish release
-4. Copy the repo's `owner/name` (e.g. `yourname/trackside-ops`) and send it to me — that's all I need to wire up the URLs.
+### Linux — new steps
+1. Download and extract: `tar xzf TrackSideOps-linux.tar.gz`
+2. Move the extracted folder to a permanent home — e.g. `~/Applications/track-side-ops/`
+3. Run the binary: `./"Track Side Ops"` from inside that folder
+4. Optional: create `~/.local/share/applications/track-side-ops.desktop` with a standard `[Desktop Entry]` block pointing `Exec=` at the binary so it shows up in your app launcher
+5. Most desktop environments (GNOME, KDE) pick up new `.desktop` files automatically — search "Track Side" in your app menu
 
-GitHub serves release assets over HTTPS from their CDN with **unlimited free bandwidth**, even for private repos.
+## Layout consideration
+The platform cards currently size to content with `flex-1` on the `<ol>`. Going from 3 to 5 short steps adds ~50px of height per card — the grid stays clean because all three cards grow together. No CSS changes needed.
 
----
+## Out of scope
+- No changes to the Electron shell, GitHub release, or build pipeline
+- No new components, routes, or assets
+- SHA256 section (already removed)
 
-## Step 2 — I: update `src/pages/Download.tsx`
-
-Once you give me the repo path, I'll:
-
-- Add a single `GITHUB_REPO` and `LATEST_VERSION` constant at the top of the file so future releases are a one-line change.
-- Build URLs in the form:
-  `https://github.com/{owner}/{repo}/releases/download/v1.0.0/TrackSideOps-mac.zip`
-- Add a **safety fallback**: if `GITHUB_REPO` is still the placeholder string, the buttons render as a disabled "Coming soon" state instead of 404'ing. This protects the page if anyone ever clears the constant.
-- Add a small "View all releases" link under the cards pointing to the GitHub releases page, so power users can grab older versions.
-
-## Step 3 — I: add SHA256 checksums (security best practice)
-
-- Compute SHA256 hashes of the three binaries currently in `/mnt/documents/`.
-- Display them under each download button in a small monospace block with a copy button, so security-conscious users can verify the file wasn't tampered with in transit.
-- Add a one-line "Why checksums?" tooltip linking to a brief explanation.
-
-## Step 4 — I: document the release workflow
-
-Update `docs/desktop-build.md` with a new "Cutting a new release" section:
-
-1. Rebuild binaries (only needed when the Electron shell changes — window size, icon, welcome modal, etc.)
-2. Bump `LATEST_VERSION` in `Download.tsx`
-3. Create a new GitHub release with the matching tag and upload the three files
-4. (Optional) regenerate SHA256 hashes on the page
-
-For 99% of updates (UI, features, backend, paywall, API keys) you do **nothing** — the live site flows through automatically.
-
----
-
-## What this does NOT change
-
-- No Electron shell changes
-- No backend, RLS, or edge function changes
-- No new dependencies in the web `package.json`
-- No new routes — `/download` already exists
-
-## What I need from you to start
-
-Just the GitHub repo path (e.g. `yourusername/trackside-ops`) once the release is published. If you'd rather, I can wire it up with a placeholder repo string now and you swap it later — your call.
-
----
-
-## Files touched
-
-**Edited:** `src/pages/Download.tsx`, `docs/desktop-build.md`
-**Not touched:** everything else
+## Verification
+After changes I'll re-read `Download.tsx` to confirm rendering is sane, then you can spot-check `/download` in the preview.

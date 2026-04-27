@@ -42,9 +42,11 @@ const platforms: Platform[] = [
     filename: "TrackSideOps-mac.zip",
     size: ".zip · Intel & Apple Silicon",
     steps: [
-      "Download and unzip the file",
-      "Drag Track Side Ops to your Applications folder",
-      "First launch: right-click the app → Open (one-time security prompt)",
+      "Download TrackSideOps-mac.zip and double-click to unzip",
+      "Drag Track Side Ops.app into your Applications folder",
+      "First launch only: right-click the app → Open → confirm the one-time unsigned-app prompt",
+      "The app now lives in Launchpad and Spotlight — search \"Track Side\" to open it",
+      "Optional: while running, right-click the Dock icon → Options → Keep in Dock",
     ],
   },
   {
@@ -54,9 +56,11 @@ const platforms: Platform[] = [
     filename: "TrackSideOps-windows.zip",
     size: ".zip · Windows 10 & 11",
     steps: [
-      "Download and unzip the file",
-      "Move the folder anywhere (e.g. Program Files)",
-      'Run "Track Side Ops.exe" — click "More info → Run anyway" if SmartScreen warns',
+      "Download TrackSideOps-windows.zip, then right-click → Extract All…",
+      "Move the extracted \"Track Side Ops-win32-x64\" folder to a permanent location (e.g. C:\\Program Files\\Track Side Ops\\) — don't leave it in Downloads",
+      "Open the folder and double-click \"Track Side Ops.exe\"",
+      "First launch only: SmartScreen says \"Windows protected your PC\" → click More info → Run anyway",
+      "Right-click the taskbar icon → Pin to taskbar, or right-click the .exe → Create shortcut and drag it to your Desktop / Start Menu",
     ],
   },
   {
@@ -67,8 +71,10 @@ const platforms: Platform[] = [
     size: ".tar.gz · x64",
     steps: [
       "Download and extract: tar xzf TrackSideOps-linux.tar.gz",
-      'Run ./"Track Side Ops" from the extracted folder',
-      "Optionally create a .desktop launcher",
+      "Move the extracted folder to a permanent home (e.g. ~/Applications/track-side-ops/)",
+      "Run the binary: ./\"Track Side Ops\" from inside that folder",
+      "Optional: create ~/.local/share/applications/track-side-ops.desktop with a [Desktop Entry] block pointing Exec= at the binary",
+      "GNOME / KDE pick up new .desktop files automatically — search \"Track Side\" in your app menu",
     ],
   },
 ];
