@@ -17,7 +17,7 @@ import tracksideLogo from "@/assets/trackside-logo-v2.png";
  *
  * Set GITHUB_REPO to "" to force the "Coming soon" state for all platforms.
  */
-const GITHUB_REPO = ""; // e.g. "yourname/trackside-ops" — empty = coming-soon mode
+const GITHUB_REPO = "Budrisss/pit-pal-app"; // empty = coming-soon mode
 const LATEST_VERSION = "1.0.0";
 
 const releaseUrl = (filename: string) =>
