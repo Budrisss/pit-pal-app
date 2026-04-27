@@ -12,7 +12,8 @@ import { useCars } from "@/contexts/CarsContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { Shield, Edit, Save, X, LogOut, Award, Clock } from "lucide-react";
+import { Shield, Edit, Save, X, LogOut, Award, Clock, Sparkles, MapPin, TrendingUp, BadgeCheck, Users } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Link, useNavigate } from "react-router-dom";
 
 import dashboardHero from "@/assets/dashboard-hero.jpg";
@@ -206,6 +207,59 @@ const GridID = () => {
 
       {/* Content */}
       <section className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6">
+        {/* Coming Soon banner */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Card className="relative overflow-hidden border-2 border-primary/40 bg-gradient-to-br from-primary/10 via-card to-card shadow-[0_0_40px_hsl(var(--primary)/0.12)]">
+            <div className="absolute top-4 right-4 z-10">
+              <Badge className="gap-1.5 py-1 px-2.5 text-[10px] uppercase tracking-wider">
+                <Sparkles className="size-3" /> Coming Soon
+              </Badge>
+            </div>
+            <CardContent className="p-6 sm:p-7 space-y-5">
+              <div className="space-y-2 pr-24">
+                <h2 className="text-xl sm:text-2xl font-bold text-foreground leading-tight">
+                  GridID — Your Verified Racing Identity
+                </h2>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  GridID is your independently-verified digital racing passport. As you log sessions, attend events, and earn organizer stamps, your profile builds a trusted record of your on-track experience — recognized across the Track Side Ops network.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {[
+                  { icon: Clock, title: "Track Hours Tracking", desc: "Automatically log every verified hour you spend on track." },
+                  { icon: MapPin, title: "Track Diversity", desc: "Build a record of every circuit you've driven, verified by organizers." },
+                  { icon: TrendingUp, title: "Lap Time Consistency", desc: "Independent analysis of your consistency across sessions." },
+                  { icon: BadgeCheck, title: "Organizer & Instructor Stamps", desc: "Earn approvals from event organizers and certified instructors." },
+                  { icon: Shield, title: "Driver Rating", desc: "Receive an independently-calculated rating based on your verified history." },
+                  { icon: Users, title: "Smarter Event Grouping", desc: "Organizers use ratings to structure run groups for safer, better racing." },
+                ].map((b) => (
+                  <div
+                    key={b.title}
+                    className="flex gap-3 p-3 rounded-lg bg-background/40 border border-border/60 hover:border-primary/40 transition-colors"
+                  >
+                    <div className="size-8 shrink-0 rounded-md bg-primary/15 flex items-center justify-center">
+                      <b.icon className="size-4 text-primary" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-foreground uppercase tracking-wide mb-0.5">{b.title}</div>
+                      <div className="text-xs text-muted-foreground leading-snug">{b.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <p className="text-xs text-muted-foreground italic border-t border-border/60 pt-4">
+                We're rolling this out with select organizers first. Your stamps and hours are already being recorded — they'll all count when GridID goes live.
+              </p>
+            </CardContent>
+          </Card>
+        </motion.div>
+
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
           <GridPassportCard
             displayName={profile?.display_name || "Racer"}
