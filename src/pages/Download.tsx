@@ -1,15 +1,39 @@
 import { Link } from "react-router-dom";
-import { Apple, Monitor, Laptop, Smartphone, Download as DownloadIcon, ChevronLeft } from "lucide-react";
+import { Apple, Monitor, Laptop, Smartphone, Download as DownloadIcon, ChevronLeft, Copy, ShieldCheck, Github } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { toast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import tracksideLogo from "@/assets/trackside-logo-v2.png";
+
+/**
+ * GitHub Releases configuration.
+ *
+ * To publish a new release:
+ * 1. Build the binaries (see docs/desktop-build.md)
+ * 2. Create a GitHub release with tag `v{LATEST_VERSION}`
+ * 3. Upload the three files with the exact filenames below
+ * 4. Bump LATEST_VERSION here and update SHA256 hashes
+ *
+ * Set GITHUB_REPO to "" to force the "Coming soon" state for all platforms.
+ */
+const GITHUB_REPO = ""; // e.g. "yourname/trackside-ops" — empty = coming-soon mode
+const LATEST_VERSION = "1.0.0";
+
+const releaseUrl = (filename: string) =>
+  GITHUB_REPO
+    ? `https://github.com/${GITHUB_REPO}/releases/download/v${LATEST_VERSION}/${filename}`
+    : "";
+
+const allReleasesUrl = GITHUB_REPO ? `https://github.com/${GITHUB_REPO}/releases` : "";
 
 type Platform = {
   id: string;
   name: string;
   icon: typeof Apple;
-  file: string;
+  filename: string;
   size: string;
+  sha256: string;
   steps: string[];
 };
 
@@ -18,8 +42,9 @@ const platforms: Platform[] = [
     id: "mac",
     name: "macOS",
     icon: Apple,
-    file: "/downloads/TrackSideOps-mac.zip",
+    filename: "TrackSideOps-mac.zip",
     size: ".zip · Intel & Apple Silicon",
+    sha256: "2b166c7450d14160abdef181c8b6149d20da82b24b88c5dc364fe87b52321c5e",
     steps: [
       "Download and unzip the file",
       "Drag Track Side Ops to your Applications folder",
@@ -30,8 +55,9 @@ const platforms: Platform[] = [
     id: "windows",
     name: "Windows",
     icon: Monitor,
-    file: "/downloads/TrackSideOps-windows.zip",
+    filename: "TrackSideOps-windows.zip",
     size: ".zip · Windows 10 & 11",
+    sha256: "9a54354dc21b482cd15251ee780dc2acbc6c677bee3bf123442a7054bfa2eb67",
     steps: [
       "Download and unzip the file",
       "Move the folder anywhere (e.g. Program Files)",
@@ -42,8 +68,9 @@ const platforms: Platform[] = [
     id: "linux",
     name: "Linux",
     icon: Laptop,
-    file: "/downloads/TrackSideOps-linux.tar.gz",
+    filename: "TrackSideOps-linux.tar.gz",
     size: ".tar.gz · x64",
+    sha256: "ca934033b5daae467385f441706952be22f647dd9178053050beb26e44710768",
     steps: [
       "Download and extract: tar xzf TrackSideOps-linux.tar.gz",
       'Run ./"Track Side Ops" from the extracted folder',
@@ -53,6 +80,17 @@ const platforms: Platform[] = [
 ];
 
 const Download = () => {
+  const isReady = Boolean(GITHUB_REPO);
+
+  const copyHash = async (hash: string) => {
+    try {
+      await navigator.clipboard.writeText(hash);
+      toast({ title: "Checksum copied", description: "SHA256 hash copied to clipboard." });
+    } catch {
+      toast({ title: "Copy failed", description: "Select the text manually to copy.", variant: "destructive" });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Top bar */}
@@ -83,6 +121,11 @@ const Download = () => {
           <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
             The same Track Side Ops, in its own native window. Always up to date — every web release flows through automatically, no reinstalling.
           </p>
+          {isReady && (
+            <p className="text-xs text-muted-foreground mt-3">
+              Latest version: <span className="font-mono text-foreground">v{LATEST_VERSION}</span>
+            </p>
+          )}
         </motion.div>
       </section>
 
@@ -106,17 +149,68 @@ const Download = () => {
                   <p className="text-xs text-muted-foreground">{p.size}</p>
                 </div>
               </div>
-              <Button asChild className="w-full mb-4">
-                <a href={p.file} download>
-                  <DownloadIcon size={16} className="mr-1" /> Download for {p.name}
-                </a>
-              </Button>
+              {isReady ? (
+                <Button asChild className="w-full mb-3">
+                  <a href={releaseUrl(p.filename)} rel="noopener noreferrer">
+                    <DownloadIcon size={16} className="mr-1" /> Download for {p.name}
+                  </a>
+                </Button>
+              ) : (
+                <Button disabled className="w-full mb-3">
+                  Coming soon
+                </Button>
+              )}
+
+              {/* SHA256 checksum */}
+              <div className="mb-4 rounded-md bg-muted/40 border border-border p-2">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold text-muted-foreground cursor-help">
+                        <ShieldCheck size={10} /> SHA256
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      Verify your download wasn't tampered with. Run <span className="font-mono">shasum -a 256 {p.filename}</span> and compare.
+                    </TooltipContent>
+                  </Tooltip>
+                  <button
+                    onClick={() => copyHash(p.sha256)}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Copy checksum"
+                  >
+                    <Copy size={11} />
+                  </button>
+                </div>
+                <code className="text-[10px] font-mono break-all text-muted-foreground leading-tight block">
+                  {p.sha256}
+                </code>
+              </div>
+
               <ol className="text-xs text-muted-foreground space-y-1.5 list-decimal list-inside flex-1">
                 {p.steps.map((s) => <li key={s}>{s}</li>)}
               </ol>
             </motion.div>
           ))}
         </div>
+
+        {/* All releases / coming-soon notice */}
+        {isReady ? (
+          <div className="mt-6 text-center">
+            <Button variant="ghost" size="sm" asChild>
+              <a href={allReleasesUrl} target="_blank" rel="noopener noreferrer">
+                <Github size={14} className="mr-1.5" /> View all releases on GitHub
+              </a>
+            </Button>
+          </div>
+        ) : (
+          <div className="mt-6 max-w-2xl mx-auto bg-primary/5 border border-primary/20 rounded-lg p-4 text-center">
+            <p className="text-sm text-foreground font-medium mb-1">Desktop apps are being prepared for release</p>
+            <p className="text-xs text-muted-foreground">
+              Binaries are built and ready — we're finalizing hosting. Check back shortly, or use the web app in the meantime.
+            </p>
+          </div>
+        )}
 
         {/* Mobile placeholder */}
         <div className="mt-10 bg-card/50 border border-dashed border-border rounded-xl p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center gap-4">
