@@ -49,13 +49,74 @@ tar czf TrackSideOps-linux.tar.gz "Track Side Ops-linux-x64"
 
 ## Hosting the downloads
 
-The `/download` page links to `/downloads/TrackSideOps-{mac,windows,linux}.{zip,tar.gz}`.
+The `/download` page is wired to **GitHub Releases** — free, unlimited bandwidth, and serves over HTTPS from GitHub's CDN. Your repository can stay private; release assets are independently public.
 
-Pick one of:
+See "Cutting a new release" below for the exact workflow.
 
-1. **Lovable Cloud Storage** *(recommended)*: upload the three files to a public bucket and point the links at the bucket URLs. Edit `src/pages/Download.tsx` and replace each `file: "/downloads/..."` with the bucket URL.
-2. **GitHub Releases**: create a release, attach the three files, replace the URLs with the release asset URLs.
-3. **Static `public/downloads/`**: drop the files into `public/downloads/` and they'll ship with the web app. *(Not recommended — they're 150–200MB each and bloat every web deploy.)*
+---
+
+## Cutting a new release
+
+The desktop app loads the live site, so you only need to release new binaries when you change the **Electron shell itself** (window size, icon, welcome modal, app name, or the URL it loads). Normal feature/UI/backend updates flow through automatically — do nothing.
+
+When you do need to ship a shell update:
+
+### 1. Rebuild the binaries
+
+Follow the build commands in the section above. You'll end up with:
+
+- `TrackSideOps-mac.zip`
+- `TrackSideOps-windows.zip`
+- `TrackSideOps-linux.tar.gz`
+
+### 2. Compute new SHA256 checksums
+
+```bash
+shasum -a 256 TrackSideOps-mac.zip TrackSideOps-windows.zip TrackSideOps-linux.tar.gz
+```
+
+Copy the three hashes — you'll paste them into `src/pages/Download.tsx`.
+
+### 3. Publish on GitHub Releases
+
+1. Go to your repo on GitHub → **Releases → Draft a new release**
+2. Tag: `v1.0.0` (bump the version each release: `v1.0.1`, `v1.1.0`, etc.)
+3. Title: `Track Side Ops Desktop v1.0.0`
+4. Drag all three binary files into the assets area
+5. Click **Publish release**
+
+The asset URLs will follow this pattern automatically:
+`https://github.com/{owner}/{repo}/releases/download/v1.0.0/TrackSideOps-mac.zip`
+
+### 4. Wire it up in the app
+
+Open `src/pages/Download.tsx` and update the constants at the top of the file:
+
+```ts
+const GITHUB_REPO = "yourname/trackside-ops"; // your repo path
+const LATEST_VERSION = "1.0.0";               // matches the GitHub tag (without the "v")
+```
+
+Then update each platform's `sha256` field with the hashes from step 2.
+
+That's it — the page automatically:
+- Builds the correct download URLs from the constants
+- Shows the version number under the hero
+- Adds a "View all releases on GitHub" link below the cards
+
+### Safety net
+
+If `GITHUB_REPO` is left empty (`""`), the page automatically falls back to a "Coming soon" state with disabled buttons — so it can never silently 404. This is the default until your first real release.
+
+---
+
+## Why GitHub Releases?
+
+- **Free, unlimited bandwidth** — even for large binaries
+- **Repo stays private** — only the files you attach to a release are public
+- **HTTPS + CDN** — fast, secure downloads worldwide
+- **Versioned** — old releases stay accessible
+- **Industry standard** — VS Code, Obsidian, Signal, Discord all distribute desktop apps this way
 
 ---
 
