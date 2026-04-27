@@ -31,6 +31,7 @@ const Dashboard = () => {
   const { cars } = useCars();
   const { events } = useEvents();
   const { signOut, user } = useAuth();
+  const { isPro } = useSubscription();
 
   const [localEvents, setLocalEvents] = useState<any[]>([]);
   const [localEventsLoading, setLocalEventsLoading] = useState(true);
@@ -103,7 +104,7 @@ const Dashboard = () => {
   const quickActions = [
     { icon: Car, label: "Garage", desc: "Manage cars", onClick: () => navigate("/garage") },
     { icon: Calendar, label: "Events", desc: "Track schedule", onClick: () => navigate("/events") },
-    { icon: Gauge, label: "Setups", desc: "Car setups", onClick: () => navigate("/setups") },
+    { icon: Gauge, label: "Setups", desc: isPro ? "Car setups" : "Pro feature", onClick: () => navigate("/setups"), proOnly: true },
     { icon: CheckSquare, label: "Checklists", desc: "Prep lists", onClick: () => navigate("/checklists") },
   ];
 
