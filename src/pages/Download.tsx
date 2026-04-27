@@ -1,8 +1,6 @@
 import { Link } from "react-router-dom";
-import { Apple, Monitor, Laptop, Smartphone, Download as DownloadIcon, ChevronLeft, Copy, ShieldCheck, Github } from "lucide-react";
+import { Apple, Monitor, Laptop, Smartphone, Download as DownloadIcon, ChevronLeft, Github } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { toast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import tracksideLogo from "@/assets/trackside-logo-v2.png";
 
@@ -33,7 +31,6 @@ type Platform = {
   icon: typeof Apple;
   filename: string;
   size: string;
-  sha256: string;
   steps: string[];
 };
 
@@ -44,7 +41,6 @@ const platforms: Platform[] = [
     icon: Apple,
     filename: "TrackSideOps-mac.zip",
     size: ".zip · Intel & Apple Silicon",
-    sha256: "2b166c7450d14160abdef181c8b6149d20da82b24b88c5dc364fe87b52321c5e",
     steps: [
       "Download and unzip the file",
       "Drag Track Side Ops to your Applications folder",
@@ -57,7 +53,6 @@ const platforms: Platform[] = [
     icon: Monitor,
     filename: "TrackSideOps-windows.zip",
     size: ".zip · Windows 10 & 11",
-    sha256: "9a54354dc21b482cd15251ee780dc2acbc6c677bee3bf123442a7054bfa2eb67",
     steps: [
       "Download and unzip the file",
       "Move the folder anywhere (e.g. Program Files)",
@@ -70,7 +65,6 @@ const platforms: Platform[] = [
     icon: Laptop,
     filename: "TrackSideOps-linux.tar.gz",
     size: ".tar.gz · x64",
-    sha256: "ca934033b5daae467385f441706952be22f647dd9178053050beb26e44710768",
     steps: [
       "Download and extract: tar xzf TrackSideOps-linux.tar.gz",
       'Run ./"Track Side Ops" from the extracted folder',
@@ -81,15 +75,6 @@ const platforms: Platform[] = [
 
 const Download = () => {
   const isReady = Boolean(GITHUB_REPO);
-
-  const copyHash = async (hash: string) => {
-    try {
-      await navigator.clipboard.writeText(hash);
-      toast({ title: "Checksum copied", description: "SHA256 hash copied to clipboard." });
-    } catch {
-      toast({ title: "Copy failed", description: "Select the text manually to copy.", variant: "destructive" });
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -161,33 +146,7 @@ const Download = () => {
                 </Button>
               )}
 
-              {/* SHA256 checksum */}
-              <div className="mb-4 rounded-md bg-muted/40 border border-border p-2">
-                <div className="flex items-center justify-between gap-2 mb-1">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold text-muted-foreground cursor-help">
-                        <ShieldCheck size={10} /> SHA256
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      Verify your download wasn't tampered with. Run <span className="font-mono">shasum -a 256 {p.filename}</span> and compare.
-                    </TooltipContent>
-                  </Tooltip>
-                  <button
-                    onClick={() => copyHash(p.sha256)}
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                    aria-label="Copy checksum"
-                  >
-                    <Copy size={11} />
-                  </button>
-                </div>
-                <code className="text-[10px] font-mono break-all text-muted-foreground leading-tight block">
-                  {p.sha256}
-                </code>
-              </div>
-
-              <ol className="text-xs text-muted-foreground space-y-1.5 list-decimal list-inside flex-1">
+              <ol className="text-xs text-muted-foreground space-y-1.5 list-decimal list-inside flex-1 mt-1">
                 {p.steps.map((s) => <li key={s}>{s}</li>)}
               </ol>
             </motion.div>
