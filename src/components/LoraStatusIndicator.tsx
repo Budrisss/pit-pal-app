@@ -15,6 +15,8 @@ const LoraStatusIndicator = ({ className }: { className?: string }) => {
   if (!isAdmin || !enabled) return null;
 
   const onLora = config.cellDown;
+  // Hide the badge entirely when transport is on Cell — only surface LoRa/DOWN states.
+  if (!onLora && !config.gatewayDown) return null;
   const Icon = config.gatewayDown ? SignalZero : onLora ? RadioTower : config.dropRate > 0.15 ? SignalLow : Signal;
   const label = config.gatewayDown ? "DOWN" : onLora ? "LoRa" : "Cell";
   const tone = config.gatewayDown
