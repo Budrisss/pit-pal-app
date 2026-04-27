@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
   Car, Calendar, CheckSquare, Settings, Plus, TrendingUp,
-  LogOut, ChevronRight, MapPin, Timer, Clock, Flag, Gauge,
+  LogOut, ChevronRight, MapPin, Timer, Clock, Flag, Gauge, Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import Navigation from "@/components/Navigation";
 import { useCars } from "@/contexts/CarsContext";
 import { useEvents } from "@/contexts/EventsContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 
