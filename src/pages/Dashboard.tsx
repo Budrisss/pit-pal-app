@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
   Car, Calendar, CheckSquare, Settings, Plus, TrendingUp,
-  LogOut, ChevronRight, MapPin, Timer, Clock, Flag, Gauge,
+  LogOut, ChevronRight, MapPin, Timer, Clock, Flag, Gauge, Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import Navigation from "@/components/Navigation";
 import { useCars } from "@/contexts/CarsContext";
 import { useEvents } from "@/contexts/EventsContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 
@@ -30,6 +31,7 @@ const Dashboard = () => {
   const { cars } = useCars();
   const { events } = useEvents();
   const { signOut, user } = useAuth();
+  const { isPro } = useSubscription();
 
   const [localEvents, setLocalEvents] = useState<any[]>([]);
   const [localEventsLoading, setLocalEventsLoading] = useState(true);
@@ -102,7 +104,7 @@ const Dashboard = () => {
   const quickActions = [
     { icon: Car, label: "Garage", desc: "Manage cars", onClick: () => navigate("/garage") },
     { icon: Calendar, label: "Events", desc: "Track schedule", onClick: () => navigate("/events") },
-    { icon: Gauge, label: "Setups", desc: "Car setups", onClick: () => navigate("/setups") },
+    { icon: Gauge, label: "Setups", desc: isPro ? "Car setups" : "Pro feature", onClick: () => navigate("/setups"), proOnly: true },
     { icon: CheckSquare, label: "Checklists", desc: "Prep lists", onClick: () => navigate("/checklists") },
   ];
 
@@ -312,23 +314,39 @@ const Dashboard = () => {
             Quick Actions
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-            {quickActions.map((action, i) => (
-              <motion.button
-                key={i}
-                whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                whileTap={{ scale: 0.97 }}
-                onClick={action.onClick}
-                className="group relative bg-card/80 backdrop-blur-md border border-border rounded-xl p-4 sm:p-5 flex flex-col items-center gap-2.5 hover:border-primary/40 transition-all duration-300 hover:shadow-[0_0_24px_hsl(var(--primary)/0.1)]"
-              >
-                <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <action.icon size={22} className="text-primary" />
-                </div>
-                <div className="text-center">
-                  <span className="text-sm font-semibold block">{action.label}</span>
-                  <span className="text-[10px] text-muted-foreground">{action.desc}</span>
-                </div>
-              </motion.button>
-            ))}
+            {quickActions.map((action, i) => {
+              const locked = action.proOnly && !isPro;
+              return (
+                <motion.button
+                  key={i}
+                  whileHover={locked ? undefined : { y: -4, transition: { duration: 0.2 } }}
+                  whileTap={locked ? undefined : { scale: 0.97 }}
+                  onClick={locked ? () => navigate("/subscription") : action.onClick}
+                  aria-disabled={locked}
+                  title={locked ? "Upgrade to Pro to access car setups" : undefined}
+                  className={`group relative bg-card/80 backdrop-blur-md border border-border rounded-xl p-4 sm:p-5 flex flex-col items-center gap-2.5 transition-all duration-300 ${
+                    locked
+                      ? "opacity-60 cursor-not-allowed"
+                      : "hover:border-primary/40 hover:shadow-[0_0_24px_hsl(var(--primary)/0.1)]"
+                  }`}
+                >
+                  {locked && (
+                    <span className="absolute top-2 right-2 inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-primary/80 bg-primary/10 border border-primary/30 rounded px-1.5 py-0.5">
+                      <Lock size={9} /> Pro
+                    </span>
+                  )}
+                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-colors ${
+                    locked ? "bg-muted" : "bg-primary/10 group-hover:bg-primary/20"
+                  }`}>
+                    <action.icon size={22} className={locked ? "text-muted-foreground" : "text-primary"} />
+                  </div>
+                  <div className="text-center">
+                    <span className="text-sm font-semibold block">{action.label}</span>
+                    <span className="text-[10px] text-muted-foreground">{action.desc}</span>
+                  </div>
+                </motion.button>
+              );
+            })}
           </div>
         </motion.div>
 
