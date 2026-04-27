@@ -1,38 +1,40 @@
 ## Goal
-Make `/download` instructions answer the real question users have: *"OK, I downloaded the zip — now how do I make this feel like an actual installed app?"* Right now the steps are technically correct but skip the install-flow finishing touches (where to put the folder, how to pin it, how to create a shortcut/launcher).
+Add a prominent "Coming Soon" banner to the `/grid-id` page that explains what GridID is and the benefits users will unlock when it's live, while keeping the existing passport/stamps UI visible (in a preview/teaser state).
 
-## Changes — `src/pages/Download.tsx` only
+## File to edit
+- `src/pages/GridID.tsx`
 
-Rewrite the `steps` array for each platform to be a fuller 5-step walkthrough. No structural changes to the page; just longer step lists in the existing `<ol>`.
+## Changes
 
-### Windows — new steps
-1. Download `TrackSideOps-windows.zip`, then right-click → **Extract All…**
-2. Move the extracted **`Track Side Ops-win32-x64`** folder to a permanent location — e.g. `C:\Program Files\Track Side Ops\` (don't leave it in Downloads)
-3. Open the folder and double-click **`Track Side Ops.exe`**
-4. First launch only: SmartScreen says *"Windows protected your PC"* → click **More info → Run anyway**
-5. Right-click the taskbar icon → **Pin to taskbar**, or right-click the `.exe` → **Create shortcut** and drag it to your Desktop / Start Menu
+### 1. Add a "Coming Soon" banner near the top of the content section
+Insert a new card immediately after the hero section (above the existing `GridPassportCard`).
 
-### macOS — new steps
-1. Download `TrackSideOps-mac.zip` and double-click to unzip
-2. Drag **Track Side Ops.app** into your **Applications** folder
-3. First launch only: right-click the app → **Open** → confirm in the dialog (Apple's one-time unsigned-app prompt)
-4. The app icon now lives in Launchpad and Spotlight — search "Track Side" to open
-5. Optional: while running, right-click the Dock icon → **Options → Keep in Dock**
+**Visual design** (matches existing dark theme + red primary accent):
+- Card with `border-2 border-primary/40`, `bg-gradient-to-br from-primary/10 via-card to-card`, subtle glow
+- Top-right `Badge` with text "Coming Soon" (using `Sparkles` or `Rocket` lucide icon)
+- Headline: **"GridID — Your Verified Racing Identity"**
+- Short intro paragraph explaining the concept:
+  > "GridID is your independently-verified digital racing passport. As you log sessions, attend events, and earn organizer stamps, your profile builds a trusted record of your on-track experience — recognized across the Track Side Ops network."
 
-### Linux — new steps
-1. Download and extract: `tar xzf TrackSideOps-linux.tar.gz`
-2. Move the extracted folder to a permanent home — e.g. `~/Applications/track-side-ops/`
-3. Run the binary: `./"Track Side Ops"` from inside that folder
-4. Optional: create `~/.local/share/applications/track-side-ops.desktop` with a standard `[Desktop Entry]` block pointing `Exec=` at the binary so it shows up in your app launcher
-5. Most desktop environments (GNOME, KDE) pick up new `.desktop` files automatically — search "Track Side" in your app menu
+### 2. Benefits list (inside the same banner card)
+Render as a 2-column responsive grid (`grid-cols-1 sm:grid-cols-2 gap-3`), each item with a small lucide icon + title + one-line description:
 
-## Layout consideration
-The platform cards currently size to content with `flex-1` on the `<ol>`. Going from 3 to 5 short steps adds ~50px of height per card — the grid stays clean because all three cards grow together. No CSS changes needed.
+1. **Clock** — *Track Hours Tracking* — Automatically log every verified hour you spend on track.
+2. **MapPin** — *Track Diversity* — Build a record of every circuit you've driven, verified by event organizers.
+3. **TrendingUp** — *Lap Time Consistency* — Independent analysis of your consistency across sessions.
+4. **Stamp** (or `BadgeCheck`) — *Organizer & Instructor Stamps* — Earn approvals from event organizers and certified instructors.
+5. **Shield** — *Driver Rating* — Receive an independently-calculated driver rating based on your verified history.
+6. **Users** — *Smarter Event Grouping* — Organizers use ratings to structure run groups, pairing drivers with similar skill and experience for safer, better racing.
 
-## Out of scope
-- No changes to the Electron shell, GitHub release, or build pipeline
-- No new components, routes, or assets
-- SHA256 section (already removed)
+### 3. Closing line
+A small muted footer line inside the banner:
+> "We're rolling this out with select organizers first. Your stamps and hours are already being recorded — they'll all count when GridID goes live."
 
-## Verification
-After changes I'll re-read `Download.tsx` to confirm rendering is sane, then you can spot-check `/download` in the preview.
+### 4. Keep existing UI
+- Leave `GridPassportCard`, the Profile editor, and the Stamps history intact below the banner — they act as a working preview of what's coming.
+
+## Animation
+- Wrap banner in a `motion.div` with the same `fadeUp` pattern already used on the page (consistent with existing animations).
+
+## No backend / no schema changes
+Pure presentational addition. No new dependencies needed (all icons come from `lucide-react`, already in use).
