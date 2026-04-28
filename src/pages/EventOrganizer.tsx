@@ -952,12 +952,17 @@ const EventOrganizer = () => {
       {/* Hero */}
       <section className="relative overflow-hidden">
         <motion.div
-          initial={{ scale: 1.1 }}
-          animate={{ scale: 1 }}
+          initial={{ scale: 1.1, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 1.2, ease: "easeOut" }}
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: `url(${organizerHero})` }}
-        />
+          style={{ y: heroY, scale: heroScale }}
+          className="absolute inset-0 will-change-transform"
+        >
+          <div
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: `url(${organizerHero})` }}
+          />
+        </motion.div>
         <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/85 to-background" />
         <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-background pointer-events-none" />
         <div className="relative z-10 max-w-6xl mx-auto px-5 sm:px-6 py-16 sm:py-20 lg:py-24">
