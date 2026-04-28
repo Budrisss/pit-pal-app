@@ -1,5 +1,8 @@
-import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Clock, Calendar, Settings, Plus, Trash2, GripVertical, StickyNote, Timer, AlertCircle, Cloud, Thermometer, Eye, Wind, Play, CheckCircle2, MoreVertical, Megaphone, FileText, Radio, Car, Droplets } from "lucide-react";
+import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
+import { ArrowLeft, Clock, Calendar, Settings, Plus, Trash2, GripVertical, StickyNote, Timer, AlertCircle, Cloud, Thermometer, Eye, Wind, Play, CheckCircle2, MoreVertical, Megaphone, FileText, Radio, Car, Droplets, LogOut } from "lucide-react";
+import { motion } from "framer-motion";
+import { useAuth } from "@/contexts/AuthContext";
+import tracksideLogo from "@/assets/trackside-logo-v2.png";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -21,7 +24,6 @@ import { CSS } from "@dnd-kit/utilities";
 import { useEvents } from "@/contexts/EventsContext";
 import SessionTireDataCard from "@/components/SessionTireDataCard";
 import Navigation from "@/components/Navigation";
-import DesktopNavigation from "@/components/DesktopNavigation";
 
 interface Session {
   id: string;
