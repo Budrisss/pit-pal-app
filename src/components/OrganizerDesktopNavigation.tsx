@@ -1,8 +1,10 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Stamp, Settings, LogOut, ArrowLeftRight, Briefcase } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { LogOut, ArrowLeftRight } from "lucide-react";
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrganizerMode } from "@/contexts/OrganizerModeContext";
+import tracksideLogo from "@/assets/trackside-logo-v2.png";
 
 const OrganizerDesktopNavigation = () => {
   const location = useLocation();
@@ -16,82 +18,68 @@ const OrganizerDesktopNavigation = () => {
   };
 
   const navItems = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/organizer" },
-    { icon: Stamp, label: "Stamps", path: "/organizer/stamps" },
-    { icon: Settings, label: "Settings", path: "/organizer/settings" },
+    { label: "Dashboard", path: "/organizer" },
+    { label: "Stamps", path: "/organizer/stamps" },
+    { label: "Settings", path: "/organizer/settings" },
   ];
 
+  const isActive = (path: string) =>
+    location.pathname === path || (path === "/organizer" && location.pathname === "/organizer/");
+
   return (
-    <nav
-      className="hidden lg:flex fixed top-0 left-0 w-full z-50 border-b-2"
+    <motion.nav
+      initial={{ y: -60, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      className="fixed top-0 inset-x-0 z-50 backdrop-blur-md border-b hidden lg:block"
       style={{
-        backgroundColor: "hsl(var(--org-surface))",
-        borderBottomColor: "hsl(var(--org-accent))",
+        backgroundColor: "hsl(var(--org-surface) / 0.8)",
+        borderBottomColor: "hsl(var(--org-accent) / 0.55)",
       }}
     >
-      <div className="flex items-center justify-between w-full max-w-7xl mx-auto px-6 py-4">
-        <div className="flex items-center gap-3">
-          <div
-            className="w-10 h-10 rounded-none flex items-center justify-center transform -skew-x-12"
-            style={{ background: "var(--gradient-org)", boxShadow: "var(--shadow-org)" }}
-          >
-            <Briefcase className="text-white transform skew-x-12" size={22} />
-          </div>
-          <div className="flex flex-col leading-tight">
-            <span
-              className="text-[10px] uppercase tracking-[0.25em] font-bold"
-              style={{ color: "hsl(var(--org-accent-soft))" }}
-            >
-              Organizer · Control Tower
-            </span>
-            <h1 className="text-lg font-bold text-white uppercase tracking-wider">Track Side Ops</h1>
-          </div>
-        </div>
-
+      <div className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 h-20">
+        <Link to="/organizer" className="flex items-center h-full py-1">
+          <img src={tracksideLogo} alt="Track Side Ops" className="h-full w-auto object-contain invert" />
+        </Link>
         <div className="flex items-center gap-1">
-          {navItems.map(({ icon: Icon, label, path }) => {
-            const active = location.pathname === path || (path === "/organizer" && location.pathname === "/organizer/");
+          {navItems.map((item) => {
+            const active = isActive(item.path);
             return (
-              <Link
-                key={path}
-                to={path}
-                className={cn(
-                  "relative flex items-center gap-2 px-6 py-3 transition-all duration-300 transform -skew-x-6 border-2 uppercase tracking-wide font-bold text-sm",
-                  active
-                    ? "text-white border-white"
-                    : "text-white/70 border-transparent hover:text-white",
-                )}
+              <Button
+                key={item.path}
+                variant={active ? "default" : "ghost"}
+                size="sm"
+                asChild
+                className={active ? "text-white border-0 hover:opacity-90" : "text-white/80 hover:text-white hover:bg-white/10"}
                 style={
                   active
-                    ? {
-                        backgroundColor: "hsl(var(--org-accent))",
-                        boxShadow: "var(--shadow-org)",
-                      }
+                    ? { background: "var(--gradient-org)", boxShadow: "var(--shadow-org)" }
                     : undefined
                 }
               >
-                <Icon size={18} className="transform skew-x-6" />
-                <span className="transform skew-x-6">{label}</span>
-              </Link>
+                <Link to={item.path}>{item.label}</Link>
+              </Button>
             );
           })}
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => { void exitOrganizerMode(); }}
-            className="flex items-center gap-2 px-6 py-3 transition-all duration-300 transform -skew-x-6 border-2 border-transparent uppercase tracking-wide font-bold text-sm text-white/70 hover:text-white hover:bg-white/10"
+            className="text-white/80 hover:text-white hover:bg-white/10"
           >
-            <ArrowLeftRight size={18} className="transform skew-x-6" />
-            <span className="transform skew-x-6">Switch to Racer</span>
-          </button>
-          <button
+            <ArrowLeftRight size={16} className="mr-1" /> Switch to Racer
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleLogout}
-            className="flex items-center gap-2 px-6 py-3 transition-all duration-300 transform -skew-x-6 border-2 border-transparent uppercase tracking-wide font-bold text-sm text-white/70 hover:text-white hover:bg-destructive"
+            className="text-destructive hover:text-destructive hover:bg-destructive/10"
           >
-            <LogOut size={18} className="transform skew-x-6" />
-            <span className="transform skew-x-6">Logout</span>
-          </button>
+            <LogOut size={16} className="mr-1" /> Logout
+          </Button>
         </div>
       </div>
-    </nav>
+    </motion.nav>
   );
 };
 
