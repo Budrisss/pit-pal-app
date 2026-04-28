@@ -949,8 +949,13 @@ const EventOrganizer = () => {
         </div>
       </motion.nav>
 
-      {/* Hero */}
-      <section className="relative overflow-hidden">
+      {/* Fixed hero background layer — sits behind ALL page content,
+          fades to the page background so there is no visible seam. */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-x-0 top-0 -z-10 overflow-hidden"
+        style={{ height: "min(80vh, 720px)" }}
+      >
         <motion.div
           initial={{ scale: 1.1, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -968,15 +973,19 @@ const EventOrganizer = () => {
         </motion.div>
         {/* Organizer accent tint */}
         <div
-          className="pointer-events-none absolute inset-0"
+          className="absolute inset-0"
           style={{
             background:
               "linear-gradient(135deg, hsl(var(--org-accent) / 0.35), hsl(var(--org-accent-dark) / 0.55))",
           }}
         />
-        {/* Dark vertical fade for legibility + section blend */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-background/55 via-background/85 to-background" />
-        <div className="relative z-10 max-w-6xl mx-auto px-5 sm:px-6 py-16 sm:py-20 lg:py-24">
+        {/* Dark vertical fade — resolves to solid page background at the bottom */}
+        <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/85 to-background" />
+      </div>
+
+      {/* Hero (transparent — image lives in the fixed layer above) */}
+      <section className="relative z-10">
+        <div className="relative max-w-6xl mx-auto px-5 sm:px-6 py-16 sm:py-20 lg:py-24">
           {/* Mobile logo */}
           <motion.div
             initial={{ opacity: 0, y: -10 }}
