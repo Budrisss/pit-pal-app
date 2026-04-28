@@ -1,42 +1,39 @@
-# Match Organizer Top Nav UI to Racer Dashboard Nav
+# Tighten the Event Organizer Hero
 
-Restyle `OrganizerDesktopNavigation` so its visual language (skewed tabs, bold uppercase labels, solid black bar, accent border, branded badge) matches the racer-side `DesktopNavigation`, while keeping the organizer color palette (amber/blue accent — `--org-accent`, `--org-surface`).
+Two issues to fix in `src/pages/EventOrganizer.tsx`:
+1. The hero image (`pit-lane-hero.jpg`) is generic racing — give it the organizer (amber/blue accent) feel.
+2. The previous "blend" change added a `-mb-32` negative margin and an overlay extending `-bottom-32`, which now sits on top of the stats and the cards below, blocking interaction.
 
-## What changes
+## Changes
 
-**File:** `src/components/OrganizerDesktopNavigation.tsx`
+### 1. Remove the bleed that overlaps the cards
+**File:** `src/pages/EventOrganizer.tsx`, hero section (~lines 952–968)
 
-Replicate the structural pattern from `src/components/DesktopNavigation.tsx`:
+- Replace `<section className="relative -mb-32">` with `<section className="relative overflow-hidden">`. This restores the hero as a self-contained block — nothing extends past its bottom edge, so the stats row, search bar, and event cards underneath are no longer covered.
+- Remove the `-bottom-32 h-64` overlay div that was leaking onto the next section.
+- Keep a single fade overlay that ends cleanly at the section's bottom: `bg-gradient-to-b from-background/55 via-background/85 to-background`. This still produces a soft fade into the page background but inside the hero box only.
 
-1. **Nav container**
-   - Switch from `backdrop-blur` translucent surface to a solid bar matching the dashboard's hard-edged style.
-   - Background: `hsl(var(--org-surface))` (solid, no blur).
-   - Bottom border: 2px solid `hsl(var(--org-accent))` (replaces the racer's `border-f1-red`).
+### 2. Re-tint the hero to the organizer theme
+Two-layer approach so we don't need a new image asset:
 
-2. **Brand badge (left)**
-   - Replace the rounded white square + Briefcase with the same skewed-rectangle treatment used on the dashboard:
-     - `w-10 h-10` block, `transform -skew-x-12`, filled with the organizer accent gradient (`var(--gradient-org)`).
-     - Inner `Briefcase` icon counter-skewed (`transform skew-x-12`), white.
-   - Title: keep "Track Side Ops" with the small "Organizer · Control Tower" eyebrow above it (preserve organizer identity).
+- **Color overlay** — add a tinted gradient on top of the image using the organizer accent:
+  - `linear-gradient(135deg, hsl(var(--org-accent) / 0.35), hsl(var(--org-accent-dark) / 0.55))`
+  - Sits between the background image and the dark fade overlay.
+- **Reduced saturation on image** — apply `filter: saturate(0.6) contrast(1.05)` to the image div so the underlying photo reads as a moody backdrop rather than competing red/orange tones.
+- The dark vertical fade (`from-background/55 … to-background`) stays on top so the title stays readable and the bottom blends into the page.
 
-3. **Nav tabs (Dashboard / Stamps / Settings)**
-   - Replace the current flat underlined tabs with skewed F1-style tabs:
-     - `transform -skew-x-6`, `border-2 border-transparent`, `uppercase tracking-wide font-bold text-sm`, `px-6 py-3`.
-     - Inactive: `text-white/70`, hover `text-white` + border `hsl(var(--org-accent-soft))`.
-     - Active: white text on `hsl(var(--org-accent))` background with white border and an organizer-tinted shadow.
-   - Icons and labels counter-skewed (`transform skew-x-6`) so they read straight, mirroring the racer nav.
+Layer order (back → front):
+1. Parallax image div (desaturated)
+2. Org accent gradient tint
+3. Dark vertical fade
+4. Hero content (eyebrow, title, subtitle, CTA, stats)
 
-4. **Switch to Racer + Logout buttons**
-   - Same skewed-tab styling as nav items.
-   - "Switch to Racer": hover uses a subtle accent-tinted background.
-   - "Logout": hover uses `bg-destructive` (matches racer nav).
-
-5. **No changes to:**
-   - `OrganizerMobileNavigation` (mobile bottom bar stays as-is).
-   - `OrganizerShell` accent strip.
-   - Routing, auth gating, or `exitOrganizerMode` behavior.
-   - Color tokens — we reuse existing `--org-*` CSS variables, no palette additions.
+### 3. Leave alone
+- The parallax `useScroll`/`useTransform` motion stays.
+- The hero content (Control Tower eyebrow, title, stats grid, Create Event CTA) is unchanged.
+- No new assets, no new CSS tokens — uses existing `--org-accent` / `--org-accent-dark` variables.
 
 ## Result
-
-The organizer top bar will share the racer dashboard's recognizable skewed-tab F1 chrome, but rendered in the organizer amber/blue accent instead of F1 red — visually unifying the two modes while preserving brand separation.
+- Cards below the hero are fully clickable and visible again (no negative-margin bleed).
+- The hero photo takes on the amber/blue organizer mood instead of looking like the racer dashboard.
+- The fade still ends gracefully at the section boundary.

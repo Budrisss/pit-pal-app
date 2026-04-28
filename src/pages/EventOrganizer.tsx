@@ -950,7 +950,7 @@ const EventOrganizer = () => {
       </motion.nav>
 
       {/* Hero */}
-      <section className="relative -mb-32">
+      <section className="relative overflow-hidden">
         <motion.div
           initial={{ scale: 1.1, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -960,11 +960,22 @@ const EventOrganizer = () => {
         >
           <div
             className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-            style={{ backgroundImage: `url(${organizerHero})` }}
+            style={{
+              backgroundImage: `url(${organizerHero})`,
+              filter: "saturate(0.6) contrast(1.05)",
+            }}
           />
         </motion.div>
-        <div className="absolute inset-0 bg-gradient-to-b from-background/55 via-background/80 to-background" />
-        <div className="pointer-events-none absolute inset-x-0 -bottom-32 h-64 bg-gradient-to-b from-background/0 via-background to-background" />
+        {/* Organizer accent tint */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(135deg, hsl(var(--org-accent) / 0.35), hsl(var(--org-accent-dark) / 0.55))",
+          }}
+        />
+        {/* Dark vertical fade for legibility + section blend */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-background/55 via-background/85 to-background" />
         <div className="relative z-10 max-w-6xl mx-auto px-5 sm:px-6 py-16 sm:py-20 lg:py-24">
           {/* Mobile logo */}
           <motion.div
