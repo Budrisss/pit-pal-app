@@ -30,7 +30,8 @@ export class SupabaseTransport implements Transport {
       event_id: this.ctx.eventId,
       user_id: this.ctx.userId,
       gap_ahead: payload.t === "gap" ? payload.v : null,
-      message: payload.t === "gap" ? null : payload.v,
+      position: payload.t === "pos" ? payload.v : null,
+      message: payload.t === "msg" ? payload.v : null,
     };
 
     const { data, error } = await supabase
@@ -63,12 +64,18 @@ export class SupabaseTransport implements Transport {
             id: string;
             user_id: string;
             gap_ahead: string | null;
+            position: string | null;
             message: string | null;
             created_at: string;
           };
+          const t: LoRaPayload["t"] = row.position
+            ? "pos"
+            : row.gap_ahead
+            ? "gap"
+            : "msg";
           const lp: LoRaPayload = {
-            t: row.gap_ahead ? "gap" : "msg",
-            v: (row.gap_ahead ?? row.message ?? "") as string,
+            t,
+            v: (row.position ?? row.gap_ahead ?? row.message ?? "") as string,
             ts: new Date(row.created_at).getTime(),
             from: row.user_id,
           };
