@@ -1216,37 +1216,65 @@ const RacerLiveView = () => {
           <div className="bg-gradient-to-b from-gray-950 to-black border-t border-white/5 shrink-0">
             {/* Track Notes + Gap Ahead */}
             <div className="grid grid-cols-2 gap-3 p-3">
-              {/* Track Notes */}
-              <div className="rounded-2xl border border-amber-500/20 bg-gradient-to-b from-amber-500/10 to-amber-900/5 p-5 h-[35vh] flex flex-col shadow-lg shadow-amber-900/10 overflow-hidden">
-                <div className="flex items-center justify-between mb-3">
+              {/* Pit Board — large display of latest crew message */}
+              <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-b from-amber-500/15 to-amber-950/20 p-4 h-[35vh] flex flex-col shadow-lg shadow-amber-900/20 overflow-hidden">
+                <div className="flex items-center justify-between mb-2 shrink-0">
                   <div className="flex items-center gap-1.5">
-                    <StickyNote size={18} className="text-amber-400" />
-                    <p className="text-xs uppercase tracking-[0.15em] text-amber-300/60 font-bold">Track Notes</p>
+                    <ClipboardList size={18} className="text-amber-400" />
+                    <p className="text-xs uppercase tracking-[0.15em] text-amber-300/70 font-bold">Pit Board</p>
                   </div>
-                  {!isEditingNotes && (
-                    <button className="text-white/20 hover:text-amber-400 transition-colors" onClick={() => { setNotesDraft(trackNotes); setIsEditingNotes(true); }}>
-                      <Pencil size={14} />
+                  {pitBoardCurrent && (
+                    <button
+                      className="text-white/25 hover:text-amber-400 transition-colors"
+                      onClick={() => setPitBoardDismissedAt(Date.now())}
+                      title="Clear board"
+                    >
+                      <X size={14} />
                     </button>
                   )}
                 </div>
-                {isEditingNotes ? (
-                  <div className="space-y-2 flex-1 flex flex-col overflow-hidden">
-                    <textarea
-                      autoFocus
-                      value={notesDraft}
-                      onChange={(e) => setNotesDraft(e.target.value)}
-                      className="w-full flex-1 bg-black/50 border border-amber-500/20 rounded-xl p-3 text-base text-white resize-none focus:outline-none focus:ring-1 focus:ring-amber-500/40 placeholder:text-white/20"
-                      rows={5}
-                      placeholder="Braking points, turn notes..."
-                    />
-                    <div className="flex gap-2 justify-end">
-                      <button className="text-white/30 hover:text-white/60 transition-colors" onClick={() => setIsEditingNotes(false)}><X size={16} /></button>
-                      <button className="text-green-400 hover:text-green-300 transition-colors" onClick={saveTrackNotes}><Check size={16} /></button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-base sm:text-lg text-white/70 whitespace-pre-wrap leading-relaxed flex-1 overflow-y-auto">
-                    {trackNotes || <span className="text-white/20 italic">Tap edit to add...</span>}
+
+                <div className="flex-1 flex flex-col items-center justify-center min-h-0 overflow-hidden">
+                  <AnimatePresence mode="wait">
+                    {pitBoardCurrent ? (
+                      <motion.div
+                        key={pitBoardCurrent.id}
+                        initial={{ scale: 0.85, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.95, opacity: 0 }}
+                        transition={{ type: "spring", stiffness: 280, damping: 22 }}
+                        className="flex flex-col items-center justify-center w-full"
+                      >
+                        <p
+                          className="text-5xl sm:text-7xl font-black text-amber-100 tabular-nums tracking-tight text-center leading-none break-words px-1"
+                          style={{ textShadow: "0 0 28px hsl(45 100% 55% / 0.45)" }}
+                        >
+                          {pitBoardCurrent.primary}
+                        </p>
+                        {pitBoardCurrent.secondary && (
+                          <p className="text-lg sm:text-2xl font-bold text-amber-300/80 tabular-nums tracking-wide mt-2 text-center">
+                            {pitBoardCurrent.secondary}
+                          </p>
+                        )}
+                      </motion.div>
+                    ) : (
+                      <motion.p
+                        key="empty"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="text-sm text-amber-300/30 italic text-center"
+                      >
+                        Waiting for pit…
+                      </motion.p>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {pitBoardHistory.length > 0 && (
+                  <div className="border-t border-amber-500/15 pt-2 mt-2 shrink-0">
+                    <p className="text-[10px] uppercase tracking-wider text-amber-300/40 truncate text-center font-semibold">
+                      {pitBoardHistory.map((e) => e.primary).join("  ·  ")}
+                    </p>
                   </div>
                 )}
               </div>
