@@ -466,18 +466,22 @@ const RacerLiveView = () => {
     return /^\d+$/.test(t) ? `P${t}` : t.toUpperCase();
   };
 
+  // Auto-expire pit board entries after 30 seconds (like a real pit board on a straight)
+  const PIT_BOARD_TTL_MS = 30_000;
+  const isFresh = (ts: string) => (currentTime.getTime() - new Date(ts).getTime()) < PIT_BOARD_TTL_MS;
+
   const pitBoardPos = useMemo(() => {
-    const found = [...visibleCrew].reverse().find((m) => m.position && m.position.trim());
+    const found = [...visibleCrew].reverse().find((m) => m.position && m.position.trim() && isFresh(m.created_at));
     return found ? { id: found.id, value: fmtPos(found.position!) } : null;
-  }, [visibleCrew]);
+  }, [visibleCrew, currentTime]);
   const pitBoardMsg = useMemo(() => {
-    const found = [...visibleCrew].reverse().find((m) => m.message && m.message.trim());
+    const found = [...visibleCrew].reverse().find((m) => m.message && m.message.trim() && isFresh(m.created_at));
     return found ? { id: found.id, value: found.message!.trim().toUpperCase() } : null;
-  }, [visibleCrew]);
+  }, [visibleCrew, currentTime]);
   const pitBoardGap = useMemo(() => {
-    const found = [...visibleCrew].reverse().find((m) => m.gap_ahead && m.gap_ahead.trim());
+    const found = [...visibleCrew].reverse().find((m) => m.gap_ahead && m.gap_ahead.trim() && isFresh(m.created_at));
     return found ? { id: found.id, value: fmtGap(found.gap_ahead!) } : null;
-  }, [visibleCrew]);
+  }, [visibleCrew, currentTime]);
   const hasPitBoardContent = !!(pitBoardPos || pitBoardMsg || pitBoardGap);
 
   const formatCrewTime = (ts: string) => {
