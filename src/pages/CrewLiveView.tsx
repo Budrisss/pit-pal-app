@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Send, Clock, TrendingUp, MessageSquare, Flag, Radio } from "lucide-react";
+import { ArrowLeft, Send, Clock, TrendingUp, MessageSquare, Flag, Radio, ClipboardList, X } from "lucide-react";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { addMinutes, differenceInMilliseconds, format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,6 +32,81 @@ interface CrewMessage {
 
 const JUST_ENDED_WINDOW_MS = 60_000;
 
+/** Single row of the Pit Board editor. Defined outside the main render so the
+ *  input doesn't lose focus on every keystroke. */
+interface PitRowProps {
+  label: string;
+  current: string | null;
+  draft: string;
+  setDraft: (v: string) => void;
+  placeholder: string;
+  isSending: boolean;
+  disabledSend: boolean;
+  onSend: () => void;
+  onClear: () => void;
+  big?: boolean;
+}
+const PitRow = ({
+  label,
+  current,
+  draft,
+  setDraft,
+  placeholder,
+  isSending,
+  disabledSend,
+  onSend,
+  onClear,
+  big,
+}: PitRowProps) => (
+  <div className="px-4 py-3 flex flex-col gap-2">
+    <div className="flex items-center justify-between">
+      <span className="text-[10px] uppercase tracking-[0.25em] text-amber-300/40 font-bold">{label}</span>
+      <div className="flex items-center gap-2 min-w-0">
+        <span
+          className={`font-black text-amber-100 tabular-nums tracking-tight leading-none truncate text-right ${
+            big ? "text-4xl sm:text-5xl" : "text-3xl sm:text-4xl"
+          }`}
+          style={{ textShadow: current ? "0 0 18px hsl(45 100% 55% / 0.45)" : "none" }}
+        >
+          {current || "—"}
+        </span>
+        {current && (
+          <button
+            onClick={onClear}
+            disabled={disabledSend}
+            className="text-amber-300/40 hover:text-amber-300 transition-colors disabled:opacity-30"
+            title="Clear"
+          >
+            <X size={14} />
+          </button>
+        )}
+      </div>
+    </div>
+    <div className="flex gap-2">
+      <Input
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        placeholder={placeholder}
+        className="h-9 text-sm bg-black/40 border-amber-500/20 text-amber-100 placeholder:text-amber-300/30 focus-visible:ring-amber-500/40"
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            onSend();
+          }
+        }}
+      />
+      <Button
+        variant="orange"
+        className="h-9 px-3 shrink-0"
+        onClick={onSend}
+        disabled={disabledSend || !draft.trim()}
+      >
+        {isSending ? "…" : <Send size={14} />}
+      </Button>
+    </div>
+  </div>
+);
+
 const CrewLiveView = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
@@ -42,8 +117,10 @@ const CrewLiveView = () => {
   const [messages, setMessages] = useState<CrewMessage[]>([]);
   const [sessions, setSessions] = useState<{ name: string; start_time: string | null; duration: number | null }[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [gapAhead, setGapAhead] = useState("");
-  const [freeText, setFreeText] = useState("");
+  const [posDraft, setPosDraft] = useState("");
+  const [msgDraft, setMsgDraft] = useState("");
+  const [gapDraft, setGapDraft] = useState("");
+  const [sendingField, setSendingField] = useState<"pos" | "msg" | "gap" | null>(null);
   const [sending, setSending] = useState(false);
   const [crewEnabled, setCrewEnabled] = useState<boolean | null>(null); // null = loading
   const [eventOwnerUserId, setEventOwnerUserId] = useState<string | null>(null);
@@ -262,33 +339,51 @@ const CrewLiveView = () => {
     }
   }, [eventId, user, simEnabled]);
 
-  const sendStructured = async () => {
+  const sendPit = async (field: "pos" | "msg" | "gap", value: string) => {
     if (!eventId || !user) return;
-    if (!gapAhead) {
-      toast({ title: "Enter gap ahead", variant: "destructive" });
-      return;
-    }
+    const v = value.trim();
+    if (!v) return;
+    setSendingField(field);
     setSending(true);
     try {
-      await transportRef.current!.send({ t: "gap", v: gapAhead, ts: Date.now(), from: user.id });
-      setGapAhead("");
+      await transportRef.current!.send({ t: field, v, ts: Date.now(), from: user.id });
+      if (field === "pos") setPosDraft("");
+      else if (field === "msg") setMsgDraft("");
+      else setGapDraft("");
     } catch (error) {
       toast({ title: "Failed to send", description: (error as Error).message, variant: "destructive" });
     }
     setSending(false);
+    setSendingField(null);
   };
 
-  const sendFreeText = async () => {
-    if (!eventId || !user || !freeText.trim()) return;
-    setSending(true);
-    try {
-      await transportRef.current!.send({ t: "msg", v: freeText.trim(), ts: Date.now(), from: user.id });
-      setFreeText("");
-    } catch (error) {
-      toast({ title: "Failed to send", description: (error as Error).message, variant: "destructive" });
-    }
-    setSending(false);
+  // Current values displayed on the racer's pit board (latest non-empty per field)
+  const fmtGap = (g: string) => {
+    const t = g.trim();
+    if (!t) return "";
+    if (/^[+-]/.test(t)) return t;
+    if (/^\d/.test(t)) return `+${t}`;
+    return t.toUpperCase();
   };
+  const fmtPos = (p: string) => {
+    const t = p.trim();
+    if (!t) return "";
+    return /^\d+$/.test(t) ? `P${t}` : t.toUpperCase();
+  };
+  const currentPos = useMemo(() => {
+    const f = [...messages].find((m) => m.position && m.position.trim());
+    return f ? fmtPos(f.position!) : null;
+  }, [messages]);
+  const currentMsg = useMemo(() => {
+    const f = [...messages].find((m) => m.message && m.message.trim());
+    return f ? f.message!.trim().toUpperCase() : null;
+  }, [messages]);
+  const currentGap = useMemo(() => {
+    const f = [...messages].find((m) => m.gap_ahead && m.gap_ahead.trim());
+    return f ? fmtGap(f.gap_ahead!) : null;
+  }, [messages]);
+
+  const sendClear = (field: "pos" | "msg" | "gap") => sendPit(field, "—");
 
   const formatTime = (ts: string) => {
     try { return format(new Date(ts), "h:mm:ss a"); } catch { return ts; }
@@ -395,66 +490,59 @@ const CrewLiveView = () => {
           </div>
         )}
 
-        {/* Structured Quick Entry */}
-        <Card className="bg-card/60 backdrop-blur-sm border-border/50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <TrendingUp size={16} className="text-primary" />
-              Quick Update
-              {activeSessionInfo?.name && (
-                <span className="text-xs text-muted-foreground font-normal">— {activeSessionInfo.name}</span>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <Label className="text-xs">Gap Ahead</Label>
-                <Input
-                  placeholder="+1.2s"
-                  value={gapAhead}
-                  onChange={(e) => setGapAhead(e.target.value)}
-                  className="h-9 text-sm"
-                />
-              </div>
-              <Button
-                variant="pulse"
-                className="self-end h-9 px-4"
-                onClick={sendStructured}
-                disabled={sending || !gapAhead}
-              >
-                <Send size={14} /> Send
-              </Button>
+        {/* Pit Board Editor — mirrors racer's display */}
+        <div className="rounded-2xl border-2 border-amber-500/40 bg-gradient-to-b from-amber-950/40 via-black to-amber-950/40 shadow-[0_0_40px_-10px_hsl(45_100%_55%_/_0.35)] overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-2 border-b border-amber-500/20 bg-black/40">
+            <div className="flex items-center gap-1.5">
+              <ClipboardList size={16} className="text-amber-400" />
+              <p className="text-[11px] uppercase tracking-[0.2em] text-amber-300/80 font-bold">Pit Board</p>
             </div>
-          </CardContent>
-        </Card>
+            {activeSessionInfo?.name && (
+              <span className="text-[10px] text-amber-300/50 truncate max-w-[60%]">{activeSessionInfo.name}</span>
+            )}
+          </div>
 
-        {/* Free Text */}
-        <Card className="bg-card/60 backdrop-blur-sm border-border/50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <MessageSquare size={16} className="text-primary" />
-              Message
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Textarea
-              placeholder="Type a message to the driver..."
-              value={freeText}
-              onChange={(e) => setFreeText(e.target.value)}
-              className="min-h-[60px]"
-              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendFreeText(); } }}
+          <div className="divide-y-2 divide-amber-500/15">
+            {/* POSITION */}
+            <PitRow
+              label="Pos"
+              current={currentPos}
+              draft={posDraft}
+              setDraft={setPosDraft}
+              placeholder="2"
+              isSending={sendingField === "pos"}
+              disabledSend={sending}
+              onSend={() => sendPit("pos", posDraft)}
+              onClear={() => sendClear("pos")}
+              big
             />
-            <Button
-              variant="default"
-              className="w-full"
-              onClick={sendFreeText}
-              disabled={sending || !freeText.trim()}
-            >
-              <Send size={14} /> Send Message
-            </Button>
-          </CardContent>
-        </Card>
+            {/* MESSAGE */}
+            <PitRow
+              label="Msg"
+              current={currentMsg}
+              draft={msgDraft}
+              setDraft={setMsgDraft}
+              placeholder="PIT IN"
+              isSending={sendingField === "msg"}
+              disabledSend={sending}
+              onSend={() => sendPit("msg", msgDraft)}
+              onClear={() => sendClear("msg")}
+            />
+            {/* GAP */}
+            <PitRow
+              label="Gap"
+              current={currentGap}
+              draft={gapDraft}
+              setDraft={setGapDraft}
+              placeholder="+1.2"
+              isSending={sendingField === "gap"}
+              disabledSend={sending}
+              onSend={() => sendPit("gap", gapDraft)}
+              onClear={() => sendClear("gap")}
+              big
+            />
+          </div>
+        </div>
 
         {/* Message History */}
         <Card className="bg-card/60 backdrop-blur-sm border-border/50">
