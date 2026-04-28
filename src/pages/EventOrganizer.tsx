@@ -21,6 +21,7 @@ import { motion } from "framer-motion";
 import Navigation from "@/components/Navigation";
 import tracksideLogo from "@/assets/trackside-logo-v2.png";
 import AddressAutocomplete, { PlaceDetails } from "@/components/AddressAutocomplete";
+import organizerHero from "@/assets/pit-lane-hero.jpg";
 
 interface PresetTrack {
   id: string;
@@ -943,29 +944,72 @@ const EventOrganizer = () => {
         </div>
       </motion.nav>
 
-      <div className="pt-0 lg:pt-20 max-w-6xl mx-auto px-4 sm:px-6 py-8">
-        {/* Header */}
+      {/* Hero */}
+      <section className="relative overflow-hidden">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between mb-8"
-        >
-          <div>
-            <div
-              className="text-[10px] uppercase tracking-[0.3em] font-bold mb-1"
-              style={{ color: "hsl(var(--org-accent-soft))" }}
+          initial={{ scale: 1.1 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 1.2, ease: "easeOut" }}
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: `url(${organizerHero})` }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/85 via-background/75 to-background" />
+        <div className="relative z-10 max-w-6xl mx-auto px-5 sm:px-6 py-16 sm:py-20 lg:py-24">
+          {/* Mobile logo */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="flex justify-center mb-6 lg:hidden"
+          >
+            <img src={tracksideLogo} alt="Track Side Ops" className="h-32 sm:h-36 w-auto invert" />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="text-[10px] uppercase tracking-[0.3em] font-bold mb-2 text-center lg:text-left"
+            style={{ color: "hsl(var(--org-accent-soft))" }}
+          >
+            Control Tower
+          </motion.div>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.3 }}
+            className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tighter leading-none mb-3 text-center lg:text-left uppercase"
+          >
+            <span className="text-foreground">Event</span>{" "}
+            <span
+              style={{
+                color: "hsl(var(--org-accent))",
+                filter: "drop-shadow(0 0 25px hsl(var(--org-accent) / 0.5))",
+              }}
             >
-              Control Tower
-            </div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
-              Event{" "}
-              <span style={{ color: "hsl(var(--org-accent))" }}>Organizer</span>
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              {organizerProfile?.org_name} — Manage your events and registrations
-            </p>
-          </div>
-          <Dialog open={showCreateDialog} onOpenChange={(open) => {
+              Organizer
+            </span>
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.55 }}
+            className="text-base sm:text-lg text-muted-foreground max-w-xl mb-8 text-center lg:text-left mx-auto lg:mx-0"
+          >
+            {organizerProfile?.org_name
+              ? `${organizerProfile.org_name} — manage your events and registrations.`
+              : "Manage your events and registrations."}
+          </motion.p>
+
+          {/* Create Event CTA */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.7 }}
+            className="flex justify-center lg:justify-start mb-8"
+          >
+            <Dialog open={showCreateDialog} onOpenChange={(open) => {
               if (open) {
                 // Pre-populate with saved defaults
                 if (defaultRegTypeNames.length > 0) {
@@ -1013,51 +1057,46 @@ const EventOrganizer = () => {
               </form>
             </DialogContent>
           </Dialog>
-        </motion.div>
+          </motion.div>
 
-        {/* Stats */}
-        <motion.div
+          {/* Stats row */}
+          <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8"
-        >
-          <Card className="bg-card/80" style={{ borderColor: "hsl(var(--org-border))" }}>
-            <CardContent className="p-5 flex items-center gap-4">
-              <div className="p-3 rounded-lg" style={{ backgroundColor: "hsl(var(--org-accent) / 0.12)" }}>
-                <Calendar size={24} style={{ color: "hsl(var(--org-accent))" }} />
+            transition={{ delay: 0.8 }}
+            className="grid grid-cols-3 gap-3 sm:gap-4"
+          >
+            {[
+              { icon: Calendar, value: events.length, label: "Total Events" },
+              { icon: Users, value: totalRegistrations, label: "Registrations" },
+              { icon: Tag, value: events.reduce((sum, e) => sum + (e.registration_types?.length || 0), 0), label: "Reg Groups" },
+            ].map((stat) => (
+              <div
+                key={stat.label}
+                className="bg-card/60 backdrop-blur-md border rounded-xl p-4 text-center transition-all duration-300"
+                style={{ borderColor: "hsl(var(--org-border))" }}
+              >
+                <stat.icon
+                  size={16}
+                  className="mx-auto mb-2"
+                  style={{ color: "hsl(var(--org-accent) / 0.7)" }}
+                />
+                <div
+                  className="text-2xl sm:text-3xl font-bold mb-0.5"
+                  style={{ color: "hsl(var(--org-accent))" }}
+                >
+                  {stat.value}
+                </div>
+                <div className="text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-widest">
+                  {stat.label}
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-bold">{events.length}</p>
-                <p className="text-sm text-muted-foreground">Total Events</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-card/80" style={{ borderColor: "hsl(var(--org-border))" }}>
-            <CardContent className="p-5 flex items-center gap-4">
-              <div className="p-3 rounded-lg" style={{ backgroundColor: "hsl(var(--org-accent) / 0.12)" }}>
-                <Users size={24} style={{ color: "hsl(var(--org-accent))" }} />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{totalRegistrations}</p>
-                <p className="text-sm text-muted-foreground">Total Registrations</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-card/80" style={{ borderColor: "hsl(var(--org-border))" }}>
-            <CardContent className="p-5 flex items-center gap-4">
-              <div className="p-3 rounded-lg" style={{ backgroundColor: "hsl(var(--org-accent) / 0.12)" }}>
-                <Tag size={24} style={{ color: "hsl(var(--org-accent))" }} />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">
-                  {events.reduce((sum, e) => sum + (e.registration_types?.length || 0), 0)}
-                </p>
-                <p className="text-sm text-muted-foreground">Registration Groups</p>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
 
         {/* Search & Filter Bar */}
         <motion.div
