@@ -13,8 +13,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
-import MyRegistrations from "@/components/MyRegistrations";
-
 import dashboardHero from "@/assets/dashboard-hero.jpg";
 import tracksideLogo from "@/assets/trackside-logo-v2.png";
 
