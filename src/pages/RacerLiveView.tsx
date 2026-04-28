@@ -447,49 +447,38 @@ const RacerLiveView = () => {
     return [...crewMessages].reverse().find(m => m.message)?.message || null;
   }, [crewMessages]);
 
-  // --- Pit Board: derive a single dominant message from the most recent crew packets ---
-  type PitBoardEntry = { id: string; primary: string; secondary: string | null; ts: string };
-  const pitBoardEntries = useMemo<PitBoardEntry[]>(() => {
-    const fmtGap = (g: string) => {
-      const t = g.trim();
-      if (!t) return "";
-      // Add a leading sign if it's purely numeric
-      if (/^[+-]/.test(t)) return `GAP ${t}`;
-      if (/^\d/.test(t)) return `GAP +${t}`;
-      return `GAP ${t.toUpperCase()}`;
-    };
-    const fmtPos = (p: string) => {
-      const t = p.trim();
-      if (!t) return "";
-      return /^\d+$/.test(t) ? `P${t}` : t.toUpperCase();
-    };
-    return crewMessages
-      .map((m) => {
-        let primary = "";
-        let secondary: string | null = null;
-        if (m.message && m.message.trim()) {
-          primary = m.message.trim().toUpperCase();
-          if (m.position) secondary = fmtPos(m.position);
-          else if (m.gap_ahead) secondary = fmtGap(m.gap_ahead);
-        } else if (m.position && m.position.trim()) {
-          primary = fmtPos(m.position);
-          if (m.gap_ahead) secondary = fmtGap(m.gap_ahead);
-        } else if (m.gap_ahead && m.gap_ahead.trim()) {
-          primary = fmtGap(m.gap_ahead);
-        } else if (m.time_remaining && m.time_remaining.trim()) {
-          primary = m.time_remaining.trim().toUpperCase();
-        }
-        return primary ? { id: m.id, primary, secondary, ts: m.created_at } : null;
-      })
-      .filter((x): x is PitBoardEntry => x !== null);
-  }, [crewMessages]);
+  // --- Pit Board: latest values for each of three rows (Position, Message, Gap) ---
+  const visibleCrew = useMemo(
+    () => crewMessages.filter((m) => new Date(m.created_at).getTime() > pitBoardDismissedAt),
+    [crewMessages, pitBoardDismissedAt]
+  );
 
-  const visiblePitBoard = useMemo(() => {
-    return pitBoardEntries.filter((e) => new Date(e.ts).getTime() > pitBoardDismissedAt);
-  }, [pitBoardEntries, pitBoardDismissedAt]);
+  const fmtGap = (g: string) => {
+    const t = g.trim();
+    if (!t) return "";
+    if (/^[+-]/.test(t)) return t;
+    if (/^\d/.test(t)) return `+${t}`;
+    return t.toUpperCase();
+  };
+  const fmtPos = (p: string) => {
+    const t = p.trim();
+    if (!t) return "";
+    return /^\d+$/.test(t) ? `P${t}` : t.toUpperCase();
+  };
 
-  const pitBoardCurrent = visiblePitBoard.length > 0 ? visiblePitBoard[visiblePitBoard.length - 1] : null;
-  const pitBoardHistory = visiblePitBoard.slice(-4, -1).reverse();
+  const pitBoardPos = useMemo(() => {
+    const found = [...visibleCrew].reverse().find((m) => m.position && m.position.trim());
+    return found ? { id: found.id, value: fmtPos(found.position!) } : null;
+  }, [visibleCrew]);
+  const pitBoardMsg = useMemo(() => {
+    const found = [...visibleCrew].reverse().find((m) => m.message && m.message.trim());
+    return found ? { id: found.id, value: found.message!.trim().toUpperCase() } : null;
+  }, [visibleCrew]);
+  const pitBoardGap = useMemo(() => {
+    const found = [...visibleCrew].reverse().find((m) => m.gap_ahead && m.gap_ahead.trim());
+    return found ? { id: found.id, value: fmtGap(found.gap_ahead!) } : null;
+  }, [visibleCrew]);
+  const hasPitBoardContent = !!(pitBoardPos || pitBoardMsg || pitBoardGap);
 
   const formatCrewTime = (ts: string) => {
     try { return format(new Date(ts), "h:mm:ss a"); } catch { return ts; }
