@@ -655,7 +655,12 @@ const LocalEvents = () => {
       ev.state?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesState = stateFilter === 'all' || ev.state === stateFilter;
     const matchesTrack = trackFilter === 'all' || ev.track_name === trackFilter;
-    return matchesSearch && matchesState && matchesTrack;
+    // Hide past events (parse as local date to avoid TZ shift)
+    const eventDate = ev.date ? new Date(`${ev.date}T00:00:00`) : null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const notPast = !eventDate || eventDate.getTime() >= today.getTime();
+    return matchesSearch && matchesState && matchesTrack && notPast;
   });
 
   const openEditDialog = async (event: PublicEvent) => {
@@ -967,7 +972,11 @@ const LocalEvents = () => {
                       <h3 className="font-bold text-base leading-tight cursor-pointer hover:text-primary transition-colors" onClick={() => navigate(`/public-event/${event.id}`)}>{event.name}</h3>
                       <div className="flex items-center gap-1 shrink-0 ml-2">
                         <Badge variant="secondary" className="text-xs">
-                          {event.status}
+                          {(() => {
+                            const d = event.date ? new Date(`${event.date}T00:00:00`) : null;
+                            const t = new Date(); t.setHours(0,0,0,0);
+                            return d && d.getTime() < t.getTime() ? 'completed' : event.status;
+                          })()}
                         </Badge>
                         {isOrganizerEvent(event) && (
                           <DropdownMenu>
