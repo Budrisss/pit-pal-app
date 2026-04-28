@@ -21,6 +21,7 @@ import { motion } from "framer-motion";
 import Navigation from "@/components/Navigation";
 import tracksideLogo from "@/assets/trackside-logo-v2.png";
 import AddressAutocomplete, { PlaceDetails } from "@/components/AddressAutocomplete";
+import organizerHero from "@/assets/pit-lane-hero.jpg";
 
 interface PresetTrack {
   id: string;
