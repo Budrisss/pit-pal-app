@@ -191,6 +191,7 @@ const MyRegistrations = () => {
                       registrationId={reg.id}
                       eventId={reg.event_id}
                       carNumber={reg.car_number}
+                      driverName={reg.user_name}
                     />
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
