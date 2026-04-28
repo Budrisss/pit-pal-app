@@ -32,6 +32,81 @@ interface CrewMessage {
 
 const JUST_ENDED_WINDOW_MS = 60_000;
 
+/** Single row of the Pit Board editor. Defined outside the main render so the
+ *  input doesn't lose focus on every keystroke. */
+interface PitRowProps {
+  label: string;
+  current: string | null;
+  draft: string;
+  setDraft: (v: string) => void;
+  placeholder: string;
+  isSending: boolean;
+  disabledSend: boolean;
+  onSend: () => void;
+  onClear: () => void;
+  big?: boolean;
+}
+const PitRow = ({
+  label,
+  current,
+  draft,
+  setDraft,
+  placeholder,
+  isSending,
+  disabledSend,
+  onSend,
+  onClear,
+  big,
+}: PitRowProps) => (
+  <div className="px-4 py-3 flex flex-col gap-2">
+    <div className="flex items-center justify-between">
+      <span className="text-[10px] uppercase tracking-[0.25em] text-amber-300/40 font-bold">{label}</span>
+      <div className="flex items-center gap-2 min-w-0">
+        <span
+          className={`font-black text-amber-100 tabular-nums tracking-tight leading-none truncate text-right ${
+            big ? "text-4xl sm:text-5xl" : "text-3xl sm:text-4xl"
+          }`}
+          style={{ textShadow: current ? "0 0 18px hsl(45 100% 55% / 0.45)" : "none" }}
+        >
+          {current || "—"}
+        </span>
+        {current && (
+          <button
+            onClick={onClear}
+            disabled={disabledSend}
+            className="text-amber-300/40 hover:text-amber-300 transition-colors disabled:opacity-30"
+            title="Clear"
+          >
+            <X size={14} />
+          </button>
+        )}
+      </div>
+    </div>
+    <div className="flex gap-2">
+      <Input
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        placeholder={placeholder}
+        className="h-9 text-sm bg-black/40 border-amber-500/20 text-amber-100 placeholder:text-amber-300/30 focus-visible:ring-amber-500/40"
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            onSend();
+          }
+        }}
+      />
+      <Button
+        variant="orange"
+        className="h-9 px-3 shrink-0"
+        onClick={onSend}
+        disabled={disabledSend || !draft.trim()}
+      >
+        {isSending ? "…" : <Send size={14} />}
+      </Button>
+    </div>
+  </div>
+);
+
 const CrewLiveView = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
