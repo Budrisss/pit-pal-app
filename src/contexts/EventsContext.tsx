@@ -15,6 +15,8 @@ export interface Event {
   address: string;
   description?: string;
   publicEventId?: string | null;
+  registrationId?: string | null;
+  carNumber?: number | null;
   weather?: { temperature: string; condition: string; windSpeed: string };
   schedule?: { time: string; activity: string }[];
   requirements?: string[];
@@ -128,6 +130,26 @@ export const EventsProvider = ({ children }: { children: ReactNode }) => {
         };
         return mapDbRowToEvent(flat);
       });
+
+      // Attach registration info (id + car #) for events linked to a public event
+      if (publicEventIds.length > 0) {
+        const { data: regs } = await (supabase as any)
+          .from("event_registrations")
+          .select("id, event_id, car_number")
+          .eq("user_id", user.id)
+          .in("event_id", publicEventIds);
+        if (regs && regs.length > 0) {
+          const regMap: Record<string, { id: string; car_number: number | null }> =
+            Object.fromEntries((regs as any[]).map((r: any) => [r.event_id, { id: r.id, car_number: r.car_number }]));
+          for (const ev of mapped) {
+            if (ev.publicEventId && regMap[ev.publicEventId]) {
+              ev.registrationId = regMap[ev.publicEventId].id;
+              ev.carNumber = regMap[ev.publicEventId].car_number;
+            }
+          }
+        }
+      }
+
       setEvents(mapped);
     }
     setLoading(false);

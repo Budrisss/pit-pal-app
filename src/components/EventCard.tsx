@@ -9,6 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from "@/components/ui/badge";
 import { useEvents } from "@/contexts/EventsContext";
 import { useChecklists } from "@/contexts/ChecklistsContext";
+import RegistrationRadioPairing from "@/components/RegistrationRadioPairing";
 
 interface EventCardProps {
   id: string;
@@ -22,10 +23,13 @@ interface EventCardProps {
   address?: string;
   isRegistered?: boolean;
   publicEventId?: string | null;
+  registrationId?: string | null;
+  carNumber?: number | null;
+  driverName?: string;
   onEdit?: () => void;
 }
 
-const EventCard = ({ id, name, track, date, time, countdown, status, car, address, isRegistered, publicEventId, onEdit }: EventCardProps) => {
+const EventCard = ({ id, name, track, date, time, countdown, status, car, address, isRegistered, publicEventId, registrationId, carNumber, driverName, onEdit }: EventCardProps) => {
   const navigate = useNavigate();
   const { deleteEvent } = useEvents();
   const { getEventProgress } = useChecklists();
@@ -165,6 +169,16 @@ const EventCard = ({ id, name, track, date, time, countdown, status, car, addres
               </Button>
             )}
           </div>
+
+          {/* Pair Radio (only for registered events) */}
+          {publicEventId && registrationId && (
+            <RegistrationRadioPairing
+              registrationId={registrationId}
+              eventId={publicEventId}
+              carNumber={carNumber ?? null}
+              driverName={driverName}
+            />
+          )}
         </CardContent>
       </Card>
 
