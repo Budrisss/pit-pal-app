@@ -349,16 +349,6 @@ const Dashboard = () => {
           </div>
         </motion.div>
 
-        {/* ─── My Registrations ─── */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-40px" }}
-          transition={{ duration: 0.5 }}
-        >
-          <MyRegistrations />
-        </motion.div>
-
         {/* ─── Two column: Garage + Local Events ─── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* Garage */}
