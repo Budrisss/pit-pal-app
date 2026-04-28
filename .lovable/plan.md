@@ -1,39 +1,50 @@
-# Tighten the Event Organizer Hero
+# Seamless Hero → Page Background Blend
 
-Two issues to fix in `src/pages/EventOrganizer.tsx`:
-1. The hero image (`pit-lane-hero.jpg`) is generic racing — give it the organizer (amber/blue accent) feel.
-2. The previous "blend" change added a `-mb-32` negative margin and an overlay extending `-bottom-32`, which now sits on top of the stats and the cards below, blocking interaction.
+Goal: the hero image fades smoothly into the page background that sits behind all the cards, buttons, stats, etc. — no visible seam, no overlay covering interactive content.
 
-## Changes
+## Why the previous attempt failed
 
-### 1. Remove the bleed that overlaps the cards
-**File:** `src/pages/EventOrganizer.tsx`, hero section (~lines 952–968)
+We extended the hero overlay past its own section (`-mb-32` + `-bottom-32` overlay div). That overlay had a higher z-index than the cards beneath it, so it visually blocked them and stole clicks.
 
-- Replace `<section className="relative -mb-32">` with `<section className="relative overflow-hidden">`. This restores the hero as a self-contained block — nothing extends past its bottom edge, so the stats row, search bar, and event cards underneath are no longer covered.
-- Remove the `-bottom-32 h-64` overlay div that was leaking onto the next section.
-- Keep a single fade overlay that ends cleanly at the section's bottom: `bg-gradient-to-b from-background/55 via-background/85 to-background`. This still produces a soft fade into the page background but inside the hero box only.
+## Correct approach: lift the hero image to a fixed background layer
 
-### 2. Re-tint the hero to the organizer theme
-Two-layer approach so we don't need a new image asset:
+Instead of stretching an overlay outward, **detach the hero image from the section box entirely** and render it as a fixed/positioned background layer behind the entire page. The fade-to-black is part of that single layer, so there's no "seam" to blend across — the cards simply float on top of one continuous gradient that resolves into the page background.
 
-- **Color overlay** — add a tinted gradient on top of the image using the organizer accent:
-  - `linear-gradient(135deg, hsl(var(--org-accent) / 0.35), hsl(var(--org-accent-dark) / 0.55))`
-  - Sits between the background image and the dark fade overlay.
-- **Reduced saturation on image** — apply `filter: saturate(0.6) contrast(1.05)` to the image div so the underlying photo reads as a moody backdrop rather than competing red/orange tones.
-- The dark vertical fade (`from-background/55 … to-background`) stays on top so the title stays readable and the bottom blends into the page.
+### Changes — `src/pages/EventOrganizer.tsx`
 
-Layer order (back → front):
-1. Parallax image div (desaturated)
-2. Org accent gradient tint
-3. Dark vertical fade
-4. Hero content (eyebrow, title, subtitle, CTA, stats)
+1. **New top-level background layer** (sibling to the page content, `z-0`, `pointer-events-none`):
+   ```
+   <div className="pointer-events-none fixed inset-x-0 top-0 -z-10 h-[80vh]">
+     <motion.div style={{ y: heroY, scale: heroScale }}
+                 className="absolute inset-0 bg-cover bg-center"
+                 style={{ backgroundImage: url(...), filter: saturate(0.6) contrast(1.05) }} />
+     <div className="absolute inset-0"
+          style={{ background: 'linear-gradient(135deg, hsl(var(--org-accent)/0.35), hsl(var(--org-accent-dark)/0.55))' }} />
+     <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/85 to-background" />
+   </div>
+   ```
+   - `pointer-events-none` → cards underneath stay clickable.
+   - `-z-10` → image always sits behind everything else.
+   - The dark vertical gradient fades to solid `background` by the bottom of the layer, so beyond ~80vh it visually IS the page color. No seam.
 
-### 3. Leave alone
-- The parallax `useScroll`/`useTransform` motion stays.
-- The hero content (Control Tower eyebrow, title, stats grid, Create Event CTA) is unchanged.
-- No new assets, no new CSS tokens — uses existing `--org-accent` / `--org-accent-dark` variables.
+2. **Hero `<section>` becomes transparent:**
+   - Remove the `<motion.div>` background image wrapper, the org-accent tint div, and the dark fade div from inside the section.
+   - Section keeps only the content (Control Tower eyebrow, title, subtitle, Create Event CTA, stats grid).
+   - Section gets `relative z-10` so its content sits over the fixed background layer.
+
+3. **Page wrapper stays as-is:**
+   - The outer `<div className="min-h-screen text-foreground pb-20 …">` keeps the solid background color from the theme. The fixed hero layer sits behind it via `-z-10`, the page content sits at default stacking — they never overlap-compete.
+
+4. **Parallax preserved:** `useScroll` + `useTransform` still drives `y`/`scale` on the image div inside the fixed layer. Because it's `fixed`, the parallax feel actually improves (image stays put while content scrolls over it, then the gradient swallows it as you scroll past).
+
+5. **Mobile:** same layer works on mobile. We'll cap the layer height at `min(80vh, 720px)` so it doesn't dominate small screens.
+
+## What stays untouched
+- All cards, stats, search, event list — no markup or z-index changes there.
+- Organizer nav, theme tokens, `pit-lane-hero.jpg` asset.
+- `useScroll`/`useTransform` parallax values.
 
 ## Result
-- Cards below the hero are fully clickable and visible again (no negative-margin bleed).
-- The hero photo takes on the amber/blue organizer mood instead of looking like the racer dashboard.
-- The fade still ends gracefully at the section boundary.
+- Single continuous gradient from photo → org tint → dark → page background, with no boundary line.
+- Cards/buttons sit on top, fully visible and interactive — the hero layer can never cover them because it's `pointer-events-none` and `-z-10`.
+- Scrolling reveals the parallax photo behind the upper content, and as you scroll down the image dissolves into the page background naturally.
