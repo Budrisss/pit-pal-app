@@ -1203,18 +1203,17 @@ const RacerLiveView = () => {
         {/* Driver Communication Panels */}
         {personalEventId && crewEnabled && (
           <div className="bg-gradient-to-b from-gray-950 to-black border-t border-white/5 shrink-0">
-            {/* Track Notes + Gap Ahead */}
-            <div className="grid grid-cols-2 gap-3 p-3">
-              {/* Pit Board — large display of latest crew message */}
-              <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-b from-amber-500/15 to-amber-950/20 p-4 h-[35vh] flex flex-col shadow-lg shadow-amber-900/20 overflow-hidden">
-                <div className="flex items-center justify-between mb-2 shrink-0">
+            {/* Pit Board — full-width, three vertical sections (Position / Message / Gap) */}
+            <div className="p-3">
+              <div className="rounded-2xl border-2 border-amber-500/40 bg-gradient-to-b from-amber-950/40 via-black to-amber-950/40 shadow-[0_0_40px_-10px_hsl(45_100%_55%_/_0.35)] overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2 border-b border-amber-500/20 bg-black/40">
                   <div className="flex items-center gap-1.5">
-                    <ClipboardList size={18} className="text-amber-400" />
-                    <p className="text-xs uppercase tracking-[0.15em] text-amber-300/70 font-bold">Pit Board</p>
+                    <ClipboardList size={16} className="text-amber-400" />
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-amber-300/80 font-bold">Pit Board</p>
                   </div>
-                  {pitBoardCurrent && (
+                  {hasPitBoardContent && (
                     <button
-                      className="text-white/25 hover:text-amber-400 transition-colors"
+                      className="text-white/30 hover:text-amber-400 transition-colors"
                       onClick={() => setPitBoardDismissedAt(Date.now())}
                       title="Clear board"
                     >
@@ -1223,125 +1222,62 @@ const RacerLiveView = () => {
                   )}
                 </div>
 
-                <div className="flex-1 flex flex-col items-center justify-center min-h-0 overflow-hidden">
-                  <AnimatePresence mode="wait">
-                    {pitBoardCurrent ? (
-                      <motion.div
-                        key={pitBoardCurrent.id}
+                {/* Three stacked rows */}
+                <div className="divide-y-2 divide-amber-500/15">
+                  {/* POSITION */}
+                  <div className="flex items-center justify-between px-5 py-4 min-h-[18vh]">
+                    <span className="text-[10px] uppercase tracking-[0.25em] text-amber-300/40 font-bold">Pos</span>
+                    <AnimatePresence mode="wait">
+                      <motion.span
+                        key={pitBoardPos?.id || "pos-empty"}
                         initial={{ scale: 0.85, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.95, opacity: 0 }}
                         transition={{ type: "spring", stiffness: 280, damping: 22 }}
-                        className="flex flex-col items-center justify-center w-full"
+                        className="text-7xl sm:text-8xl font-black text-amber-100 tabular-nums tracking-tight leading-none"
+                        style={{ textShadow: pitBoardPos ? "0 0 30px hsl(45 100% 55% / 0.5)" : "none" }}
                       >
-                        <p
-                          className="text-5xl sm:text-7xl font-black text-amber-100 tabular-nums tracking-tight text-center leading-none break-words px-1"
-                          style={{ textShadow: "0 0 28px hsl(45 100% 55% / 0.45)" }}
-                        >
-                          {pitBoardCurrent.primary}
-                        </p>
-                        {pitBoardCurrent.secondary && (
-                          <p className="text-lg sm:text-2xl font-bold text-amber-300/80 tabular-nums tracking-wide mt-2 text-center">
-                            {pitBoardCurrent.secondary}
-                          </p>
-                        )}
-                      </motion.div>
-                    ) : (
-                      <motion.p
-                        key="empty"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="text-sm text-amber-300/30 italic text-center"
-                      >
-                        Waiting for pit…
-                      </motion.p>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {pitBoardHistory.length > 0 && (
-                  <div className="border-t border-amber-500/15 pt-2 mt-2 shrink-0">
-                    <p className="text-[10px] uppercase tracking-wider text-amber-300/40 truncate text-center font-semibold">
-                      {pitBoardHistory.map((e) => e.primary).join("  ·  ")}
-                    </p>
+                        {pitBoardPos?.value || "—"}
+                      </motion.span>
+                    </AnimatePresence>
                   </div>
-                )}
-              </div>
 
-              {/* Interchangeable Right Card */}
-              <div className="rounded-2xl border border-primary/20 bg-gradient-to-b from-primary/10 to-primary/5 p-5 h-[35vh] flex flex-col items-center justify-center shadow-lg shadow-primary/10 relative overflow-hidden">
-                {/* Card Switcher */}
-                <div className="absolute top-3 right-3 flex gap-1">
-                  {([
-                    { key: 'gap' as const, icon: TrendingUp },
-                    { key: 'map' as const, icon: Map },
-                    { key: 'lap' as const, icon: Timer },
-                  ]).map(({ key, icon: Icon }) => (
-                    <button
-                      key={key}
-                      onClick={() => { setRightCard(key); localStorage.setItem(`right-card-${eventId}`, key); }}
-                      className={`p-1.5 rounded-lg transition-all ${rightCard === key ? 'bg-primary/30 text-primary' : 'text-white/20 hover:text-white/40'}`}
-                    >
-                      <Icon size={14} />
-                    </button>
-                  ))}
-                </div>
-
-                {/* Gap Ahead */}
-                {rightCard === 'gap' && (
-                  <>
-                    <TrendingUp size={28} className="text-primary/70 mb-3" />
-                    <p className="text-6xl sm:text-7xl font-black text-white tabular-nums tracking-tight" style={{ textShadow: latestGap ? "0 0 30px hsl(var(--primary) / 0.3)" : "none" }}>
-                      {latestGap || "—"}
-                    </p>
-                    <p className="text-xs uppercase tracking-[0.15em] text-white/30 mt-3 font-medium">Gap Ahead</p>
-                  </>
-                )}
-
-                {/* Track Map */}
-                {rightCard === 'map' && (
-                  <div className="flex flex-col items-center justify-center flex-1 w-full">
-                    <input ref={trackMapInputRef} type="file" accept="image/*" className="hidden" onChange={handleTrackMapUpload} />
-                    {trackMapUrl ? (
-                      <>
-                        <img src={trackMapUrl} alt="Track map" className="w-full flex-1 min-h-[20vh] max-h-[30vh] object-contain rounded-xl" />
-                        <button
-                          onClick={() => trackMapInputRef.current?.click()}
-                          className="text-[10px] text-white/30 hover:text-white/50 mt-2 transition-colors"
-                        >
-                          Replace map
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        onClick={() => trackMapInputRef.current?.click()}
-                        disabled={trackMapUploading}
-                        className="w-full flex-1 min-h-[20vh] rounded-xl border-2 border-dashed border-white/10 hover:border-white/20 flex flex-col items-center justify-center gap-2 transition-colors"
+                  {/* MESSAGE */}
+                  <div className="flex items-center justify-between px-5 py-4 min-h-[18vh] gap-3">
+                    <span className="text-[10px] uppercase tracking-[0.25em] text-amber-300/40 font-bold shrink-0">Msg</span>
+                    <AnimatePresence mode="wait">
+                      <motion.span
+                        key={pitBoardMsg?.id || "msg-empty"}
+                        initial={{ scale: 0.85, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.95, opacity: 0 }}
+                        transition={{ type: "spring", stiffness: 280, damping: 22 }}
+                        className="text-5xl sm:text-7xl font-black text-amber-100 tracking-tight leading-none text-right break-words"
+                        style={{ textShadow: pitBoardMsg ? "0 0 30px hsl(45 100% 55% / 0.5)" : "none" }}
                       >
-                        {trackMapUploading ? (
-                          <Loader2 size={24} className="text-white/30 animate-spin" />
-                        ) : (
-                          <>
-                            <Upload size={24} className="text-white/20" />
-                            <p className="text-sm text-white/20 italic">Tap to upload track map</p>
-                          </>
-                        )}
-                      </button>
-                    )}
-                    <p className="text-xs uppercase tracking-[0.15em] text-white/30 mt-3 font-medium">Track Map</p>
+                        {pitBoardMsg?.value || "—"}
+                      </motion.span>
+                    </AnimatePresence>
                   </div>
-                )}
 
-                {/* Fastest Lap */}
-                {rightCard === 'lap' && (
-                  <>
-                    <Timer size={28} className="text-primary/70 mb-3" />
-                    <p className="text-6xl sm:text-7xl font-black text-white tabular-nums tracking-tight">
-                      —
-                    </p>
-                    <p className="text-xs uppercase tracking-[0.15em] text-white/30 mt-3 font-medium">Fastest Lap</p>
-                  </>
-                )}
+                  {/* GAP */}
+                  <div className="flex items-center justify-between px-5 py-4 min-h-[18vh]">
+                    <span className="text-[10px] uppercase tracking-[0.25em] text-amber-300/40 font-bold">Gap</span>
+                    <AnimatePresence mode="wait">
+                      <motion.span
+                        key={pitBoardGap?.id || "gap-empty"}
+                        initial={{ scale: 0.85, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.95, opacity: 0 }}
+                        transition={{ type: "spring", stiffness: 280, damping: 22 }}
+                        className="text-7xl sm:text-8xl font-black text-amber-100 tabular-nums tracking-tight leading-none"
+                        style={{ textShadow: pitBoardGap ? "0 0 30px hsl(45 100% 55% / 0.5)" : "none" }}
+                      >
+                        {pitBoardGap?.value || "—"}
+                      </motion.span>
+                    </AnimatePresence>
+                  </div>
+                </div>
               </div>
             </div>
 
