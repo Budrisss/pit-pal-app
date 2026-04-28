@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { BleClient, type BleDevice } from "@capacitor-community/bluetooth-le";
-import { Bluetooth, Loader2, Type } from "lucide-react";
+import { Bluetooth, Loader2, Type, Radio as RadioIcon, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -58,6 +58,10 @@ const AssignRadioDialog = ({
   const [scanning, setScanning] = useState(false);
   const [saving, setSaving] = useState(false);
   const [manualId, setManualId] = useState("");
+  const [scannedDevice, setScannedDevice] = useState<{
+    bleDeviceId: string;
+    deviceName: string | null;
+  } | null>(null);
   const [namePrefix, setNamePrefix] = useState<string>("TSO-");
   const [allowlist, setAllowlist] = useState<Set<string>>(new Set());
   const [allowlistEnforced, setAllowlistEnforced] = useState(false);
@@ -90,6 +94,7 @@ const AssignRadioDialog = ({
     setManualId("");
     setScanning(false);
     setSaving(false);
+    setScannedDevice(null);
   };
 
   const handleClose = () => {
@@ -246,10 +251,67 @@ const AssignRadioDialog = ({
       return;
     }
     await persistPair({
-      bleDeviceId: `manual:${cleaned}`,
-      deviceName: cleaned,
+      bleDeviceId: scannedDevice?.bleDeviceId ?? `manual:${cleaned}`,
+      deviceName: scannedDevice?.deviceName ?? cleaned,
       nodeIdHex: cleaned,
     });
+  };
+
+  /**
+   * Mobile-only "Scan & Connect" — connect to the radio over BLE just long enough
+   * to read its node ID, then auto-fill the manual input so the user can review
+   * and confirm before the Car # mapping is saved.
+   */
+  const handleScanAndConnect = async () => {
+    if (!isHardwareCapable()) return;
+    setScanning(true);
+    try {
+      await BleClient.initialize({ androidNeverForLocation: true });
+      const device: BleDevice = await BleClient.requestDevice({
+        services: [MESHTASTIC_SERVICE],
+        namePrefix: namePrefix || "Meshtastic",
+      });
+      const transport = new LoRaHardwareTransport(
+        { eventId, userId: driverUserId, registrationId },
+        device.deviceId,
+      );
+      let captured = false;
+      const finish = (nodeIdHex: string | null) => {
+        if (captured) return;
+        captured = true;
+        off();
+        transport.destroy();
+        setScanning(false);
+        if (!nodeIdHex) {
+          toast({
+            title: "Couldn't read node ID",
+            description: "Connected, but the radio didn't report its node ID. Enter it manually.",
+            variant: "destructive",
+          });
+          return;
+        }
+        const cleaned = normalizeNodeId(nodeIdHex);
+        setManualId(cleaned);
+        setScannedDevice({
+          bleDeviceId: device.deviceId,
+          deviceName: device.name ?? "Meshtastic Node",
+        });
+        toast({
+          title: "Radio connected",
+          description: `Read ${cleaned} from ${device.name ?? "radio"}. Confirm to assign.`,
+        });
+      };
+      const off = transport.onNodeInfo((nodeIdHex) => finish(nodeIdHex));
+      transport.subscribe(() => {});
+      setTimeout(() => finish(null), 8000);
+    } catch (err) {
+      toast({
+        title: "Scan cancelled",
+        description: (err as Error).message,
+        variant: "destructive",
+      });
+      setScanning(false);
+    }
   };
 
   return (
@@ -308,7 +370,10 @@ const AssignRadioDialog = ({
             <Input
               id="manual-node-id"
               value={manualId}
-              onChange={(e) => setManualId(e.target.value)}
+              onChange={(e) => {
+                setManualId(e.target.value);
+                setScannedDevice(null);
+              }}
               placeholder="!a3b1c9d8"
               className="font-mono"
               autoFocus
@@ -316,6 +381,32 @@ const AssignRadioDialog = ({
             <p className="text-[10px] text-muted-foreground">
               Printed on the loaner radio's label or shown on its screen. The radio just needs to be reachable via the gateway — no BLE pairing required for manual entry.
             </p>
+            {isHardwareCapable() && (
+              <div className="pt-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={handleScanAndConnect}
+                  disabled={scanning || saving}
+                >
+                  {scanning ? (
+                    <Loader2 size={14} className="mr-1 animate-spin" />
+                  ) : (
+                    <RadioIcon size={14} className="mr-1" />
+                  )}
+                  {scanning ? "Connecting…" : "Scan & Connect to read node ID"}
+                </Button>
+                {scannedDevice && (
+                  <p className="text-[10px] text-emerald-500 mt-1 flex items-center gap-1">
+                    <CheckCircle2 size={11} />
+                    Connected to {scannedDevice.deviceName} — node ID auto-filled.
+                    {carNumber ? ` Will map to Car #${carNumber}.` : ""}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         )}
 
