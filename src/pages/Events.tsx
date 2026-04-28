@@ -21,7 +21,7 @@ const Events = () => {
   const { events, loading, addEvent, updateEvent } = useEvents();
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const [countdown, setCountdown] = useState("");
   const [isEventFormOpen, setIsEventFormOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
@@ -369,6 +369,9 @@ const Events = () => {
                   address={event.address}
                   isRegistered={!!event.publicEventId}
                   publicEventId={event.publicEventId}
+                  registrationId={event.registrationId}
+                  carNumber={event.carNumber}
+                  driverName={user?.email ?? "Driver"}
                   onEdit={() => handleEditEvent(event)}
                 />
               ))}
