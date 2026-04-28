@@ -1,65 +1,164 @@
-# Pit Board Track Notes
+# Pairing UX overhaul: discoverable, organizer-assisted, friendly labels, racer-only filtering
 
-Transform the existing **Track Notes** card on the Race Live page (`src/pages/RacerLiveView.tsx`) from a freeform text scratchpad into a **Pit Board** — a high-contrast, large-format display that shows the latest crew message exactly like a real pit-wall board.
+## The current state (so we're aligned)
 
-## What the driver will see
+You already have a working two-tier pairing model:
 
-The left card (currently "Track Notes") becomes a **PIT BOARD** with one giant message dominating the card, plus a small history strip beneath. Examples of what it can show:
+- **Global pairing** (`LoRaPairingCard` on Settings) — "this radio belongs to my phone"
+- **Per-registration pairing** (`RegistrationRadioPairing` inside each row of My Registrations) — "this radio = Car #24 at this event"
+- **Organizer dashboard** (`PairedRadiosPanel` on `OrganizerLiveManage`) — joins everything and shows `Run Group → Car # → Driver → 🟢/🟡/⚫ → node ID`
 
-- `P1` / `P2` (current position)
-- `GAP +0.42` (gap ahead) or `GAP -1.10` (gap behind)
-- `PIT IN` / `PIT NOW` / `BOX BOX`
-- `LAP 12` / `L 12 / 25`
-- Any free-text message the crew sends ("FUEL", "PUSH", "COOL TYRES", etc.)
+The mapping "Radio = Car #24" is done via a row in `lora_paired_devices` keyed on `(user_id, event_registration_id)` and the radio's permanent Meshtastic hex node ID (e.g. `!a3b1c9d8`).
 
-The newest crew message auto-promotes to the giant slot. Older ones scroll into a compact history line below. A small dismiss/clear control resets the board.
+You picked four problems to fix. Here's the plan for each.
 
-## Design (mobile-first, fits the existing dark race UI)
+---
+
+## 1. Drivers can't find where to pair
+
+### Add a prominent "Pair Radio" entry point in three high-visibility places:
+
+- **Dashboard banner**: If the user has any registration for an event happening **today or in the next 3 days** AND no `lora_paired_devices` row for that registration, show a dismissable yellow banner: *"Pair your radio for [Event Name] →"* that scrolls to / highlights the registration card.
+- **My Registrations card**: When unpaired, replace the small "Assign Radio" button with a more obvious full-width primary-tinted button: **"📡 Pair Radio for Car #24"** (uses car number when available). Add a one-line helper: *"Race control sees your radio status live."*
+- **Driver Live View** (`RacerLiveView`): If the driver is on the live view but has no radio paired for this registration, show a top-of-page slim alert with a "Pair now" button that opens the same BLE flow inline.
+
+### Add a "Pairing" section to Settings:
+A new card on Settings grouping both:
+- **Default radio** (existing `LoRaPairingCard`)
+- A list of **Per-event pairings** (read-only summary: event name + car # + node ID + unpair button) so users have one place to audit/manage all pairings.
+
+---
+
+## 2. Organizer needs to pair on driver's behalf (loaner radios)
+
+### New "Assign Radio" action on `PairedRadiosPanel`
+
+For each row in the organizer's paired radios panel, add a small `+ Assign` button (visible only when that registration has no paired radio). It opens a dialog:
 
 ```text
-┌────────────────────────────┐
-│ 📋 PIT BOARD       (clear) │
-│                            │
-│         P 2                │ ← giant, 7xl–8xl, white, glow
-│       GAP +0.42            │ ← secondary line, 2xl
-│                            │
-│ ─────────────────────────  │
-│ L12 · PIT IN · GAP +0.30   │ ← history strip, tiny
-└────────────────────────────┘
+Assign Radio to Car #24 — John Smith
+─────────────────────────────────────
+[ ○ Scan nearby radio (BLE)  ]   ← native only
+[ ○ Enter node ID manually   ]
+   Node ID: [ !__________ ]
+[ Cancel ]   [ Assign ]
 ```
 
-- Dark amber/yellow accent retained (matches a real pit board).
-- New message animates in (scale + fade) so the driver notices change.
-- Tabular-nums font for numbers; uppercase for words.
+- **BLE path** (Capacitor only): organizer's phone scans, picks the loaner radio, app captures node ID, writes the `lora_paired_devices` row with the **driver's** `user_id` and the registration's `event_registration_id`.
+- **Manual path** (works on desktop too): organizer types/pastes the node ID printed on the loaner radio's case label. We just write the row directly — no BLE connection needed since the radio will phone home via the gateway anyway.
 
-## Where the data comes from
+### RLS change required
 
-`crewMessages` is **already loaded and live-subscribed** in `RacerLiveView.tsx`. Each message has `position`, `gap_ahead`, `time_remaining`, and free-form `message`. We just need to render it differently — no new tables, no new realtime channels.
+Currently `lora_paired_devices` policy is `auth.uid() = user_id` only. We need to allow the **event organizer** to INSERT/DELETE rows where `event_registration_id` belongs to one of their events. New policy:
 
-The display priority for the giant slot (in order):
-1. Latest `message` if present (free text / "PIT IN" / "BOX")
-2. Else latest `position` → renders as `P{n}`
-3. Else latest `gap_ahead` → renders as `GAP {value}`
-4. Else placeholder `—`
+```sql
+CREATE POLICY "Organizers can manage paired devices for their events"
+ON public.lora_paired_devices
+FOR ALL TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM public.event_registrations er
+    JOIN public.public_events pe ON pe.id = er.event_id
+    JOIN public.organizer_profiles op ON op.id = pe.organizer_id
+    WHERE er.id = lora_paired_devices.event_registration_id
+      AND op.user_id = auth.uid()
+      AND op.approved = true
+  )
+)
+WITH CHECK (...same...);
+```
 
-The right-side card (Gap / Map / Lap switcher) is **unchanged**.
+---
 
-## Technical changes
+## 3. Friendly "Radio #" labels (not hex IDs)
 
-**File:** `src/pages/RacerLiveView.tsx` only.
+### Add a `radio_label` column to `lora_paired_devices`
 
-1. Remove the local `trackNotes` / `notesDraft` / `isEditingNotes` state and the `localStorage` read/write/save helpers (they back the old freeform editor).
-2. Replace the Track Notes JSX block (lines ~1187–1219) with a `PitBoard` inline render that:
-   - Computes `pitBoardPrimary` and `pitBoardSecondary` via `useMemo` over `crewMessages` using the priority list above.
-   - Formats: position → `P{n}`, gap → `GAP {value}`, message → uppercased text.
-   - Shows the most recent 3 prior entries as a single-line history strip (` · ` separated).
-   - Animates the giant value when it changes (Framer Motion `key={primary}` with `initial/animate` scale+opacity — Framer is already used in this file).
-3. Keep the amber color treatment, border, and the `h-[35vh]` card height so the existing two-column layout stays balanced.
-4. Imports: drop `Pencil`, `Check`, `X`, `StickyNote` if unused after the change; add `ClipboardList` (or reuse `StickyNote`) for the header icon.
+Migration:
+```sql
+ALTER TABLE public.lora_paired_devices
+  ADD COLUMN radio_label text;
+```
 
-No DB migration, no new edge functions, no new dependencies.
+### Auto-assign on pair
+When a new radio is paired for an event, compute the next available label: count existing paired devices for that event's registrations and assign `Radio 1`, `Radio 2`, etc. The driver/organizer can rename inline (small pencil icon on the panel row).
 
-## Out of scope
+### Display rules
+- `PairedRadiosPanel`: show `Radio 3` as the primary label, hex node ID demoted to small monospace muted subtitle.
+- `RegistrationRadioPairing` card: show `Radio 3 · !a3b1c9d8` once paired.
+- Driver-facing copy: always "Radio 3", never hex.
 
-- Changing how crew sends messages (the existing Crew Live View / Driver Communication flow stays as-is).
-- Persisting a manual driver-authored note (the old freeform notes feature is removed; if you want a personal scratchpad kept somewhere else, say the word and I'll add it back on a different surface).
+---
+
+## 4. Only show racer radios, not random radios at the track
+
+This is the most important one — it solves discovery clutter and security.
+
+### Two complementary filters:
+
+**Filter A — BLE scan name prefix (already partially in place)**
+The current code uses `namePrefix: "Meshtastic"`, which still matches every Meshtastic node within ~30m at a track. Tighten this with **a configurable, per-event device name convention**:
+
+- Organizer sets a **Radio Name Prefix** in `LoRaGatewayConfigCard` (e.g. `TSO-` for "Track Side Ops") — store on `lora_event_channels.radio_name_prefix`.
+- The provisioning instructions in `docs/hardware-setup.md` tell organizers to flash/rename their loaner radios to `TSO-001`, `TSO-002`, etc. (Meshtastic supports custom long names via the Meshtastic app or CLI).
+- The `RegistrationRadioPairing` and organizer "Assign Radio" dialogs read this prefix from the active event and pass it to `BleClient.requestDevice({ namePrefix })`. Result: the OS picker only lists radios that match the convention.
+
+**Filter B — Allowlist of known node IDs per event**
+Add a `lora_event_radio_allowlist` table:
+```sql
+CREATE TABLE public.lora_event_radio_allowlist (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_id uuid NOT NULL,
+  meshtastic_node_id text NOT NULL,
+  label text,
+  notes text,
+  added_by uuid NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (event_id, meshtastic_node_id)
+);
+```
+- Organizer pre-loads the node IDs of the radios they're bringing (one paste box on the gateway config card: "Allowed radios for this event").
+- During pairing, after the BLE scan returns a device, we read its node ID and **reject the pair if it's not on the allowlist** with a clear toast: *"This radio isn't registered for this event. Ask the organizer to add node !xxx."*
+- The `meshtastic-uplink` edge function gains an allowlist check too: packets from non-allowlisted nodes are dropped (defense in depth — prevents any random Meshtastic user near the track from polluting `crew_messages` or `lora_position_fixes`).
+
+### UX summary for the organizer
+
+On `LoRaGatewayConfigCard` (already collapsible on `OrganizerLiveManage`), add a new sub-section: **"Authorized Radios for this Event"** with:
+- Textarea/list of node IDs (one per line) + optional label
+- Bulk import from CSV
+- "Auto-add when a driver pairs" toggle (default: off — strict mode)
+
+---
+
+## Technical implementation notes
+
+**Files to add**
+- `src/components/PairRadioForRegistrationDialog.tsx` — shared dialog used by both driver pair flow and organizer-on-behalf flow (BLE + manual node ID modes)
+- `src/components/PairingNudgeBanner.tsx` — Dashboard/Live View banner
+- `src/components/EventRadioAllowlistCard.tsx` — lives inside `LoRaGatewayConfigCard`
+
+**Files to modify**
+- `src/components/RegistrationRadioPairing.tsx` — bigger primary CTA, reads event prefix + allowlist
+- `src/components/PairedRadiosPanel.tsx` — show `radio_label`, add per-row Assign button, inline rename
+- `src/components/LoRaPairingCard.tsx` (Settings) — add per-event pairings summary
+- `src/pages/Dashboard.tsx` — mount `PairingNudgeBanner`
+- `src/pages/RacerLiveView.tsx` — slim "Pair now" alert when unpaired
+- `src/pages/OrganizerLiveManage.tsx` — wire allowlist UI under gateway config
+- `supabase/functions/meshtastic-uplink/index.ts` — drop packets from non-allowlisted nodes
+- `docs/hardware-setup.md` — update with naming convention + allowlist workflow
+
+**DB migrations**
+1. `ALTER TABLE lora_paired_devices ADD COLUMN radio_label text;`
+2. `ALTER TABLE lora_event_channels ADD COLUMN radio_name_prefix text DEFAULT 'TSO-';`
+3. `CREATE TABLE lora_event_radio_allowlist (...)` with RLS: organizers manage own, racers can SELECT for events they're registered to (so the pair dialog can validate client-side before BLE).
+4. New RLS policy on `lora_paired_devices` allowing organizers to manage rows for their events' registrations.
+
+**No breaking changes** to the transport layer or wire format — all changes are at the pairing/management layer.
+
+---
+
+## What you'll see when this ships
+
+- **Driver**: opens app the day before the event → yellow banner "Pair your radio for Saturday Practice →" → tap → BLE picker shows only `TSO-xxx` radios → pick → toast "Paired as Radio 4 for Car #24". Done.
+- **Organizer**: at check-in hands a loaner to a driver who can't pair themselves → opens Live Manage → finds the row → taps "+ Assign" → scans or types `!a3b1c9d8` → that row turns green within 30s of the radio powering on.
+- **Race control panel**: instead of `#24 — John Smith — !a3b1c9d8` it now reads `Radio 4 · #24 — John Smith` with the hex as a small subtitle. No mystery radios from track passersby ever appear.

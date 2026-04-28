@@ -649,6 +649,7 @@ export type Database = {
           hmac_secret: string
           id: string
           organizer_user_id: string
+          radio_name_prefix: string
           updated_at: string
         }
         Insert: {
@@ -659,6 +660,7 @@ export type Database = {
           hmac_secret: string
           id?: string
           organizer_user_id: string
+          radio_name_prefix?: string
           updated_at?: string
         }
         Update: {
@@ -669,6 +671,40 @@ export type Database = {
           hmac_secret?: string
           id?: string
           organizer_user_id?: string
+          radio_name_prefix?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      lora_event_radio_allowlist: {
+        Row: {
+          added_by: string
+          created_at: string
+          event_id: string
+          id: string
+          label: string | null
+          meshtastic_node_id: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          added_by: string
+          created_at?: string
+          event_id: string
+          id?: string
+          label?: string | null
+          meshtastic_node_id: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          added_by?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+          label?: string | null
+          meshtastic_node_id?: string
+          notes?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -682,6 +718,7 @@ export type Database = {
           id: string
           last_seen_at: string | null
           meshtastic_node_id: string | null
+          radio_label: string | null
           updated_at: string
           user_id: string
         }
@@ -693,6 +730,7 @@ export type Database = {
           id?: string
           last_seen_at?: string | null
           meshtastic_node_id?: string | null
+          radio_label?: string | null
           updated_at?: string
           user_id: string
         }
@@ -704,6 +742,7 @@ export type Database = {
           id?: string
           last_seen_at?: string | null
           meshtastic_node_id?: string | null
+          radio_label?: string | null
           updated_at?: string
           user_id?: string
         }

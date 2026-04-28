@@ -28,6 +28,7 @@ import PairedRadiosPanel from "@/components/PairedRadiosPanel";
 import ConnectivityCheckPanel from "@/components/ConnectivityCheckPanel";
 import LiveTrackMap from "@/components/LiveTrackMap";
 import LoRaGatewayConfigCard from "@/components/LoRaGatewayConfigCard";
+import EventRadioAllowlistCard from "@/components/EventRadioAllowlistCard";
 
 interface EventSession {
   id?: string;
@@ -69,6 +70,7 @@ interface EventRegistrationWithCar {
   run_group_id: string | null;
   crew_enabled: boolean;
   radio_node_id?: string | null;
+  radio_label?: string | null;
   radio_last_seen?: string | null;
 }
 
@@ -206,18 +208,24 @@ const OrganizerLiveManage = () => {
         const regIds = regs.map((r) => r.id);
         const { data: pairedRows } = await (supabase as any)
           .from("lora_paired_devices")
-          .select("event_registration_id, meshtastic_node_id, last_seen_at")
+          .select("event_registration_id, meshtastic_node_id, radio_label, last_seen_at")
           .in("event_registration_id", regIds);
-        const pairedMap = new Map<string, { node: string | null; lastSeen: string | null }>();
+        const pairedMap = new Map<string, { node: string | null; label: string | null; lastSeen: string | null }>();
         (pairedRows || []).forEach((p: any) => {
           pairedMap.set(p.event_registration_id, {
             node: p.meshtastic_node_id,
+            label: p.radio_label,
             lastSeen: p.last_seen_at,
           });
         });
         setRegistrations(regs.map((r) => {
           const p = pairedMap.get(r.id);
-          return { ...r, radio_node_id: p?.node ?? null, radio_last_seen: p?.lastSeen ?? null };
+          return {
+            ...r,
+            radio_node_id: p?.node ?? null,
+            radio_label: p?.label ?? null,
+            radio_last_seen: p?.lastSeen ?? null,
+          };
         }));
       } else {
         setRegistrations(regs);
@@ -1613,7 +1621,12 @@ const OrganizerLiveManage = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.12 }}
           >
-            <PairedRadiosPanel participants={registrations} runGroups={registrationTypes} />
+            <PairedRadiosPanel
+              participants={registrations}
+              runGroups={registrationTypes}
+              eventId={eventId}
+              onChanged={fetchData}
+            />
           </motion.div>
 
           {/* LoRa Gateway Config */}
@@ -1623,6 +1636,15 @@ const OrganizerLiveManage = () => {
             transition={{ delay: 0.13 }}
           >
             <LoRaGatewayConfigCard eventId={eventId!} />
+          </motion.div>
+
+          {/* Authorized radios for this event */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.135 }}
+          >
+            <EventRadioAllowlistCard publicEventId={eventId!} />
           </motion.div>
 
           {/* Participants — Crew Messaging Toggle */}

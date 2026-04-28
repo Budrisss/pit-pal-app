@@ -111,6 +111,30 @@ Deno.serve(async (req) => {
   // Resolve sender node → paired device → registration
   // Crew messages from unknown radios are dropped silently (security).
   const nodeId = bridge.from?.startsWith("!") ? bridge.from : `!${bridge.from ?? ""}`;
+
+  // Allowlist enforcement: if this event has any authorized-radios entries,
+  // drop ANY packet whose sender node id isn't on the list. This prevents
+  // random Meshtastic radios at the track from polluting crew_messages
+  // or lora_position_fixes.
+  const { data: allowRows } = await supabase
+    .from("lora_event_radio_allowlist")
+    .select("meshtastic_node_id")
+    .eq("event_id", mapping.event_id);
+  if (allowRows && allowRows.length > 0) {
+    const allowed = new Set(
+      (allowRows as { meshtastic_node_id: string }[]).map((r) =>
+        r.meshtastic_node_id.toLowerCase(),
+      ),
+    );
+    if (!allowed.has(nodeId.toLowerCase())) {
+      console.warn(`[meshtastic-uplink] dropped packet from non-allowlisted node ${nodeId}`);
+      return new Response(
+        JSON.stringify({ ok: false, reason: "node_not_allowlisted" }),
+        { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+  }
+
   const { data: paired } = await supabase
     .from("lora_paired_devices")
     .select("user_id, event_registration_id")

@@ -1,20 +1,24 @@
 import { useMemo, useState } from "react";
-import { Radio, ChevronDown } from "lucide-react";
+import { Radio, ChevronDown, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import AssignRadioDialog from "@/components/AssignRadioDialog";
 
 interface PairedRegistration {
   id: string;
+  user_id?: string;
   user_name: string;
   car_number: number | null;
   run_group_id: string | null;
   radio_node_id?: string | null;
+  radio_label?: string | null;
   radio_last_seen?: string | null;
 }
 
@@ -26,6 +30,9 @@ interface RunGroup {
 interface PairedRadiosPanelProps {
   participants: PairedRegistration[];
   runGroups: RunGroup[];
+  /** public_events.id — required for the organizer assign-on-behalf flow */
+  eventId?: string;
+  onChanged?: () => void;
 }
 
 const STALE_MS = 10 * 60 * 1000;
@@ -60,10 +67,11 @@ function StatusDot({ s }: { s: "live" | "stale" | "none" }) {
 const SIM_NAMES = ["John Smith", "Jane Doe", "Mike Chen", "Carlos Ruiz", "Sam Patel"];
 const SIM_NODES = ["!a3b1c9d8", "!b8d4e2f1", "!c1f7e44a", "!d2e5a9b3", "!e9c0d77f"];
 
-const PairedRadiosPanel = ({ participants, runGroups }: PairedRadiosPanelProps) => {
+const PairedRadiosPanel = ({ participants, runGroups, eventId, onChanged }: PairedRadiosPanelProps) => {
   const [hideUnpaired, setHideUnpaired] = useState(false);
   const [simulate, setSimulate] = useState(false);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+  const [assignTarget, setAssignTarget] = useState<PairedRegistration | null>(null);
 
   const effectiveParticipants = useMemo<PairedRegistration[]>(() => {
     if (!simulate) return participants;
@@ -150,10 +158,26 @@ const PairedRadiosPanel = ({ participants, runGroups }: PairedRadiosPanelProps) 
                     </Badge>
                     <span className="truncate flex-1 min-w-0">{r.user_name}</span>
                     <StatusDot s={s} />
-                    {r.radio_node_id ? (
-                      <span className="font-mono text-[11px] text-muted-foreground shrink-0">
-                        {r.radio_node_id}
-                      </span>
+                    {r.radio_node_id || r.radio_label ? (
+                      <div className="flex flex-col items-end shrink-0 leading-tight">
+                        <span className="text-[11px] font-medium">
+                          {r.radio_label ?? r.radio_node_id}
+                        </span>
+                        {r.radio_label && r.radio_node_id && (
+                          <span className="font-mono text-[9px] text-muted-foreground">
+                            {r.radio_node_id}
+                          </span>
+                        )}
+                      </div>
+                    ) : eventId && !r.id.startsWith("sim-") ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-6 px-2 text-[10px] shrink-0"
+                        onClick={() => setAssignTarget(r)}
+                      >
+                        <Plus size={10} className="mr-0.5" /> Assign
+                      </Button>
                     ) : (
                       <span className="text-[11px] text-muted-foreground italic shrink-0">
                         no radio
@@ -174,6 +198,21 @@ const PairedRadiosPanel = ({ participants, runGroups }: PairedRadiosPanelProps) 
 
   return (
     <div>
+      {assignTarget && eventId && (
+        <AssignRadioDialog
+          open={!!assignTarget}
+          onOpenChange={(o) => !o && setAssignTarget(null)}
+          registrationId={assignTarget.id}
+          driverUserId={assignTarget.user_id ?? ""}
+          driverName={assignTarget.user_name}
+          carNumber={assignTarget.car_number}
+          eventId={eventId}
+          onPaired={() => {
+            setAssignTarget(null);
+            onChanged?.();
+          }}
+        />
+      )}
       <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
         <div>
           <h2 className="font-semibold flex items-center gap-2">
