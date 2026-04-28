@@ -1281,14 +1281,6 @@ const RacerLiveView = () => {
               </div>
             </div>
 
-            {/* Latest Crew Message */}
-            {latestCrewMessage && (
-              <div className="mx-3 mb-2 rounded-xl border border-primary/15 bg-gradient-to-r from-primary/5 to-primary/10 px-4 py-2.5 shadow-sm">
-                <p className="text-[10px] uppercase tracking-[0.15em] text-primary/70 font-bold mb-0.5">Latest from Crew</p>
-                <p className="text-sm font-semibold text-white">{latestCrewMessage}</p>
-              </div>
-            )}
-
           </div>
         )}
       </div>
