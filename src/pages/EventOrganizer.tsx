@@ -17,7 +17,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useOrganizerMode } from "@/contexts/OrganizerModeContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import Navigation from "@/components/Navigation";
 import tracksideLogo from "@/assets/trackside-logo-v2.png";
 import AddressAutocomplete, { PlaceDetails } from "@/components/AddressAutocomplete";
@@ -481,6 +481,11 @@ const EventOrganizer = () => {
   const { user, signOut } = useAuth();
   const { organizerProfileId } = useOrganizerMode();
   const { toast } = useToast();
+
+  // Subtle scroll-driven parallax for the hero image.
+  const { scrollY } = useScroll();
+  const heroY = useTransform(scrollY, [0, 600], [0, 120]);
+  const heroScale = useTransform(scrollY, [0, 600], [1, 1.08]);
 
   const [organizerProfile, setOrganizerProfile] = useState<OrganizerProfile | null>(null);
   const [events, setEvents] = useState<PublicEvent[]>([]);
@@ -947,12 +952,17 @@ const EventOrganizer = () => {
       {/* Hero */}
       <section className="relative overflow-hidden">
         <motion.div
-          initial={{ scale: 1.1 }}
-          animate={{ scale: 1 }}
+          initial={{ scale: 1.1, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 1.2, ease: "easeOut" }}
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: `url(${organizerHero})` }}
-        />
+          style={{ y: heroY, scale: heroScale }}
+          className="absolute inset-0 will-change-transform"
+        >
+          <div
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: `url(${organizerHero})` }}
+          />
+        </motion.div>
         <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/85 to-background" />
         <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-background pointer-events-none" />
         <div className="relative z-10 max-w-6xl mx-auto px-5 sm:px-6 py-16 sm:py-20 lg:py-24">
