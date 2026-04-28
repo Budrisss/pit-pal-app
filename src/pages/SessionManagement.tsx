@@ -1,5 +1,8 @@
-import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Clock, Calendar, Settings, Plus, Trash2, GripVertical, StickyNote, Timer, AlertCircle, Cloud, Thermometer, Eye, Wind, Play, CheckCircle2, MoreVertical, Megaphone, FileText, Radio, Car, Droplets } from "lucide-react";
+import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
+import { ArrowLeft, Clock, Calendar, Settings, Plus, Trash2, GripVertical, StickyNote, Timer, AlertCircle, Cloud, Thermometer, Eye, Wind, Play, CheckCircle2, MoreVertical, Megaphone, FileText, Radio, Car, Droplets, LogOut } from "lucide-react";
+import { motion } from "framer-motion";
+import { useAuth } from "@/contexts/AuthContext";
+import tracksideLogo from "@/assets/trackside-logo-v2.png";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -21,7 +24,6 @@ import { CSS } from "@dnd-kit/utilities";
 import { useEvents } from "@/contexts/EventsContext";
 import SessionTireDataCard from "@/components/SessionTireDataCard";
 import Navigation from "@/components/Navigation";
-import DesktopNavigation from "@/components/DesktopNavigation";
 
 interface Session {
   id: string;
@@ -202,6 +204,12 @@ const SortableSessionItem = ({ session, onDelete, onMarkComplete, onEditNote, on
 const SessionManagement = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { signOut } = useAuth();
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/");
+  };
   const { getEventById } = useEvents();
   const { toast } = useToast();
 
@@ -966,7 +974,36 @@ const SessionManagement = () => {
 
   return (
     <div className="min-h-screen bg-gradient-dark pb-20 lg:pb-0 lg:pt-20">
-      <DesktopNavigation />
+      <motion.nav
+        initial={{ y: -60, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="fixed top-0 inset-x-0 z-50 bg-background/80 backdrop-blur-md border-b border-border hidden lg:block"
+      >
+        <div className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 h-20">
+          <Link to="/dashboard" className="flex items-center h-full py-1">
+            <img src={tracksideLogo} alt="Track Side Ops" className="h-full w-auto object-contain invert" />
+          </Link>
+          <div className="flex items-center gap-1">
+            {[
+              { label: "Home", path: "/dashboard" },
+              { label: "Garage", path: "/garage" },
+              { label: "GridID", path: "/grid-id" },
+              { label: "Events", path: "/events" },
+              { label: "Local Events", path: "/local-events" },
+              { label: "Organizer", path: "/event-organizer" },
+              { label: "Settings", path: "/settings" },
+            ].map((item) => (
+              <Button key={item.path} variant={location.pathname === item.path ? "default" : "ghost"} size="sm" asChild>
+                <Link to={item.path}>{item.label}</Link>
+              </Button>
+            ))}
+            <Button variant="ghost" size="sm" onClick={handleLogout} className="text-destructive hover:text-destructive">
+              <LogOut size={16} className="mr-1" /> Logout
+            </Button>
+          </div>
+        </div>
+      </motion.nav>
 
       <div className="p-4 sm:p-6 lg:p-8 space-y-5 max-w-6xl mx-auto">
         {/* Header */}
