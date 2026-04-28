@@ -13,6 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
+import MyRegistrations from "@/components/MyRegistrations";
 
 import dashboardHero from "@/assets/dashboard-hero.jpg";
 import tracksideLogo from "@/assets/trackside-logo-v2.png";
@@ -348,6 +349,16 @@ const Dashboard = () => {
               );
             })}
           </div>
+        </motion.div>
+
+        {/* ─── My Registrations ─── */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-40px" }}
+          transition={{ duration: 0.5 }}
+        >
+          <MyRegistrations />
         </motion.div>
 
         {/* ─── Two column: Garage + Local Events ─── */}
