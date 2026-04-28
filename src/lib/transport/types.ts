@@ -3,7 +3,7 @@
  * Allows swapping between Supabase realtime (cell) and LoRaWAN sim (radio fallback).
  */
 
-export type LoRaPayloadType = "gap" | "msg" | "flag" | "ack";
+export type LoRaPayloadType = "gap" | "msg" | "pos" | "flag" | "ack";
 
 /** Compact wire format — must encode to <=50 bytes (LoRaWAN constraint). */
 export interface LoRaPayload {
