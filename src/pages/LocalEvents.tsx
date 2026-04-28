@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -139,6 +140,7 @@ const LocalEvents = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [stateFilter, setStateFilter] = useState<string>('all');
   const [trackFilter, setTrackFilter] = useState<string>('all');
+  const [showPastEvents, setShowPastEvents] = useState<boolean>(false);
   const [organizerProfile, setOrganizerProfile] = useState<OrganizerProfile | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -660,7 +662,7 @@ const LocalEvents = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const notPast = !eventDate || eventDate.getTime() >= today.getTime();
-    return matchesSearch && matchesState && matchesTrack && notPast;
+    return matchesSearch && matchesState && matchesTrack && (showPastEvents || notPast);
   });
 
   const openEditDialog = async (event: PublicEvent) => {
@@ -833,6 +835,16 @@ const LocalEvents = () => {
                   {US_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                 </SelectContent>
               </Select>
+              <div className="flex items-center gap-2 px-3 h-10 bg-card/60 backdrop-blur-md border border-border rounded-md">
+                <Switch
+                  id="show-past-events"
+                  checked={showPastEvents}
+                  onCheckedChange={setShowPastEvents}
+                />
+                <Label htmlFor="show-past-events" className="text-sm whitespace-nowrap cursor-pointer">
+                  Show past
+                </Label>
+              </div>
             </div>
           </motion.div>
         </div>
