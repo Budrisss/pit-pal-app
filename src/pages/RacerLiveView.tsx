@@ -1202,14 +1202,14 @@ const RacerLiveView = () => {
 
         {/* Driver Communication Panels */}
         {personalEventId && crewEnabled && (
-          <div className="bg-gradient-to-b from-gray-950 to-black border-t border-white/5 shrink-0">
+          <div className="bg-gradient-to-b from-gray-950 to-black border-t border-white/5 shrink-0 h-[50vh] flex flex-col">
             {/* Pit Board — full-width, three vertical sections (Position / Message / Gap) */}
-            <div className="p-3">
-              <div className="rounded-2xl border-2 border-amber-500/40 bg-gradient-to-b from-amber-950/40 via-black to-amber-950/40 shadow-[0_0_40px_-10px_hsl(45_100%_55%_/_0.35)] overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-2 border-b border-amber-500/20 bg-black/40">
+            <div className="p-2 flex-1 flex flex-col min-h-0">
+              <div className="flex-1 min-h-0 rounded-2xl border-2 border-amber-500/40 bg-gradient-to-b from-amber-950/40 via-black to-amber-950/40 shadow-[0_0_40px_-10px_hsl(45_100%_55%_/_0.35)] overflow-hidden flex flex-col">
+                <div className="flex items-center justify-between px-4 py-1.5 border-b border-amber-500/20 bg-black/40 shrink-0">
                   <div className="flex items-center gap-1.5">
-                    <ClipboardList size={16} className="text-amber-400" />
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-amber-300/80 font-bold">Pit Board</p>
+                    <ClipboardList size={14} className="text-amber-400" />
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-amber-300/80 font-bold">Pit Board</p>
                   </div>
                   {hasPitBoardContent && (
                     <button
@@ -1222,10 +1222,10 @@ const RacerLiveView = () => {
                   )}
                 </div>
 
-                {/* Three stacked rows */}
-                <div className="divide-y-2 divide-amber-500/15">
+                {/* Three stacked rows — share remaining space equally */}
+                <div className="flex-1 min-h-0 flex flex-col divide-y-2 divide-amber-500/15">
                   {/* POSITION */}
-                  <div className="flex items-center justify-between px-5 py-4 min-h-[18vh]">
+                  <div className="flex-1 min-h-0 flex items-center justify-between px-5">
                     <span className="text-[10px] uppercase tracking-[0.25em] text-amber-300/40 font-bold">Pos</span>
                     <AnimatePresence mode="wait">
                       <motion.span
@@ -1234,7 +1234,7 @@ const RacerLiveView = () => {
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.95, opacity: 0 }}
                         transition={{ type: "spring", stiffness: 280, damping: 22 }}
-                        className="text-7xl sm:text-8xl font-black text-amber-100 tabular-nums tracking-tight leading-none"
+                        className="text-5xl sm:text-7xl font-black text-amber-100 tabular-nums tracking-tight leading-none"
                         style={{ textShadow: pitBoardPos ? "0 0 30px hsl(45 100% 55% / 0.5)" : "none" }}
                       >
                         {pitBoardPos?.value || "—"}
@@ -1243,7 +1243,7 @@ const RacerLiveView = () => {
                   </div>
 
                   {/* MESSAGE */}
-                  <div className="flex items-center justify-between px-5 py-4 min-h-[18vh] gap-3">
+                  <div className="flex-1 min-h-0 flex items-center justify-between px-5 gap-3 overflow-hidden">
                     <span className="text-[10px] uppercase tracking-[0.25em] text-amber-300/40 font-bold shrink-0">Msg</span>
                     <AnimatePresence mode="wait">
                       <motion.span
@@ -1252,7 +1252,7 @@ const RacerLiveView = () => {
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.95, opacity: 0 }}
                         transition={{ type: "spring", stiffness: 280, damping: 22 }}
-                        className="text-5xl sm:text-7xl font-black text-amber-100 tracking-tight leading-none text-right break-words"
+                        className="text-4xl sm:text-6xl font-black text-amber-100 tracking-tight leading-none text-right break-words"
                         style={{ textShadow: pitBoardMsg ? "0 0 30px hsl(45 100% 55% / 0.5)" : "none" }}
                       >
                         {pitBoardMsg?.value || "—"}
@@ -1261,7 +1261,7 @@ const RacerLiveView = () => {
                   </div>
 
                   {/* GAP */}
-                  <div className="flex items-center justify-between px-5 py-4 min-h-[18vh]">
+                  <div className="flex-1 min-h-0 flex items-center justify-between px-5">
                     <span className="text-[10px] uppercase tracking-[0.25em] text-amber-300/40 font-bold">Gap</span>
                     <AnimatePresence mode="wait">
                       <motion.span
@@ -1270,7 +1270,7 @@ const RacerLiveView = () => {
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.95, opacity: 0 }}
                         transition={{ type: "spring", stiffness: 280, damping: 22 }}
-                        className="text-7xl sm:text-8xl font-black text-amber-100 tabular-nums tracking-tight leading-none"
+                        className="text-5xl sm:text-7xl font-black text-amber-100 tabular-nums tracking-tight leading-none"
                         style={{ textShadow: pitBoardGap ? "0 0 30px hsl(45 100% 55% / 0.5)" : "none" }}
                       >
                         {pitBoardGap?.value || "—"}
