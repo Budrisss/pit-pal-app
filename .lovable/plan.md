@@ -1,40 +1,42 @@
-## Goal
-Add a prominent "Coming Soon" banner to the `/grid-id` page that explains what GridID is and the benefits users will unlock when it's live, while keeping the existing passport/stamps UI visible (in a preview/teaser state).
+# Match Organizer Top Nav UI to Racer Dashboard Nav
 
-## File to edit
-- `src/pages/GridID.tsx`
+Restyle `OrganizerDesktopNavigation` so its visual language (skewed tabs, bold uppercase labels, solid black bar, accent border, branded badge) matches the racer-side `DesktopNavigation`, while keeping the organizer color palette (amber/blue accent — `--org-accent`, `--org-surface`).
 
-## Changes
+## What changes
 
-### 1. Add a "Coming Soon" banner near the top of the content section
-Insert a new card immediately after the hero section (above the existing `GridPassportCard`).
+**File:** `src/components/OrganizerDesktopNavigation.tsx`
 
-**Visual design** (matches existing dark theme + red primary accent):
-- Card with `border-2 border-primary/40`, `bg-gradient-to-br from-primary/10 via-card to-card`, subtle glow
-- Top-right `Badge` with text "Coming Soon" (using `Sparkles` or `Rocket` lucide icon)
-- Headline: **"GridID — Your Verified Racing Identity"**
-- Short intro paragraph explaining the concept:
-  > "GridID is your independently-verified digital racing passport. As you log sessions, attend events, and earn organizer stamps, your profile builds a trusted record of your on-track experience — recognized across the Track Side Ops network."
+Replicate the structural pattern from `src/components/DesktopNavigation.tsx`:
 
-### 2. Benefits list (inside the same banner card)
-Render as a 2-column responsive grid (`grid-cols-1 sm:grid-cols-2 gap-3`), each item with a small lucide icon + title + one-line description:
+1. **Nav container**
+   - Switch from `backdrop-blur` translucent surface to a solid bar matching the dashboard's hard-edged style.
+   - Background: `hsl(var(--org-surface))` (solid, no blur).
+   - Bottom border: 2px solid `hsl(var(--org-accent))` (replaces the racer's `border-f1-red`).
 
-1. **Clock** — *Track Hours Tracking* — Automatically log every verified hour you spend on track.
-2. **MapPin** — *Track Diversity* — Build a record of every circuit you've driven, verified by event organizers.
-3. **TrendingUp** — *Lap Time Consistency* — Independent analysis of your consistency across sessions.
-4. **Stamp** (or `BadgeCheck`) — *Organizer & Instructor Stamps* — Earn approvals from event organizers and certified instructors.
-5. **Shield** — *Driver Rating* — Receive an independently-calculated driver rating based on your verified history.
-6. **Users** — *Smarter Event Grouping* — Organizers use ratings to structure run groups, pairing drivers with similar skill and experience for safer, better racing.
+2. **Brand badge (left)**
+   - Replace the rounded white square + Briefcase with the same skewed-rectangle treatment used on the dashboard:
+     - `w-10 h-10` block, `transform -skew-x-12`, filled with the organizer accent gradient (`var(--gradient-org)`).
+     - Inner `Briefcase` icon counter-skewed (`transform skew-x-12`), white.
+   - Title: keep "Track Side Ops" with the small "Organizer · Control Tower" eyebrow above it (preserve organizer identity).
 
-### 3. Closing line
-A small muted footer line inside the banner:
-> "We're rolling this out with select organizers first. Your stamps and hours are already being recorded — they'll all count when GridID goes live."
+3. **Nav tabs (Dashboard / Stamps / Settings)**
+   - Replace the current flat underlined tabs with skewed F1-style tabs:
+     - `transform -skew-x-6`, `border-2 border-transparent`, `uppercase tracking-wide font-bold text-sm`, `px-6 py-3`.
+     - Inactive: `text-white/70`, hover `text-white` + border `hsl(var(--org-accent-soft))`.
+     - Active: white text on `hsl(var(--org-accent))` background with white border and an organizer-tinted shadow.
+   - Icons and labels counter-skewed (`transform skew-x-6`) so they read straight, mirroring the racer nav.
 
-### 4. Keep existing UI
-- Leave `GridPassportCard`, the Profile editor, and the Stamps history intact below the banner — they act as a working preview of what's coming.
+4. **Switch to Racer + Logout buttons**
+   - Same skewed-tab styling as nav items.
+   - "Switch to Racer": hover uses a subtle accent-tinted background.
+   - "Logout": hover uses `bg-destructive` (matches racer nav).
 
-## Animation
-- Wrap banner in a `motion.div` with the same `fadeUp` pattern already used on the page (consistent with existing animations).
+5. **No changes to:**
+   - `OrganizerMobileNavigation` (mobile bottom bar stays as-is).
+   - `OrganizerShell` accent strip.
+   - Routing, auth gating, or `exitOrganizerMode` behavior.
+   - Color tokens — we reuse existing `--org-*` CSS variables, no palette additions.
 
-## No backend / no schema changes
-Pure presentational addition. No new dependencies needed (all icons come from `lucide-react`, already in use).
+## Result
+
+The organizer top bar will share the racer dashboard's recognizable skewed-tab F1 chrome, but rendered in the organizer amber/blue accent instead of F1 red — visually unifying the two modes while preserving brand separation.
