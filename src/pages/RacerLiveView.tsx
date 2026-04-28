@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { parseISO, addMinutes, differenceInMilliseconds, isAfter, isBefore, format } from "date-fns";
-import { ArrowLeft, Volume2, StickyNote, Pencil, Check, X, TrendingUp, MessageSquare, Clock, Users, Copy, Map, Timer, Upload, Loader2, Radio } from "lucide-react";
+import { ArrowLeft, Volume2, ClipboardList, X, TrendingUp, MessageSquare, Clock, Users, Copy, Map, Timer, Upload, Loader2, Radio } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -80,9 +80,7 @@ const RacerLiveView = () => {
   const [personalEventId, setPersonalEventId] = useState<string | null>(null);
   const [crewEnabled, setCrewEnabled] = useState(false);
   const [crewMessages, setCrewMessages] = useState<{ id: string; gap_ahead: string | null; message: string | null; created_at: string; position: string | null; time_remaining: string | null }[]>([]);
-  const [trackNotes, setTrackNotes] = useState("");
-  const [isEditingNotes, setIsEditingNotes] = useState(false);
-  const [notesDraft, setNotesDraft] = useState("");
+  const [pitBoardDismissedAt, setPitBoardDismissedAt] = useState<number>(0);
   const [rightCard, setRightCard] = useState<'gap' | 'map' | 'lap'>(() => {
     const saved = localStorage.getItem(`right-card-${eventId}`);
     return (saved === 'gap' || saved === 'map' || saved === 'lap') ? saved : 'gap';
@@ -276,8 +274,6 @@ const RacerLiveView = () => {
         .maybeSingle();
       if (data?.id) {
         setPersonalEventId(data.id);
-        const savedNotes = localStorage.getItem(`track-notes-${data.id}`);
-        if (savedNotes) setTrackNotes(savedNotes);
         if (data.track_map_url) {
           // Get signed URL for the track map
           const { data: signedData } = await supabase.storage
@@ -417,13 +413,6 @@ const RacerLiveView = () => {
   useEffect(() => {
     feedEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [crewMessages.length]);
-
-  const saveTrackNotes = () => {
-    if (!personalEventId) return;
-    localStorage.setItem(`track-notes-${personalEventId}`, notesDraft);
-    setTrackNotes(notesDraft);
-    setIsEditingNotes(false);
-  };
 
   const handleTrackMapUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
