@@ -17,7 +17,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useOrganizerMode } from "@/contexts/OrganizerModeContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import Navigation from "@/components/Navigation";
 import tracksideLogo from "@/assets/trackside-logo-v2.png";
 import AddressAutocomplete, { PlaceDetails } from "@/components/AddressAutocomplete";
@@ -481,6 +481,11 @@ const EventOrganizer = () => {
   const { user, signOut } = useAuth();
   const { organizerProfileId } = useOrganizerMode();
   const { toast } = useToast();
+
+  // Subtle scroll-driven parallax for the hero image.
+  const { scrollY } = useScroll();
+  const heroY = useTransform(scrollY, [0, 600], [0, 120]);
+  const heroScale = useTransform(scrollY, [0, 600], [1, 1.08]);
 
   const [organizerProfile, setOrganizerProfile] = useState<OrganizerProfile | null>(null);
   const [events, setEvents] = useState<PublicEvent[]>([]);
