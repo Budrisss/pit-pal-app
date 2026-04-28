@@ -335,9 +335,9 @@ const RacerLiveView = () => {
         return [...prev, {
           id: msg.id,
           gap_ahead: msg.payload.t === "gap" ? msg.payload.v : null,
-          message: msg.payload.t === "gap" ? null : msg.payload.v,
+          position: msg.payload.t === "pos" ? msg.payload.v : null,
+          message: msg.payload.t === "msg" ? msg.payload.v : null,
           created_at: new Date(msg.payload.ts).toISOString(),
-          position: null,
           time_remaining: null,
         }];
       });
