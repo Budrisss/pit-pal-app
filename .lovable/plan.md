@@ -1,121 +1,40 @@
+## Goal
 
-# Path 3: In-App LoRa Channel Provisioning
+Extend `TrackSideOps_Median_Hardware_Spec.pdf` (currently one page) with a **second page** documenting exactly what's inside the radio packets, so Median.co has hardware spec + data spec in a single PDF.
 
-Let drivers re-use one T1000-E radio across multiple organizers. When a driver pairs a radio to an event, the app reads the organizer's channel config from the database and writes it to the radio over BLE. No bench access, no Meshtastic app, no QR scanning.
+## Approach
 
-Per the decisions: **per-organizer channels**, **app-generated PSK**, **overwrite slot 0 each time**, **region stays pre-flashed**.
+Regenerate the PDF using ReportLab (same toolchain as v1) with two pages:
 
----
+- **Page 1** — unchanged hardware spec (T1000-E + Solar Repeater + WisGate Edge Pro, BLE GATT profile, permissions, data flow).
+- **Page 2 (new)** — "Data On The Wire" reference.
 
-## What gets built
+Output to `/mnt/documents/TrackSideOps_Median_Hardware_Spec_v2.pdf` (versioned per artifact iteration rule, keeps original intact).
 
-### 1. Database changes
+## Page 2 contents
 
-**New table: `lora_organizer_channels`**
-- `id`, `organizer_profile_id` (unique), `channel_name` (e.g. `TSO-NJORG-A1B2`), `psk_base64` (32-byte key, app-generated), `created_at`, `updated_at`, `rotated_at`.
-- RLS: organizer manages own row; registered racers can SELECT the row of any organizer whose event they're registered for (so the driver app can read what to provision).
-
-**Modify `lora_event_channels`**
-- Add nullable `organizer_channel_id` FK. When set, the event inherits the organizer's channel/PSK and the existing `channel_name`/`hmac_secret` are ignored for radio provisioning (HMAC stays for the gateway→edge function bridge, that's a separate concern).
-
-**Auto-provision row on organizer approval**
-- Trigger on `organizer_profiles` AFTER UPDATE: when `approved` flips to true, insert a `lora_organizer_channels` row with a generated channel name and random 32-byte PSK.
-
-### 2. Meshtastic protobuf encoder
-
-Extend `src/lib/transport/meshtastic/protobuf.ts`:
-- Add `AdminMessage` encoder (portnum 6) with a `SetChannel` payload.
-- Add `Channel` + `ChannelSettings` message encoders (slot index, name, PSK bytes, role=PRIMARY).
-- Add a `WantConfigId` request + response decoder so we can read the radio's current channel slot 0 to compare before writing.
-- Add a "save config" admin commit message so writes persist across reboot.
-
-### 3. Transport layer
-
-In `src/lib/transport/LoRaHardwareTransport.ts`, add:
-- `readChannelSlot0(): Promise<{ name: string; pskBase64: string } | null>` — sends WantConfig, waits for the channel response, returns parsed slot 0.
-- `provisionChannel(name: string, pskBase64: string): Promise<void>` — writes slot 0, commits, verifies by re-reading. Throws on mismatch.
-- `resetToDefaultChannel(): Promise<void>` — writes a hardcoded `TSO-Public` channel with no PSK. Used for recovery.
-
-### 4. Pairing UI changes
-
-In `AssignRadioDialog.tsx` (used by both global pairing and per-event pairing):
-- After "Scan & Connect" reads the node ID, add a **"Configure Channel"** step.
-- Fetch the event → public_event → organizer → `lora_organizer_channels` row.
-- Show: "This event uses **NJ Track Org**'s private channel. Your radio will be reconfigured."
-- Read current slot 0 from radio. If it already matches, skip the write and show "Already configured ✓".
-- If it doesn't match, write + verify. Show progress: `Reading → Writing → Verifying → Done`.
-- On failure, show "Provisioning failed" with a **Retry** and a **Reset to Default Channel** button.
-
-In `LoRaPairingCard.tsx` (Settings):
-- Add a small "Reset Radio Channel" recovery button (collapsed under an "Advanced" toggle) that calls `resetToDefaultChannel()`. Useful if a radio gets stuck.
-
-### 5. Organizer-facing UI
-
-New `OrganizerChannelCard.tsx` mounted on `OrganizerLiveManage` (replaces or sits next to `LoRaGatewayConfigCard`):
-- Shows the organizer's channel name (read-only).
-- Shows masked PSK with a "Reveal" toggle and a "Rotate Key" button (regenerates PSK; warns that all paired radios will need to re-provision).
-- Copy-to-clipboard for both, in case the organizer wants to manually configure a radio outside the app.
-
-### 6. Region safety guard
-
-Region stays pre-flashed at your bench. To prevent accidents:
-- Before any `provisionChannel()` call, do a region read via `WantConfig`. If the region is `UNSET` or doesn't match the organizer's expected region (new `lora_organizer_channels.expected_region` column, default `US`), abort with a clear message: "This radio's region (EU868) doesn't match this organizer's region (US915). Contact your organizer."
-
----
+1. **Two-layer model** — outer Meshtastic protobuf envelope wraps inner app payload (JSON for our traffic, protobuf for GPS/nodeinfo).
+2. **Outer envelope (MeshPacket)** — fields actually emitted by our encoder (`src/lib/transport/meshtastic/protobuf.ts`): `from`, `to` (broadcast `0xFFFFFFFF`), `channel`, `hop_limit` (3), `want_ack`, `Data { portnum, payload }`. Note portnums used: `TEXT_MESSAGE_APP=1` (our JSON), `POSITION_APP=3` (GPS), `NODEINFO_APP` (identity beacons from firmware).
+3. **Inner app payload — JSON LoRaPayload** (from `src/lib/transport/types.ts` + `encoder.ts`):
+   - Schema: `{ t, v, ts, f }` — type, value, unix-ms timestamp, sender id (8-char hex).
+   - Type discriminator `t`: `gap`, `msg`, `pos`, `flag`, `ack`.
+   - Example packets for each type (gap delta, crew text "Pit now", flag "yellow", ack).
+   - **222-byte hard cap** (LoRaWAN SF7 US915 ceiling) enforced in encoder.
+4. **Position packets (POSITION_APP)** — decoded fields: lat/lon (1e-7 deg sfixed32), altitude (m), GPS fix time, ground speed (m/s), heading (deg). Throttled to 1 fix / 10 s.
+5. **NodeInfo / MyNodeInfo** — radio identity beacon emitted by firmware on connect; we extract the 8-char hex node id (`!a3b1c9d8`) used for pairing/allowlist.
+6. **What is NOT in packets** — no audio, no images, no PII (no names/emails/phones), no auth tokens. Sender id is a hex radio id, not a user id.
+7. **Authenticity / integrity** — gateway-side HMAC-SHA256 signing on the MQTT→backend hop (`X-Signature` header to `meshtastic-uplink` edge function); per-event channel allowlist drops unknown nodes.
+8. **Size budget table** — typical bytes per packet type (gap ~30B, msg ~50–80B, flag ~35B, position ~25B protobuf), all well under 222B cap.
 
 ## Technical details
 
-### Wire-level flow (per pairing)
-```text
-App                          Radio (T1000-E)
- |---- WantConfigId(rand) -->|
- |<-- ChannelInfo(slot 0) ---|
- |<-- ConfigComplete ---------|
- |  (compare to target)
- |---- AdminMessage:SetChannel(slot 0, name, psk) -->|
- |---- AdminMessage:CommitEditSettings ------------->|
- |---- WantConfigId(rand2) ------------------------->|
- |<-- ChannelInfo(slot 0, new values) --------------|
- |  (verify match → success)
-```
+- Reuse the v1 ReportLab script structure (Platypus flowables, same fonts/colors/branding from prior page).
+- Insert a `PageBreak()` after page 1 content, then add page 2 flowables (heading, intro paragraph, sub-sections with `Preformatted` blocks for JSON/protobuf examples in a monospace font, a small table for the size budget).
+- Keep monospace JSON examples narrow enough to fit 1" margins on US Letter.
+- After generation, run mandatory PDF QA: `pdftoppm -jpeg -r 150` and visually inspect both pages for overflow, clipped code blocks, font issues. Fix and re-render if needed.
+- Emit `<lov-artifact>` for the new v2 PDF.
 
-### PSK format
-- 32 random bytes (PSK256), generated client-side in the trigger via `gen_random_bytes(32)` and base64-encoded for storage. On the BLE write, decode to raw bytes and stuff into `ChannelSettings.psk`.
+## Out of scope
 
-### Files touched
-- New: `supabase/migrations/<ts>_organizer_channels.sql`
-- New: `src/components/OrganizerChannelCard.tsx`
-- Modified: `src/lib/transport/meshtastic/protobuf.ts` (~+250 lines for AdminMessage + Channel encoders/decoders)
-- Modified: `src/lib/transport/LoRaHardwareTransport.ts` (~+150 lines for read/provision/reset methods)
-- Modified: `src/components/AssignRadioDialog.tsx` (Configure Channel step + retry/reset UI)
-- Modified: `src/components/LoRaPairingCard.tsx` (advanced reset button)
-- Modified: `src/pages/OrganizerLiveManage.tsx` (mount OrganizerChannelCard)
-- Modified: `docs/hardware-setup.md` (document the new flow)
-
-### Out of scope (intentionally)
-- Multi-slot support (Option B from the discussion) — slot 0 only for now.
-- Per-event channels — every event uses the organizer's channel.
-- Region pushing — pre-flash only.
-- Web fallback — provisioning is BLE-only, gated by `isHardwareCapable()`. Web users still get manual node-ID entry but no channel write.
-
----
-
-## Risks and mitigations
-
-| Risk | Mitigation |
-|---|---|
-| BLE write fails mid-flow, radio in bad state | Verify-after-write step + "Reset to Default" button always available |
-| Organizer rotates key while drivers are at the track | Show banner in `RegistrationRadioPairing`: "Channel updated, re-pair your radio" — driver re-runs Configure step |
-| Driver's radio is on wrong region | Region guard aborts before any write, with clear error |
-| Protobuf encoder bug bricks slot 0 | Reset-to-Default uses hardcoded known-good values; worst case driver pairs to Meshtastic app and resets |
-| Two organizers pick the same channel name by coincidence | Channel names auto-generated as `TSO-<orgSlug>-<4hexchars>`, uniqueness enforced by table constraint |
-
----
-
-## Memory updates after build
-
-Update `mem://features/lora-hardware.md` to document:
-- `lora_organizer_channels` table and per-organizer channel model
-- AdminMessage protobuf support
-- Slot-0-overwrite provisioning model
-- Region-pre-flash policy
+- No code changes to the app.
+- No edits to the existing v1 PDF (kept as baseline per artifact versioning rule).
